@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { School } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
@@ -18,7 +18,7 @@ const Navigation: React.FC = () => {
     <nav className="bg-white border-b py-3 px-4 sm:px-6">
       <div className="container mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <School className="h-6 w-6 text-school-primary" />
+          <Logo size="sm" className="text-school-primary" />
           <span className="font-semibold text-xl">School Pickup</span>
         </Link>
         

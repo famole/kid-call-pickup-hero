@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { getCurrentlyCalled } from '@/services/supabaseService';
-import { School } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequestWithDetails } from '@/types/supabase';
+import Logo from '@/components/Logo';
 
 const ViewerDisplay = () => {
   const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
@@ -48,7 +48,7 @@ const ViewerDisplay = () => {
       <header className="bg-school-primary text-white py-4 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <School className="h-8 w-8" />
+            <Logo size="md" />
             <h1 className="text-2xl font-bold">School Pickup System</h1>
           </div>
           <div className="text-lg">
