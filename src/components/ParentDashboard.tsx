@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getChildrenForParent, createPickupRequest, getActivePickupRequests } from '@/services/mockData';
@@ -8,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CheckCheck, School, UserRound } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import ChildCard from './ChildCard';
+import Logo from '@/components/ui/logo';
 
 const ParentDashboard = () => {
   const { user } = useAuth();
@@ -87,35 +87,35 @@ const ParentDashboard = () => {
   const hasActiveRequests = activeRequests.length > 0;
 
   return (
-    <div className="container mx-auto py-6">
-      <header className="mb-8">
+    <div className="container mx-auto py-4 sm:py-6 px-4">
+      <header className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <School className="h-8 w-8 text-school-primary" />
-          <h1 className="text-3xl font-bold">School Pickup</h1>
+          <Logo size="sm" className="text-school-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold">School Pickup</h1>
         </div>
         <div className="flex items-center">
           <div className="flex-1">
-            <p className="text-lg text-gray-600">Welcome, {user?.name}</p>
+            <p className="text-base sm:text-lg text-gray-600">Welcome, {user?.name}</p>
           </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Select Children for Pickup</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Select Children for Pickup</CardTitle>
               <CardDescription>
                 Choose which children to pick up today
               </CardDescription>
             </CardHeader>
             <CardContent>
               {children.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="text-center py-8 sm:py-12 text-muted-foreground">
                   No children found in your account
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {children.map((child) => (
                     <ChildCard
                       key={child.id}
@@ -128,7 +128,7 @@ const ParentDashboard = () => {
                 </div>
               )}
               
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <Button 
                   className="w-full bg-school-secondary hover:bg-school-secondary/90"
                   disabled={isSubmitting || selectedChildren.length === 0 || hasActiveRequests}
@@ -144,18 +144,18 @@ const ParentDashboard = () => {
         <div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Active Pickups</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Active Pickups</CardTitle>
               <CardDescription>
                 Children currently requested for pickup
               </CardDescription>
             </CardHeader>
             <CardContent>
               {activeRequests.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="text-center py-8 sm:py-12 text-muted-foreground">
                   No active pickup requests
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {activeRequests.map((request) => {
                     const child = children.find(c => c.id === request.childId);
                     return (
@@ -168,12 +168,12 @@ const ParentDashboard = () => {
                         }`}
                       >
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border">
-                          <UserRound className={`h-6 w-6 ${
+                          <UserRound className={`h-5 w-5 ${
                             request.status === 'called' ? 'text-green-600' : 'text-blue-600'
                           }`} />
                         </div>
-                        <div>
-                          <div className="font-medium">{child?.name || 'Unknown Child'}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{child?.name || 'Unknown Child'}</div>
                           <div className="text-sm text-muted-foreground">
                             {request.status === 'called' ? (
                               <span className="flex items-center gap-1 text-green-600">
