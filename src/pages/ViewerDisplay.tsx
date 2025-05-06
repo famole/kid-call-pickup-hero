@@ -1,22 +1,45 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { getCurrentlyCalled } from '@/services/mockData';
+import { getCurrentlyCalled } from '@/services/supabaseService';
 import { School } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
+import { PickupRequestWithDetails } from '@/types/supabase';
 
 const ViewerDisplay = () => {
-  const [calledChildren, setCalledChildren] = useState<any[]>([]);
+  const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
   
   useEffect(() => {
     // Initial fetch
-    setCalledChildren(getCurrentlyCalled());
+    const fetchCalledChildren = async () => {
+      const data = await getCurrentlyCalled();
+      setCalledChildren(data);
+    };
     
-    // Set up a refresh interval
-    const interval = setInterval(() => {
-      setCalledChildren(getCurrentlyCalled());
-    }, 3000);
+    fetchCalledChildren();
     
-    return () => clearInterval(interval);
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('public:pickup_requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pickup_requests',
+          filter: 'status=eq.called'
+        },
+        async () => {
+          // Refetch data when there's a change
+          const data = await getCurrentlyCalled();
+          setCalledChildren(data);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
