@@ -1,0 +1,81 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { getCurrentlyCalled } from '@/services/mockData';
+import { School } from 'lucide-react';
+
+const ViewerDisplay = () => {
+  const [calledChildren, setCalledChildren] = useState<any[]>([]);
+  
+  useEffect(() => {
+    // Initial fetch
+    setCalledChildren(getCurrentlyCalled());
+    
+    // Set up a refresh interval
+    const interval = setInterval(() => {
+      setCalledChildren(getCurrentlyCalled());
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-school-background">
+      <header className="bg-school-primary text-white py-4 shadow-md">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <School className="h-8 w-8" />
+            <h1 className="text-2xl font-bold">School Pickup System</h1>
+          </div>
+          <div className="text-lg">
+            {new Date().toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </div>
+        </div>
+      </header>
+      
+      <div className="container mx-auto flex-1 py-8 px-4">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-gray-800">Currently Called for Pickup</h2>
+          <p className="text-lg text-muted-foreground">Students should come to the pickup area when their name appears</p>
+        </div>
+        
+        {calledChildren.length === 0 ? (
+          <div className="text-center py-20">
+            <h3 className="text-2xl font-semibold text-gray-500">No students currently called</h3>
+            <p className="text-muted-foreground mt-2">Student names will appear here when they are called for pickup</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {calledChildren.map((item) => (
+              <Card key={item.request.id} className="call-animation border-2 border-school-secondary">
+                <CardContent className="flex items-center justify-between p-6">
+                  <div>
+                    <h3 className="text-2xl font-bold">{item.child?.name}</h3>
+                    <p className="text-lg text-muted-foreground">{item.class?.name}</p>
+                    <p className="text-sm mt-2">Teacher: {item.class?.teacher}</p>
+                  </div>
+                  <div className="text-4xl font-bold text-school-primary">
+                    {item.class?.grade.charAt(0)}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      <footer className="bg-gray-100 py-4">
+        <div className="container mx-auto text-center text-muted-foreground">
+          School Pickup System — Please wait until your name appears on screen
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default ViewerDisplay;
