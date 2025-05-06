@@ -29,7 +29,8 @@ const ViewerDisplay = () => {
           table: 'pickup_requests',
           filter: 'status=eq.called'
         },
-        async () => {
+        async (payload) => {
+          console.log('Realtime update received:', payload);
           // Refetch data when there's a change
           const data = await getCurrentlyCalled();
           setCalledChildren(data);

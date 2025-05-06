@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Child, Class, PickupRequest, User } from '@/types';
-import { PickupRequestWithDetails } from '@/types/supabase';
+import { PickupRequestRow, PickupRequestWithDetails } from '@/types/supabase';
 import { 
   getChildById, 
   getClassById, 
@@ -22,12 +22,12 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
       return getMockActivePickupRequests(); // Fallback to mock data
     }
     
-    return data.map(item => ({
+    return (data as PickupRequestRow[]).map(item => ({
       id: item.id,
       childId: item.child_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
-      status: item.status
+      status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
     })) as PickupRequest[];
   } catch (error) {
     console.error('Error in getActivePickupRequests:', error);
@@ -49,7 +49,7 @@ export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> 
     }
     
     // Map the data to the expected format with child and class details
-    const result = requestsData.map(req => {
+    const result = (requestsData as PickupRequestRow[]).map(req => {
       const child = getChildById(req.child_id);
       const classInfo = child ? getClassById(child.classId) : null;
       
@@ -59,7 +59,7 @@ export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> 
           childId: req.child_id,
           parentId: req.parent_id,
           requestTime: new Date(req.request_time),
-          status: req.status
+          status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
         },
         child,
         class: classInfo
