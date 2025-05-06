@@ -4,10 +4,10 @@ import { getChildrenForParent, createPickupRequest, getActivePickupRequests } fr
 import { Child, PickupRequest } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCheck, School, UserRound } from 'lucide-react';
+import { CheckCheck, UserRound } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import ChildCard from './ChildCard';
-import Logo from '@/components/ui/logo';
+import Logo from '@/components/Logo';
 
 const ParentDashboard = () => {
   const { user } = useAuth();
