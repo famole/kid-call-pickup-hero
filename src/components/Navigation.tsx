@@ -9,7 +9,7 @@ import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Navigation: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +30,7 @@ const Navigation: React.FC = () => {
       </SheetTrigger>
       <SheetContent side="left" className="w-[250px] pt-10">
         <div className="flex flex-col space-y-4 py-4">
-          {user && user.role === 'admin' && (
+          {isAuthenticated && user?.role === 'admin' && (
             <>
               <Link 
                 to="/admin" 
@@ -51,7 +51,7 @@ const Navigation: React.FC = () => {
             </>
           )}
           
-          {user && (
+          {isAuthenticated && (
             <Link 
               to="/viewer" 
               className="px-4 py-2 text-gray-600 hover:text-school-primary hover:bg-gray-100 rounded-md"
@@ -61,7 +61,7 @@ const Navigation: React.FC = () => {
             </Link>
           )}
           
-          {user ? (
+          {isAuthenticated ? (
             <Button variant="outline" onClick={handleLogout} className="mx-4">
               Logout
             </Button>
@@ -101,7 +101,7 @@ const Navigation: React.FC = () => {
           <MobileMenu />
         ) : (
           <div className="hidden md:flex items-center gap-4">
-            {user && user.role === 'admin' && (
+            {isAuthenticated && user?.role === 'admin' && (
               <>
                 <Link to="/admin" className="text-gray-600 hover:text-school-primary flex items-center gap-1">
                   <Users size={18} />
@@ -114,13 +114,13 @@ const Navigation: React.FC = () => {
               </>
             )}
             
-            {user && (
+            {isAuthenticated && (
               <Link to="/viewer" className="text-gray-600 hover:text-school-primary">
                 Viewer Display
               </Link>
             )}
             
-            {user ? (
+            {isAuthenticated ? (
               <Button variant="outline" onClick={handleLogout}>
                 Logout
               </Button>
