@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -170,7 +169,6 @@ const AdminStudentsScreen = () => {
       toast({
         title: "Warning",
         description: `Only ${validData.length} out of ${parsedData.length} entries were valid and will be imported.`,
-        variant: "warning"
       });
     }
 

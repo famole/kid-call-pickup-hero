@@ -40,7 +40,8 @@ export async function parseCSV<T extends Record<string, any>>(
             continue;
           }
           
-          const row = {} as T;
+          // Create an object with proper typing to satisfy TypeScript
+          const row = {} as Record<string, any>;
           
           // Map values to object properties based on header
           for (let j = 0; j < header.length; j++) {
@@ -79,7 +80,8 @@ export async function parseCSV<T extends Record<string, any>>(
             continue;
           }
           
-          result.push(row);
+          // Convert the record to the expected type
+          result.push(row as unknown as T);
         }
         
         resolve({ data: result, errors });
