@@ -10,6 +10,7 @@ import { getStudentById } from '@/services/studentService';
 import { getAllParents } from '@/services/parentService';
 import { getClassById } from '@/services/classService';
 import { Child, Class, PickupRequest, User } from '@/types';
+import { Parent } from '@/types/parent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check } from 'lucide-react';
@@ -36,7 +37,11 @@ const AdminPanel = () => {
         const parents = await getAllParents();
         const parentsMap: Record<string, User> = {};
         parents.forEach(parent => {
-          parentsMap[parent.id] = parent;
+          // Convert Parent to User type by adding the required role property
+          parentsMap[parent.id] = {
+            ...parent,
+            role: 'parent' // Set default role for parents
+          };
         });
         setParentsCache(parentsMap);
       } catch (error) {
