@@ -1,0 +1,208 @@
+
+import { supabase } from "@/integrations/supabase/client";
+import { PickupRequest } from '@/types';
+import { PickupRequestWithDetails } from '@/types/supabase';
+import { getStudentById } from './studentService';
+import { getClassById } from './classService';
+
+// Create a new pickup request
+export const createPickupRequest = async (studentId: string, parentId: string): Promise<PickupRequest> => {
+  try {
+    const { data, error } = await supabase
+      .from('pickup_requests')
+      .insert([{
+        student_id: studentId,
+        parent_id: parentId,
+        status: 'pending'
+      }])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating pickup request:', error);
+      throw new Error(error.message);
+    }
+    
+    return {
+      id: data.id,
+      childId: data.student_id,
+      parentId: data.parent_id,
+      requestTime: new Date(data.request_time),
+      status: data.status
+    };
+  } catch (error) {
+    console.error('Error in createPickupRequest:', error);
+    
+    // Fallback to mock data
+    const { createPickupRequest: createMockPickupRequest } = await import('./mockData');
+    return createMockPickupRequest(studentId, parentId);
+  }
+};
+
+// Update the status of a pickup request
+export const updatePickupRequestStatus = async (id: string, status: PickupRequest['status']): Promise<PickupRequest | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('pickup_requests')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating pickup request status:', error);
+      
+      // Fallback to mock data
+      const { updatePickupRequestStatus: updateMockStatus } = await import('./mockData');
+      return updateMockStatus(id, status);
+    }
+    
+    return {
+      id: data.id,
+      childId: data.student_id,
+      parentId: data.parent_id,
+      requestTime: new Date(data.request_time),
+      status: data.status
+    };
+  } catch (error) {
+    console.error('Error in updatePickupRequestStatus:', error);
+    
+    // Fallback to mock data
+    const { updatePickupRequestStatus: updateMockStatus } = await import('./mockData');
+    return updateMockStatus(id, status);
+  }
+};
+
+// Get all active pickup requests
+export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('pickup_requests')
+      .select('*')
+      .in('status', ['pending', 'called']);
+    
+    if (error) {
+      console.error('Error fetching active pickup requests:', error);
+      
+      // Fallback to mock data
+      const { getActivePickupRequests: getMockActiveRequests } = await import('./mockData');
+      return getMockActiveRequests();
+    }
+    
+    return data.map(item => ({
+      id: item.id,
+      childId: item.student_id,
+      parentId: item.parent_id,
+      requestTime: new Date(item.request_time),
+      status: item.status
+    }));
+  } catch (error) {
+    console.error('Error in getActivePickupRequests:', error);
+    
+    // Fallback to mock data
+    const { getActivePickupRequests: getMockActiveRequests } = await import('./mockData');
+    return getMockActiveRequests();
+  }
+};
+
+// Get active pickup requests for a specific parent
+export const getActivePickupRequestsForParent = async (parentId: string): Promise<PickupRequest[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('pickup_requests')
+      .select('*')
+      .eq('parent_id', parentId)
+      .in('status', ['pending', 'called']);
+    
+    if (error) {
+      console.error('Error fetching active pickup requests for parent:', error);
+      
+      // Fallback to mock data (filtered for parent)
+      const { getActivePickupRequests: getMockActiveRequests } = await import('./mockData');
+      return getMockActiveRequests().filter(req => req.parentId === parentId);
+    }
+    
+    return data.map(item => ({
+      id: item.id,
+      childId: item.student_id,
+      parentId: item.parent_id,
+      requestTime: new Date(item.request_time),
+      status: item.status
+    }));
+  } catch (error) {
+    console.error('Error in getActivePickupRequestsForParent:', error);
+    
+    // Fallback to mock data (filtered for parent)
+    const { getActivePickupRequests: getMockActiveRequests } = await import('./mockData');
+    return getMockActiveRequests().filter(req => req.parentId === parentId);
+  }
+};
+
+// Get currently called pickup requests with details
+export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('pickup_requests')
+      .select('*')
+      .eq('status', 'called');
+    
+    if (error) {
+      console.error('Error fetching called pickup requests:', error);
+      
+      // Fallback to mock data
+      const { getCurrentlyCalled: getMockCurrentlyCalled } = await import('./mockData');
+      return getMockCurrentlyCalled();
+    }
+    
+    // Map the data and get additional details
+    const result = await Promise.all(data.map(async (req) => {
+      const student = await getStudentById(req.student_id);
+      const classInfo = student ? await getClassById(student.classId) : null;
+      
+      return {
+        request: {
+          id: req.id,
+          childId: req.student_id,
+          parentId: req.parent_id,
+          requestTime: new Date(req.request_time),
+          status: req.status
+        },
+        child: student,
+        class: classInfo
+      };
+    }));
+    
+    return result;
+  } catch (error) {
+    console.error('Error in getCurrentlyCalled:', error);
+    
+    // Fallback to mock data
+    const { getCurrentlyCalled: getMockCurrentlyCalled } = await import('./mockData');
+    return getMockCurrentlyCalled();
+  }
+};
+
+// Migrate pickup request data from mock to Supabase
+export const migratePickupRequestsToSupabase = async (requests: PickupRequest[]): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('pickup_requests')
+      .upsert(
+        requests.map(request => ({
+          id: request.id,
+          student_id: request.childId,
+          parent_id: request.parentId,
+          request_time: request.requestTime.toISOString(),
+          status: request.status
+        }))
+      );
+    
+    if (error) {
+      console.error('Error migrating pickup requests:', error);
+      throw new Error(error.message);
+    }
+  } catch (error) {
+    console.error('Error in migratePickupRequestsToSupabase:', error);
+    throw error;
+  }
+};

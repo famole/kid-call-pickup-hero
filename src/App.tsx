@@ -1,57 +1,56 @@
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import Login from './pages/Login';
+import Index from './pages/Index';
+import AdminPanel from './pages/AdminPanel';
+import ViewerDisplay from './pages/ViewerDisplay';
+import NotFound from './pages/NotFound';
+import ProtectedRoute from './components/ProtectedRoute';
+// Add the new import
+import AdminInitialSetup from './pages/AdminInitialSetup';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Navigation from "@/components/Navigation";
-
-import Login from "./pages/Login";
-import Index from "./pages/Index";
-import AdminPanel from "./pages/AdminPanel";
-import ViewerDisplay from "./pages/ViewerDisplay";
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+function App() {
+  return (
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/viewer" element={
-              <ProtectedRoute>
-                <ViewerDisplay />
-              </ProtectedRoute>
-            } />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <>
-                  <Navigation />
-                  <Index />
-                </>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin" element={
-              <ProtectedRoute requireAdmin={true}>
-                <>
-                  <Navigation />
-                  <AdminPanel />
-                </>
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
     </AuthProvider>
-  </QueryClientProvider>
-);
+  );
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/login" element={<Login />} />
+      
+      {/* Admin routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminPanel />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/setup"
+        element={
+          <ProtectedRoute>
+            <AdminInitialSetup />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Viewer display */}
+      <Route path="/viewer" element={<ViewerDisplay />} />
+      
+      {/* 404 route */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
 
 export default App;
