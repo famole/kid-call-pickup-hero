@@ -78,6 +78,11 @@ export const getChildById = (id: string) => {
   return children.find(child => child.id === id);
 };
 
+// Add the missing getAllStudents function
+export const getAllStudents = (): Child[] => {
+  return [...children];
+};
+
 export const createPickupRequest = (childId: string, parentId: string): PickupRequest => {
   const request: PickupRequest = {
     id: Date.now().toString(),
