@@ -80,6 +80,12 @@ export async function parseCSV<T extends Record<string, any>>(
             continue;
           }
           
+          // Email validation for parent imports
+          if ('email' in row && (!row.email || typeof row.email !== 'string' || !isValidEmail(row.email))) {
+            errors.push(`Row ${i}: Valid email is required`);
+            continue;
+          }
+          
           // Convert the record to the expected type
           result.push(row as unknown as T);
         }
@@ -125,3 +131,10 @@ function parseCSVLine(line: string): string[] {
   
   return result;
 }
+
+// Helper function to validate email format
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
