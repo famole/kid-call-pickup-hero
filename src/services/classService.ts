@@ -15,12 +15,7 @@ export const getAllClasses = async (): Promise<Class[]> => {
       throw new Error(error.message);
     }
     
-    return data.map((classItem: any) => ({
-      id: classItem.id,
-      name: classItem.name,
-      grade: classItem.grade,
-      teacher: classItem.teacher
-    }));
+    return data as Class[];
   } catch (error) {
     console.error('Error in getAllClasses:', error);
     // Fallback to mock data if there's an error
@@ -46,12 +41,7 @@ export const getClassById = async (id: string): Promise<Class | null> => {
       return classes.find(cls => cls.id === id) || null;
     }
     
-    return {
-      id: data.id,
-      name: data.name,
-      grade: data.grade,
-      teacher: data.teacher
-    };
+    return data as Class;
   } catch (error) {
     console.error('Error in getClassById:', error);
     
@@ -66,11 +56,11 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
   try {
     const { data, error } = await supabase
       .from('classes')
-      .insert([{
+      .insert({
         name: classData.name,
         grade: classData.grade,
         teacher: classData.teacher
-      }])
+      })
       .select()
       .single();
     
@@ -79,12 +69,7 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
       throw new Error(error.message);
     }
     
-    return {
-      id: data.id,
-      name: data.name,
-      grade: data.grade,
-      teacher: data.teacher
-    };
+    return data as Class;
   } catch (error) {
     console.error('Error in createClass:', error);
     throw error;
@@ -94,13 +79,14 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
 // Update an existing class
 export const updateClass = async (id: string, classData: Partial<Class>): Promise<Class> => {
   try {
+    const updateData: Record<string, any> = {};
+    if (classData.name !== undefined) updateData.name = classData.name;
+    if (classData.grade !== undefined) updateData.grade = classData.grade;
+    if (classData.teacher !== undefined) updateData.teacher = classData.teacher;
+
     const { data, error } = await supabase
       .from('classes')
-      .update({
-        name: classData.name,
-        grade: classData.grade,
-        teacher: classData.teacher
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -110,12 +96,7 @@ export const updateClass = async (id: string, classData: Partial<Class>): Promis
       throw new Error(error.message);
     }
     
-    return {
-      id: data.id,
-      name: data.name,
-      grade: data.grade,
-      teacher: data.teacher
-    };
+    return data as Class;
   } catch (error) {
     console.error('Error in updateClass:', error);
     throw error;
