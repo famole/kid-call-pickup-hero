@@ -1,17 +1,14 @@
+
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { School } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminTabs from '@/components/AdminTabs';
 import { useState, useEffect } from 'react';
-import { 
-  children, 
-  classes, 
-  parents, 
-  getActivePickupRequests, 
-  updatePickupRequestStatus,
-  getChildById
-} from '@/services/mockData';
+import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickupService';
+import { getStudentById } from '@/services/studentService';
+import { getAllParents } from '@/services/parentService';
+import { getClassById } from '@/services/classService';
 import { Child, Class, PickupRequest, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,39 +18,122 @@ import { useToast } from '@/components/ui/use-toast';
 const AdminPanel = () => {
   const { user } = useAuth();
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
+  const [studentsCache, setStudentsCache] = useState<Record<string, Child>>({});
+  const [classesCache, setClassesCache] = useState<Record<string, Class>>({});
+  const [parentsCache, setParentsCache] = useState<Record<string, User>>({});
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initial fetch of active requests
-    setActiveRequests(getActivePickupRequests());
+    // Initial fetch
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const requests = await getActivePickupRequests();
+        setActiveRequests(requests);
+        
+        // Prefetch parent data for efficiency
+        const parents = await getAllParents();
+        const parentsMap: Record<string, User> = {};
+        parents.forEach(parent => {
+          parentsMap[parent.id] = parent;
+        });
+        setParentsCache(parentsMap);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load pickup requests",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
     
     // Set up refresh interval
-    const interval = setInterval(() => {
-      setActiveRequests(getActivePickupRequests());
+    const interval = setInterval(async () => {
+      try {
+        const requests = await getActivePickupRequests();
+        setActiveRequests(requests);
+      } catch (error) {
+        console.error('Error refreshing pickup requests:', error);
+      }
     }, 3000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [toast]);
 
-  const handleCallStudent = (requestId: string) => {
-    const updated = updatePickupRequestStatus(requestId, 'called');
+  // Load a child's data if not in cache
+  const getChildDetails = async (childId: string) => {
+    if (studentsCache[childId]) {
+      return studentsCache[childId];
+    }
+    try {
+      const child = await getStudentById(childId);
+      if (child) {
+        setStudentsCache(prev => ({ ...prev, [childId]: child }));
+        
+        // Also get the class info if not already in cache
+        if (child.classId && !classesCache[child.classId]) {
+          const classInfo = await getClassById(child.classId);
+          if (classInfo) {
+            setClassesCache(prev => ({ ...prev, [child.classId]: classInfo }));
+          }
+        }
+      }
+      return child;
+    } catch (error) {
+      console.error(`Error fetching child ${childId}:`, error);
+      return null;
+    }
+  };
+
+  // Get class info for a child
+  const getChildClass = async (childId: string) => {
+    const child = await getChildDetails(childId);
+    if (child?.classId && classesCache[child.classId]) {
+      return classesCache[child.classId];
+    } else if (child?.classId) {
+      try {
+        const classInfo = await getClassById(child.classId);
+        if (classInfo) {
+          setClassesCache(prev => ({ ...prev, [child.classId]: classInfo }));
+        }
+        return classInfo;
+      } catch (error) {
+        console.error(`Error fetching class for child ${childId}:`, error);
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const handleCallStudent = async (requestId: string) => {
+    const updated = await updatePickupRequestStatus(requestId, 'called');
     if (updated) {
       toast({
         title: 'Student Called',
         description: 'The student has been called for pickup.',
       });
-      setActiveRequests(getActivePickupRequests());
+      // Refresh the list
+      const requests = await getActivePickupRequests();
+      setActiveRequests(requests);
     }
   };
 
-  const handleMarkCompleted = (requestId: string) => {
-    const updated = updatePickupRequestStatus(requestId, 'completed');
+  const handleMarkCompleted = async (requestId: string) => {
+    const updated = await updatePickupRequestStatus(requestId, 'completed');
     if (updated) {
       toast({
         title: 'Pickup Completed',
         description: 'The student pickup has been marked as completed.',
       });
-      setActiveRequests(getActivePickupRequests());
+      // Refresh the list
+      const requests = await getActivePickupRequests();
+      setActiveRequests(requests);
     }
   };
 
@@ -84,16 +164,35 @@ const AdminPanel = () => {
               <CardTitle>Active Pickup Requests</CardTitle>
             </CardHeader>
             <CardContent>
-              {activeRequests.length === 0 ? (
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary"></div>
+                </div>
+              ) : activeRequests.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   No active pickup requests
                 </div>
               ) : (
                 <div className="space-y-4">
                   {activeRequests.map((request) => {
-                    const child = getChildById(request.childId);
-                    const parent = parents.find(p => p.id === request.parentId);
-                    const childClass = child ? classes.find(c => c.id === child.classId) : null;
+                    const [child, setChild] = useState<Child | null>(null);
+                    const [classInfo, setClassInfo] = useState<Class | null>(null);
+                    const [parent, setParent] = useState<User | null>(parentsCache[request.parentId] || null);
+                    
+                    // Load child and class data when component mounts
+                    useEffect(() => {
+                      const loadData = async () => {
+                        const childData = await getChildDetails(request.childId);
+                        setChild(childData);
+                        
+                        if (childData?.classId) {
+                          const classData = await getChildClass(request.childId);
+                          setClassInfo(classData);
+                        }
+                      };
+                      
+                      loadData();
+                    }, [request.childId]);
                     
                     return (
                       <div 
@@ -105,9 +204,9 @@ const AdminPanel = () => {
                         }`}
                       >
                         <div>
-                          <h3 className="font-semibold text-lg">{child?.name || 'Unknown Child'}</h3>
+                          <h3 className="font-semibold text-lg">{child?.name || 'Loading...'}</h3>
                           <p className="text-sm text-muted-foreground">
-                            Class: {childClass?.name || 'Unknown'} • 
+                            Class: {classInfo?.name || 'Loading...'} • 
                             Requested by: {parent?.name || 'Unknown Parent'}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">

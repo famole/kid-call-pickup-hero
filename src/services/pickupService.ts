@@ -10,11 +10,11 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
   try {
     const { data, error } = await supabase
       .from('pickup_requests')
-      .insert([{
-        student_id: studentId,
+      .insert({
+        child_id: studentId,
         parent_id: parentId,
         status: 'pending'
-      }])
+      })
       .select()
       .single();
     
@@ -25,10 +25,10 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
     
     return {
       id: data.id,
-      childId: data.student_id,
+      childId: data.child_id,
       parentId: data.parent_id,
       requestTime: new Date(data.request_time),
-      status: data.status
+      status: data.status as 'pending' | 'called' | 'completed' | 'cancelled'
     };
   } catch (error) {
     console.error('Error in createPickupRequest:', error);
@@ -59,10 +59,10 @@ export const updatePickupRequestStatus = async (id: string, status: PickupReques
     
     return {
       id: data.id,
-      childId: data.student_id,
+      childId: data.child_id,
       parentId: data.parent_id,
       requestTime: new Date(data.request_time),
-      status: data.status
+      status: data.status as 'pending' | 'called' | 'completed' | 'cancelled'
     };
   } catch (error) {
     console.error('Error in updatePickupRequestStatus:', error);
@@ -91,10 +91,10 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     return data.map(item => ({
       id: item.id,
-      childId: item.student_id,
+      childId: item.child_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
-      status: item.status
+      status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
     }));
   } catch (error) {
     console.error('Error in getActivePickupRequests:', error);
@@ -124,10 +124,10 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
     
     return data.map(item => ({
       id: item.id,
-      childId: item.student_id,
+      childId: item.child_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
-      status: item.status
+      status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
     }));
   } catch (error) {
     console.error('Error in getActivePickupRequestsForParent:', error);
@@ -156,16 +156,16 @@ export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> 
     
     // Map the data and get additional details
     const result = await Promise.all(data.map(async (req) => {
-      const student = await getStudentById(req.student_id);
+      const student = await getStudentById(req.child_id);
       const classInfo = student ? await getClassById(student.classId) : null;
       
       return {
         request: {
           id: req.id,
-          childId: req.student_id,
+          childId: req.child_id,
           parentId: req.parent_id,
           requestTime: new Date(req.request_time),
-          status: req.status
+          status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
         },
         child: student,
         class: classInfo
@@ -190,7 +190,7 @@ export const migratePickupRequestsToSupabase = async (requests: PickupRequest[])
       .upsert(
         requests.map(request => ({
           id: request.id,
-          student_id: request.childId,
+          child_id: request.childId,
           parent_id: request.parentId,
           request_time: request.requestTime.toISOString(),
           status: request.status

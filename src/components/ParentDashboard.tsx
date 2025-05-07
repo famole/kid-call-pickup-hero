@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getChildrenForParent, createPickupRequest, getActivePickupRequests } from '@/services/mockData';
+import { createPickupRequest, getActivePickupRequestsForParent } from '@/services/pickupService';
+import { getStudentsForParent } from '@/services/studentService';
 import { Child, PickupRequest } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,32 +17,50 @@ const ParentDashboard = () => {
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      const parentChildren = getChildrenForParent(user.id);
-      setChildren(parentChildren);
-    }
-  }, [user]);
+    const loadData = async () => {
+      if (user) {
+        try {
+          setLoading(true);
+          // Get children for this parent from the database
+          const parentChildren = await getStudentsForParent(user.id);
+          setChildren(parentChildren);
 
-  useEffect(() => {
-    // Check for active pickup requests
-    const active = getActivePickupRequests().filter(
-      req => user && req.parentId === user.id
-    );
-    setActiveRequests(active);
+          // Check for active pickup requests
+          const active = await getActivePickupRequestsForParent(user.id);
+          setActiveRequests(active);
+        } catch (error) {
+          console.error('Error loading parent dashboard data:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load data. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
 
     // Set up a refresh interval (in a real app, this would be replaced with websockets)
-    const interval = setInterval(() => {
-      const updated = getActivePickupRequests().filter(
-        req => user && req.parentId === user.id
-      );
-      setActiveRequests(updated);
+    const interval = setInterval(async () => {
+      if (user) {
+        try {
+          const updated = await getActivePickupRequestsForParent(user.id);
+          setActiveRequests(updated);
+        } catch (error) {
+          console.error('Error refreshing pickup requests:', error);
+        }
+      }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, toast]);
 
   const toggleChildSelection = (childId: string) => {
     setSelectedChildren(prev => 
@@ -56,9 +76,10 @@ const ParentDashboard = () => {
     setIsSubmitting(true);
     try {
       // Create pickup requests for all selected children
-      selectedChildren.forEach(childId => {
-        createPickupRequest(childId, user.id);
-      });
+      const promises = selectedChildren.map(childId => 
+        createPickupRequest(childId, user.id)
+      );
+      await Promise.all(promises);
 
       toast({
         title: "Pickup Request Sent",
@@ -66,9 +87,7 @@ const ParentDashboard = () => {
       });
 
       // Refresh the active requests list
-      const active = getActivePickupRequests().filter(
-        req => user && req.parentId === user.id
-      );
+      const active = await getActivePickupRequestsForParent(user.id);
       setActiveRequests(active);
       
       // Clear the selection
@@ -100,99 +119,105 @@ const ParentDashboard = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Select Children for Pickup</CardTitle>
-              <CardDescription>
-                Choose which children to pick up today
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {children.length === 0 ? (
-                <div className="text-center py-8 sm:py-12 text-muted-foreground">
-                  No children found in your account
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {children.map((child) => (
-                    <ChildCard
-                      key={child.id}
-                      child={child}
-                      isSelected={selectedChildren.includes(child.id)}
-                      isDisabled={hasActiveRequests}
-                      onClick={() => !hasActiveRequests && toggleChildSelection(child.id)}
-                    />
-                  ))}
-                </div>
-              )}
-              
-              <div className="mt-4 sm:mt-6">
-                <Button 
-                  className="w-full bg-school-secondary hover:bg-school-secondary/90"
-                  disabled={isSubmitting || selectedChildren.length === 0 || hasActiveRequests}
-                  onClick={handleRequestPickup}
-                >
-                  {isSubmitting ? 'Requesting...' : 'Request Pickup'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school-primary"></div>
         </div>
-
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Active Pickups</CardTitle>
-              <CardDescription>
-                Children currently requested for pickup
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {activeRequests.length === 0 ? (
-                <div className="text-center py-8 sm:py-12 text-muted-foreground">
-                  No active pickup requests
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl">Select Children for Pickup</CardTitle>
+                <CardDescription>
+                  Choose which children to pick up today
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {children.length === 0 ? (
+                  <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                    No children found in your account
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    {children.map((child) => (
+                      <ChildCard
+                        key={child.id}
+                        child={child}
+                        isSelected={selectedChildren.includes(child.id)}
+                        isDisabled={hasActiveRequests}
+                        onClick={() => !hasActiveRequests && toggleChildSelection(child.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+                
+                <div className="mt-4 sm:mt-6">
+                  <Button 
+                    className="w-full bg-school-secondary hover:bg-school-secondary/90"
+                    disabled={isSubmitting || selectedChildren.length === 0 || hasActiveRequests}
+                    onClick={handleRequestPickup}
+                  >
+                    {isSubmitting ? 'Requesting...' : 'Request Pickup'}
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  {activeRequests.map((request) => {
-                    const child = children.find(c => c.id === request.childId);
-                    return (
-                      <div 
-                        key={request.id}
-                        className={`p-3 border rounded-md flex items-center gap-3 ${
-                          request.status === 'called' 
-                            ? 'bg-green-50 border-green-200 call-animation'
-                            : 'bg-blue-50 border-blue-200'
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border">
-                          <UserRound className={`h-5 w-5 ${
-                            request.status === 'called' ? 'text-green-600' : 'text-blue-600'
-                          }`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{child?.name || 'Unknown Child'}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {request.status === 'called' ? (
-                              <span className="flex items-center gap-1 text-green-600">
-                                <CheckCheck className="h-3 w-3" /> Ready for pickup!
-                              </span>
-                            ) : (
-                              'Waiting to be called'
-                            )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl">Active Pickups</CardTitle>
+                <CardDescription>
+                  Children currently requested for pickup
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {activeRequests.length === 0 ? (
+                  <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                    No active pickup requests
+                  </div>
+                ) : (
+                  <div className="space-y-3 sm:space-y-4">
+                    {activeRequests.map((request) => {
+                      const child = children.find(c => c.id === request.childId);
+                      return (
+                        <div 
+                          key={request.id}
+                          className={`p-3 border rounded-md flex items-center gap-3 ${
+                            request.status === 'called' 
+                              ? 'bg-green-50 border-green-200 call-animation'
+                              : 'bg-blue-50 border-blue-200'
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border">
+                            <UserRound className={`h-5 w-5 ${
+                              request.status === 'called' ? 'text-green-600' : 'text-blue-600'
+                            }`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{child?.name || 'Unknown Child'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {request.status === 'called' ? (
+                                <span className="flex items-center gap-1 text-green-600">
+                                  <CheckCheck className="h-3 w-3" /> Ready for pickup!
+                                </span>
+                              ) : (
+                                'Waiting to be called'
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -4,7 +4,6 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
@@ -30,7 +29,8 @@ import { Label } from "@/components/ui/label";
 import { School, Pencil, Trash, Plus } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { Class } from '@/types';
-import { classes, children } from '@/services/mockData';
+import { getAllClasses, createClass, updateClass, deleteClass } from '@/services/classService';
+import { getAllStudents } from '@/services/studentService';
 
 const AdminClassesScreen = () => {
   const [classList, setClassList] = useState<Class[]>([]);
@@ -43,15 +43,33 @@ const AdminClassesScreen = () => {
     grade: '',
     teacher: ''
   });
+  const [loading, setLoading] = useState(true);
   
   const { toast } = useToast();
 
   // Load classes
   useEffect(() => {
-    setClassList(classes);
-  }, []);
+    const loadClasses = async () => {
+      try {
+        setLoading(true);
+        const data = await getAllClasses();
+        setClassList(data);
+      } catch (error) {
+        console.error('Error loading classes:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load classes",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadClasses();
+  }, [toast]);
 
-  const handleAddClass = () => {
+  const handleAddClass = async () => {
     if (!newClass.name || !newClass.grade || !newClass.teacher) {
       toast({
         title: "Error",
@@ -61,27 +79,35 @@ const AdminClassesScreen = () => {
       return;
     }
 
-    const classToAdd = {
-      id: Date.now().toString(),
-      name: newClass.name,
-      grade: newClass.grade,
-      teacher: newClass.teacher
-    };
+    try {
+      const classToAdd = {
+        name: newClass.name,
+        grade: newClass.grade,
+        teacher: newClass.teacher
+      };
 
-    // Add to classes list (in a real app, this would call an API)
-    setClassList([...classList, classToAdd]);
-    
-    // In a real app with Supabase, we'd call the API here
-    // const { data, error } = await supabase.from('classes').insert(classToAdd);
-
-    toast({
-      title: "Class Added",
-      description: `${classToAdd.name} has been added successfully`,
-    });
-    
-    // Reset form and close dialog
-    setNewClass({ name: '', grade: '', teacher: '' });
-    setIsAddDialogOpen(false);
+      // Add to database
+      const createdClass = await createClass(classToAdd);
+      
+      // Update the local list
+      setClassList([...classList, createdClass]);
+      
+      toast({
+        title: "Class Added",
+        description: `${createdClass.name} has been added successfully`,
+      });
+      
+      // Reset form and close dialog
+      setNewClass({ name: '', grade: '', teacher: '' });
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error('Error adding class:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add class. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditClass = (classItem: Class) => {
@@ -94,7 +120,7 @@ const AdminClassesScreen = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateClass = () => {
+  const handleUpdateClass = async () => {
     if (!currentClass || !newClass.name || !newClass.grade || !newClass.teacher) {
       toast({
         title: "Error",
@@ -104,27 +130,32 @@ const AdminClassesScreen = () => {
       return;
     }
 
-    const updatedClass = {
-      ...currentClass,
-      name: newClass.name,
-      grade: newClass.grade,
-      teacher: newClass.teacher
-    };
+    try {
+      const updatedClass = await updateClass(currentClass.id, {
+        name: newClass.name,
+        grade: newClass.grade,
+        teacher: newClass.teacher
+      });
 
-    // Update class in the list (in a real app, this would call an API)
-    setClassList(classList.map(c => c.id === currentClass.id ? updatedClass : c));
-    
-    // In a real app with Supabase, we'd call the API here
-    // const { data, error } = await supabase.from('classes').update(updatedClass).eq('id', currentClass.id);
-
-    toast({
-      title: "Class Updated",
-      description: `${updatedClass.name} has been updated successfully`,
-    });
-    
-    // Reset form and close dialog
-    setNewClass({ name: '', grade: '', teacher: '' });
-    setIsEditDialogOpen(false);
+      // Update class in the list
+      setClassList(classList.map(c => c.id === currentClass.id ? updatedClass : c));
+      
+      toast({
+        title: "Class Updated",
+        description: `${updatedClass.name} has been updated successfully`,
+      });
+      
+      // Reset form and close dialog
+      setNewClass({ name: '', grade: '', teacher: '' });
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating class:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update class. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeletePrompt = (classItem: Class) => {
@@ -132,33 +163,45 @@ const AdminClassesScreen = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteClass = () => {
+  const handleDeleteClass = async () => {
     if (!currentClass) return;
 
-    // Check if there are students in this class
-    const studentsInClass = children.filter(child => child.classId === currentClass.id);
-    if (studentsInClass.length > 0) {
+    try {
+      // Check if there are students in this class
+      const students = await getAllStudents();
+      const studentsInClass = students.filter(student => student.classId === currentClass.id);
+      
+      if (studentsInClass.length > 0) {
+        toast({
+          title: "Cannot Delete Class",
+          description: `There are ${studentsInClass.length} students assigned to this class. Please reassign them first.`,
+          variant: "destructive"
+        });
+        setIsDeleteDialogOpen(false);
+        return;
+      }
+
+      // Delete class from the database
+      await deleteClass(currentClass.id);
+      
+      // Update the local list
+      setClassList(classList.filter(c => c.id !== currentClass.id));
+      
       toast({
-        title: "Cannot Delete Class",
-        description: `There are ${studentsInClass.length} students assigned to this class. Please reassign them first.`,
+        title: "Class Deleted",
+        description: `${currentClass.name} has been deleted successfully`,
+      });
+      
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting class:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete class. Please try again.",
         variant: "destructive"
       });
       setIsDeleteDialogOpen(false);
-      return;
     }
-
-    // Delete class from the list (in a real app, this would call an API)
-    setClassList(classList.filter(c => c.id !== currentClass.id));
-    
-    // In a real app with Supabase, we'd call the API here
-    // const { data, error } = await supabase.from('classes').delete().eq('id', currentClass.id);
-
-    toast({
-      title: "Class Deleted",
-      description: `${currentClass.name} has been deleted successfully`,
-    });
-    
-    setIsDeleteDialogOpen(false);
   };
 
   return (
@@ -183,50 +226,56 @@ const AdminClassesScreen = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>Teacher</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {classList.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    No classes found
-                  </TableCell>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Teacher</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : (
-                classList.map((classItem) => (
-                  <TableRow key={classItem.id}>
-                    <TableCell>{classItem.name}</TableCell>
-                    <TableCell>{classItem.grade}</TableCell>
-                    <TableCell>{classItem.teacher}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleEditClass(classItem)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-red-500 border-red-200 hover:bg-red-50"
-                        onClick={() => handleDeletePrompt(classItem)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {classList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No classes found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  classList.map((classItem) => (
+                    <TableRow key={classItem.id}>
+                      <TableCell>{classItem.name}</TableCell>
+                      <TableCell>{classItem.grade}</TableCell>
+                      <TableCell>{classItem.teacher}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEditClass(classItem)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-500 border-red-200 hover:bg-red-50"
+                          onClick={() => handleDeletePrompt(classItem)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
