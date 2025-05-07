@@ -15,7 +15,7 @@ export const getAllClasses = async (): Promise<Class[]> => {
       throw new Error(error.message);
     }
     
-    return data.map(classItem => ({
+    return data.map((classItem: any) => ({
       id: classItem.id,
       name: classItem.name,
       grade: classItem.grade,
@@ -66,7 +66,11 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
   try {
     const { data, error } = await supabase
       .from('classes')
-      .insert([classData])
+      .insert([{
+        name: classData.name,
+        grade: classData.grade,
+        teacher: classData.teacher
+      }])
       .select()
       .single();
     
@@ -92,7 +96,11 @@ export const updateClass = async (id: string, classData: Partial<Class>): Promis
   try {
     const { data, error } = await supabase
       .from('classes')
-      .update(classData)
+      .update({
+        name: classData.name,
+        grade: classData.grade,
+        teacher: classData.teacher
+      })
       .eq('id', id)
       .select()
       .single();
@@ -135,16 +143,16 @@ export const deleteClass = async (id: string): Promise<void> => {
 // Migrate class data from mock to Supabase
 export const migrateClassesToSupabase = async (classes: Class[]): Promise<void> => {
   try {
+    const classesForInsert = classes.map(cls => ({
+      id: cls.id,
+      name: cls.name,
+      grade: cls.grade,
+      teacher: cls.teacher
+    }));
+
     const { error } = await supabase
       .from('classes')
-      .upsert(
-        classes.map(cls => ({
-          id: cls.id,
-          name: cls.name,
-          grade: cls.grade,
-          teacher: cls.teacher
-        }))
-      );
+      .upsert(classesForInsert);
     
     if (error) {
       console.error('Error migrating classes:', error);
