@@ -1,6 +1,9 @@
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { School } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdminTabs from '@/components/AdminTabs';
+import { useState, useEffect } from 'react';
 import { 
   children, 
   classes, 
@@ -12,14 +15,12 @@ import {
 import { Child, Class, PickupRequest, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, School, UserRound } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const AdminPanel = () => {
   const { user } = useAuth();
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
-  const [activeTab, setActiveTab] = useState('requests');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -70,11 +71,11 @@ const AdminPanel = () => {
         </div>
       </header>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue="requests" className="w-full">
         <TabsList className="grid grid-cols-3 mb-8">
           <TabsTrigger value="requests">Pickup Requests</TabsTrigger>
-          <TabsTrigger value="students">Students</TabsTrigger>
-          <TabsTrigger value="classes">Classes</TabsTrigger>
+          <TabsTrigger value="manage">Manage School</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
         
         <TabsContent value="requests">
@@ -141,90 +142,14 @@ const AdminPanel = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="students">
-          <Card>
-            <CardHeader>
-              <CardTitle>Students</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {children.map((child) => {
-                  const childClass = classes.find(c => c.id === child.classId);
-                  const childParents = parents.filter(p => child.parentIds.includes(p.id));
-                  
-                  return (
-                    <Card key={child.id} className="overflow-hidden">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <UserRound className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{child.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {childClass?.name || 'No Class'}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="text-sm">
-                          <strong className="block mb-1">Parents:</strong>
-                          {childParents.length > 0 ? (
-                            <ul className="list-disc list-inside text-muted-foreground">
-                              {childParents.map(parent => (
-                                <li key={parent.id}>{parent.name}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-muted-foreground">No parents assigned</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="manage">
+          <AdminTabs />
         </TabsContent>
         
-        <TabsContent value="classes">
-          <Card>
-            <CardHeader>
-              <CardTitle>Classes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {classes.map((cls) => {
-                  const classChildren = children.filter(child => child.classId === cls.id);
-                  
-                  return (
-                    <Card key={cls.id}>
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold text-lg mb-1">{cls.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {cls.grade} • Teacher: {cls.teacher}
-                        </p>
-                        
-                        <div className="text-sm">
-                          <strong className="block mb-1">Students ({classChildren.length}):</strong>
-                          {classChildren.length > 0 ? (
-                            <ul className="list-disc list-inside text-muted-foreground">
-                              {classChildren.map(child => (
-                                <li key={child.id}>{child.name}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-muted-foreground">No students in this class</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="reports">
+          <div className="text-center py-12 text-muted-foreground">
+            Reports section coming soon
+          </div>
         </TabsContent>
       </Tabs>
     </div>
