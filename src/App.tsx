@@ -1,14 +1,16 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Index from './pages/Index';
 import AdminPanel from './pages/AdminPanel';
 import ViewerDisplay from './pages/ViewerDisplay';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
-// Add the new import
 import AdminInitialSetup from './pages/AdminInitialSetup';
+import ParentManagement from './pages/ParentManagement';
 
 function App() {
   return (
@@ -25,6 +27,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       
       {/* Admin routes */}
       <Route
@@ -40,6 +43,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AdminInitialSetup />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/parents"
+        element={
+          <ProtectedRoute requireAdmin={true}>
+            <ParentManagement />
           </ProtectedRoute>
         }
       />
