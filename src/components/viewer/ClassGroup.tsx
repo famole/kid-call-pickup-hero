@@ -14,7 +14,8 @@ const ClassGroup: React.FC<ClassGroupProps> = ({ classId, students }) => {
   
   useEffect(() => {
     prevStudentCountRef.current = students.length;
-  }, [students]);
+    console.log(`ClassGroup updated for class ${classId} with ${students.length} students`);
+  }, [students, classId]);
   
   if (!students || students.length === 0) return null;
   
@@ -23,7 +24,7 @@ const ClassGroup: React.FC<ClassGroupProps> = ({ classId, students }) => {
   const grade = students[0]?.class?.grade || '';
   
   return (
-    <div key={classId} className="border rounded-lg p-4">
+    <div key={classId} className="border rounded-lg p-4 mb-4">
       <h3 className="text-xl font-bold mb-4 text-school-primary border-b pb-2">
         {className} {grade && `(${grade})`}
       </h3>

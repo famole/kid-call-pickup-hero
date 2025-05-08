@@ -32,11 +32,13 @@ export const useCalledStudents = () => {
       setLoading(true);
       try {
         // Pass the selectedClass to the service
+        console.log(`Fetching called students with classId filter: ${selectedClass}`);
         const data = await getCurrentlyCalled(selectedClass);
-        setCalledChildren(data);
         console.log("Fetched called children:", data);
+        setCalledChildren(data);
       } catch (error) {
         console.error("Error fetching called children:", error);
+        setCalledChildren([]); // Set empty array on error to prevent UI issues
       } finally {
         setLoading(false);
       }
@@ -123,10 +125,12 @@ export const useCalledStudents = () => {
 
   // Group children by class
   const childrenByClass = useMemo(() => {
+    console.log("Grouping children by class, total children:", calledChildren.length);
     const grouped: Record<string, PickupRequestWithDetails[]> = {};
     
     calledChildren.forEach(item => {
       if (!item.child || !item.class) {
+        console.log("Skipping item with missing child or class data", item);
         return;
       }
       
