@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Menu, UserPlus, Users, UserCheck } from 'lucide-react';
 import Logo from '@/components/Logo';

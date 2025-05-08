@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/auth/AuthProvider';
+import Navigation from './components/Navigation';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Index from './pages/Index';
@@ -16,7 +17,12 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppRoutes />
+        <div className="flex flex-col min-h-screen">
+          <Navigation />
+          <main className="flex-1">
+            <AppRoutes />
+          </main>
+        </div>
       </Router>
     </AuthProvider>
   );
