@@ -36,12 +36,17 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
 };
 
 // Function to get currently called children with details
-export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> => {
+export const getCurrentlyCalled = async (classId?: string): Promise<PickupRequestWithDetails[]> => {
   try {
-    const { data: requestsData, error: requestsError } = await supabase
+    console.log(`Fetching called students with classId filter: ${classId || 'all'}`);
+    
+    // Start with the base query
+    let query = supabase
       .from('pickup_requests')
       .select('*')
       .eq('status', 'called');
+    
+    const { data: requestsData, error: requestsError } = await query;
     
     if (requestsError) {
       console.error('Error fetching called pickup requests:', requestsError);
@@ -49,7 +54,7 @@ export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> 
     }
     
     // Map the data to the expected format with child and class details
-    const result = (requestsData as PickupRequestRow[]).map(req => {
+    let result = (requestsData as PickupRequestRow[]).map(req => {
       const child = getChildById(req.child_id);
       const classInfo = child ? getClassById(child.classId) : null;
       
@@ -65,6 +70,21 @@ export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> 
         class: classInfo
       };
     });
+    
+    // If classId is specified and not 'all', filter the results
+    if (classId && classId !== 'all') {
+      console.log(`Filtering results by classId: ${classId}`);
+      result = result.filter(item => {
+        // Convert both IDs to strings for comparison to ensure consistent type matching
+        const itemClassId = item.child?.classId ? String(item.child.classId) : '';
+        const filterClassId = String(classId);
+        
+        const match = itemClassId === filterClassId;
+        console.log(`Comparing class IDs: ${itemClassId} vs ${filterClassId}, match: ${match}`);
+        
+        return match;
+      });
+    }
     
     return result;
   } catch (error) {

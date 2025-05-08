@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
-import { getCurrentlyCalled } from '@/services/supabaseService';
+import { getCurrentlyCalled } from '@/services/pickupService';
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { getAllClasses } from '@/services/classService';
@@ -31,7 +31,8 @@ export const useCalledStudents = () => {
     const fetchCalledChildren = async () => {
       setLoading(true);
       try {
-        const data = await getCurrentlyCalled();
+        // Pass the selectedClass to the service
+        const data = await getCurrentlyCalled(selectedClass);
         setCalledChildren(data);
         console.log("Fetched called children:", data);
       } catch (error) {
@@ -56,9 +57,9 @@ export const useCalledStudents = () => {
         },
         async (payload) => {
           console.log('Realtime update received for pickup requests:', payload);
-          // Refetch data when there's a change
+          // Refetch data when there's a change, passing the current class filter
           try {
-            const data = await getCurrentlyCalled();
+            const data = await getCurrentlyCalled(selectedClass);
             setCalledChildren(data);
           } catch (error) {
             console.error("Error fetching called children after update:", error);
@@ -81,7 +82,7 @@ export const useCalledStudents = () => {
           console.log('Student data updated');
           // Refetch data when student data changes
           try {
-            const data = await getCurrentlyCalled();
+            const data = await getCurrentlyCalled(selectedClass);
             setCalledChildren(data);
           } catch (error) {
             console.error("Error fetching called children after student update:", error);
@@ -108,7 +109,7 @@ export const useCalledStudents = () => {
             setClasses(classData);
             
             // Refetch called children data
-            const data = await getCurrentlyCalled();
+            const data = await getCurrentlyCalled(selectedClass);
             setCalledChildren(data);
           } catch (error) {
             console.error("Error updating after class changes:", error);
@@ -122,47 +123,13 @@ export const useCalledStudents = () => {
       supabase.removeChannel(studentsChannel);
       supabase.removeChannel(classesChannel);
     };
-  }, []); // Removed selectedClass from the dependency array, as we want to filter on the client side
-
-  // Filter children by selected class
-  const filteredChildren = useMemo(() => {
-    console.log("Filtering with class:", selectedClass);
-    console.log("Available children:", calledChildren);
-    
-    if (selectedClass === 'all') {
-      return calledChildren;
-    }
-    
-    return calledChildren.filter(item => {
-      // Check if the child and class exist
-      if (!item.child || !item.class) {
-        return false;
-      }
-      
-      // Convert both IDs to strings for comparison to ensure consistent type matching
-      const childClassId = String(item.child.classId);
-      const selectedClassId = String(selectedClass);
-      
-      // Find the corresponding class in our classes array to get the UUID
-      const classMatch = classes.find(c => c.id === childClassId || String(c.id) === childClassId);
-      
-      // If we found a matching class, use its ID for comparison, otherwise use the child's classId
-      const classIdToCompare = classMatch ? String(classMatch.id) : childClassId;
-      
-      const result = classIdToCompare === selectedClassId;
-      
-      console.log(`Child ${item.child.name} with class ${childClassId} matches ${selectedClassId}? ${result}`);
-      console.log(`Class match found: ${!!classMatch}, using ID for comparison: ${classIdToCompare}`);
-      
-      return result;
-    });
-  }, [calledChildren, selectedClass, classes]);
+  }, [selectedClass]); // Now we want to re-fetch when selectedClass changes
 
   // Group children by class
   const childrenByClass = useMemo(() => {
     const grouped: Record<string, PickupRequestWithDetails[]> = {};
     
-    filteredChildren.forEach(item => {
+    calledChildren.forEach(item => {
       if (!item.child || !item.class) {
         return;
       }
@@ -178,7 +145,7 @@ export const useCalledStudents = () => {
     
     console.log("Grouped children by class:", grouped);
     return grouped;
-  }, [filteredChildren]);
+  }, [calledChildren]);
 
   // Handle class change with logging
   const handleClassChange = (value: string) => {

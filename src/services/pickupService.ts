@@ -138,9 +138,12 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
   }
 };
 
-// Get currently called pickup requests with details
-export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> => {
+// Get currently called pickup requests with details, optionally filtered by class
+export const getCurrentlyCalled = async (classId?: string): Promise<PickupRequestWithDetails[]> => {
   try {
+    console.log(`Fetching currently called with classId filter: ${classId || 'all'}`);
+    
+    // Base query to get called pickup requests
     const { data, error } = await supabase
       .from('pickup_requests')
       .select('*')
@@ -154,8 +157,8 @@ export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> 
       return getMockCurrentlyCalled();
     }
     
-    // Map the data and get additional details
-    const result = await Promise.all(data.map(async (req) => {
+    // Get student and class details for each request
+    const requestsWithDetails = await Promise.all(data.map(async (req) => {
       const student = await getStudentById(req.child_id);
       const classInfo = student ? await getClassById(student.classId) : null;
       
@@ -172,7 +175,28 @@ export const getCurrentlyCalled = async (): Promise<PickupRequestWithDetails[]> 
       };
     }));
     
-    return result;
+    // Filter by class if a classId is provided and it's not 'all'
+    if (classId && classId !== 'all') {
+      console.log(`Filtering by classId: ${classId}`);
+      const filtered = requestsWithDetails.filter(item => {
+        if (!item.child || !item.class) {
+          return false;
+        }
+        
+        // Convert both IDs to strings for consistent comparison
+        const itemClassId = String(item.child.classId);
+        const filterClassId = String(classId);
+        
+        const match = itemClassId === filterClassId;
+        console.log(`Comparing IDs: ${itemClassId} vs ${filterClassId}, match: ${match}`);
+        
+        return match;
+      });
+      
+      return filtered;
+    }
+    
+    return requestsWithDetails;
   } catch (error) {
     console.error('Error in getCurrentlyCalled:', error);
     
