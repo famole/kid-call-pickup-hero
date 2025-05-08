@@ -31,7 +31,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     return (data as PickupRequestRow[]).map(item => ({
       id: item.id,
-      childId: item.child_id,
+      childId: item.student_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
       status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -64,12 +64,12 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     const result: PickupRequestWithDetails[] = [];
     
     for (const req of requestsData as PickupRequestRow[]) {
-      // IMPORTANT: For non-UUID child_ids, we'll use mock data directly
+      // IMPORTANT: For non-UUID student_ids, we'll use mock data directly
       // This handles legacy/numeric IDs that aren't valid UUIDs
-      const childId = req.child_id;
+      const studentId = req.student_id;
       
       // Always use mock data for child lookup since we can't query with non-UUID values
-      const child = getChildById(childId);
+      const child = getChildById(studentId);
       let classInfo: Class | null = null;
       
       // If we have a child with a valid classId that's a UUID, try to get real class data
@@ -107,7 +107,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
       result.push({
         request: {
           id: req.id,
-          childId: req.child_id,
+          childId: req.student_id,
           parentId: req.parent_id,
           requestTime: new Date(req.request_time),
           status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -126,8 +126,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
           return false;
         }
         
-        // Here's the key fix: Compare the child's classId directly with the filter classId
-        // Converting both to strings for consistent comparison
+        // Convert both IDs to strings for consistent comparison
         const childClassId = String(item.child.classId);
         const filterClassId = String(classId);
         
@@ -152,7 +151,7 @@ export const migratePickupRequestsToSupabase = async (requests: PickupRequest[])
       .from('pickup_requests')
       .upsert({
         id: request.id,
-        child_id: request.childId,
+        student_id: request.childId,
         parent_id: request.parentId,
         request_time: request.requestTime.toISOString(),
         status: request.status

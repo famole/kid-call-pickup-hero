@@ -11,7 +11,7 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
     const { data, error } = await supabase
       .from('pickup_requests')
       .insert({
-        child_id: studentId,
+        student_id: studentId,
         parent_id: parentId,
         status: 'pending'
       })
@@ -25,7 +25,7 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
     
     return {
       id: data.id,
-      childId: data.child_id,
+      childId: data.student_id,
       parentId: data.parent_id,
       requestTime: new Date(data.request_time),
       status: data.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -59,7 +59,7 @@ export const updatePickupRequestStatus = async (id: string, status: PickupReques
     
     return {
       id: data.id,
-      childId: data.child_id,
+      childId: data.student_id,
       parentId: data.parent_id,
       requestTime: new Date(data.request_time),
       status: data.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -91,7 +91,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     return data.map(item => ({
       id: item.id,
-      childId: item.child_id,
+      childId: item.student_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
       status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -124,7 +124,7 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
     
     return data.map(item => ({
       id: item.id,
-      childId: item.child_id,
+      childId: item.student_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
       status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -159,13 +159,13 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     
     // Get student and class details for each request
     const requestsWithDetails = await Promise.all(data.map(async (req) => {
-      const student = await getStudentById(req.child_id);
+      const student = await getStudentById(req.student_id);
       const classInfo = student ? await getClassById(student.classId) : null;
       
       return {
         request: {
           id: req.id,
-          childId: req.child_id,
+          childId: req.student_id,
           parentId: req.parent_id,
           requestTime: new Date(req.request_time),
           status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -184,11 +184,11 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
         }
         
         // Convert both IDs to strings for consistent comparison
-        const itemClassId = String(item.child.classId);
+        const childClassId = String(item.child.classId);
         const filterClassId = String(classId);
         
-        const match = itemClassId === filterClassId;
-        console.log(`Comparing IDs: ${itemClassId} vs ${filterClassId}, match: ${match}`);
+        const match = childClassId === filterClassId;
+        console.log(`Comparing IDs: ${childClassId} vs ${filterClassId}, match: ${match}`);
         
         return match;
       });
@@ -214,7 +214,7 @@ export const migratePickupRequestsToSupabase = async (requests: PickupRequest[])
       .upsert(
         requests.map(request => ({
           id: request.id,
-          child_id: request.childId,
+          student_id: request.childId,
           parent_id: request.parentId,
           request_time: request.requestTime.toISOString(),
           status: request.status

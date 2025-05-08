@@ -65,25 +65,25 @@ export type Database = {
       }
       pickup_requests: {
         Row: {
-          child_id: string
           id: string
           parent_id: string
           request_time: string | null
           status: string | null
+          student_id: string
         }
         Insert: {
-          child_id: string
           id?: string
           parent_id: string
           request_time?: string | null
           status?: string | null
+          student_id: string
         }
         Update: {
-          child_id?: string
           id?: string
           parent_id?: string
           request_time?: string | null
           status?: string | null
+          student_id?: string
         }
         Relationships: []
       }
