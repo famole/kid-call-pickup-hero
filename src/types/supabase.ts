@@ -15,8 +15,8 @@ export interface PickupRequestRow {
 export type PickupRequestWithDetails = {
   request: {
     id: string;
-    childId: string;
-    parentId: string;
+    childId: string;  // We maintain this property name for internal consistency
+    parentId: string; // We maintain this property name for internal consistency
     requestTime: Date;
     status: 'pending' | 'called' | 'completed' | 'cancelled';
   };

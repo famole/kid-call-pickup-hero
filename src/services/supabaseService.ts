@@ -31,7 +31,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     return (data as PickupRequestRow[]).map(item => ({
       id: item.id,
-      childId: item.student_id,
+      childId: item.student_id, // Map from student_id to childId for internal consistency
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
       status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -64,8 +64,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     const result: PickupRequestWithDetails[] = [];
     
     for (const req of requestsData as PickupRequestRow[]) {
-      // IMPORTANT: For non-UUID student_ids, we'll use mock data directly
-      // This handles legacy/numeric IDs that aren't valid UUIDs
+      // Get student details
       const studentId = req.student_id;
       
       // Always use mock data for child lookup since we can't query with non-UUID values

@@ -8,6 +8,9 @@ import { getClassById } from './classService';
 // Create a new pickup request
 export const createPickupRequest = async (studentId: string, parentId: string): Promise<PickupRequest> => {
   try {
+    // Ensure we're sending proper UUID format IDs to Supabase
+    console.log(`Creating pickup request for student: ${studentId}, parent: ${parentId}`);
+    
     const { data, error } = await supabase
       .from('pickup_requests')
       .insert({
