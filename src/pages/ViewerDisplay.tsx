@@ -34,8 +34,13 @@ const ViewerDisplay = () => {
   useEffect(() => {
     // Initial fetch
     const fetchCalledChildren = async () => {
-      const data = await getCurrentlyCalled();
-      setCalledChildren(data);
+      try {
+        const data = await getCurrentlyCalled();
+        setCalledChildren(data);
+        console.log("Fetched called children:", data);
+      } catch (error) {
+        console.error("Error fetching called children:", error);
+      }
     };
     
     fetchCalledChildren();
@@ -52,10 +57,14 @@ const ViewerDisplay = () => {
           filter: 'status=eq.called'
         },
         async (payload) => {
-          console.log('Realtime update received:', payload);
+          console.log('Realtime update received for pickup requests:', payload);
           // Refetch data when there's a change
-          const data = await getCurrentlyCalled();
-          setCalledChildren(data);
+          try {
+            const data = await getCurrentlyCalled();
+            setCalledChildren(data);
+          } catch (error) {
+            console.error("Error fetching called children after update:", error);
+          }
         }
       )
       .subscribe();
@@ -73,8 +82,12 @@ const ViewerDisplay = () => {
         async () => {
           console.log('Student data updated');
           // Refetch data when student data changes
-          const data = await getCurrentlyCalled();
-          setCalledChildren(data);
+          try {
+            const data = await getCurrentlyCalled();
+            setCalledChildren(data);
+          } catch (error) {
+            console.error("Error fetching called children after student update:", error);
+          }
         }
       )
       .subscribe();
@@ -92,11 +105,16 @@ const ViewerDisplay = () => {
         async () => {
           console.log('Class data updated');
           // Refetch class data
-          const classData = await getAllClasses();
-          setClasses(classData);
-          // Refetch called children data
-          const data = await getCurrentlyCalled();
-          setCalledChildren(data);
+          try {
+            const classData = await getAllClasses();
+            setClasses(classData);
+            
+            // Refetch called children data
+            const data = await getCurrentlyCalled();
+            setCalledChildren(data);
+          } catch (error) {
+            console.error("Error updating after class changes:", error);
+          }
         }
       )
       .subscribe();
@@ -110,10 +128,18 @@ const ViewerDisplay = () => {
 
   // Filter children by selected class
   const filteredChildren = useMemo(() => {
+    console.log("Filtering with class:", selectedClass);
+    console.log("Available children:", calledChildren);
+    
     if (selectedClass === 'all') {
       return calledChildren;
     }
-    return calledChildren.filter(item => item.class?.id === selectedClass);
+    
+    return calledChildren.filter(item => {
+      const result = item.class && item.class.id === selectedClass;
+      console.log(`Child ${item.child?.name} with class ${item.class?.id} matches ${selectedClass}? ${result}`);
+      return result;
+    });
   }, [calledChildren, selectedClass]);
 
   // Group children by class
@@ -122,7 +148,6 @@ const ViewerDisplay = () => {
     
     filteredChildren.forEach(item => {
       const classId = item.class?.id || 'unknown';
-      const className = item.class?.name || 'Unknown Class';
       
       if (!grouped[classId]) {
         grouped[classId] = [];
@@ -131,8 +156,14 @@ const ViewerDisplay = () => {
       grouped[classId].push(item);
     });
     
+    console.log("Grouped children by class:", grouped);
     return grouped;
   }, [filteredChildren]);
+
+  const handleClassChange = (value: string) => {
+    console.log("Selected class changed to:", value);
+    setSelectedClass(value);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-school-background">
@@ -166,7 +197,7 @@ const ViewerDisplay = () => {
               <p className="text-base sm:text-lg text-muted-foreground">Students should come to the pickup area</p>
             </div>
             <div className="w-[200px]">
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
+              <Select value={selectedClass} onValueChange={handleClassChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by class" />
                 </SelectTrigger>
