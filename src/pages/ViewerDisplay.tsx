@@ -8,7 +8,7 @@ import NoStudents from '@/components/viewer/NoStudents';
 import { useCalledStudents } from '@/hooks/useCalledStudents';
 
 const ViewerDisplay: React.FC = () => {
-  const { classes, selectedClass, childrenByClass, handleClassChange } = useCalledStudents();
+  const { classes, selectedClass, childrenByClass, handleClassChange, loading } = useCalledStudents();
 
   return (
     <div className="min-h-screen flex flex-col bg-school-background">
@@ -29,7 +29,11 @@ const ViewerDisplay: React.FC = () => {
           </div>
         </div>
         
-        {Object.keys(childrenByClass).length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground">Loading students...</p>
+          </div>
+        ) : Object.keys(childrenByClass).length === 0 ? (
           <NoStudents />
         ) : (
           <div className="space-y-8">

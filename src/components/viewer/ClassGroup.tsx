@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import './styles.css';
@@ -10,6 +10,12 @@ interface ClassGroupProps {
 }
 
 const ClassGroup: React.FC<ClassGroupProps> = ({ classId, students }) => {
+  const prevStudentCountRef = useRef(0);
+  
+  useEffect(() => {
+    prevStudentCountRef.current = students.length;
+  }, [students]);
+  
   if (!students || students.length === 0) return null;
   
   const className = students[0]?.class?.name || 'Unknown Class';

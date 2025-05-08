@@ -10,6 +10,7 @@ export const useCalledStudents = () => {
   const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [loading, setLoading] = useState<boolean>(true);
   
   // Fetch all classes for the filter
   useEffect(() => {
@@ -25,16 +26,18 @@ export const useCalledStudents = () => {
     fetchClasses();
   }, []);
   
-  // Set up realtime subscriptions and initial data fetching
+  // Fetch data whenever the selectedClass changes
   useEffect(() => {
-    // Initial fetch
     const fetchCalledChildren = async () => {
+      setLoading(true);
       try {
         const data = await getCurrentlyCalled();
         setCalledChildren(data);
         console.log("Fetched called children:", data);
       } catch (error) {
         console.error("Error fetching called children:", error);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -119,7 +122,7 @@ export const useCalledStudents = () => {
       supabase.removeChannel(studentsChannel);
       supabase.removeChannel(classesChannel);
     };
-  }, []);
+  }, []); // Removed selectedClass from the dependency array, as we want to filter on the client side
 
   // Filter children by selected class
   const filteredChildren = useMemo(() => {
@@ -166,5 +169,6 @@ export const useCalledStudents = () => {
     selectedClass,
     childrenByClass,
     handleClassChange,
+    loading,
   };
 };
