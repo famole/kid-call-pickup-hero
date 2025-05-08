@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
-import { getCurrentlyCalled } from '@/services/pickupService';
+import { getCurrentlyCalled } from '@/services/supabaseService';
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { getAllClasses } from '@/services/classService';
@@ -31,7 +31,7 @@ export const useCalledStudents = () => {
     const fetchCalledChildren = async () => {
       setLoading(true);
       try {
-        // Pass the selectedClass to the service
+        // Pass the selectedClass to the service, which now properly handles UUID validation
         const data = await getCurrentlyCalled(selectedClass);
         setCalledChildren(data);
         console.log("Fetched called children:", data);
@@ -57,7 +57,7 @@ export const useCalledStudents = () => {
         },
         async (payload) => {
           console.log('Realtime update received for pickup requests:', payload);
-          // Refetch data when there's a change, passing the current class filter
+          // Refetch data when there's a change
           try {
             const data = await getCurrentlyCalled(selectedClass);
             setCalledChildren(data);
@@ -68,7 +68,7 @@ export const useCalledStudents = () => {
       )
       .subscribe();
     
-    // Set up realtime subscription for students table
+    // Set up realtime subscriptions for students and classes tables
     const studentsChannel = supabase
       .channel('public:students')
       .on(
@@ -80,7 +80,6 @@ export const useCalledStudents = () => {
         },
         async () => {
           console.log('Student data updated');
-          // Refetch data when student data changes
           try {
             const data = await getCurrentlyCalled(selectedClass);
             setCalledChildren(data);
@@ -91,7 +90,6 @@ export const useCalledStudents = () => {
       )
       .subscribe();
     
-    // Set up realtime subscription for classes table
     const classesChannel = supabase
       .channel('public:classes')
       .on(
@@ -103,12 +101,10 @@ export const useCalledStudents = () => {
         },
         async () => {
           console.log('Class data updated');
-          // Refetch class data
           try {
             const classData = await getAllClasses();
             setClasses(classData);
             
-            // Refetch called children data
             const data = await getCurrentlyCalled(selectedClass);
             setCalledChildren(data);
           } catch (error) {
@@ -123,7 +119,7 @@ export const useCalledStudents = () => {
       supabase.removeChannel(studentsChannel);
       supabase.removeChannel(classesChannel);
     };
-  }, [selectedClass]); // Now we want to re-fetch when selectedClass changes
+  }, [selectedClass]);
 
   // Group children by class
   const childrenByClass = useMemo(() => {

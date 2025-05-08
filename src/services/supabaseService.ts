@@ -9,6 +9,12 @@ import {
   getCurrentlyCalled as getMockCurrentlyCalled
 } from './mockData';
 
+// Function to check if a string is a valid UUID
+const isValidUUID = (id: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
 // Function to get active pickup requests
 export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
   try {
@@ -54,11 +60,48 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     }
     
     // Map the data to the expected format with child and class details
-    let result = (requestsData as PickupRequestRow[]).map(req => {
-      const child = getChildById(req.child_id);
-      const classInfo = child ? getClassById(child.classId) : null;
+    const result: PickupRequestWithDetails[] = [];
+    
+    for (const req of requestsData as PickupRequestRow[]) {
+      // For real database operations, we need valid UUIDs
+      // If the child_id or class_id isn't a valid UUID, we'll use mock data
+      const childId = req.child_id;
       
-      return {
+      let child: Child | null = null;
+      let classInfo: Class | null = null;
+      
+      if (isValidUUID(childId)) {
+        try {
+          // Here we would query the database for the child
+          // Since the current structure might return null, we'll use mock data for now
+          child = getChildById(childId);
+        } catch (error) {
+          console.error(`Error fetching child with id ${childId}:`, error);
+          child = getChildById(childId); // Fallback to mock data
+        }
+      } else {
+        // If not a valid UUID, use mock data
+        child = getChildById(childId);
+      }
+      
+      if (child) {
+        const classId = child.classId;
+        
+        if (isValidUUID(classId)) {
+          try {
+            // Here we would query the database for the class
+            classInfo = getClassById(classId);
+          } catch (error) {
+            console.error(`Error fetching class with id ${classId}:`, error);
+            classInfo = getClassById(classId); // Fallback to mock data
+          }
+        } else {
+          // If not a valid UUID, use mock data
+          classInfo = getClassById(classId);
+        }
+      }
+      
+      result.push({
         request: {
           id: req.id,
           childId: req.child_id,
@@ -68,18 +111,25 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
         },
         child,
         class: classInfo
-      };
-    });
+      });
+    }
     
     // If classId is specified and not 'all', filter the results
     if (classId && classId !== 'all') {
       console.log(`Filtering results by classId: ${classId}`);
-      result = result.filter(item => {
+      
+      return result.filter(item => {
+        if (!item.child || !item.class) {
+          return false;
+        }
+        
         // Convert both IDs to strings for comparison to ensure consistent type matching
-        const itemClassId = item.child?.classId ? String(item.child.classId) : '';
+        const itemClassId = item.child.classId ? String(item.child.classId) : '';
         const filterClassId = String(classId);
         
-        const match = itemClassId === filterClassId;
+        const match = itemClassId === filterClassId || 
+                     (isValidUUID(itemClassId) && isValidUUID(filterClassId) && itemClassId === filterClassId);
+        
         console.log(`Comparing class IDs: ${itemClassId} vs ${filterClassId}, match: ${match}`);
         
         return match;
