@@ -25,7 +25,7 @@ const ClassFilter: React.FC<ClassFilterProps> = ({ selectedClass, classes, onCha
         <SelectContent>
           <SelectItem value="all">All Classes</SelectItem>
           {classes.map((cls) => (
-            <SelectItem key={cls.id} value={cls.id}>
+            <SelectItem key={cls.id} value={String(cls.id)}>
               {cls.name} ({cls.grade})
             </SelectItem>
           ))}

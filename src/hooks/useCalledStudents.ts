@@ -134,18 +134,40 @@ export const useCalledStudents = () => {
     }
     
     return calledChildren.filter(item => {
-      const result = item.class && item.class.id === selectedClass;
-      console.log(`Child ${item.child?.name} with class ${item.class?.id} matches ${selectedClass}? ${result}`);
+      // Check if the child and class exist
+      if (!item.child || !item.class) {
+        return false;
+      }
+      
+      // Convert both IDs to strings for comparison to ensure consistent type matching
+      const childClassId = String(item.child.classId);
+      const selectedClassId = String(selectedClass);
+      
+      // Find the corresponding class in our classes array to get the UUID
+      const classMatch = classes.find(c => c.id === childClassId || String(c.id) === childClassId);
+      
+      // If we found a matching class, use its ID for comparison, otherwise use the child's classId
+      const classIdToCompare = classMatch ? String(classMatch.id) : childClassId;
+      
+      const result = classIdToCompare === selectedClassId;
+      
+      console.log(`Child ${item.child.name} with class ${childClassId} matches ${selectedClassId}? ${result}`);
+      console.log(`Class match found: ${!!classMatch}, using ID for comparison: ${classIdToCompare}`);
+      
       return result;
     });
-  }, [calledChildren, selectedClass]);
+  }, [calledChildren, selectedClass, classes]);
 
   // Group children by class
   const childrenByClass = useMemo(() => {
     const grouped: Record<string, PickupRequestWithDetails[]> = {};
     
     filteredChildren.forEach(item => {
-      const classId = item.class?.id || 'unknown';
+      if (!item.child || !item.class) {
+        return;
+      }
+      
+      const classId = String(item.class.id);
       
       if (!grouped[classId]) {
         grouped[classId] = [];
@@ -158,7 +180,7 @@ export const useCalledStudents = () => {
     return grouped;
   }, [filteredChildren]);
 
-  // Handle class change with validation for Supabase filter
+  // Handle class change with logging
   const handleClassChange = (value: string) => {
     console.log("Selected class changed to:", value);
     setSelectedClass(value);

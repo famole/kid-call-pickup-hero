@@ -18,6 +18,7 @@ const ClassGroup: React.FC<ClassGroupProps> = ({ classId, students }) => {
   
   if (!students || students.length === 0) return null;
   
+  // Use the class data from the first student, which should be consistent for the group
   const className = students[0]?.class?.name || 'Unknown Class';
   const grade = students[0]?.class?.grade || '';
   
