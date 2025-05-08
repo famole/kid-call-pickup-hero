@@ -126,13 +126,13 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
           return false;
         }
         
-        // Convert both IDs to strings for comparison to ensure consistent type matching
-        const itemClassId = item.child.classId ? String(item.child.classId) : '';
+        // Here's the key fix: Compare the child's classId directly with the filter classId
+        // Converting both to strings for consistent comparison
+        const childClassId = String(item.child.classId);
         const filterClassId = String(classId);
         
-        const match = itemClassId === filterClassId;
-        
-        console.log(`Comparing class IDs: ${itemClassId} vs ${filterClassId}, match: ${match}`);
+        const match = childClassId === filterClassId;
+        console.log(`Comparing class IDs: ${childClassId} vs ${filterClassId}, match: ${match}`);
         
         return match;
       });
