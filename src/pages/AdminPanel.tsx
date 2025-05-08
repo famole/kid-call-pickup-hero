@@ -1,10 +1,9 @@
 
-import React from 'react';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '@/context/auth/AuthProvider';
 import { School } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminTabs from '@/components/AdminTabs';
-import { useState, useEffect } from 'react';
 import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickupService';
 import { getStudentById } from '@/services/studentService';
 import { getAllParents } from '@/services/parentService';
@@ -15,6 +14,115 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+
+// ChildRequestItem component to fix the hook execution order problem
+const ChildRequestItem = ({ request, parentsCache }) => {
+  const [child, setChild] = useState<Child | null>(null);
+  const [classInfo, setClassInfo] = useState<Class | null>(null);
+  const [parent, setParent] = useState<User | null>(parentsCache[request.parentId] || null);
+  const { toast } = useToast();
+  
+  // Load child and class data when component mounts
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const childData = await getStudentById(request.childId);
+        setChild(childData);
+        
+        if (childData?.classId) {
+          try {
+            const classData = await getClassById(childData.classId);
+            setClassInfo(classData);
+          } catch (error) {
+            console.error(`Error fetching class for child ${request.childId}:`, error);
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching details for request ${request.id}:`, error);
+      }
+    };
+    
+    loadData();
+  }, [request.childId, request.id]);
+
+  const handleCallStudent = async () => {
+    try {
+      const updated = await updatePickupRequestStatus(request.id, 'called');
+      if (updated) {
+        toast({
+          title: 'Student Called',
+          description: 'The student has been called for pickup.',
+        });
+      }
+    } catch (error) {
+      console.error('Error calling student:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to call student.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleMarkCompleted = async () => {
+    try {
+      const updated = await updatePickupRequestStatus(request.id, 'completed');
+      if (updated) {
+        toast({
+          title: 'Pickup Completed',
+          description: 'The student pickup has been marked as completed.',
+        });
+      }
+    } catch (error) {
+      console.error('Error completing pickup:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to mark pickup as completed.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <div 
+      className={`p-4 border rounded-lg flex items-center gap-4 ${
+        request.status === 'called' 
+          ? 'bg-green-50 border-green-200'
+          : 'bg-blue-50 border-blue-200'
+      }`}
+    >
+      <div>
+        <h3 className="font-semibold text-lg">{child?.name || 'Loading...'}</h3>
+        <p className="text-sm text-muted-foreground">
+          Class: {classInfo?.name || 'Loading...'} • 
+          Requested by: {parent?.name || 'Unknown Parent'}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Requested at: {new Date(request.requestTime).toLocaleTimeString()}
+        </p>
+      </div>
+      <div className="ml-auto flex gap-2">
+        {request.status === 'pending' ? (
+          <Button 
+            variant="outline" 
+            className="border-school-primary text-school-primary hover:bg-school-primary/10"
+            onClick={handleCallStudent}
+          >
+            Call Student
+          </Button>
+        ) : (
+          <Button 
+            variant="outline" 
+            className="border-school-secondary text-school-secondary hover:bg-school-secondary/10"
+            onClick={handleMarkCompleted}
+          >
+            <Check className="mr-1 h-4 w-4" /> Mark Completed
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const AdminPanel = () => {
   const { user } = useAuth();
@@ -71,77 +179,6 @@ const AdminPanel = () => {
     return () => clearInterval(interval);
   }, [toast]);
 
-  // Load a child's data if not in cache
-  const getChildDetails = async (childId: string) => {
-    if (studentsCache[childId]) {
-      return studentsCache[childId];
-    }
-    try {
-      const child = await getStudentById(childId);
-      if (child) {
-        setStudentsCache(prev => ({ ...prev, [childId]: child }));
-        
-        // Also get the class info if not already in cache
-        if (child.classId && !classesCache[child.classId]) {
-          const classInfo = await getClassById(child.classId);
-          if (classInfo) {
-            setClassesCache(prev => ({ ...prev, [child.classId]: classInfo }));
-          }
-        }
-      }
-      return child;
-    } catch (error) {
-      console.error(`Error fetching child ${childId}:`, error);
-      return null;
-    }
-  };
-
-  // Get class info for a child
-  const getChildClass = async (childId: string) => {
-    const child = await getChildDetails(childId);
-    if (child?.classId && classesCache[child.classId]) {
-      return classesCache[child.classId];
-    } else if (child?.classId) {
-      try {
-        const classInfo = await getClassById(child.classId);
-        if (classInfo) {
-          setClassesCache(prev => ({ ...prev, [child.classId]: classInfo }));
-        }
-        return classInfo;
-      } catch (error) {
-        console.error(`Error fetching class for child ${childId}:`, error);
-        return null;
-      }
-    }
-    return null;
-  };
-
-  const handleCallStudent = async (requestId: string) => {
-    const updated = await updatePickupRequestStatus(requestId, 'called');
-    if (updated) {
-      toast({
-        title: 'Student Called',
-        description: 'The student has been called for pickup.',
-      });
-      // Refresh the list
-      const requests = await getActivePickupRequests();
-      setActiveRequests(requests);
-    }
-  };
-
-  const handleMarkCompleted = async (requestId: string) => {
-    const updated = await updatePickupRequestStatus(requestId, 'completed');
-    if (updated) {
-      toast({
-        title: 'Pickup Completed',
-        description: 'The student pickup has been marked as completed.',
-      });
-      // Refresh the list
-      const requests = await getActivePickupRequests();
-      setActiveRequests(requests);
-    }
-  };
-
   return (
     <div className="container mx-auto py-6">
       <header className="mb-8">
@@ -179,67 +216,13 @@ const AdminPanel = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {activeRequests.map((request) => {
-                    const [child, setChild] = useState<Child | null>(null);
-                    const [classInfo, setClassInfo] = useState<Class | null>(null);
-                    const [parent, setParent] = useState<User | null>(parentsCache[request.parentId] || null);
-                    
-                    // Load child and class data when component mounts
-                    useEffect(() => {
-                      const loadData = async () => {
-                        const childData = await getChildDetails(request.childId);
-                        setChild(childData);
-                        
-                        if (childData?.classId) {
-                          const classData = await getChildClass(request.childId);
-                          setClassInfo(classData);
-                        }
-                      };
-                      
-                      loadData();
-                    }, [request.childId]);
-                    
-                    return (
-                      <div 
-                        key={request.id}
-                        className={`p-4 border rounded-lg flex items-center gap-4 ${
-                          request.status === 'called' 
-                            ? 'bg-green-50 border-green-200'
-                            : 'bg-blue-50 border-blue-200'
-                        }`}
-                      >
-                        <div>
-                          <h3 className="font-semibold text-lg">{child?.name || 'Loading...'}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Class: {classInfo?.name || 'Loading...'} • 
-                            Requested by: {parent?.name || 'Unknown Parent'}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Requested at: {new Date(request.requestTime).toLocaleTimeString()}
-                          </p>
-                        </div>
-                        <div className="ml-auto flex gap-2">
-                          {request.status === 'pending' ? (
-                            <Button 
-                              variant="outline" 
-                              className="border-school-primary text-school-primary hover:bg-school-primary/10"
-                              onClick={() => handleCallStudent(request.id)}
-                            >
-                              Call Student
-                            </Button>
-                          ) : (
-                            <Button 
-                              variant="outline" 
-                              className="border-school-secondary text-school-secondary hover:bg-school-secondary/10"
-                              onClick={() => handleMarkCompleted(request.id)}
-                            >
-                              <Check className="mr-1 h-4 w-4" /> Mark Completed
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {activeRequests.map((request) => (
+                    <ChildRequestItem 
+                      key={request.id} 
+                      request={request} 
+                      parentsCache={parentsCache} 
+                    />
+                  ))}
                 </div>
               )}
             </CardContent>

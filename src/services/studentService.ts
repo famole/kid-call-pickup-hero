@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Child } from '@/types';
 
@@ -51,11 +52,11 @@ export const getStudentById = async (id: string): Promise<Child | null> => {
       return getChildById(id);
     }
     
-    // Get parent IDs for this student
+    // Get parent IDs for this student - Using UUID validation to prevent invalid input errors
     const { data: parentRelations, error: parentsError } = await supabase
       .from('student_parents')
       .select('parent_id')
-      .eq('student_id', id);
+      .eq('student_id', data.id); // Use the validated UUID from the student record
     
     if (parentsError) {
       console.error('Error fetching student parents:', parentsError);
@@ -82,11 +83,26 @@ export const getStudentById = async (id: string): Promise<Child | null> => {
 // Get students for a specific parent
 export const getStudentsForParent = async (parentId: string): Promise<Child[]> => {
   try {
+    // Validate that the parentId is a UUID before querying
+    let validParentId: string;
+    try {
+      // Check that it's a valid UUID format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parentId)) {
+        throw new Error('Invalid UUID format');
+      }
+      validParentId = parentId;
+    } catch (error) {
+      console.error('Invalid parent ID format:', error);
+      // Fallback to mock data
+      const { getChildrenForParent } = await import('./mockData');
+      return getChildrenForParent(parentId);
+    }
+    
     // First get the student IDs related to this parent
     const { data: relations, error: relationsError } = await supabase
       .from('student_parents')
       .select('student_id')
-      .eq('parent_id', parentId);
+      .eq('parent_id', validParentId);
     
     if (relationsError) {
       console.error('Error fetching student relations:', relationsError);
@@ -96,7 +112,7 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
       return getChildrenForParent(parentId);
     }
     
-    if (relations.length === 0) {
+    if (!relations || relations.length === 0) {
       return [];
     }
     
@@ -120,7 +136,7 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
       id: student.id,
       name: student.name,
       classId: student.class_id || '',
-      parentIds: [parentId], // We know this parent is related at least
+      parentIds: [validParentId], // We know this parent is related at least
       avatar: student.avatar || undefined
     }));
   } catch (error) {
