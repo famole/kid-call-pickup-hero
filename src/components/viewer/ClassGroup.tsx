@@ -18,7 +18,7 @@ const ClassGroup: React.FC<ClassGroupProps> = ({ classId, students }) => {
   
   if (!students || students.length === 0) return null;
   
-  // Use the class data from the first student, which should be consistent for the group
+  // Use the class data from the first student
   const className = students[0]?.class?.name || 'Unknown Class';
   const grade = students[0]?.class?.grade || '';
   
@@ -39,8 +39,8 @@ const ClassGroup: React.FC<ClassGroupProps> = ({ classId, students }) => {
         <TableBody>
           {students.map((item) => (
             <TableRow key={item.request.id} className="call-animation">
-              <TableCell className="font-medium">{item.child?.name}</TableCell>
-              <TableCell>{item.class?.teacher}</TableCell>
+              <TableCell className="font-medium">{item.child?.name || 'Unknown Student'}</TableCell>
+              <TableCell>{item.class?.teacher || 'Unknown Teacher'}</TableCell>
               <TableCell>{new Date(item.request.requestTime).toLocaleTimeString()}</TableCell>
             </TableRow>
           ))}

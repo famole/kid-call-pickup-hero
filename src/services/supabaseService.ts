@@ -11,6 +11,7 @@ import {
 
 // Function to check if a string is a valid UUID
 const isValidUUID = (id: string): boolean => {
+  if (!id) return false;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
 };
@@ -63,41 +64,43 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     const result: PickupRequestWithDetails[] = [];
     
     for (const req of requestsData as PickupRequestRow[]) {
-      // For real database operations, we need valid UUIDs
-      // If the child_id or class_id isn't a valid UUID, we'll use mock data
+      // IMPORTANT: For non-UUID child_ids, we'll use mock data directly
+      // This handles legacy/numeric IDs that aren't valid UUIDs
       const childId = req.child_id;
       
-      let child: Child | null = null;
+      // Always use mock data for child lookup since we can't query with non-UUID values
+      const child = getChildById(childId);
       let classInfo: Class | null = null;
       
-      if (isValidUUID(childId)) {
-        try {
-          // Here we would query the database for the child
-          // Since the current structure might return null, we'll use mock data for now
-          child = getChildById(childId);
-        } catch (error) {
-          console.error(`Error fetching child with id ${childId}:`, error);
-          child = getChildById(childId); // Fallback to mock data
-        }
-      } else {
-        // If not a valid UUID, use mock data
-        child = getChildById(childId);
-      }
-      
-      if (child) {
-        const classId = child.classId;
-        
-        if (isValidUUID(classId)) {
+      // If we have a child with a valid classId that's a UUID, try to get real class data
+      if (child && child.classId) {
+        if (isValidUUID(child.classId)) {
           try {
-            // Here we would query the database for the class
-            classInfo = getClassById(classId);
+            // Get class data from database if classId is a valid UUID
+            const { data: classData, error: classError } = await supabase
+              .from('classes')
+              .select('*')
+              .eq('id', child.classId)
+              .single();
+            
+            if (!classError && classData) {
+              classInfo = {
+                id: classData.id,
+                name: classData.name,
+                grade: classData.grade,
+                teacher: classData.teacher
+              };
+            } else {
+              // Fallback to mock for class data
+              classInfo = getClassById(child.classId);
+            }
           } catch (error) {
-            console.error(`Error fetching class with id ${classId}:`, error);
-            classInfo = getClassById(classId); // Fallback to mock data
+            console.error(`Error fetching class with id ${child.classId}:`, error);
+            classInfo = getClassById(child.classId); // Fallback to mock data
           }
         } else {
-          // If not a valid UUID, use mock data
-          classInfo = getClassById(classId);
+          // If classId isn't a valid UUID, use mock data
+          classInfo = getClassById(child.classId);
         }
       }
       
@@ -127,8 +130,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
         const itemClassId = item.child.classId ? String(item.child.classId) : '';
         const filterClassId = String(classId);
         
-        const match = itemClassId === filterClassId || 
-                     (isValidUUID(itemClassId) && isValidUUID(filterClassId) && itemClassId === filterClassId);
+        const match = itemClassId === filterClassId;
         
         console.log(`Comparing class IDs: ${itemClassId} vs ${filterClassId}, match: ${match}`);
         

@@ -31,7 +31,7 @@ export const useCalledStudents = () => {
     const fetchCalledChildren = async () => {
       setLoading(true);
       try {
-        // Pass the selectedClass to the service, which now properly handles UUID validation
+        // Pass the selectedClass to the service
         const data = await getCurrentlyCalled(selectedClass);
         setCalledChildren(data);
         console.log("Fetched called children:", data);
