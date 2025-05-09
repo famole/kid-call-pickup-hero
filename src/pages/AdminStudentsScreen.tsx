@@ -35,7 +35,13 @@ import { Label } from "@/components/ui/label";
 import { UserRound, Pencil, Trash, Plus, Upload, Download } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { Child, Class } from '@/types';
-import { children, classes, parents } from '@/services/mockData';
+import { 
+  getAllStudents, 
+  createStudent, 
+  updateStudent, 
+  deleteStudent 
+} from '@/services/studentService';
+import { classes, parents } from '@/services/mockData';
 import CSVUploadModal from '@/components/CSVUploadModal';
 
 const AdminStudentsScreen = () => {
@@ -51,16 +57,37 @@ const AdminStudentsScreen = () => {
     classId: '',
     parentIds: []
   });
+  const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
 
   // Load students and classes
   useEffect(() => {
-    setStudentList(children);
-    setClassList(classes);
-  }, []);
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        // Get students from Supabase
+        const students = await getAllStudents();
+        setStudentList(students);
+        
+        // For now, we're still using mock classes
+        setClassList(classes);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load student data",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [toast]);
 
-  const handleAddStudent = () => {
+  const handleAddStudent = async () => {
     if (!newStudent.name || !newStudent.classId) {
       toast({
         title: "Error",
@@ -70,24 +97,35 @@ const AdminStudentsScreen = () => {
       return;
     }
 
-    const studentToAdd = {
-      id: Date.now().toString(),
-      name: newStudent.name,
-      classId: newStudent.classId,
-      parentIds: newStudent.parentIds || []
-    };
+    try {
+      // Create student in Supabase
+      const studentToAdd = {
+        name: newStudent.name,
+        classId: newStudent.classId,
+        parentIds: newStudent.parentIds || []
+      };
 
-    // Add to students list (in a real app, this would call an API)
-    setStudentList([...studentList, studentToAdd]);
-    
-    toast({
-      title: "Student Added",
-      description: `${studentToAdd.name} has been added successfully`,
-    });
-    
-    // Reset form and close dialog
-    setNewStudent({ name: '', classId: '', parentIds: [] });
-    setIsAddDialogOpen(false);
+      const createdStudent = await createStudent(studentToAdd);
+      
+      // Update local state
+      setStudentList(prev => [...prev, createdStudent]);
+      
+      toast({
+        title: "Student Added",
+        description: `${createdStudent.name} has been added successfully`,
+      });
+      
+      // Reset form and close dialog
+      setNewStudent({ name: '', classId: '', parentIds: [] });
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error('Error adding student:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add student to database",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditStudent = (student: Child) => {
@@ -100,7 +138,7 @@ const AdminStudentsScreen = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateStudent = () => {
+  const handleUpdateStudent = async () => {
     if (!currentStudent || !newStudent.name || !newStudent.classId) {
       toast({
         title: "Error",
@@ -110,24 +148,33 @@ const AdminStudentsScreen = () => {
       return;
     }
 
-    const updatedStudent = {
-      ...currentStudent,
-      name: newStudent.name,
-      classId: newStudent.classId,
-      parentIds: newStudent.parentIds || []
-    };
+    try {
+      // Update student in Supabase
+      const updatedStudent = await updateStudent(currentStudent.id, {
+        name: newStudent.name,
+        classId: newStudent.classId,
+        parentIds: newStudent.parentIds
+      });
 
-    // Update student in the list (in a real app, this would call an API)
-    setStudentList(studentList.map(s => s.id === currentStudent.id ? updatedStudent : s));
-    
-    toast({
-      title: "Student Updated",
-      description: `${updatedStudent.name} has been updated successfully`,
-    });
-    
-    // Reset form and close dialog
-    setNewStudent({ name: '', classId: '', parentIds: [] });
-    setIsEditDialogOpen(false);
+      // Update local state
+      setStudentList(studentList.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+      
+      toast({
+        title: "Student Updated",
+        description: `${updatedStudent.name} has been updated successfully`,
+      });
+      
+      // Reset form and close dialog
+      setNewStudent({ name: '', classId: '', parentIds: [] });
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating student:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update student in database",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeletePrompt = (student: Child) => {
@@ -135,21 +182,33 @@ const AdminStudentsScreen = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteStudent = () => {
+  const handleDeleteStudent = async () => {
     if (!currentStudent) return;
 
-    // Delete student from the list (in a real app, this would call an API)
-    setStudentList(studentList.filter(s => s.id !== currentStudent.id));
-    
-    toast({
-      title: "Student Deleted",
-      description: `${currentStudent.name} has been deleted successfully`,
-    });
-    
-    setIsDeleteDialogOpen(false);
+    try {
+      // Delete student from Supabase
+      await deleteStudent(currentStudent.id);
+      
+      // Update local state
+      setStudentList(studentList.filter(s => s.id !== currentStudent.id));
+      
+      toast({
+        title: "Student Deleted",
+        description: `${currentStudent.name} has been deleted successfully`,
+      });
+      
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete student from database",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleCSVImport = (parsedData: Partial<Child>[]) => {
+  const handleCSVImport = async (parsedData: Partial<Child>[]) => {
     if (!parsedData || parsedData.length === 0) {
       toast({
         title: "Error",
@@ -172,23 +231,41 @@ const AdminStudentsScreen = () => {
       });
     }
 
-    // Generate IDs for new students
-    const studentsToAdd = validData.map(item => ({
-      id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-      name: item.name!,
-      classId: item.classId!,
-      parentIds: item.parentIds || []
-    }));
+    try {
+      const importedStudents: Child[] = [];
+      
+      // Create students one by one
+      for (const item of validData) {
+        try {
+          const student = await createStudent({
+            name: item.name!,
+            classId: item.classId!,
+            parentIds: item.parentIds || []
+          });
+          
+          importedStudents.push(student);
+        } catch (error) {
+          console.error('Error importing student:', error);
+        }
+      }
 
-    // Add to students list (in a real app, this would call an API)
-    setStudentList([...studentList, ...studentsToAdd]);
+      // Update student list with new students
+      setStudentList(prev => [...prev, ...importedStudents]);
 
-    toast({
-      title: "Students Imported",
-      description: `${studentsToAdd.length} students have been imported successfully`,
-    });
-    
-    setIsCSVModalOpen(false);
+      toast({
+        title: "Students Imported",
+        description: `${importedStudents.length} students have been imported successfully`,
+      });
+      
+      setIsCSVModalOpen(false);
+    } catch (error) {
+      console.error('Error importing students:', error);
+      toast({
+        title: "Error",
+        description: "Failed to import students",
+        variant: "destructive"
+      });
+    }
   };
 
   // Function to export students as CSV
@@ -270,7 +347,13 @@ const AdminStudentsScreen = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {studentList.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8">
+                    Loading students...
+                  </TableCell>
+                </TableRow>
+              ) : studentList.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     No students found
