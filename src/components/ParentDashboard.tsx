@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createPickupRequest, getActivePickupRequestsForParent } from '@/services/pickupService';
@@ -83,7 +82,7 @@ const ParentDashboard = () => {
 
       toast({
         title: "Pickup Request Sent",
-        description: `Pickup requests sent for ${selectedChildren.length} children.`,
+        description: `Your ${selectedChildren.length > 1 ? 'children are' : 'child is'} now ready for pickup.`,
       });
 
       // Refresh the active requests list
@@ -158,7 +157,7 @@ const ParentDashboard = () => {
                     disabled={isSubmitting || selectedChildren.length === 0 || hasActiveRequests}
                     onClick={handleRequestPickup}
                   >
-                    {isSubmitting ? 'Requesting...' : 'Request Pickup'}
+                    {isSubmitting ? 'Processing...' : selectedChildren.length > 0 ? 'Request Immediate Pickup' : 'Select Children First'}
                   </Button>
                 </div>
               </CardContent>
@@ -168,9 +167,9 @@ const ParentDashboard = () => {
           <div>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Active Pickups</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Ready for Pickup</CardTitle>
                 <CardDescription>
-                  Children currently requested for pickup
+                  Children currently ready for pickup
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -185,27 +184,17 @@ const ParentDashboard = () => {
                       return (
                         <div 
                           key={request.id}
-                          className={`p-3 border rounded-md flex items-center gap-3 ${
-                            request.status === 'called' 
-                              ? 'bg-green-50 border-green-200 call-animation'
-                              : 'bg-blue-50 border-blue-200'
-                          }`}
+                          className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200 call-animation"
                         >
                           <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border">
-                            <UserRound className={`h-5 w-5 ${
-                              request.status === 'called' ? 'text-green-600' : 'text-blue-600'
-                            }`} />
+                            <UserRound className="h-5 w-5 text-green-600" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate">{child?.name || 'Unknown Child'}</div>
                             <div className="text-sm text-muted-foreground">
-                              {request.status === 'called' ? (
-                                <span className="flex items-center gap-1 text-green-600">
-                                  <CheckCheck className="h-3 w-3" /> Ready for pickup!
-                                </span>
-                              ) : (
-                                'Waiting to be called'
-                              )}
+                              <span className="flex items-center gap-1 text-green-600">
+                                <CheckCheck className="h-3 w-3" /> Ready for pickup!
+                              </span>
                             </div>
                           </div>
                         </div>

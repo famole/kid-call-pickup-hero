@@ -16,7 +16,7 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
       .insert({
         student_id: studentId,
         parent_id: parentId,
-        status: 'pending'
+        status: 'called' // Changed from 'pending' to 'called' to skip approval
       })
       .select()
       .single();
