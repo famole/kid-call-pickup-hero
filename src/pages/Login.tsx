@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,16 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,11 +30,16 @@ const Login = () => {
     
     try {
       await login(email, password);
+      toast({
+        title: 'Welcome back!',
+        description: 'You have successfully logged in.',
+      });
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Authentication error:', error);
       toast({
         title: 'Authentication Error',
-        description: 'Invalid email or password. Please try again.',
+        description: error.message || 'Invalid email or password. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -87,7 +99,7 @@ const Login = () => {
             Demo credentials: <br />
             Parent: parent@example.com <br />
             Admin: admin@example.com <br />
-            (any password will work)
+            (any password will work with Supabase Auth)
           </p>
         </div>
       </Card>

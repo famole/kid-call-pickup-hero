@@ -19,7 +19,35 @@ export const useAuthProvider = (): AuthState & {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved authentication in localStorage or Supabase session
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event);
+        
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+        } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          try {
+            // Defer data fetching to prevent deadlocks
+            setTimeout(async () => {
+              // Get user data from our database
+              const parentData = await getParentData(session.user.email);
+                
+              if (parentData) {
+                setUser(createUserFromParentData(parentData));
+              } else {
+                // Fall back to auth user data
+                setUser(createUserFromAuthData(session.user));
+              }
+            }, 0);
+          } catch (error) {
+            console.error("Error in auth state change:", error);
+          }
+        }
+      }
+    );
+    
+    // THEN check for existing session
     const loadUser = async () => {
       try {
         // Try to get session from Supabase
@@ -57,29 +85,6 @@ export const useAuthProvider = (): AuthState & {
     
     loadUser();
     
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-        } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          try {
-            // Get user data from our database
-            const parentData = await getParentData(session.user.email);
-              
-            if (parentData) {
-              setUser(createUserFromParentData(parentData));
-            } else {
-              // Fall back to auth user data
-              setUser(createUserFromAuthData(session.user));
-            }
-          } catch (error) {
-            console.error("Error in auth state change:", error);
-          }
-        }
-      }
-    );
-    
     return () => {
       subscription.unsubscribe();
     };
@@ -89,6 +94,17 @@ export const useAuthProvider = (): AuthState & {
     try {
       setLoading(true);
       
+      // Clean up existing state
+      cleanupAuthState();
+      
+      // Attempt global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (signOutError) {
+        // Continue even if this fails
+        console.error("Sign out before login failed:", signOutError);
+      }
+      
       // Try to authenticate with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -97,6 +113,7 @@ export const useAuthProvider = (): AuthState & {
       
       if (error) {
         // If Supabase auth fails, fall back to mock login for development
+        console.log("Supabase auth failed, trying mock auth:", error);
         const mockUser = mockUsers.find(u => u.email === email);
         if (mockUser) {
           // Save to localStorage for development
@@ -122,6 +139,7 @@ export const useAuthProvider = (): AuthState & {
       
       return Promise.resolve();
     } catch (error) {
+      console.error("Login error:", error);
       return Promise.reject(error);
     } finally {
       setLoading(false);
@@ -129,12 +147,22 @@ export const useAuthProvider = (): AuthState & {
   };
 
   const logout = async () => {
+    // Clean up auth state
+    cleanupAuthState();
+    
     // Try to sign out from Supabase
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (error) {
+      console.error("Error during sign out:", error);
+    }
     
     // Also remove from localStorage for development
     localStorage.removeItem('user');
     setUser(null);
+    
+    // Force page reload for a clean state
+    window.location.href = '/login';
     
     return Promise.resolve();
   };

@@ -44,8 +44,8 @@ export const createUserFromParentData = (parentData: any): User => {
   return {
     id: parentData.id,
     email: parentData.email,
-    name: parentData.name,
-    role: 'parent', // Default role for registered users
+    name: parentData.name || parentData.email?.split('@')[0] || 'User',
+    role: parentData.role || 'parent',
   };
 };
 
@@ -55,6 +55,6 @@ export const createUserFromAuthData = (authUser: any): User => {
     id: authUser.id,
     email: authUser.email || '',
     name: authUser.email?.split('@')[0] || 'User',
-    role: 'parent',
+    role: 'parent', // Default role
   };
 };
