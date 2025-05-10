@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Child } from '@/types';
-import { getAllStudentsMock } from '../mockData';
+import { getAllStudents as getAllStudentsMock } from '../mockData';
 
 // Get all students
 export const getAllStudents = async (): Promise<Child[]> => {

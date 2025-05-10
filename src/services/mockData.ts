@@ -78,7 +78,7 @@ export const getChildById = (id: string) => {
   return children.find(child => child.id === id);
 };
 
-// Add the missing getAllStudents function
+// Add the getAllStudents function
 export const getAllStudents = (): Child[] => {
   return [...children];
 };
