@@ -39,28 +39,31 @@ const AddStudentDialog = ({
 }: AddStudentDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Student</DialogTitle>
           <DialogDescription>
-            Add a new student to your school
+            Add a new student to your school. Fill in the required fields.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="studentName">Student Name</Label>
+            <Label htmlFor="studentName" className="required">Student Name</Label>
             <Input 
               id="studentName" 
-              value={newStudent.name} 
+              value={newStudent.name || ''} 
               onChange={e => setNewStudent({...newStudent, name: e.target.value})}
               placeholder="e.g. John Doe"
+              required
+              autoFocus
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="studentClass">Class</Label>
+            <Label htmlFor="studentClass" className="required">Class</Label>
             <Select
-              value={newStudent.classId}
+              value={newStudent.classId || ''}
               onValueChange={(value) => setNewStudent({...newStudent, classId: value})}
+              required
             >
               <SelectTrigger id="studentClass">
                 <SelectValue placeholder="Select a class" />
@@ -76,8 +79,21 @@ const AddStudentDialog = ({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={onSave}>Save Student</Button>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setNewStudent({ name: '', classId: '', parentIds: [] });
+              onOpenChange(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={onSave}
+            disabled={!newStudent.name || !newStudent.classId}
+          >
+            Save Student
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

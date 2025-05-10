@@ -26,7 +26,7 @@ export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> 
       const parentRelations = student.parentIds.map(parentId => ({
         student_id: data.id,
         parent_id: parentId,
-        is_primary: true // Default to primary for now
+        is_primary: student.parentIds.indexOf(parentId) === 0 // First parent is primary
       }));
       
       const { error: relError } = await supabase

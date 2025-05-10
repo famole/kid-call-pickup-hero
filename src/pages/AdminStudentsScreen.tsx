@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -77,6 +76,7 @@ const AdminStudentsScreen = () => {
     }
 
     try {
+      setIsLoading(true);
       // Create student in Supabase
       const studentToAdd = {
         name: newStudent.name,
@@ -84,7 +84,9 @@ const AdminStudentsScreen = () => {
         parentIds: newStudent.parentIds || []
       };
 
+      console.log('Creating student:', studentToAdd);
       const createdStudent = await createStudent(studentToAdd);
+      console.log('Created student:', createdStudent);
       
       // Update local state
       setStudentList(prev => [...prev, createdStudent]);
@@ -104,6 +106,8 @@ const AdminStudentsScreen = () => {
         description: "Failed to add student to database",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
