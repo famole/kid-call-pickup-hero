@@ -101,9 +101,10 @@ const AdminStudentsScreen = () => {
       setIsAddDialogOpen(false);
     } catch (error) {
       console.error('Error adding student:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to add student";
       toast({
         title: "Error",
-        description: "Failed to add student to database",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -317,6 +318,7 @@ const AdminStudentsScreen = () => {
         newStudent={newStudent}
         setNewStudent={setNewStudent}
         onSave={handleAddStudent}
+        isLoading={isLoading}
       />
 
       {/* Edit Student Dialog */}

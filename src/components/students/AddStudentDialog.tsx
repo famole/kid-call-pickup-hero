@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Class, Child } from '@/types';
+import { Loader2 } from "lucide-react";
 
 interface AddStudentDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface AddStudentDialogProps {
   newStudent: Partial<Child>;
   setNewStudent: React.Dispatch<React.SetStateAction<Partial<Child>>>;
   onSave: () => void;
+  isLoading?: boolean;
 }
 
 const AddStudentDialog = ({
@@ -35,7 +37,8 @@ const AddStudentDialog = ({
   classList,
   newStudent,
   setNewStudent,
-  onSave
+  onSave,
+  isLoading = false
 }: AddStudentDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,14 +88,22 @@ const AddStudentDialog = ({
               setNewStudent({ name: '', classId: '', parentIds: [] });
               onOpenChange(false);
             }}
+            disabled={isLoading}
           >
             Cancel
           </Button>
           <Button 
             onClick={onSave}
-            disabled={!newStudent.name || !newStudent.classId}
+            disabled={!newStudent.name || !newStudent.classId || isLoading}
           >
-            Save Student
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Student"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

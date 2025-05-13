@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Child } from '@/types';
+import { isValidUUID } from '@/utils/validators';
 
 // Create a new student
 export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> => {
@@ -23,18 +24,23 @@ export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> 
     
     // Add parent relationships if provided
     if (student.parentIds && student.parentIds.length > 0) {
-      const parentRelations = student.parentIds.map(parentId => ({
-        student_id: data.id,
-        parent_id: parentId,
-        is_primary: student.parentIds.indexOf(parentId) === 0 // First parent is primary
-      }));
+      // Filter out non-UUID parentIds
+      const validParentIds = student.parentIds.filter(id => isValidUUID(id));
       
-      const { error: relError } = await supabase
-        .from('student_parents')
-        .insert(parentRelations);
-      
-      if (relError) {
-        console.error('Error creating student-parent relationships:', relError);
+      if (validParentIds.length > 0) {
+        const parentRelations = validParentIds.map(parentId => ({
+          student_id: data.id,
+          parent_id: parentId,
+          is_primary: validParentIds.indexOf(parentId) === 0 // First parent is primary
+        }));
+        
+        const { error: relError } = await supabase
+          .from('student_parents')
+          .insert(parentRelations);
+        
+        if (relError) {
+          console.error('Error creating student-parent relationships:', relError);
+        }
       }
     }
     
@@ -83,20 +89,24 @@ export const updateStudent = async (id: string, student: Partial<Child>): Promis
         console.error('Error deleting student-parent relationships:', delError);
       }
       
-      // Then add new ones
+      // Then add new ones - filter out non-UUID values
       if (student.parentIds.length > 0) {
-        const parentRelations = student.parentIds.map(parentId => ({
-          student_id: id,
-          parent_id: parentId,
-          is_primary: true // Default to primary for now
-        }));
+        const validParentIds = student.parentIds.filter(pid => isValidUUID(pid));
         
-        const { error: relError } = await supabase
-          .from('student_parents')
-          .insert(parentRelations);
-        
-        if (relError) {
-          console.error('Error creating student-parent relationships:', relError);
+        if (validParentIds.length > 0) {
+          const parentRelations = validParentIds.map(parentId => ({
+            student_id: id,
+            parent_id: parentId,
+            is_primary: validParentIds.indexOf(parentId) === 0 // First parent is primary
+          }));
+          
+          const { error: relError } = await supabase
+            .from('student_parents')
+            .insert(parentRelations);
+          
+          if (relError) {
+            console.error('Error creating student-parent relationships:', relError);
+          }
         }
       }
     }
