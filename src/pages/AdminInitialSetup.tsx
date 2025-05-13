@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -22,7 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { classes, children, parents, pickupRequests } from '@/services/mockData';
 import { migrateClassesToSupabase } from '@/services/classService';
-import { migrateStudentsToSupabase } from '@/services/studentService';
+import { migrateStudentsToSupabase } from '@/services/student';
 import { migratePickupRequestsToSupabase } from '@/services/pickupService';
 import { AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';

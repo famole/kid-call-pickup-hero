@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash } from "lucide-react";
 import { Child } from '@/types';
-import { parents } from '@/services/mockData';
+import { supabase } from "@/integrations/supabase/client";
 
 interface StudentTableProps {
   studentList: Child[];
@@ -28,6 +28,45 @@ const StudentTable = ({
   onEdit, 
   onDelete 
 }: StudentTableProps) => {
+  const [parentNames, setParentNames] = useState<Record<string, string>>({});
+  
+  // Fetch parent names from Supabase
+  useEffect(() => {
+    const fetchParentNames = async () => {
+      // Collect all unique parent IDs
+      const allParentIds = studentList.flatMap(student => student.parentIds).filter(Boolean);
+      const uniqueParentIds = [...new Set(allParentIds)];
+      
+      if (uniqueParentIds.length === 0) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('parents')
+          .select('id, name')
+          .in('id', uniqueParentIds);
+        
+        if (error) {
+          console.error('Error fetching parent names:', error);
+          return;
+        }
+        
+        // Create a mapping of parent ID to name
+        const nameMap = data.reduce((acc, parent) => {
+          acc[parent.id] = parent.name;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        setParentNames(nameMap);
+      } catch (error) {
+        console.error('Error in fetchParentNames:', error);
+      }
+    };
+    
+    if (studentList.length > 0) {
+      fetchParentNames();
+    }
+  }, [studentList]);
+  
   return (
     <Table>
       <TableHeader>
@@ -58,10 +97,7 @@ const StudentTable = ({
               <TableCell>{getClassName(student.classId)}</TableCell>
               <TableCell className="hidden md:table-cell">
                 {student.parentIds.length > 0 
-                  ? student.parentIds.map(id => {
-                      const parent = parents.find(p => p.id === id);
-                      return parent ? parent.name : 'Unknown';
-                    }).join(', ')
+                  ? student.parentIds.map(id => parentNames[id] || 'Unknown').join(', ')
                   : 'No parents assigned'}
               </TableCell>
               <TableCell className="text-right space-x-2">

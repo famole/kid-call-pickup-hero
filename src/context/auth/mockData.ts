@@ -5,13 +5,13 @@ import { v4 as uuidv4 } from 'uuid';
 // Mock data for development when Supabase auth is not set up
 export const mockUsers: User[] = [
   {
-    id: uuidv4(),
+    id: uuidv4(),  // Ensure proper UUID format
     email: 'parent@example.com',
     name: 'Parent User',
     role: 'parent',
   },
   {
-    id: uuidv4(),
+    id: uuidv4(),  // Ensure proper UUID format
     email: 'admin@example.com',
     name: 'Admin User',
     role: 'admin',
