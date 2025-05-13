@@ -1,23 +1,24 @@
 
 import { Child, Class, User, PickupRequest } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 // Mock classes
 export const classes: Class[] = [
-  { id: '1', name: 'Class 1A', grade: '1st Grade', teacher: 'Ms. Smith' },
-  { id: '2', name: 'Class 2B', grade: '2nd Grade', teacher: 'Mr. Johnson' },
-  { id: '3', name: 'Class 3C', grade: '3rd Grade', teacher: 'Mrs. Williams' },
+  { id: uuidv4(), name: 'Class 1A', grade: '1st Grade', teacher: 'Ms. Smith' },
+  { id: uuidv4(), name: 'Class 2B', grade: '2nd Grade', teacher: 'Mr. Johnson' },
+  { id: uuidv4(), name: 'Class 3C', grade: '3rd Grade', teacher: 'Mrs. Williams' },
 ];
 
 // Mock parents
 export const parents: User[] = [
   {
-    id: '1',
+    id: uuidv4(),
     email: 'parent@example.com',
     name: 'John Doe',
     role: 'parent',
   },
   {
-    id: '2',
+    id: uuidv4(),
     email: 'parent2@example.com',
     name: 'Jane Smith',
     role: 'parent',
@@ -27,7 +28,7 @@ export const parents: User[] = [
 // Mock admins
 export const admins: User[] = [
   {
-    id: 'admin1',
+    id: uuidv4(),
     email: 'admin@example.com',
     name: 'Admin User',
     role: 'admin',
@@ -37,28 +38,28 @@ export const admins: User[] = [
 // Mock children
 export const children: Child[] = [
   {
-    id: '1',
+    id: uuidv4(),
     name: 'Emma Doe',
-    classId: '1',
-    parentIds: ['1'],
+    classId: classes[0].id,
+    parentIds: [parents[0].id],
   },
   {
-    id: '2',
+    id: uuidv4(),
     name: 'Liam Doe',
-    classId: '2',
-    parentIds: ['1'],
+    classId: classes[1].id,
+    parentIds: [parents[0].id],
   },
   {
-    id: '3',
+    id: uuidv4(),
     name: 'Olivia Smith',
-    classId: '1',
-    parentIds: ['2'],
+    classId: classes[0].id,
+    parentIds: [parents[1].id],
   },
   {
-    id: '4',
+    id: uuidv4(),
     name: 'Noah Smith',
-    classId: '3',
-    parentIds: ['2'],
+    classId: classes[2].id,
+    parentIds: [parents[1].id],
   },
 ];
 
@@ -85,7 +86,7 @@ export const getAllStudents = (): Child[] => {
 
 export const createPickupRequest = (childId: string, parentId: string): PickupRequest => {
   const request: PickupRequest = {
-    id: Date.now().toString(),
+    id: uuidv4(),
     childId,
     parentId,
     requestTime: new Date(),
