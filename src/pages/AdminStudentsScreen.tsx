@@ -21,6 +21,7 @@ import AddStudentDialog from '@/components/students/AddStudentDialog';
 import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import StudentsHeader from '@/components/students/StudentsHeader';
+import { isValidUUID } from '@/utils/validators';
 
 const AdminStudentsScreen = () => {
   const [studentList, setStudentList] = useState<Child[]>([]);
@@ -78,10 +79,13 @@ const AdminStudentsScreen = () => {
     try {
       setIsLoading(true);
       // Create student in Supabase
+      // Ensure we're sending valid UUIDs for parentIds
+      const validParentIds = newStudent.parentIds?.filter(id => isValidUUID(id)) || [];
+      
       const studentToAdd = {
         name: newStudent.name,
         classId: newStudent.classId,
-        parentIds: newStudent.parentIds || []
+        parentIds: validParentIds
       };
 
       console.log('Creating student:', studentToAdd);
@@ -114,10 +118,13 @@ const AdminStudentsScreen = () => {
 
   const handleEditStudent = (student: Child) => {
     setCurrentStudent(student);
+    // Make sure we're not passing non-UUID values
+    const validParentIds = student.parentIds.filter(isValidUUID);
+    
     setNewStudent({
       name: student.name,
       classId: student.classId,
-      parentIds: student.parentIds
+      parentIds: validParentIds
     });
     setIsEditDialogOpen(true);
   };
@@ -133,11 +140,15 @@ const AdminStudentsScreen = () => {
     }
 
     try {
+      setIsLoading(true);
+      // Make sure we're sending valid UUIDs for parentIds
+      const validParentIds = newStudent.parentIds?.filter(id => isValidUUID(id)) || [];
+      
       // Update student in Supabase
       const updatedStudent = await updateStudent(currentStudent.id, {
         name: newStudent.name,
         classId: newStudent.classId,
-        parentIds: newStudent.parentIds
+        parentIds: validParentIds
       });
 
       // Update local state
@@ -158,6 +169,8 @@ const AdminStudentsScreen = () => {
         description: "Failed to update student in database",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -170,6 +183,7 @@ const AdminStudentsScreen = () => {
     if (!currentStudent) return;
 
     try {
+      setIsLoading(true);
       // Delete student from Supabase
       await deleteStudent(currentStudent.id);
       
@@ -189,6 +203,8 @@ const AdminStudentsScreen = () => {
         description: "Failed to delete student from database",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -216,15 +232,19 @@ const AdminStudentsScreen = () => {
     }
 
     try {
+      setIsLoading(true);
       const importedStudents: Child[] = [];
       
       // Create students one by one
       for (const item of validData) {
         try {
+          // Ensure we're only sending valid UUIDs for parentIds
+          const validParentIds = item.parentIds?.filter(id => isValidUUID(id)) || [];
+          
           const student = await createStudent({
             name: item.name!,
             classId: item.classId!,
-            parentIds: item.parentIds || []
+            parentIds: validParentIds
           });
           
           importedStudents.push(student);
@@ -249,6 +269,8 @@ const AdminStudentsScreen = () => {
         description: "Failed to import students",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -257,7 +279,8 @@ const AdminStudentsScreen = () => {
     // Create CSV content
     const headers = "id,name,classId,parentIds\n";
     const csvContent = studentList.map(student => {
-      return `${student.id},"${student.name}",${student.classId},"${student.parentIds.join(',')}"`;
+      const validParentIds = student.parentIds.filter(isValidUUID);
+      return `${student.id},"${student.name}",${student.classId},"${validParentIds.join(',')}"`;
     }).join("\n");
 
     const finalCsvContent = headers + csvContent;
