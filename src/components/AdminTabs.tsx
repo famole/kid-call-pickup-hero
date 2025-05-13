@@ -4,7 +4,7 @@ import AdminClassesScreen from "@/pages/AdminClassesScreen";
 import AdminStudentsScreen from "@/pages/AdminStudentsScreen";
 import AdminParentsScreen from "@/pages/AdminParentsScreen";
 import { Link } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Settings, Database } from "lucide-react";
 
 const AdminTabs = () => {
   return (
@@ -14,7 +14,7 @@ const AdminTabs = () => {
           to="/admin/setup" 
           className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
         >
-          <Settings className="h-4 w-4 mr-1" />
+          <Database className="h-4 w-4 mr-1" />
           Data Migration
         </Link>
       </div>

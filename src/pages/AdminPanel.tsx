@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { School } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,8 +12,9 @@ import { Child, Class, PickupRequest, User } from '@/types';
 import { Parent } from '@/types/parent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Check, Database } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 // ChildRequestItem component to fix the hook execution order problem
 const ChildRequestItem = ({ request, parentsCache }) => {
@@ -187,7 +188,13 @@ const AdminPanel = () => {
             <School className="h-8 w-8 text-school-primary" />
             <h1 className="text-3xl font-bold">School Pickup Admin</h1>
           </div>
-          <div>
+          <div className="flex items-center gap-4">
+            <Link 
+              to="/admin/setup"
+              className="inline-flex items-center px-4 py-2 bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 transition-colors"
+            >
+              <Database className="mr-2 h-4 w-4" /> Migrate Data
+            </Link>
             <span className="text-muted-foreground">Logged in as {user?.name}</span>
           </div>
         </div>
