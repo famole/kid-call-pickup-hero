@@ -8,6 +8,12 @@ export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> 
   try {
     console.log('Creating student with data:', student);
     
+    // Validate the class ID before proceeding
+    if (student.classId && !isValidUUID(student.classId)) {
+      console.error('Invalid class ID format:', student.classId);
+      throw new Error('Invalid class ID format. Must be a UUID.');
+    }
+    
     // Insert the student record
     const { data, error } = await supabase
       .from('students')

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Class, Child } from '@/types';
 import { Loader2 } from "lucide-react";
+import { isValidUUID } from '@/utils/validators';
 
 interface AddStudentDialogProps {
   open: boolean;
@@ -40,6 +41,22 @@ const AddStudentDialog = ({
   onSave,
   isLoading = false
 }: AddStudentDialogProps) => {
+  // Validate that the classId is a valid UUID before setting it
+  const handleClassChange = (classId: string) => {
+    if (isValidUUID(classId)) {
+      setNewStudent({...newStudent, classId});
+    } else {
+      console.error("Invalid class ID format:", classId);
+      // Try to find the actual UUID for this class in the list
+      const classItem = classList.find(c => c.id === classId || c.name === classId);
+      if (classItem && isValidUUID(classItem.id)) {
+        setNewStudent({...newStudent, classId: classItem.id});
+      } else {
+        console.error("Could not find a valid UUID for class:", classId);
+      }
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -65,7 +82,7 @@ const AddStudentDialog = ({
             <Label htmlFor="studentClass" className="required">Class</Label>
             <Select
               value={newStudent.classId || ''}
-              onValueChange={(value) => setNewStudent({...newStudent, classId: value})}
+              onValueChange={handleClassChange}
               required
             >
               <SelectTrigger id="studentClass">

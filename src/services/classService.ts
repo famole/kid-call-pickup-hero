@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Class } from '@/types';
+import { isValidUUID } from '@/utils/validators';
 
 // Fetch all classes
 export const getAllClasses = async (): Promise<Class[]> => {
@@ -142,5 +142,24 @@ export const migrateClassesToSupabase = async (classes: Class[]): Promise<void> 
   } catch (error) {
     console.error('Error in migrateClassesToSupabase:', error);
     throw error;
+  }
+};
+
+// Get classes by ID lookup - utility function to help with class ID validation
+export const getClassesById = async (): Promise<Record<string, Class>> => {
+  try {
+    const classes = await getAllClasses();
+    return classes.reduce((acc, cls) => {
+      acc[cls.id] = cls;
+      return acc;
+    }, {} as Record<string, Class>);
+  } catch (error) {
+    console.error('Error in getClassesById:', error);
+    // Fallback to mock data
+    const { classes } = await import('./mockData');
+    return classes.reduce((acc, cls) => {
+      acc[cls.id] = cls;
+      return acc;
+    }, {} as Record<string, Class>);
   }
 };
