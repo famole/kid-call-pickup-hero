@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -15,165 +16,103 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast";
-import {
-  PlusCircle,
-  UserPlus, // Kept for Add Student button, if ParentTableRow doesn't cover all cases (it should)
-} from "lucide-react";
-import { ParentWithStudents, ParentInput } from '@/types/parent';
+import { useToast } from "@/components/ui/use-toast"; // Corrected import path
+import { PlusCircle } from "lucide-react";
+import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import {
   getParentsWithStudents,
-  createParent,
-  updateParent,
   deleteParent,
-  addStudentToParent,
   removeStudentFromParent,
   updateStudentParentRelationship,
-  importParentsFromCSV
 } from '@/services/parentService';
-import { getAllStudents } from '@/services/studentService'; // Corrected import
-import { parseCSV } from '@/utils/csvUtils';
+import { getAllStudents } from '@/services/studentService';
 
-// Import new components
+// Import new components and hooks
 import AddParentSheet from '@/components/admin-parents/AddParentSheet';
 import EditParentSheet from '@/components/admin-parents/EditParentSheet';
 import ImportParentsDialog from '@/components/admin-parents/ImportParentsDialog';
 import AddStudentToParentDialog from '@/components/admin-parents/AddStudentToParentDialog';
-import ParentTableRow from '@/components/admin-parents/ParentTableRow'; // New component import
+import ParentTableRow from '@/components/admin-parents/ParentTableRow';
+
+import { useAddParentForm } from '@/hooks/useAddParentForm';
+import { useEditParentForm } from '@/hooks/useEditParentForm';
+import { useImportParents } from '@/hooks/useImportParents';
+import { useAddStudentToParentForm } from '@/hooks/useAddStudentToParentForm';
 
 const AdminParentsScreen = () => {
   const { toast } = useToast();
   const [parents, setParents] = useState<ParentWithStudents[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
-  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
-  const [selectedParent, setSelectedParent] = useState<ParentWithStudents | null>(null);
-  const [newParent, setNewParent] = useState<ParentInput>({ name: '', email: '', phone: '' });
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
-  const [relationship, setRelationship] = useState<string>('');
-  const [isPrimary, setIsPrimary] = useState(false);
   const [allStudents, setAllStudents] = useState<Child[]>([]);
 
-  // Fetch parents on component mount
-  useEffect(() => {
-    const loadParents = async () => {
-      try {
-        const data = await getParentsWithStudents();
-        setParents(data);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load parents data",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const loadStudents = async () => {
-      try {
-        const studentsData = await getAllStudents(); // Corrected function name
-        setAllStudents(studentsData);
-      } catch (error) {
-        console.error('Failed to load students:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load students data",
-          variant: "destructive",
-        });
-      }
-    };
-
-    loadParents();
-    loadStudents();
+  const loadParents = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getParentsWithStudents();
+      setParents(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load parents data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [toast]);
 
-  // Handle form submission for new parent
-  const handleAddParent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newParent.name || !newParent.email) {
-      toast({
-        title: "Error",
-        description: "Name and email are required",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+  const loadStudents = useCallback(async () => {
     try {
-      const createdParent = await createParent(newParent);
-      const createdParentWithStudents: ParentWithStudents = {
-        ...createdParent,
-        students: []
-      };
-      setParents(prev => [...prev, createdParentWithStudents]);
-      
-      toast({
-        title: "Success",
-        description: `Parent ${createdParent.name} has been created`,
-      });
-      
-      setNewParent({ name: '', email: '', phone: '' });
-      setIsAddSheetOpen(false);
+      const studentsData = await getAllStudents();
+      setAllStudents(studentsData);
     } catch (error) {
+      console.error('Failed to load students:', error);
       toast({
         title: "Error",
-        description: "Failed to create parent",
+        description: "Failed to load students data",
         variant: "destructive",
       });
     }
+  }, [toast]);
+
+  useEffect(() => {
+    loadParents();
+    loadStudents();
+  }, [loadParents, loadStudents]);
+
+  // Callbacks for hooks
+  const onParentAdded = (newParent: ParentWithStudents) => {
+    setParents(prev => [...prev, newParent]);
   };
 
-  // Handle form submission for editing parent
-  const handleEditParent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedParent) return;
-    
-    try {
-      const parentInputData: ParentInput = {
-        name: selectedParent.name,
-        email: selectedParent.email,
-        phone: selectedParent.phone,
-      };
-      const updatedParentData = await updateParent(selectedParent.id, parentInputData);
-      
-      setParents(prev => prev.map(parent => 
-        parent.id === updatedParentData.id ? { ...parent, ...updatedParentData, students: parent.students } : parent // Ensure students array is preserved
-      ));
-      
-      toast({
-        title: "Success",
-        description: `Parent ${updatedParentData.name} has been updated`,
-      });
-      
-      setIsEditSheetOpen(false);
-      setSelectedParent(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update parent",
-        variant: "destructive",
-      });
-    }
+  const onParentUpdated = (updatedParent: ParentWithStudents) => {
+    setParents(prev => prev.map(p => p.id === updatedParent.id ? updatedParent : p));
   };
+  
+  const onStudentAddedToParent = (updatedParent: ParentWithStudents) => {
+     setParents(prev => prev.map(p => p.id === updatedParent.id ? updatedParent : p));
+  };
+
+  const onImportCompleted = () => {
+    loadParents(); // Refresh the parent list
+  };
+  
+  // Initialize hooks
+  const addParentForm = useAddParentForm({ onParentAdded });
+  const editParentForm = useEditParentForm({ onParentUpdated });
+  const importParentsHook = useImportParents({ onImportCompleted }); // Renamed to avoid conflict
+  const addStudentForm = useAddStudentToParentForm({ allStudents, onStudentAddedToParent });
+
 
   // Handle parent deletion
   const handleDeleteParent = async (parentId: string) => {
     if (!confirm("Are you sure you want to delete this parent? This action cannot be undone.")) {
       return;
     }
-    
     try {
       await deleteParent(parentId);
       setParents(prev => prev.filter(parent => parent.id !== parentId));
-      
       toast({
         title: "Success",
         description: "Parent has been deleted",
@@ -182,137 +121,6 @@ const AdminParentsScreen = () => {
       toast({
         title: "Error",
         description: "Failed to delete parent",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleOpenEditSheet = (parent: ParentWithStudents) => {
-    setSelectedParent(parent);
-    setIsEditSheetOpen(true);
-  };
-
-  const handleOpenAddStudentDialog = (parent: ParentWithStudents) => {
-    setSelectedParent(parent);
-    setSelectedStudentId('');
-    setRelationship('');
-    setIsPrimary(false);
-    setIsStudentDialogOpen(true);
-  };
-
-  // Handle file import
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImportFile(e.target.files[0]);
-    }
-  };
-
-  // Handle CSV import submission
-  const handleImportSubmit = async () => {
-    if (!importFile) {
-      toast({
-        title: "Error",
-        description: "Please select a file to import",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { data, errors } = await parseCSV<ParentInput>(importFile);
-      
-      if (errors.length > 0) {
-        toast({
-          title: "Warning",
-          description: `${errors.length} rows contain errors and will be skipped.`,
-        });
-      }
-
-      const result = await importParentsFromCSV(data);
-      
-      toast({
-        title: "Import Complete",
-        description: `Successfully imported ${result.success} parents. ${result.errors} failed.`,
-      });
-
-      // Refresh the parent list
-      const refreshedParents = await getParentsWithStudents();
-      setParents(refreshedParents);
-      
-      setIsImportDialogOpen(false);
-      setImportFile(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to import parents",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle adding student to parent
-  const handleAddStudent = async () => {
-    if (!selectedParent || !selectedStudentId) {
-      toast({
-        title: "Error",
-        description: "Please select a student",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      // Check if student already exists for this parent
-      const exists = selectedParent.students?.some(s => s.id === selectedStudentId);
-      
-      if (exists) {
-        toast({
-          title: "Error",
-          description: "This student is already associated with this parent",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const newRelationship = await addStudentToParent(
-        selectedParent.id, 
-        selectedStudentId, 
-        relationship || undefined, 
-        isPrimary
-      );
-
-      // Find the student info
-      const studentInfo = allStudents.find(s => s.id === selectedStudentId);
-      
-      // Update the local state
-      setParents(prev => prev.map(parent => {
-        if (parent.id === selectedParent.id) {
-          const updatedStudents = [...(parent.students || []), {
-            id: selectedStudentId, // Student's ID
-            name: studentInfo ? studentInfo.name : 'Unknown Student',
-            isPrimary,
-            relationship: relationship || undefined,
-            parentRelationshipId: newRelationship.id, // This is the ID from student_parents table
-          }];
-          return { ...parent, students: updatedStudents };
-        }
-        return parent;
-      }));
-      
-      // Reset the form
-      setSelectedStudentId('');
-      setRelationship('');
-      setIsPrimary(false);
-      setIsStudentDialogOpen(false);
-      
-      toast({
-        title: "Success",
-        description: "Student added to parent successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add student to parent",
         variant: "destructive",
       });
     }
@@ -329,7 +137,6 @@ const AdminParentsScreen = () => {
     
     try {
       await removeStudentFromParent(studentRelationshipId);
-      
       setParents(prev => prev.map(p => {
         if (p.id === parentId) {
           return {
@@ -339,7 +146,6 @@ const AdminParentsScreen = () => {
         }
         return p;
       }));
-      
       toast({
         title: "Success",
         description: "Student removed from parent successfully",
@@ -364,38 +170,33 @@ const AdminParentsScreen = () => {
         !currentIsPrimary, 
         currentRelationship
       );
-      
       setParents(prev => prev.map(p => {
         if (p.id === parentId) {
+          // When a student is set to primary, others should be set to non-primary for that parent.
+          const newStudentsList = p.students?.map(s => {
+            if (s.parentRelationshipId === studentRelationshipId) {
+              return { ...s, isPrimary: !s.isPrimary }; // Toggle the selected student
+            } else if (!currentIsPrimary && s.isPrimary) { 
+              // If we are setting the current student to primary (!currentIsPrimary is true)
+              // and this 's' student is another primary one, set it to false.
+              return { ...s, isPrimary: false };
+            }
+            return s;
+          }) || [];
+
+          // If after toggling, no student is primary (e.g., unsetting the only primary one),
+          // and the list is not empty, it's often desired to make the first student primary.
+          // However, this can be complex. For now, we'll just handle the toggle and explicit unsetting of others.
+          // The API should ideally enforce one primary or the business logic here needs to be more robust.
+          // For this iteration, we ensure that if one is set to primary, others are unset.
+          
           return {
             ...p,
-            students: p.students?.map(s => {
-              if (s.parentRelationshipId === studentRelationshipId) {
-                return { ...s, isPrimary: !s.isPrimary };
-              }
-              // Optional: if making this primary, ensure others are not.
-              // For simplicity, API should ideally handle exclusivity if required.
-              // If !currentIsPrimary is true (meaning we are setting this student as primary)
-              // and s.isPrimary is true (meaning s is another primary student),
-              // then set s.isPrimary to false.
-              // This logic ensures only one student is primary at a time for a parent.
-              // However, this specific client-side update for exclusivity can be complex 
-              // if the API doesn't enforce it or if there are race conditions.
-              // The current API for updateStudentParentRelationship does not handle exclusivity automatically.
-              // A more robust solution involves the backend or a more complex client-side update strategy.
-              // For now, just toggle the selected one. If exclusive primary is a strict requirement,
-              // the backend should enforce it, or the client logic needs to be more comprehensive.
-              // Simplified logic:
-              // if (!currentIsPrimary && s.id !== studentIdToToggle && s.isPrimary) {
-              //   return { ...s, isPrimary: false };
-              // }
-              return s;
-            }) || [],
+            students: newStudentsList,
           };
         }
         return p;
       }));
-      
       toast({
         title: "Success",
         description: "Primary status updated successfully",
@@ -419,15 +220,12 @@ const AdminParentsScreen = () => {
           </div>
           <div className="flex space-x-2">
             <ImportParentsDialog
-              isOpen={isImportDialogOpen}
-              onOpenChange={setIsImportDialogOpen}
-              onFileChange={handleFileChange}
-              onSubmit={handleImportSubmit}
+              isOpen={importParentsHook.isImportDialogOpen}
+              onOpenChange={openState => openState ? importParentsHook.openImportDialog() : importParentsHook.closeImportDialog()}
+              onFileChange={importParentsHook.handleImportFileChange}
+              onSubmit={importParentsHook.handleImportSubmit}
             />
-            <Button onClick={() => {
-              setNewParent({ name: '', email: '', phone: '' }); // Reset form
-              setIsAddSheetOpen(true);
-            }}>
+            <Button onClick={addParentForm.openAddParentSheet}>
               <PlusCircle className="mr-2 h-4 w-4" /> Add Parent
             </Button>
           </div>
@@ -458,9 +256,9 @@ const AdminParentsScreen = () => {
                   <ParentTableRow
                     key={parent.id}
                     parent={parent}
-                    onEdit={() => handleOpenEditSheet(parent)}
+                    onEdit={() => editParentForm.openEditParentSheet(parent)}
                     onDelete={handleDeleteParent}
-                    onAddStudent={() => handleOpenAddStudentDialog(parent)}
+                    onAddStudent={() => addStudentForm.openAddStudentDialog(parent)}
                     onTogglePrimary={handleTogglePrimary}
                     onRemoveStudent={handleRemoveStudent}
                   />
@@ -472,41 +270,35 @@ const AdminParentsScreen = () => {
       </Card>
 
       <AddParentSheet
-        isOpen={isAddSheetOpen}
-        onOpenChange={setIsAddSheetOpen}
-        newParent={newParent}
-        onNewParentChange={setNewParent}
-        onSubmit={handleAddParent}
+        isOpen={addParentForm.isAddSheetOpen}
+        onOpenChange={openState => openState ? addParentForm.openAddParentSheet() : addParentForm.closeAddParentSheet()}
+        newParent={addParentForm.newParent}
+        onNewParentChange={addParentForm.handleNewParentChange}
+        onSubmit={addParentForm.handleAddParentSubmit}
       />
 
-      {selectedParent && (
+      {editParentForm.editingParent && (
         <EditParentSheet
-          isOpen={isEditSheetOpen}
-          onOpenChange={(isOpen) => {
-            setIsEditSheetOpen(isOpen);
-            if (!isOpen) setSelectedParent(null);
-          }}
-          selectedParent={selectedParent}
-          onSelectedParentChange={setSelectedParent}
-          onSubmit={handleEditParent}
+          isOpen={editParentForm.isEditSheetOpen}
+          onOpenChange={openState => openState ? editParentForm.openEditParentSheet(editParentForm.editingParent!) : editParentForm.closeEditParentSheet()}
+          selectedParent={editParentForm.editingParent}
+          onSelectedParentChange={editParentForm.handleEditingParentChange}
+          onSubmit={editParentForm.handleEditParentSubmit}
         />
       )}
       
       <AddStudentToParentDialog
-        isOpen={isStudentDialogOpen}
-        onOpenChange={(isOpen) => {
-          setIsStudentDialogOpen(isOpen);
-          if (!isOpen) setSelectedParent(null);
-        }}
-        selectedParentName={selectedParent?.name}
-        allStudents={allStudents.filter(s => !selectedParent?.students?.find(ps => ps.id === s.id))}
-        selectedStudentId={selectedStudentId}
-        onSelectedStudentIdChange={setSelectedStudentId}
-        relationship={relationship}
-        onRelationshipChange={setRelationship}
-        isPrimary={isPrimary}
-        onIsPrimaryChange={setIsPrimary}
-        onSubmit={handleAddStudent}
+        isOpen={addStudentForm.isStudentDialogOpen}
+        onOpenChange={(openState) => openState ? addStudentForm.openAddStudentDialog(parents.find(p => p.name === addStudentForm.targetParentName)!) : addStudentForm.closeAddStudentDialog()}
+        selectedParentName={addStudentForm.targetParentName}
+        allStudents={addStudentForm.availableStudents}
+        selectedStudentId={addStudentForm.selectedStudentId}
+        onSelectedStudentIdChange={addStudentForm.setSelectedStudentId}
+        relationship={addStudentForm.relationship}
+        onRelationshipChange={addStudentForm.setRelationship}
+        isPrimary={addStudentForm.isPrimary}
+        onIsPrimaryChange={addStudentForm.setIsPrimary}
+        onSubmit={addStudentForm.handleAddStudentToParentSubmit}
       />
     </div>
   );
