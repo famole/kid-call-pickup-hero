@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -314,32 +313,29 @@ const AdminParentsScreen = () => {
   };
 
   // Handle removing student from parent
-  const handleRemoveStudent = async (studentId: string, parentId: string) => {
+  const handleRemoveStudent = async (studentRelationshipId: string, parentId: string, studentId: string) => {
     const parent = parents.find(p => p.id === parentId);
     if (!parent || !parent.students) return;
     
-    const studentRelationship = parent.students.find(s => s.id === studentId);
-    if (!studentRelationship) return;
+    // studentId is passed for confirmation message and filtering local state, 
+    // studentRelationshipId is used for the API call.
     
     if (!confirm("Are you sure you want to remove this student from the parent?")) {
       return;
     }
     
     try {
-      // In a real app, you would use the relationship ID
-      // Since we don't have that stored in our mock data, we'll just use a function
-      // that deletes based on parent and student ID
-      await removeStudentFromParent(studentRelationship.id);
+      await removeStudentFromParent(studentRelationshipId);
       
       // Update the local state
-      setParents(prev => prev.map(parent => {
-        if (parent.id === parentId) {
+      setParents(prev => prev.map(p => {
+        if (p.id === parentId) {
           return {
-            ...parent,
-            students: parent.students?.filter(s => s.id !== studentId) || [],
+            ...p,
+            students: p.students?.filter(s => s.parentRelationshipId !== studentRelationshipId) || [],
           };
         }
-        return parent;
+        return p;
       }));
       
       toast({
@@ -356,37 +352,36 @@ const AdminParentsScreen = () => {
   };
 
   // Handle toggling primary status
-  const handleTogglePrimary = async (studentId: string, parentId: string) => {
+  const handleTogglePrimary = async (studentRelationshipId: string, parentId: string, currentIsPrimary: boolean, currentRelationship?: string) => {
     const parent = parents.find(p => p.id === parentId);
     if (!parent || !parent.students) return;
-    
-    const studentRelationship = parent.students.find(s => s.id === studentId);
-    if (!studentRelationship) return;
-    
+        
     try {
-      // In a real app, you would use the relationship ID
-      // Since we don't have that stored in our mock data, we'll just use a function
-      // that updates based on parent and student ID
       await updateStudentParentRelationship(
-        studentRelationship.id, 
-        !studentRelationship.isPrimary, 
-        studentRelationship.relationship
+        studentRelationshipId, 
+        !currentIsPrimary, 
+        currentRelationship
       );
       
       // Update the local state
-      setParents(prev => prev.map(parent => {
-        if (parent.id === parentId) {
+      setParents(prev => prev.map(p => {
+        if (p.id === parentId) {
           return {
-            ...parent,
-            students: parent.students?.map(s => {
-              if (s.id === studentId) {
+            ...p,
+            students: p.students?.map(s => {
+              if (s.parentRelationshipId === studentRelationshipId) {
                 return { ...s, isPrimary: !s.isPrimary };
               }
+              // If making this student primary, ensure no other student for this parent is primary
+              // This logic might be complex if multiple students can be primary,
+              // or if primary status should be exclusive.
+              // For simplicity, this example only toggles the specific student.
+              // A more robust solution might involve an API update that handles exclusivity.
               return s;
             }) || [],
           };
         }
-        return parent;
+        return p;
       }));
       
       toast({
@@ -463,7 +458,7 @@ const AdminParentsScreen = () => {
                       {parent.students && parent.students.length > 0 ? (
                         <div className="space-y-2">
                           {parent.students.map(student => (
-                            <div key={student.id} className="flex items-center justify-between bg-gray-100 p-2 rounded">
+                            <div key={student.parentRelationshipId} className="flex items-center justify-between bg-gray-100 p-2 rounded">
                               <div className="flex items-center">
                                 {student.isPrimary ? <Star className="h-4 w-4 text-yellow-500 mr-1" /> : null}
                                 <span>{student.name}</span>
@@ -473,14 +468,14 @@ const AdminParentsScreen = () => {
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
-                                  onClick={() => handleTogglePrimary(student.id, parent.id)}
+                                  onClick={() => handleTogglePrimary(student.parentRelationshipId, parent.id, student.isPrimary, student.relationship)}
                                 >
                                   {student.isPrimary ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />}
                                 </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  onClick={() => handleRemoveStudent(student.id, parent.id)}
+                                  onClick={() => handleRemoveStudent(student.parentRelationshipId, parent.id, student.id)}
                                 >
                                   <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>

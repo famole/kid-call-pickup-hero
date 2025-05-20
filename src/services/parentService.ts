@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Parent, ParentInput, StudentParentRelationship, ParentWithStudents } from "@/types/parent";
 import { Child } from "@/types";
@@ -28,43 +27,40 @@ export const getAllParents = async (): Promise<Parent[]> => {
 // Fetch parents with their associated students
 export const getParentsWithStudents = async (): Promise<ParentWithStudents[]> => {
   // Get all parents
-  const parents = await getAllParents();
+  const parentsList = await getAllParents();
   
   // For each parent, get their students
   const parentsWithStudents: ParentWithStudents[] = [];
   
-  for (const parent of parents) {
-    const { data, error } = await supabase
+  for (const parent of parentsList) {
+    const { data: studentParentRows, error: studentParentError } = await supabase
       .from('student_parents')
       .select('id, student_id, is_primary, relationship')
       .eq('parent_id', parent.id);
     
-    if (error) {
-      console.error(`Error fetching students for parent ${parent.id}:`, error);
+    if (studentParentError) {
+      console.error(`Error fetching students for parent ${parent.id}:`, studentParentError);
+      // Add parent even if fetching students fails, with empty students array or undefined
+      parentsWithStudents.push({
+        ...parent,
+        students: [], 
+      });
       continue;
     }
     
-    // Get student names from the mock data
     // In a real app, you'd fetch this from your students table
-    const studentRelationships = data.map(relationship => ({
-      id: relationship.student_id,
-      parentRelationshipId: relationship.id,
-      isPrimary: relationship.is_primary,
-      relationship: relationship.relationship,
-    }));
-    
-    // Fetch student details from mock data (for now)
-    // TODO: Replace with real API call once student table is created
+    // For now, using the provided mock data logic
     const { getAllStudents } = await import('./mockData');
-    const allStudents = getAllStudents();
+    const allStudentsData = getAllStudents();
     
-    const studentDetails = studentRelationships.map(relationship => {
-      const student = allStudents.find(s => s.id === relationship.id);
+    const studentDetails = studentParentRows.map(spRow => {
+      const student = allStudentsData.find(s => s.id === spRow.student_id);
       return {
-        id: relationship.id,
+        id: spRow.student_id,
         name: student ? student.name : 'Unknown Student',
-        isPrimary: relationship.isPrimary,
-        relationship: relationship.relationship,
+        isPrimary: spRow.is_primary,
+        relationship: spRow.relationship || undefined,
+        parentRelationshipId: spRow.id,
       };
     });
     

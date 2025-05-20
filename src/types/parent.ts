@@ -25,9 +25,11 @@ export type StudentParentRelationship = {
 
 export type ParentWithStudents = Parent & {
   students?: {
-    id: string;
+    id: string; // Student's ID
     name: string;
     isPrimary: boolean;
     relationship?: string;
+    parentRelationshipId: string; // The ID of the student_parents table row
   }[];
 };
+
