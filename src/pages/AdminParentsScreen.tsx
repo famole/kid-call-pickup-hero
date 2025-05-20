@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,28 +16,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  PlusCircle, 
-  FileUp, 
-  Trash2, 
-  Pencil, 
-  UserPlus, 
-  Star, 
-  StarOff 
+import {
+  PlusCircle,
+  UserPlus, // Kept for Add Student button, if ParentTableRow doesn't cover all cases (it should)
 } from "lucide-react";
 import { ParentWithStudents, ParentInput } from '@/types/parent';
 import { Child } from '@/types';
-import { 
-  getParentsWithStudents, 
-  createParent, 
-  updateParent, 
+import {
+  getParentsWithStudents,
+  createParent,
+  updateParent,
   deleteParent,
   addStudentToParent,
   removeStudentFromParent,
   updateStudentParentRelationship,
   importParentsFromCSV
 } from '@/services/parentService';
-import { fetchAllStudentsService } from '@/services/studentService';
+import { getAllStudents } from '@/services/studentService'; // Corrected import
 import { parseCSV } from '@/utils/csvUtils';
 
 // Import new components
@@ -45,6 +40,7 @@ import AddParentSheet from '@/components/admin-parents/AddParentSheet';
 import EditParentSheet from '@/components/admin-parents/EditParentSheet';
 import ImportParentsDialog from '@/components/admin-parents/ImportParentsDialog';
 import AddStudentToParentDialog from '@/components/admin-parents/AddStudentToParentDialog';
+import ParentTableRow from '@/components/admin-parents/ParentTableRow'; // New component import
 
 const AdminParentsScreen = () => {
   const { toast } = useToast();
@@ -81,7 +77,7 @@ const AdminParentsScreen = () => {
 
     const loadStudents = async () => {
       try {
-        const studentsData = await fetchAllStudentsService();
+        const studentsData = await getAllStudents(); // Corrected function name
         setAllStudents(studentsData);
       } catch (error) {
         console.error('Failed to load students:', error);
@@ -149,7 +145,7 @@ const AdminParentsScreen = () => {
       const updatedParentData = await updateParent(selectedParent.id, parentInputData);
       
       setParents(prev => prev.map(parent => 
-        parent.id === updatedParentData.id ? { ...parent, ...updatedParentData } : parent
+        parent.id === updatedParentData.id ? { ...parent, ...updatedParentData, students: parent.students } : parent // Ensure students array is preserved
       ));
       
       toast({
@@ -189,6 +185,19 @@ const AdminParentsScreen = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleOpenEditSheet = (parent: ParentWithStudents) => {
+    setSelectedParent(parent);
+    setIsEditSheetOpen(true);
+  };
+
+  const handleOpenAddStudentDialog = (parent: ParentWithStudents) => {
+    setSelectedParent(parent);
+    setSelectedStudentId('');
+    setRelationship('');
+    setIsPrimary(false);
+    setIsStudentDialogOpen(true);
   };
 
   // Handle file import
@@ -314,9 +323,6 @@ const AdminParentsScreen = () => {
     const parent = parents.find(p => p.id === parentId);
     if (!parent || !parent.students) return;
     
-    // studentId is passed for confirmation message and filtering local state, 
-    // studentRelationshipId is used for the API call.
-    
     if (!confirm("Are you sure you want to remove this student from the parent?")) {
       return;
     }
@@ -324,7 +330,6 @@ const AdminParentsScreen = () => {
     try {
       await removeStudentFromParent(studentRelationshipId);
       
-      // Update the local state
       setParents(prev => prev.map(p => {
         if (p.id === parentId) {
           return {
@@ -360,7 +365,6 @@ const AdminParentsScreen = () => {
         currentRelationship
       );
       
-      // Update the local state
       setParents(prev => prev.map(p => {
         if (p.id === parentId) {
           return {
@@ -369,11 +373,22 @@ const AdminParentsScreen = () => {
               if (s.parentRelationshipId === studentRelationshipId) {
                 return { ...s, isPrimary: !s.isPrimary };
               }
-              // If making this student primary, ensure no other student for this parent is primary
-              // This logic might be complex if multiple students can be primary,
-              // or if primary status should be exclusive.
-              // For simplicity, this example only toggles the specific student.
-              // A more robust solution might involve an API update that handles exclusivity.
+              // Optional: if making this primary, ensure others are not.
+              // For simplicity, API should ideally handle exclusivity if required.
+              // If !currentIsPrimary is true (meaning we are setting this student as primary)
+              // and s.isPrimary is true (meaning s is another primary student),
+              // then set s.isPrimary to false.
+              // This logic ensures only one student is primary at a time for a parent.
+              // However, this specific client-side update for exclusivity can be complex 
+              // if the API doesn't enforce it or if there are race conditions.
+              // The current API for updateStudentParentRelationship does not handle exclusivity automatically.
+              // A more robust solution involves the backend or a more complex client-side update strategy.
+              // For now, just toggle the selected one. If exclusive primary is a strict requirement,
+              // the backend should enforce it, or the client logic needs to be more comprehensive.
+              // Simplified logic:
+              // if (!currentIsPrimary && s.id !== studentIdToToggle && s.isPrimary) {
+              //   return { ...s, isPrimary: false };
+              // }
               return s;
             }) || [],
           };
@@ -440,83 +455,15 @@ const AdminParentsScreen = () => {
                 </TableRow>
               ) : (
                 parents.map((parent) => (
-                  <TableRow key={parent.id}>
-                    <TableCell>{parent.name}</TableCell>
-                    <TableCell>{parent.email}</TableCell>
-                    <TableCell>{parent.phone || '-'}</TableCell>
-                    <TableCell>
-                      {parent.students && parent.students.length > 0 ? (
-                        <div className="space-y-2">
-                          {parent.students.map(student => (
-                            <div key={student.parentRelationshipId} className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                              <div className="flex items-center">
-                                {student.isPrimary ? <Star className="h-4 w-4 text-yellow-500 mr-1" /> : null}
-                                <span>{student.name}</span>
-                                {student.relationship && <span className="text-xs text-gray-500 ml-1">({student.relationship})</span>}
-                              </div>
-                              <div className="flex space-x-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  title={student.isPrimary ? "Unset as primary" : "Set as primary"}
-                                  onClick={() => handleTogglePrimary(student.parentRelationshipId, parent.id, student.isPrimary, student.relationship)}
-                                >
-                                  {student.isPrimary ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />}
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  title="Remove student"
-                                  onClick={() => handleRemoveStudent(student.parentRelationshipId, parent.id, student.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">No students</span>
-                      )}
-                      <Button 
-                        variant="link" 
-                        size="sm" 
-                        className="mt-2 px-0 text-primary"
-                        onClick={() => {
-                          setSelectedParent(parent); // Keep existing students data
-                          setSelectedStudentId('');
-                          setRelationship('');
-                          setIsPrimary(false);
-                          setIsStudentDialogOpen(true);
-                        }}
-                      >
-                        <UserPlus className="h-4 w-4 mr-1" /> Add Student
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-1">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          title="Edit parent"
-                          onClick={() => {
-                            setSelectedParent(parent); // Keep existing students data
-                            setIsEditSheetOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          title="Delete parent"
-                          onClick={() => handleDeleteParent(parent.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <ParentTableRow
+                    key={parent.id}
+                    parent={parent}
+                    onEdit={() => handleOpenEditSheet(parent)}
+                    onDelete={handleDeleteParent}
+                    onAddStudent={() => handleOpenAddStudentDialog(parent)}
+                    onTogglePrimary={handleTogglePrimary}
+                    onRemoveStudent={handleRemoveStudent}
+                  />
                 ))
               )}
             </TableBody>
@@ -540,7 +487,7 @@ const AdminParentsScreen = () => {
             if (!isOpen) setSelectedParent(null);
           }}
           selectedParent={selectedParent}
-          onSelectedParentChange={setSelectedParent} // setSelectedParent expects ParentWithStudents
+          onSelectedParentChange={setSelectedParent}
           onSubmit={handleEditParent}
         />
       )}
@@ -549,10 +496,10 @@ const AdminParentsScreen = () => {
         isOpen={isStudentDialogOpen}
         onOpenChange={(isOpen) => {
           setIsStudentDialogOpen(isOpen);
-          if (!isOpen) setSelectedParent(null); // Reset selected parent when dialog closes
+          if (!isOpen) setSelectedParent(null);
         }}
         selectedParentName={selectedParent?.name}
-        allStudents={allStudents.filter(s => !selectedParent?.students?.find(ps => ps.id === s.id))} // Show only unassigned students for THIS parent
+        allStudents={allStudents.filter(s => !selectedParent?.students?.find(ps => ps.id === s.id))}
         selectedStudentId={selectedStudentId}
         onSelectedStudentIdChange={setSelectedStudentId}
         relationship={relationship}
