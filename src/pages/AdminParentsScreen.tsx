@@ -269,7 +269,7 @@ const AdminParentsScreen = () => {
         return;
       }
 
-      await addStudentToParent(
+      const newRelationship = await addStudentToParent(
         selectedParent.id, 
         selectedStudentId, 
         relationship || undefined, 
@@ -277,16 +277,17 @@ const AdminParentsScreen = () => {
       );
 
       // Find the student info
-      const student = allStudents.find(s => s.id === selectedStudentId);
+      const studentInfo = allStudents.find(s => s.id === selectedStudentId);
       
       // Update the local state
       setParents(prev => prev.map(parent => {
         if (parent.id === selectedParent.id) {
           const updatedStudents = [...(parent.students || []), {
-            id: selectedStudentId,
-            name: student ? student.name : 'Unknown Student',
+            id: selectedStudentId, // Student's ID
+            name: studentInfo ? studentInfo.name : 'Unknown Student',
             isPrimary,
             relationship: relationship || undefined,
+            parentRelationshipId: newRelationship.id, // This is the ID from student_parents table
           }];
           return { ...parent, students: updatedStudents };
         }

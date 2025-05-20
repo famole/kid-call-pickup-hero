@@ -31,7 +31,7 @@ import {
   Search,
   Link as LinkIcon
 } from "lucide-react";
-import { getParentsWithStudents } from '@/services/parentService';
+import { getParentsWithStudents, addStudentToParent } from '@/services/parentService'; // Added addStudentToParent
 import { getAllStudents } from '@/services/studentService';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
@@ -90,12 +90,16 @@ const ParentManagement: React.FC = () => {
   
   const handleAssignStudent = async (parentId: string, studentId: string) => {
     try {
-      // API call to assign student to parent would go here
-      // For now we're just updating the UI
-      
       // Get the student info from unassignedStudents
       const student = unassignedStudents.find(s => s.id === studentId);
-      if (!student) return;
+      if (!student) {
+        toast({ title: "Error", description: "Student not found.", variant: "destructive" });
+        return;
+      }
+      
+      // Call the service to associate student with parent
+      // For this simplified UI, we'll set isPrimary to true and relationship to undefined by default.
+      const newRelationship = await addStudentToParent(parentId, studentId, undefined, true);
       
       // Update the parents state
       setParents(prevParents => 
@@ -105,7 +109,13 @@ const ParentManagement: React.FC = () => {
               ...parent,
               students: [
                 ...(parent.students || []),
-                { id: student.id, name: student.name, isPrimary: true }
+                { 
+                  id: student.id, // Student's ID
+                  name: student.name, 
+                  isPrimary: newRelationship.isPrimary, // Use value from relationship
+                  relationship: newRelationship.relationship, // Use value from relationship
+                  parentRelationshipId: newRelationship.id // This is the ID from student_parents table
+                }
               ]
             };
           }
@@ -345,3 +355,4 @@ const ParentManagement: React.FC = () => {
 };
 
 export default ParentManagement;
+
