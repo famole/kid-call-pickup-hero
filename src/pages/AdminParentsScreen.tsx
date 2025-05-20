@@ -3,7 +3,6 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
@@ -18,25 +17,6 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetDescription, 
-  SheetFooter 
-} from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle,
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
   PlusCircle, 
   FileUp, 
   Trash2, 
@@ -48,7 +28,6 @@ import {
 import { ParentWithStudents, ParentInput } from '@/types/parent';
 import { Child } from '@/types';
 import { 
-  getAllParents, 
   getParentsWithStudents, 
   createParent, 
   updateParent, 
@@ -58,7 +37,14 @@ import {
   updateStudentParentRelationship,
   importParentsFromCSV
 } from '@/services/parentService';
+import { fetchAllStudentsService } from '@/services/studentService';
 import { parseCSV } from '@/utils/csvUtils';
+
+// Import new components
+import AddParentSheet from '@/components/admin-parents/AddParentSheet';
+import EditParentSheet from '@/components/admin-parents/EditParentSheet';
+import ImportParentsDialog from '@/components/admin-parents/ImportParentsDialog';
+import AddStudentToParentDialog from '@/components/admin-parents/AddStudentToParentDialog';
 
 const AdminParentsScreen = () => {
   const { toast } = useToast();
@@ -67,7 +53,7 @@ const AdminParentsScreen = () => {
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [selectedParent, setSelectedParent] = useState<ParentWithStudents | null>(null);
-  const [newParent, setNewParent] = useState<ParentInput>({ name: '', email: '' });
+  const [newParent, setNewParent] = useState<ParentInput>({ name: '', email: '', phone: '' });
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
@@ -95,11 +81,15 @@ const AdminParentsScreen = () => {
 
     const loadStudents = async () => {
       try {
-        // Using mock data for now, replace with actual API call when student table is implemented
-        const { getAllStudents } = await import('@/services/mockData');
-        setAllStudents(getAllStudents());
+        const studentsData = await fetchAllStudentsService();
+        setAllStudents(studentsData);
       } catch (error) {
         console.error('Failed to load students:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load students data",
+          variant: "destructive",
+        });
       }
     };
 
@@ -122,14 +112,18 @@ const AdminParentsScreen = () => {
     
     try {
       const createdParent = await createParent(newParent);
-      setParents(prev => [...prev, { ...createdParent, students: [] }]);
+      const createdParentWithStudents: ParentWithStudents = {
+        ...createdParent,
+        students: []
+      };
+      setParents(prev => [...prev, createdParentWithStudents]);
       
       toast({
         title: "Success",
         description: `Parent ${createdParent.name} has been created`,
       });
       
-      setNewParent({ name: '', email: '' });
+      setNewParent({ name: '', email: '', phone: '' });
       setIsAddSheetOpen(false);
     } catch (error) {
       toast({
@@ -147,22 +141,24 @@ const AdminParentsScreen = () => {
     if (!selectedParent) return;
     
     try {
-      const updatedParent = await updateParent(selectedParent.id, {
+      const parentInputData: ParentInput = {
         name: selectedParent.name,
         email: selectedParent.email,
-        phone: selectedParent.phone
-      });
+        phone: selectedParent.phone,
+      };
+      const updatedParentData = await updateParent(selectedParent.id, parentInputData);
       
       setParents(prev => prev.map(parent => 
-        parent.id === updatedParent.id ? { ...updatedParent, students: parent.students } : parent
+        parent.id === updatedParentData.id ? { ...parent, ...updatedParentData } : parent
       ));
       
       toast({
         title: "Success",
-        description: `Parent ${updatedParent.name} has been updated`,
+        description: `Parent ${updatedParentData.name} has been updated`,
       });
       
       setIsEditSheetOpen(false);
+      setSelectedParent(null);
     } catch (error) {
       toast({
         title: "Error",
@@ -407,25 +403,18 @@ const AdminParentsScreen = () => {
             <CardDescription>Manage parents and their associated students</CardDescription>
           </div>
           <div className="flex space-x-2">
-            <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline"><FileUp className="mr-2 h-4 w-4" /> Import</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Import Parents</DialogTitle>
-                  <DialogDescription>
-                    Upload a CSV file with parent data. The file should have columns for name, email, and phone (optional).
-                  </DialogDescription>
-                </DialogHeader>
-                <Input type="file" accept=".csv" onChange={handleFileChange} />
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={handleImportSubmit}>Import</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <Button onClick={() => setIsAddSheetOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Add Parent</Button>
+            <ImportParentsDialog
+              isOpen={isImportDialogOpen}
+              onOpenChange={setIsImportDialogOpen}
+              onFileChange={handleFileChange}
+              onSubmit={handleImportSubmit}
+            />
+            <Button onClick={() => {
+              setNewParent({ name: '', email: '', phone: '' }); // Reset form
+              setIsAddSheetOpen(true);
+            }}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Parent
+            </Button>
           </div>
         </CardHeader>
 
@@ -459,16 +448,17 @@ const AdminParentsScreen = () => {
                       {parent.students && parent.students.length > 0 ? (
                         <div className="space-y-2">
                           {parent.students.map(student => (
-                            <div key={student.parentRelationshipId} className="flex items-center justify-between bg-gray-100 p-2 rounded">
+                            <div key={student.parentRelationshipId} className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-2 rounded">
                               <div className="flex items-center">
                                 {student.isPrimary ? <Star className="h-4 w-4 text-yellow-500 mr-1" /> : null}
                                 <span>{student.name}</span>
                                 {student.relationship && <span className="text-xs text-gray-500 ml-1">({student.relationship})</span>}
                               </div>
-                              <div className="flex space-x-2">
+                              <div className="flex space-x-1">
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
+                                  title={student.isPrimary ? "Unset as primary" : "Set as primary"}
                                   onClick={() => handleTogglePrimary(student.parentRelationshipId, parent.id, student.isPrimary, student.relationship)}
                                 >
                                   {student.isPrimary ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />}
@@ -476,6 +466,7 @@ const AdminParentsScreen = () => {
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
+                                  title="Remove student"
                                   onClick={() => handleRemoveStudent(student.parentRelationshipId, parent.id, student.id)}
                                 >
                                   <Trash2 className="h-4 w-4 text-red-500" />
@@ -488,11 +479,14 @@ const AdminParentsScreen = () => {
                         <span className="text-gray-400">No students</span>
                       )}
                       <Button 
-                        variant="ghost" 
+                        variant="link" 
                         size="sm" 
-                        className="mt-2"
+                        className="mt-2 px-0 text-primary"
                         onClick={() => {
-                          setSelectedParent(parent);
+                          setSelectedParent(parent); // Keep existing students data
+                          setSelectedStudentId('');
+                          setRelationship('');
+                          setIsPrimary(false);
                           setIsStudentDialogOpen(true);
                         }}
                       >
@@ -500,12 +494,13 @@ const AdminParentsScreen = () => {
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-1">
                         <Button 
                           variant="ghost" 
                           size="sm"
+                          title="Edit parent"
                           onClick={() => {
-                            setSelectedParent(parent);
+                            setSelectedParent(parent); // Keep existing students data
                             setIsEditSheetOpen(true);
                           }}
                         >
@@ -514,6 +509,7 @@ const AdminParentsScreen = () => {
                         <Button 
                           variant="ghost" 
                           size="sm" 
+                          title="Delete parent"
                           onClick={() => handleDeleteParent(parent.id)}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
@@ -528,154 +524,43 @@ const AdminParentsScreen = () => {
         </CardContent>
       </Card>
 
-      {/* Add Parent Sheet */}
-      <Sheet open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Add New Parent</SheetTitle>
-            <SheetDescription>
-              Create a new parent record. Parents can be associated with students.
-            </SheetDescription>
-          </SheetHeader>
-          <form onSubmit={handleAddParent} className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input 
-                id="name" 
-                placeholder="Enter parent name" 
-                value={newParent.name}
-                onChange={(e) => setNewParent({...newParent, name: e.target.value})}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="Enter email address" 
-                value={newParent.email}
-                onChange={(e) => setNewParent({...newParent, email: e.target.value})}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone (optional)</Label>
-              <Input 
-                id="phone" 
-                placeholder="Enter phone number" 
-                value={newParent.phone || ''}
-                onChange={(e) => setNewParent({...newParent, phone: e.target.value})}
-              />
-            </div>
-            <SheetFooter className="pt-4">
-              <Button type="submit">Add Parent</Button>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
+      <AddParentSheet
+        isOpen={isAddSheetOpen}
+        onOpenChange={setIsAddSheetOpen}
+        newParent={newParent}
+        onNewParentChange={setNewParent}
+        onSubmit={handleAddParent}
+      />
 
-      {/* Edit Parent Sheet */}
-      <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Edit Parent</SheetTitle>
-            <SheetDescription>
-              Update parent information.
-            </SheetDescription>
-          </SheetHeader>
-          {selectedParent && (
-            <form onSubmit={handleEditParent} className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Name</Label>
-                <Input 
-                  id="edit-name" 
-                  placeholder="Enter parent name" 
-                  value={selectedParent.name}
-                  onChange={(e) => setSelectedParent({...selectedParent, name: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-email">Email</Label>
-                <Input 
-                  id="edit-email" 
-                  type="email" 
-                  placeholder="Enter email address" 
-                  value={selectedParent.email}
-                  onChange={(e) => setSelectedParent({...selectedParent, email: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-phone">Phone (optional)</Label>
-                <Input 
-                  id="edit-phone" 
-                  placeholder="Enter phone number" 
-                  value={selectedParent.phone || ''}
-                  onChange={(e) => setSelectedParent({...selectedParent, phone: e.target.value})}
-                />
-              </div>
-              <SheetFooter className="pt-4">
-                <Button type="submit">Update Parent</Button>
-              </SheetFooter>
-            </form>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Add Student to Parent Dialog */}
-      <Dialog open={isStudentDialogOpen} onOpenChange={setIsStudentDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Student to Parent</DialogTitle>
-            <DialogDescription>
-              Associate a student with {selectedParent?.name}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="student">Student</Label>
-              <select 
-                id="student" 
-                className="w-full border rounded p-2"
-                value={selectedStudentId}
-                onChange={(e) => setSelectedStudentId(e.target.value)}
-                required
-              >
-                <option value="">Select a student</option>
-                {allStudents.map(student => (
-                  <option key={student.id} value={student.id}>
-                    {student.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="relationship">Relationship (optional)</Label>
-              <Input 
-                id="relationship" 
-                placeholder="e.g., Mother, Father, Guardian" 
-                value={relationship}
-                onChange={(e) => setRelationship(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="primary" 
-                checked={isPrimary}
-                onChange={(e) => setIsPrimary(e.target.checked)}
-              />
-              <Label htmlFor="primary">Primary Parent/Guardian</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsStudentDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddStudent}>Add Student</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {selectedParent && (
+        <EditParentSheet
+          isOpen={isEditSheetOpen}
+          onOpenChange={(isOpen) => {
+            setIsEditSheetOpen(isOpen);
+            if (!isOpen) setSelectedParent(null);
+          }}
+          selectedParent={selectedParent}
+          onSelectedParentChange={setSelectedParent} // setSelectedParent expects ParentWithStudents
+          onSubmit={handleEditParent}
+        />
+      )}
+      
+      <AddStudentToParentDialog
+        isOpen={isStudentDialogOpen}
+        onOpenChange={(isOpen) => {
+          setIsStudentDialogOpen(isOpen);
+          if (!isOpen) setSelectedParent(null); // Reset selected parent when dialog closes
+        }}
+        selectedParentName={selectedParent?.name}
+        allStudents={allStudents.filter(s => !selectedParent?.students?.find(ps => ps.id === s.id))} // Show only unassigned students for THIS parent
+        selectedStudentId={selectedStudentId}
+        onSelectedStudentIdChange={setSelectedStudentId}
+        relationship={relationship}
+        onRelationshipChange={setRelationship}
+        isPrimary={isPrimary}
+        onIsPrimaryChange={setIsPrimary}
+        onSubmit={handleAddStudent}
+      />
     </div>
   );
 };

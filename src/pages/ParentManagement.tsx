@@ -18,23 +18,19 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle,
-  DialogTrigger 
-} from "@/components/ui/dialog";
+// Dialog related imports are now in child components
 import { 
   Search,
   Link as LinkIcon
 } from "lucide-react";
-import { getParentsWithStudents, addStudentToParent } from '@/services/parentService'; // Added addStudentToParent
-import { getAllStudents } from '@/services/studentService';
+import { getParentsWithStudents, addStudentToParent } from '@/services/parentService';
+import { getAllStudents as fetchAllStudentsService } from '@/services/studentService'; // Renamed to avoid conflict
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
+
+// Import new components
+import ViewParentDetailsDialog from '@/components/parent-management/ViewParentDetailsDialog';
+import AssignStudentDialog from '@/components/parent-management/AssignStudentDialog';
 
 const ParentManagement: React.FC = () => {
   const { toast } = useToast();
@@ -50,14 +46,11 @@ const ParentManagement: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        // Load all parents with their students
         const parentsData = await getParentsWithStudents();
         setParents(parentsData);
         
-        // Load all students
-        const allStudents = await getAllStudents();
+        const allStudentsData = await fetchAllStudentsService();
         
-        // Get all student IDs that are already assigned to parents
         const assignedStudentIds = new Set<string>();
         parentsData.forEach(parent => {
           parent.students?.forEach(student => {
@@ -65,8 +58,7 @@ const ParentManagement: React.FC = () => {
           });
         });
         
-        // Filter out students that aren't assigned to any parent
-        const unassignedStuds = allStudents.filter(student => !assignedStudentIds.has(student.id));
+        const unassignedStuds = allStudentsData.filter(student => !assignedStudentIds.has(student.id));
         setUnassignedStudents(unassignedStuds);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -90,40 +82,35 @@ const ParentManagement: React.FC = () => {
   
   const handleAssignStudent = async (parentId: string, studentId: string) => {
     try {
-      // Get the student info from unassignedStudents
       const student = unassignedStudents.find(s => s.id === studentId);
       if (!student) {
         toast({ title: "Error", description: "Student not found.", variant: "destructive" });
         return;
       }
       
-      // Call the service to associate student with parent
-      // For this simplified UI, we'll set isPrimary to true and relationship to undefined by default.
       const newRelationship = await addStudentToParent(parentId, studentId, undefined, true);
       
-      // Update the parents state
       setParents(prevParents => 
-        prevParents.map(parent => {
-          if (parent.id === parentId) {
+        prevParents.map(p => {
+          if (p.id === parentId) {
             return {
-              ...parent,
+              ...p,
               students: [
-                ...(parent.students || []),
+                ...(p.students || []),
                 { 
-                  id: student.id, // Student's ID
+                  id: student.id, 
                   name: student.name, 
-                  isPrimary: newRelationship.isPrimary, // Use value from relationship
-                  relationship: newRelationship.relationship, // Use value from relationship
-                  parentRelationshipId: newRelationship.id // This is the ID from student_parents table
+                  isPrimary: newRelationship.isPrimary, 
+                  relationship: newRelationship.relationship, 
+                  parentRelationshipId: newRelationship.id 
                 }
               ]
             };
           }
-          return parent;
+          return p;
         })
       );
       
-      // Remove from unassigned students
       setUnassignedStudents(prev => prev.filter(s => s.id !== studentId));
       
       toast({
@@ -132,6 +119,7 @@ const ParentManagement: React.FC = () => {
       });
       
       setIsStudentAssignDialogOpen(false);
+      setSelectedParent(null); // Clear selected parent after assignment
     } catch (error) {
       console.error("Error assigning student:", error);
       toast({
@@ -154,7 +142,7 @@ const ParentManagement: React.FC = () => {
         <CardContent>
           <div className="flex items-center mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
               <Input
                 placeholder="Search parents..."
                 className="pl-8"
@@ -196,19 +184,19 @@ const ParentManagement: React.FC = () => {
                             {parent.students.slice(0, 2).map(student => (
                               <span 
                                 key={student.id} 
-                                className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                                className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded dark:bg-blue-800 dark:text-blue-100"
                               >
                                 {student.name}
                               </span>
                             ))}
                             {parent.students.length > 2 && (
-                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded dark:bg-gray-700 dark:text-gray-200">
                                 +{parent.students.length - 2} more
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-400 text-sm">No students assigned</span>
+                          <span className="text-gray-400 dark:text-gray-500 text-sm">No students assigned</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -232,6 +220,7 @@ const ParentManagement: React.FC = () => {
                               setSelectedParent(parent);
                               setIsStudentAssignDialogOpen(true);
                             }}
+                            disabled={unassignedStudents.length === 0 && !parent.students?.length} // Disable if no students to assign and no students already assigned (edge case, usually unassignedStudents check is enough)
                           >
                             <LinkIcon className="h-4 w-4" />
                             Assign Student
@@ -247,112 +236,27 @@ const ParentManagement: React.FC = () => {
         </CardContent>
       </Card>
       
-      {/* View Parent Details Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Parent Details</DialogTitle>
-            <DialogDescription>
-              View details and assigned students
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedParent && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium">Contact Information</h3>
-                <div className="mt-2 space-y-1 text-sm">
-                  <p><strong>Name:</strong> {selectedParent.name}</p>
-                  <p><strong>Email:</strong> {selectedParent.email}</p>
-                  <p><strong>Phone:</strong> {selectedParent.phone || "Not provided"}</p>
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-medium">Assigned Students</h3>
-                {selectedParent.students && selectedParent.students.length > 0 ? (
-                  <div className="mt-2 space-y-2">
-                    {selectedParent.students.map(student => (
-                      <div key={student.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                        <span>{student.name}</span>
-                        {student.isPrimary && (
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                            Primary
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm mt-2">No students assigned</p>
-                )}
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button 
-              onClick={() => setIsViewDialogOpen(false)} 
-              className="w-full sm:w-auto"
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ViewParentDetailsDialog
+        isOpen={isViewDialogOpen}
+        onOpenChange={(isOpen) => {
+          setIsViewDialogOpen(isOpen);
+          if (!isOpen) setSelectedParent(null);
+        }}
+        selectedParent={selectedParent}
+      />
       
-      {/* Assign Student Dialog */}
-      <Dialog open={isStudentAssignDialogOpen} onOpenChange={setIsStudentAssignDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Assign Student to Parent</DialogTitle>
-            <DialogDescription>
-              {selectedParent && `Select a student to assign to ${selectedParent.name}`}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedParent && (
-            <>
-              {unassignedStudents.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">No unassigned students available</p>
-                </div>
-              ) : (
-                <div className="max-h-[300px] overflow-y-auto space-y-2">
-                  {unassignedStudents.map(student => (
-                    <div 
-                      key={student.id}
-                      className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
-                    >
-                      <span>{student.name}</span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleAssignStudent(selectedParent.id, student.id)}
-                      >
-                        Assign
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-          
-          <DialogFooter>
-            <Button 
-              onClick={() => setIsStudentAssignDialogOpen(false)} 
-              className="w-full sm:w-auto"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AssignStudentDialog
+        isOpen={isStudentAssignDialogOpen}
+        onOpenChange={(isOpen) => {
+          setIsStudentAssignDialogOpen(isOpen);
+          if (!isOpen) setSelectedParent(null);
+        }}
+        selectedParent={selectedParent}
+        unassignedStudents={unassignedStudents}
+        onAssignStudent={handleAssignStudent}
+      />
     </div>
   );
 };
 
 export default ParentManagement;
-
