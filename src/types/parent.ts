@@ -29,5 +29,6 @@ export type ParentWithStudents = Parent & {
     name: string;
     isPrimary: boolean;
     relationship?: string;
+    parentRelationshipId?: string;
   }[];
 };

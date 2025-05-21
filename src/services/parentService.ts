@@ -65,6 +65,7 @@ export const getParentsWithStudents = async (): Promise<ParentWithStudents[]> =>
         name: student ? student.name : 'Unknown Student',
         isPrimary: relationship.isPrimary,
         relationship: relationship.relationship,
+        parentRelationshipId: relationship.parentRelationshipId,
       };
     });
     

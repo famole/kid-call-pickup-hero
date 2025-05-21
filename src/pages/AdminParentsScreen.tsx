@@ -270,10 +270,10 @@ const AdminParentsScreen = () => {
         return;
       }
 
-      await addStudentToParent(
-        selectedParent.id, 
-        selectedStudentId, 
-        relationship || undefined, 
+      const newRelationship = await addStudentToParent(
+        selectedParent.id,
+        selectedStudentId,
+        relationship || undefined,
         isPrimary
       );
 
@@ -288,6 +288,7 @@ const AdminParentsScreen = () => {
             name: student ? student.name : 'Unknown Student',
             isPrimary,
             relationship: relationship || undefined,
+            parentRelationshipId: newRelationship.id,
           }];
           return { ...parent, students: updatedStudents };
         }
@@ -326,10 +327,7 @@ const AdminParentsScreen = () => {
     }
     
     try {
-      // In a real app, you would use the relationship ID
-      // Since we don't have that stored in our mock data, we'll just use a function
-      // that deletes based on parent and student ID
-      await removeStudentFromParent(studentRelationship.id);
+      await removeStudentFromParent(studentRelationship.parentRelationshipId);
       
       // Update the local state
       setParents(prev => prev.map(parent => {
@@ -364,12 +362,9 @@ const AdminParentsScreen = () => {
     if (!studentRelationship) return;
     
     try {
-      // In a real app, you would use the relationship ID
-      // Since we don't have that stored in our mock data, we'll just use a function
-      // that updates based on parent and student ID
       await updateStudentParentRelationship(
-        studentRelationship.id, 
-        !studentRelationship.isPrimary, 
+        studentRelationship.parentRelationshipId,
+        !studentRelationship.isPrimary,
         studentRelationship.relationship
       );
       
