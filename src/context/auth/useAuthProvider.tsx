@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { AuthContextType } from './AuthProvider';
+import { AuthContextType } from '@/types/auth';
 import { User } from '@/types';
 import { 
   cleanupAuthState, 
