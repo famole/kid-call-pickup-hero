@@ -46,7 +46,7 @@ import {
   Star, 
   StarOff 
 } from "lucide-react";
-import { ParentWithStudents, ParentInput } from '@/types/parent';
+import { ParentWithStudents, ParentInput, StudentParentRelationship } from '@/types/parent';
 import { Child } from '@/types';
 import { 
   getAllParents, 
@@ -270,7 +270,7 @@ const AdminParentsScreen = () => {
         return;
       }
 
-      const newRelationship = await addStudentToParent(
+      const newRelationship: StudentParentRelationship = await addStudentToParent(
         selectedParent.id,
         selectedStudentId,
         relationship || undefined,
@@ -320,7 +320,7 @@ const AdminParentsScreen = () => {
     if (!parent || !parent.students) return;
     
     const studentRelationship = parent.students.find(s => s.id === studentId);
-    if (!studentRelationship) return;
+    if (!studentRelationship || !studentRelationship.parentRelationshipId) return;
     
     if (!confirm("Are you sure you want to remove this student from the parent?")) {
       return;
@@ -359,7 +359,7 @@ const AdminParentsScreen = () => {
     if (!parent || !parent.students) return;
     
     const studentRelationship = parent.students.find(s => s.id === studentId);
-    if (!studentRelationship) return;
+    if (!studentRelationship || !studentRelationship.parentRelationshipId) return;
     
     try {
       await updateStudentParentRelationship(
