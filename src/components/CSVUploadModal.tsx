@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useId } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ const CSVUploadModal: React.FC<CSVUploadModalProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
+  const csvInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -115,12 +116,12 @@ const CSVUploadModal: React.FC<CSVUploadModalProps> = ({
         
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="csvFile">CSV File</Label>
-            <Input 
+            <Label htmlFor={csvInputId}>CSV File</Label>
+            <Input
               ref={fileInputRef}
-              id="csvFile" 
-              type="file" 
-              accept=".csv,text/csv" 
+              id={csvInputId}
+              type="file"
+              accept=".csv,text/csv"
               onChange={handleFileChange}
             />
             {file && (
