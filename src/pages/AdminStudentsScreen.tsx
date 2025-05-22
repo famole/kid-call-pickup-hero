@@ -14,7 +14,7 @@ import {
   updateStudent, 
   deleteStudent 
 } from '@/services/studentService';
-import { classes } from '@/services/mockData';
+import { getAllClasses } from '@/services/classService'; // Import getAllClasses
 import CSVUploadModal from '@/components/CSVUploadModal';
 import StudentTable from '@/components/students/StudentTable';
 import AddStudentDialog from '@/components/students/AddStudentDialog';
@@ -22,6 +22,10 @@ import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import StudentsHeader from '@/components/students/StudentsHeader';
 import { isValidUUID } from '@/utils/validators';
+import { useAddParentForm } from '@/hooks/useAddParentForm'; // Assuming this and other hooks are correctly placed by previous refactorings
+import { useEditParentForm } from '@/hooks/useEditParentForm';
+import { useImportParents } from '@/hooks/useImportParents';
+import { useAddStudentToParentForm } from '@/hooks/useAddStudentToParentForm';
 
 const AdminStudentsScreen = () => {
   const [studentList, setStudentList] = useState<Child[]>([]);
@@ -46,16 +50,28 @@ const AdminStudentsScreen = () => {
       try {
         setIsLoading(true);
         // Get students from Supabase
-        const students = await getAllStudents();
-        setStudentList(students);
+        const studentsPromise = getAllStudents();
+        // Get classes from Supabase
+        const classesPromise = getAllClasses(); 
+
+        const [students, fetchedClasses] = await Promise.all([studentsPromise, classesPromise]);
         
-        // For now, we're still using mock classes
-        setClassList(classes);
+        setStudentList(students);
+        setClassList(fetchedClasses);
+        console.log('Fetched classes:', fetchedClasses);
+        if (fetchedClasses.length === 0) {
+          toast({
+            title: "No Classes Found",
+            description: "No classes were loaded from the database. Please ensure classes exist.",
+            variant: "warning"
+          });
+        }
+
       } catch (error) {
         console.error('Failed to load data:', error);
         toast({
           title: "Error",
-          description: "Failed to load student data",
+          description: "Failed to load student or class data",
           variant: "destructive"
         });
       } finally {
@@ -75,10 +91,18 @@ const AdminStudentsScreen = () => {
       });
       return;
     }
+    // Ensure classId exists in the fetched classList
+    if (!classList.find(c => c.id === newStudent.classId)) {
+      toast({
+        title: "Invalid Class",
+        description: "The selected class ID does not exist. Please refresh or select a valid class.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
       setIsLoading(true);
-      // Create student in Supabase
       // Ensure we're sending valid UUIDs for parentIds
       const validParentIds = newStudent.parentIds?.filter(id => isValidUUID(id)) || [];
       
@@ -107,7 +131,7 @@ const AdminStudentsScreen = () => {
       console.error('Error adding student:', error);
       const errorMessage = error instanceof Error ? error.message : "Failed to add student";
       toast({
-        title: "Error",
+        title: "Error Adding Student",
         description: errorMessage,
         variant: "destructive"
       });
@@ -139,17 +163,33 @@ const AdminStudentsScreen = () => {
       return;
     }
 
+    // Ensure classId exists in the fetched classList
+    if (!classList.find(c => c.id === newStudent.classId)) {
+      toast({
+        title: "Invalid Class",
+        description: "The selected class ID does not exist. Please refresh or select a valid class.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       // Make sure we're sending valid UUIDs for parentIds
       const validParentIds = newStudent.parentIds?.filter(id => isValidUUID(id)) || [];
       
       // Update student in Supabase
-      const updatedStudent = await updateStudent(currentStudent.id, {
+      const updatedStudentData = {
         name: newStudent.name,
         classId: newStudent.classId,
         parentIds: validParentIds
-      });
+      };
+      // If avatar is part of newStudent and should be updated, include it
+      if (newStudent.avatar !== undefined) {
+        (updatedStudentData as Partial<Child>).avatar = newStudent.avatar;
+      }
+
+      const updatedStudent = await updateStudent(currentStudent.id, updatedStudentData);
 
       // Update local state
       setStudentList(studentList.map(s => s.id === updatedStudent.id ? updatedStudent : s));
@@ -164,9 +204,10 @@ const AdminStudentsScreen = () => {
       setIsEditDialogOpen(false);
     } catch (error) {
       console.error('Error updating student:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update student";
       toast({
-        title: "Error",
-        description: "Failed to update student in database",
+        title: "Error Updating Student",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -211,76 +252,116 @@ const AdminStudentsScreen = () => {
   const handleCSVImport = async (parsedData: Partial<Child>[]) => {
     if (!parsedData || parsedData.length === 0) {
       toast({
-        title: "Error",
-        description: "No valid data found in CSV",
+        title: "Import Error",
+        description: "No data found in CSV to import.",
         variant: "destructive"
       });
+      setIsCSVModalOpen(false); // Close modal if no data
       return;
     }
-
-    // Validate all entries
-    const validData = parsedData.filter(item => 
-      item.name && item.classId && 
-      classList.some(c => c.id === item.classId)
-    );
-
-    if (validData.length !== parsedData.length) {
-      toast({
-        title: "Warning",
-        description: `Only ${validData.length} out of ${parsedData.length} entries were valid and will be imported.`,
-      });
+  
+    setIsLoading(true);
+    let successfullyImportedCount = 0;
+    let errorsEncountered: string[] = [];
+  
+    // Fetch latest class list to ensure IDs are valid
+    const currentClasses = await getAllClasses();
+    if (currentClasses.length === 0) {
+        toast({
+            title: "Import Warning",
+            description: "No classes found in the system. Cannot validate class IDs from CSV.",
+            variant: "warning"
+        });
     }
-
-    try {
-      setIsLoading(true);
-      const importedStudents: Child[] = [];
-      
-      // Create students one by one
-      for (const item of validData) {
-        try {
-          // Ensure we're only sending valid UUIDs for parentIds
-          const validParentIds = item.parentIds?.filter(id => isValidUUID(id)) || [];
-          
-          const student = await createStudent({
-            name: item.name!,
-            classId: item.classId!,
-            parentIds: validParentIds
-          });
-          
-          importedStudents.push(student);
-        } catch (error) {
-          console.error('Error importing student:', error);
-        }
+  
+    const studentsToCreate = parsedData.map(item => {
+      // Validate required fields
+      if (!item.name || !item.classId) {
+        errorsEncountered.push(`Skipping student '${item.name || 'Unknown'}' due to missing name or classId.`);
+        return null;
       }
-
-      // Update student list with new students
-      setStudentList(prev => [...prev, ...importedStudents]);
-
-      toast({
-        title: "Students Imported",
-        description: `${importedStudents.length} students have been imported successfully`,
-      });
+      // Validate classId against currentClasses
+      if (!currentClasses.some(c => c.id === item.classId)) {
+        errorsEncountered.push(`Skipping student '${item.name}' - Class ID '${item.classId}' not found.`);
+        return null;
+      }
+      // Validate parentIds format if present
+      const validParentIds = item.parentIds?.filter(id => isValidUUID(id)) || [];
+      if (item.parentIds && item.parentIds.length > 0 && validParentIds.length !== item.parentIds.length) {
+          errorsEncountered.push(`Student '${item.name}': Some parent IDs were invalid and skipped.`);
+      }
       
-      setIsCSVModalOpen(false);
-    } catch (error) {
-      console.error('Error importing students:', error);
+      return {
+        name: item.name,
+        classId: item.classId,
+        parentIds: validParentIds,
+        avatar: item.avatar // Include avatar if present in CSV
+      };
+    }).filter(Boolean) as Omit<Child, 'id'>[];
+  
+    if (studentsToCreate.length === 0 && parsedData.length > 0) {
       toast({
-        title: "Error",
-        description: "Failed to import students",
+        title: "Import Failed",
+        description: "No valid student data to import after validation. Check CSV format and class IDs.",
         variant: "destructive"
       });
-    } finally {
+      if (errorsEncountered.length > 0) {
+        console.error("CSV Import Validation Errors:", errorsEncountered.join("\n"));
+         toast({
+            title: "CSV Import Validation Issues",
+            description: errorsEncountered.join(" "),
+            variant: "warning",
+            duration: 7000,
+        });
+      }
       setIsLoading(false);
+      setIsCSVModalOpen(false);
+      return;
     }
+  
+    const importedStudents: Child[] = [];
+    for (const studentData of studentsToCreate) {
+      try {
+        const createdStudent = await createStudent(studentData);
+        importedStudents.push(createdStudent);
+        successfullyImportedCount++;
+      } catch (error) {
+        console.error(`Error importing student ${studentData.name}:`, error);
+        errorsEncountered.push(`Failed to import student ${studentData.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  
+    if (importedStudents.length > 0) {
+      setStudentList(prev => [...prev, ...importedStudents]);
+    }
+  
+    toast({
+      title: "Import Complete",
+      description: `${successfullyImportedCount} students imported. ${studentsToCreate.length - successfullyImportedCount} failed. ${errorsEncountered.length > 0 ? 'Some rows had issues.' : ''}`,
+      variant: successfullyImportedCount > 0 && errorsEncountered.length === 0 ? "default" : "warning"
+    });
+  
+    if (errorsEncountered.length > 0 && successfullyImportedCount < studentsToCreate.length) {
+       console.error("Detailed CSV Import Errors:", errorsEncountered.join("\n"));
+       toast({
+            title: "CSV Import Report",
+            description: `Details: ${errorsEncountered.slice(0,2).join(" ")}... (Check console for more details if any error)`, // Show first few errors
+            variant: "warning",
+            duration: 10000, // Longer duration for detailed messages
+        });
+    }
+  
+    setIsLoading(false);
+    setIsCSVModalOpen(false);
   };
 
   // Function to export students as CSV
   const handleExportCSV = () => {
     // Create CSV content
-    const headers = "id,name,classId,parentIds\n";
+    const headers = "id,name,classId,parentIds,avatar\n"; // Added avatar
     const csvContent = studentList.map(student => {
       const validParentIds = student.parentIds.filter(isValidUUID);
-      return `${student.id},"${student.name}",${student.classId},"${validParentIds.join(',')}"`;
+      return `${student.id},"${student.name}",${student.classId},"${validParentIds.join(',')}",${student.avatar || ''}`;
     }).join("\n");
 
     const finalCsvContent = headers + csvContent;
@@ -303,7 +384,7 @@ const AdminStudentsScreen = () => {
   };
 
   const getClassName = (classId: string) => {
-    const classInfo = classes.find(c => c.id === classId);
+    const classInfo = classList.find(c => c.id === classId); // Use fetched classList
     return classInfo ? classInfo.name : 'Unknown Class';
   };
 
@@ -312,7 +393,10 @@ const AdminStudentsScreen = () => {
       <StudentsHeader 
         onExportCSV={handleExportCSV}
         onImportCSV={() => setIsCSVModalOpen(true)}
-        onAddStudent={() => setIsAddDialogOpen(true)}
+        onAddStudent={() => {
+          setNewStudent({ name: '', classId: '', parentIds: [] }); // Reset for add
+          setIsAddDialogOpen(true);
+        }}
       />
       
       <Card>
@@ -341,7 +425,7 @@ const AdminStudentsScreen = () => {
         newStudent={newStudent}
         setNewStudent={setNewStudent}
         onSave={handleAddStudent}
-        isLoading={isLoading}
+        isLoading={isLoading && isAddDialogOpen} // isLoading specific to this dialog
       />
 
       {/* Edit Student Dialog */}
@@ -349,9 +433,10 @@ const AdminStudentsScreen = () => {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         classList={classList}
-        student={newStudent}
+        student={newStudent} // newStudent state is used for both add and edit forms
         setStudent={setNewStudent}
         onUpdate={handleUpdateStudent}
+        isLoading={isLoading && isEditDialogOpen} // isLoading specific to this dialog
       />
 
       {/* Delete Confirmation Dialog */}
@@ -360,6 +445,7 @@ const AdminStudentsScreen = () => {
         onOpenChange={setIsDeleteDialogOpen}
         student={currentStudent}
         onDelete={handleDeleteStudent}
+        isLoading={isLoading && isDeleteDialogOpen} // isLoading specific to this dialog
       />
 
       {/* CSV Upload Modal */}
@@ -367,7 +453,7 @@ const AdminStudentsScreen = () => {
         isOpen={isCSVModalOpen}
         onClose={() => setIsCSVModalOpen(false)}
         onImport={handleCSVImport}
-        classList={classList}
+        classList={classList} // Pass the fetched classList
       />
     </div>
   );

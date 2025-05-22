@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -19,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Class, Child } from '@/types';
+import { Loader2 } from 'lucide-react';
 
 interface EditStudentDialogProps {
   open: boolean;
@@ -27,6 +27,7 @@ interface EditStudentDialogProps {
   student: Partial<Child>;
   setStudent: React.Dispatch<React.SetStateAction<Partial<Child>>>;
   onUpdate: () => void;
+  isLoading?: boolean;
 }
 
 const EditStudentDialog = ({
@@ -35,33 +36,37 @@ const EditStudentDialog = ({
   classList,
   student,
   setStudent,
-  onUpdate
+  onUpdate,
+  isLoading = false
 }: EditStudentDialogProps) => {
   const nameId = React.useId();
   const classId = React.useId();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Student</DialogTitle>
           <DialogDescription>
-            Update student information
+            Update student information. Ensure class selection is valid.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor={nameId}>Student Name</Label>
+            <Label htmlFor={nameId} className="required">Student Name</Label>
             <Input
               id={nameId}
-              value={student.name}
+              value={student.name || ''}
               onChange={e => setStudent({...student, name: e.target.value})}
+              placeholder="e.g. Jane Doe"
+              required
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor={classId}>Class</Label>
+            <Label htmlFor={classId} className="required">Class</Label>
             <Select
-              value={student.classId}
+              value={student.classId || ''}
               onValueChange={(value) => setStudent({...student, classId: value})}
+              required
             >
               <SelectTrigger id={classId}>
                 <SelectValue placeholder="Select a class" />
@@ -77,8 +82,26 @@ const EditStudentDialog = ({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={onUpdate}>Update Student</Button>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={onUpdate}
+            disabled={!student.name || !student.classId || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              "Update Student"
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
