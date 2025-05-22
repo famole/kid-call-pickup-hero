@@ -37,6 +37,8 @@ const EditStudentDialog = ({
   setStudent,
   onUpdate
 }: EditStudentDialogProps) => {
+  const nameId = React.useId();
+  const classId = React.useId();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -48,20 +50,20 @@ const EditStudentDialog = ({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="editStudentName">Student Name</Label>
-            <Input 
-              id="editStudentName" 
-              value={student.name} 
+            <Label htmlFor={nameId}>Student Name</Label>
+            <Input
+              id={nameId}
+              value={student.name}
               onChange={e => setStudent({...student, name: e.target.value})}
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="editStudentClass">Class</Label>
+            <Label htmlFor={classId}>Class</Label>
             <Select
               value={student.classId}
               onValueChange={(value) => setStudent({...student, classId: value})}
             >
-              <SelectTrigger id="editStudentClass">
+              <SelectTrigger id={classId}>
                 <SelectValue placeholder="Select a class" />
               </SelectTrigger>
               <SelectContent>
