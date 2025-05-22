@@ -28,6 +28,9 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
   onSelectedParentChange,
   onSubmit,
 }) => {
+  const nameId = React.useId();
+  const emailId = React.useId();
+  const phoneId = React.useId();
   if (!selectedParent) return null;
 
   return (
@@ -41,9 +44,9 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
         </SheetHeader>
         <form onSubmit={onSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-name">Name</Label>
-            <Input 
-              id="edit-name" 
+            <Label htmlFor={nameId}>Name</Label>
+            <Input
+              id={nameId}
               placeholder="Enter parent name" 
               value={selectedParent.name}
               onChange={(e) => onSelectedParentChange({...selectedParent, name: e.target.value})}
@@ -51,9 +54,9 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-email">Email</Label>
-            <Input 
-              id="edit-email" 
+            <Label htmlFor={emailId}>Email</Label>
+            <Input
+              id={emailId}
               type="email" 
               placeholder="Enter email address" 
               value={selectedParent.email}
@@ -62,9 +65,9 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-phone">Phone (optional)</Label>
-            <Input 
-              id="edit-phone" 
+            <Label htmlFor={phoneId}>Phone (optional)</Label>
+            <Input
+              id={phoneId}
               placeholder="Enter phone number" 
               value={selectedParent.phone || ''}
               onChange={(e) => onSelectedParentChange({...selectedParent, phone: e.target.value})}

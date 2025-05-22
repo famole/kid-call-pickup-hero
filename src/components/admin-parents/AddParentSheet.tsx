@@ -28,6 +28,9 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
   onNewParentChange,
   onSubmit,
 }) => {
+  const nameId = React.useId();
+  const emailId = React.useId();
+  const phoneId = React.useId();
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent>
@@ -39,9 +42,9 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
         </SheetHeader>
         <form onSubmit={onSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input 
-              id="name" 
+            <Label htmlFor={nameId}>Name</Label>
+            <Input
+              id={nameId}
               placeholder="Enter parent name" 
               value={newParent.name}
               onChange={(e) => onNewParentChange({...newParent, name: e.target.value})}
@@ -49,9 +52,9 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
+            <Label htmlFor={emailId}>Email</Label>
+            <Input
+              id={emailId}
               type="email" 
               placeholder="Enter email address" 
               value={newParent.email}
@@ -60,9 +63,9 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone (optional)</Label>
-            <Input 
-              id="phone" 
+            <Label htmlFor={phoneId}>Phone (optional)</Label>
+            <Input
+              id={phoneId}
               placeholder="Enter phone number" 
               value={newParent.phone || ''}
               onChange={(e) => onNewParentChange({...newParent, phone: e.target.value})}
