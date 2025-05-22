@@ -2,8 +2,9 @@
 import { Class } from '@/types';
 
 export async function parseCSV<T extends Record<string, any>>(
-  file: File, 
-  classList?: Class[]
+  file: File,
+  classList?: Class[],
+  parentIdLookup?: Record<string | number, string>
 ): Promise<{ data: T[], errors: string[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -66,7 +67,25 @@ export async function parseCSV<T extends Record<string, any>>(
               if (value.startsWith('"') && value.endsWith('"')) {
                 value = value.substring(1, value.length - 1);
               }
-              row['parentIds'] = value.split(',').map(id => id.trim()).filter(id => id);
+              const ids = value.split(',').map(id => id.trim()).filter(id => id);
+              const finalIds: string[] = [];
+              const unmapped: string[] = [];
+              for (const rawId of ids) {
+                if (/^\d+$/.test(rawId) && parentIdLookup) {
+                  const mapped = parentIdLookup[rawId];
+                  if (mapped) {
+                    finalIds.push(mapped);
+                  } else {
+                    unmapped.push(rawId);
+                  }
+                } else {
+                  finalIds.push(rawId);
+                }
+              }
+              if (unmapped.length > 0) {
+                errors.push(`Row ${i}: Parent IDs not found for [${unmapped.join(', ')}]`);
+              }
+              row['parentIds'] = finalIds;
             } else {
               // Normalise known keys to camelCase expected by the app
               switch (columnKey) {
