@@ -40,6 +40,9 @@ const AddStudentToParentDialog: React.FC<AddStudentToParentDialogProps> = ({
   onIsPrimaryChange,
   onSubmit,
 }) => {
+  const studentId = React.useId();
+  const relationshipId = React.useId();
+  const primaryId = React.useId();
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -51,9 +54,9 @@ const AddStudentToParentDialog: React.FC<AddStudentToParentDialogProps> = ({
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="student">Student</Label>
-            <select 
-              id="student" 
+            <Label htmlFor={studentId}>Student</Label>
+            <select
+              id={studentId}
               className="w-full border rounded p-2 bg-background text-foreground" // Added bg and text for dark mode
               value={selectedStudentId}
               onChange={(e) => onSelectedStudentIdChange(e.target.value)}
@@ -68,23 +71,23 @@ const AddStudentToParentDialog: React.FC<AddStudentToParentDialogProps> = ({
             </select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="relationship">Relationship (optional)</Label>
-            <Input 
-              id="relationship" 
+            <Label htmlFor={relationshipId}>Relationship (optional)</Label>
+            <Input
+              id={relationshipId}
               placeholder="e.g., Mother, Father, Guardian" 
               value={relationship}
               onChange={(e) => onRelationshipChange(e.target.value)}
             />
           </div>
           <div className="flex items-center space-x-2">
-            <input 
-              type="checkbox" 
-              id="primary" 
+            <input
+              type="checkbox"
+              id={primaryId}
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" // Basic styling
               checked={isPrimary}
               onChange={(e) => onIsPrimaryChange(e.target.checked)}
             />
-            <Label htmlFor="primary">Primary Parent/Guardian</Label>
+            <Label htmlFor={primaryId}>Primary Parent/Guardian</Label>
           </div>
         </div>
         <DialogFooter>
