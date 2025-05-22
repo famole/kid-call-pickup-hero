@@ -4,6 +4,9 @@ import { PickupRequest } from '@/types';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { getStudentById } from './studentService';
 import { getClassById } from './classService';
+import { randomUUID } from 'crypto';
+// Import the mapping of old student IDs to new UUIDs generated during migration
+import { studentIdMap } from './student/migrationUtils';
 
 // Create a new pickup request
 export const createPickupRequest = async (studentId: string, parentId: string): Promise<PickupRequest> => {
@@ -210,19 +213,21 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
 };
 
 // Migrate pickup request data from mock to Supabase
-export const migratePickupRequestsToSupabase = async (requests: PickupRequest[]): Promise<void> => {
+export const migratePickupRequestsToSupabase = async (
+  requests: PickupRequest[]
+): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('pickup_requests')
-      .upsert(
-        requests.map(request => ({
-          id: request.id,
-          student_id: request.childId,
-          parent_id: request.parentId,
-          request_time: request.requestTime.toISOString(),
-          status: request.status
-        }))
-      );
+    // Generate new UUIDs for each pickup request and replace the old student ID
+    // with the UUID generated during the student migration step.
+    const rows = requests.map(request => ({
+      id: randomUUID(),
+      student_id: studentIdMap[request.childId] ?? request.childId,
+      parent_id: request.parentId,
+      request_time: request.requestTime.toISOString(),
+      status: request.status
+    }));
+
+    const { error } = await supabase.from('pickup_requests').upsert(rows);
     
     if (error) {
       console.error('Error migrating pickup requests:', error);
