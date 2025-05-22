@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequest } from '@/types';
 import { PickupRequestRow, PickupRequestWithDetails } from '@/types/supabase';
+import { fixInvalidPickupRequestIds } from './pickupService';
 
 // Function to get active pickup requests
 export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
@@ -103,3 +104,13 @@ export const migratePickupRequestsToSupabase = async (requests: PickupRequest[])
     }
   }
 };
+
+// Correct any pickup requests that still reference legacy numeric IDs on startup
+(async () => {
+  try {
+    await fixInvalidPickupRequestIds();
+    console.log('Invalid pickup request IDs fixed during service initialization');
+  } catch (error) {
+    console.error('Error fixing invalid pickup request IDs during initialization', error);
+  }
+})();

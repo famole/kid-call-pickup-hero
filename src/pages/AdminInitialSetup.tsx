@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { classes, children, parents, pickupRequests } from '@/services/mockData';
 import { migrateClassesToSupabase } from '@/services/classService';
 import { migrateStudentsToSupabase } from '@/services/studentService';
-import { migratePickupRequestsToSupabase } from '@/services/pickupService';
+import { migratePickupRequestsToSupabase, fixInvalidPickupRequestIds } from '@/services/pickupService';
 import { AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -67,6 +67,14 @@ const AdminInitialSetup = () => {
           title: "Pickup Requests Migrated",
           description: `${pickupRequests.length} pickup requests have been migrated to Supabase`,
         });
+      
+        // Fix any pickup requests that may still reference legacy numeric IDs
+        try {
+          await fixInvalidPickupRequestIds();
+          console.log('Successfully corrected invalid pickup request IDs');
+        } catch (fixError) {
+          console.error('Failed to fix invalid pickup request IDs', fixError);
+        }
       } else {
         setMigrationStatus(prev => ({ ...prev, pickupRequests: true }));
         toast({
