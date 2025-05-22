@@ -40,6 +40,8 @@ const AddStudentDialog = ({
   onSave,
   isLoading = false
 }: AddStudentDialogProps) => {
+  const nameId = React.useId();
+  const classId = React.useId();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -51,10 +53,10 @@ const AddStudentDialog = ({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="studentName" className="required">Student Name</Label>
-            <Input 
-              id="studentName" 
-              value={newStudent.name || ''} 
+            <Label htmlFor={nameId} className="required">Student Name</Label>
+            <Input
+              id={nameId}
+              value={newStudent.name || ''}
               onChange={e => setNewStudent({...newStudent, name: e.target.value})}
               placeholder="e.g. John Doe"
               required
@@ -62,13 +64,13 @@ const AddStudentDialog = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="studentClass" className="required">Class</Label>
+            <Label htmlFor={classId} className="required">Class</Label>
             <Select
               value={newStudent.classId || ''}
               onValueChange={(value) => setNewStudent({...newStudent, classId: value})}
               required
             >
-              <SelectTrigger id="studentClass">
+              <SelectTrigger id={classId}>
                 <SelectValue placeholder="Select a class" />
               </SelectTrigger>
               <SelectContent>

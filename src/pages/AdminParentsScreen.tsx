@@ -77,6 +77,16 @@ const AdminParentsScreen = () => {
   const [isPrimary, setIsPrimary] = useState(false);
   const [allStudents, setAllStudents] = useState<Child[]>([]);
 
+  const addNameId = React.useId();
+  const addEmailId = React.useId();
+  const addPhoneId = React.useId();
+  const editNameId = React.useId();
+  const editEmailId = React.useId();
+  const editPhoneId = React.useId();
+  const studentSelectId = React.useId();
+  const relationshipId = React.useId();
+  const primaryId = React.useId();
+
   // Fetch parents on component mount
   useEffect(() => {
     const loadParents = async () => {
@@ -538,31 +548,31 @@ const AdminParentsScreen = () => {
           </SheetHeader>
           <form onSubmit={handleAddParent} className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input 
-                id="name" 
-                placeholder="Enter parent name" 
+              <Label htmlFor={addNameId}>Name</Label>
+              <Input
+                id={addNameId}
+                placeholder="Enter parent name"
                 value={newParent.name}
                 onChange={(e) => setNewParent({...newParent, name: e.target.value})}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="Enter email address" 
+              <Label htmlFor={addEmailId}>Email</Label>
+              <Input
+                id={addEmailId}
+                type="email"
+                placeholder="Enter email address"
                 value={newParent.email}
                 onChange={(e) => setNewParent({...newParent, email: e.target.value})}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone (optional)</Label>
-              <Input 
-                id="phone" 
-                placeholder="Enter phone number" 
+              <Label htmlFor={addPhoneId}>Phone (optional)</Label>
+              <Input
+                id={addPhoneId}
+                placeholder="Enter phone number"
                 value={newParent.phone || ''}
                 onChange={(e) => setNewParent({...newParent, phone: e.target.value})}
               />
@@ -586,31 +596,31 @@ const AdminParentsScreen = () => {
           {selectedParent && (
             <form onSubmit={handleEditParent} className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-name">Name</Label>
-                <Input 
-                  id="edit-name" 
-                  placeholder="Enter parent name" 
+                <Label htmlFor={editNameId}>Name</Label>
+                <Input
+                  id={editNameId}
+                  placeholder="Enter parent name"
                   value={selectedParent.name}
                   onChange={(e) => setSelectedParent({...selectedParent, name: e.target.value})}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-email">Email</Label>
-                <Input 
-                  id="edit-email" 
-                  type="email" 
-                  placeholder="Enter email address" 
+                <Label htmlFor={editEmailId}>Email</Label>
+                <Input
+                  id={editEmailId}
+                  type="email"
+                  placeholder="Enter email address"
                   value={selectedParent.email}
                   onChange={(e) => setSelectedParent({...selectedParent, email: e.target.value})}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-phone">Phone (optional)</Label>
-                <Input 
-                  id="edit-phone" 
-                  placeholder="Enter phone number" 
+                <Label htmlFor={editPhoneId}>Phone (optional)</Label>
+                <Input
+                  id={editPhoneId}
+                  placeholder="Enter phone number"
                   value={selectedParent.phone || ''}
                   onChange={(e) => setSelectedParent({...selectedParent, phone: e.target.value})}
                 />
@@ -634,9 +644,9 @@ const AdminParentsScreen = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="student">Student</Label>
-              <select 
-                id="student" 
+              <Label htmlFor={studentSelectId}>Student</Label>
+              <select
+                id={studentSelectId}
                 className="w-full border rounded p-2"
                 value={selectedStudentId}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
@@ -651,22 +661,22 @@ const AdminParentsScreen = () => {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="relationship">Relationship (optional)</Label>
-              <Input 
-                id="relationship" 
-                placeholder="e.g., Mother, Father, Guardian" 
+              <Label htmlFor={relationshipId}>Relationship (optional)</Label>
+              <Input
+                id={relationshipId}
+                placeholder="e.g., Mother, Father, Guardian"
                 value={relationship}
                 onChange={(e) => setRelationship(e.target.value)}
               />
             </div>
             <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="primary" 
+              <input
+                type="checkbox"
+                id={primaryId}
                 checked={isPrimary}
                 onChange={(e) => setIsPrimary(e.target.checked)}
               />
-              <Label htmlFor="primary">Primary Parent/Guardian</Label>
+              <Label htmlFor={primaryId}>Primary Parent/Guardian</Label>
             </div>
           </div>
           <DialogFooter>
