@@ -1,6 +1,6 @@
-
 import { useToast } from '@/hooks/use-toast';
-import { createStudent, getAllClasses } from '@/services/studentService';
+import { createStudent } from '@/services/studentService'; // Keep this import for createStudent
+import { getAllClasses } from '@/services/classService'; // Changed from studentService to classService
 import { Child, Class } from '@/types';
 import { isValidUUID } from '@/utils/validators';
 import React from 'react';
@@ -33,7 +33,7 @@ export const useStudentCSV = ({
     let successfullyImportedCount = 0;
     let errorsEncountered: string[] = [];
   
-    const currentClasses = await getAllClasses(); // Fetch latest class list
+    const currentClasses = await getAllClasses(); // Fetches from classService now
     if (currentClasses.length === 0) {
         toast({
             title: "Import Warning",
@@ -47,7 +47,9 @@ export const useStudentCSV = ({
         errorsEncountered.push(`Skipping student '${item.name || 'Unknown'}' due to missing name or classId.`);
         return null;
       }
-      if (currentClasses.length > 0 && !currentClasses.some(c => c.id === item.classId)) {
+      // Ensure item.classId is treated as string for comparison if necessary, though UUIDs are typically strings.
+      // The currentClasses.some check should work fine as long as class IDs are consistently string UUIDs.
+      if (currentClasses.length > 0 && !currentClasses.some(c => String(c.id) === String(item.classId))) {
         errorsEncountered.push(`Skipping student '${item.name}' - Class ID '${item.classId}' not found.`);
         return null;
       }
@@ -58,7 +60,7 @@ export const useStudentCSV = ({
       
       return {
         name: item.name,
-        classId: item.classId,
+        classId: item.classId, // Assuming item.classId is already a string UUID
         parentIds: validParentIds,
         avatar: item.avatar
       };
@@ -86,7 +88,9 @@ export const useStudentCSV = ({
     const importedStudents: Child[] = [];
     for (const studentData of studentsToCreate) {
       try {
-        const createdStudent = await createStudent(studentData);
+        // Ensure studentData.classId is correctly typed for createStudent if necessary
+        // createStudent expects Omit<Child, 'id'>
+        const createdStudent = await createStudent(studentData); 
         importedStudents.push(createdStudent);
         successfullyImportedCount++;
       } catch (error) {
@@ -102,14 +106,14 @@ export const useStudentCSV = ({
     toast({
       title: "Import Complete",
       description: `${successfullyImportedCount} students imported. ${studentsToCreate.length - successfullyImportedCount} failed. ${errorsEncountered.length > 0 ? 'Issues found.' : ''}`,
-      variant: (successfullyImportedCount > 0) ? "default" : "destructive"
+      variant: (successfullyImportedCount > 0 && (studentsToCreate.length - successfullyImportedCount === 0)) ? "default" : "destructive"
     });
   
     if (errorsEncountered.length > 0) {
        toast({
             title: "CSV Import Report",
             description: `Details: ${errorsEncountered.slice(0,2).join(" ")}... (Check console for more)`,
-            variant: "default",
+            variant: "default", // changed from "warning"
             duration: 10000
         });
     }
@@ -122,7 +126,8 @@ export const useStudentCSV = ({
     const headers = "id,name,classId,parentIds,avatar\n";
     const csvContent = studentListToExport.map(student => {
       const validParentIds = student.parentIds?.filter(isValidUUID) || [];
-      return `${student.id},"${student.name}",${student.classId},"${validParentIds.join(',')}",${student.avatar || ''}`;
+      // Ensure classId is a string for CSV export
+      return `${student.id},"${student.name}","${String(student.classId)}","${validParentIds.join(',')}",${student.avatar || ''}`;
     }).join("\n");
 
     const finalCsvContent = headers + csvContent;
