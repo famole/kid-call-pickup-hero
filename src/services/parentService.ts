@@ -258,7 +258,9 @@ export const updateStudentParentRelationship = async (
 };
 
 // Get all students for a parent
-export const getStudentsForParent = async (parentId: string): Promise<Child[]> => {
+export const getStudentsForParent = async (
+  parentId: string
+): Promise<Child[]> => {
   if (!isValidUUID(parentId)) {
     console.error(`Invalid parent ID: ${parentId}`);
     return [];
@@ -267,23 +269,34 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
     .from('student_parents')
     .select('student_id')
     .eq('parent_id', parentId);
-  
+
   if (error) {
     console.error(`Error fetching students for parent ${parentId}:`, error);
     throw new Error(error.message);
   }
-  
+
   const studentIds = data.map(item => item.student_id).filter(isValidUUID);
   if (studentIds.length === 0) {
     return [];
   }
-  
-  // Fetch student details from mock data (for now)
-  // TODO: Replace with real API call once student table is created
-  const { getAllStudents } = await import('./mockData');
-  const allStudents = getAllStudents();
-  
-  return allStudents.filter(student => studentIds.includes(student.id));
+
+  const { data: students, error: studentsError } = await supabase
+    .from('students')
+    .select('*')
+    .in('id', studentIds);
+
+  if (studentsError) {
+    console.error('Error fetching students:', studentsError);
+    throw new Error(studentsError.message);
+  }
+
+  return students.map(student => ({
+    id: student.id,
+    name: student.name,
+    classId: student.class_id || '',
+    parentIds: [parentId],
+    avatar: student.avatar || undefined
+  }));
 };
 
 // Method to import parents from CSV

@@ -85,7 +85,9 @@ export const getStudentById = async (id: string): Promise<Child | null> => {
 };
 
 // Get students for a specific parent
-export const getStudentsForParent = async (parentId: string): Promise<Child[]> => {
+export const getStudentsForParent = async (
+  parentId: string
+): Promise<Child[]> => {
   try {
     if (!isValidUUID(parentId)) {
       console.error(`Invalid parent ID: ${parentId}`);
@@ -96,13 +98,10 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
       .from('student_parents')
       .select('student_id')
       .eq('parent_id', parentId);
-    
+
     if (relationsError) {
       console.error('Error fetching student relations:', relationsError);
-      
-      // Fallback to mock data
-      const { getChildrenForParent } = await import('../mockData');
-      return getChildrenForParent(parentId);
+      throw new Error(relationsError.message);
     }
     
     if (!relations || relations.length === 0) {
@@ -118,13 +117,10 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
       .from('students')
       .select('*')
       .in('id', studentIds);
-    
+
     if (studentsError) {
       console.error('Error fetching students:', studentsError);
-      
-      // Fallback to mock data
-      const { getChildrenForParent } = await import('../mockData');
-      return getChildrenForParent(parentId);
+      throw new Error(studentsError.message);
     }
     
     // Transform the data to match our application's structure
@@ -137,9 +133,6 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
     }));
   } catch (error) {
     console.error('Error in getStudentsForParent:', error);
-    
-    // Fallback to mock data
-    const { getChildrenForParent } = await import('../mockData');
-    return getChildrenForParent(parentId);
+    return [];
   }
 };

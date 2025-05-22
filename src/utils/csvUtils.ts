@@ -33,28 +33,30 @@ export async function parseCSV<T extends Record<string, any>>(
         // Process data rows
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
-          
+
           const values = parseCSVLine(lines[i]);
-          
+
           if (values.length !== header.length) {
             errors.push(`Row ${i} has ${values.length} columns, but header has ${header.length} columns`);
             continue;
           }
-          
+
           // Create an object with proper typing to satisfy TypeScript
           const row = {} as Record<string, any>;
-          
+          let skipRow = false;
+
           // Map values to object properties based on header
           for (let j = 0; j < header.length; j++) {
             const columnKey = header[j].toLowerCase();
             let value = values[j].trim();
-            
+
             // Special handling for classId (validate against classList)
             if (columnKey === 'classid' && classList && value) {
               const classExists = classList.some(c => c.id === value);
               if (!classExists) {
                 errors.push(`Row ${i}: Class ID '${value}' does not exist`);
-                continue;
+                skipRow = true;
+                break;
               }
             }
             
@@ -85,7 +87,11 @@ export async function parseCSV<T extends Record<string, any>>(
               }
             }
           }
-          
+
+          if (skipRow) {
+            continue;
+          }
+
           // Validation
           if ('name' in row && (!row.name || typeof row.name !== 'string')) {
             errors.push(`Row ${i}: Name is required`);
