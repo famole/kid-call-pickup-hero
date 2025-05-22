@@ -25,8 +25,9 @@ export async function parseCSV<T extends Record<string, any>>(
           return;
         }
         
-        // Parse header row to determine column indices
-        const header = parseCSVLine(lines[0]);
+        // Parse header row and normalise keys for easier lookups
+        const rawHeader = parseCSVLine(lines[0]);
+        const header = rawHeader.map(h => h.trim());
         const result: T[] = [];
         
         // Process data rows
@@ -45,11 +46,11 @@ export async function parseCSV<T extends Record<string, any>>(
           
           // Map values to object properties based on header
           for (let j = 0; j < header.length; j++) {
-            const columnName = header[j].trim().toLowerCase();
+            const columnKey = header[j].toLowerCase();
             let value = values[j].trim();
             
             // Special handling for classId (validate against classList)
-            if (columnName === 'classid' && classList && value) {
+            if (columnKey === 'classid' && classList && value) {
               const classExists = classList.some(c => c.id === value);
               if (!classExists) {
                 errors.push(`Row ${i}: Class ID '${value}' does not exist`);
@@ -58,14 +59,30 @@ export async function parseCSV<T extends Record<string, any>>(
             }
             
             // Special handling for parentIds (split comma-separated string)
-            if (columnName === 'parentids' && value) {
+            if (columnKey === 'parentids' && value) {
               // Handle quoted comma lists and regular comma lists
               if (value.startsWith('"') && value.endsWith('"')) {
                 value = value.substring(1, value.length - 1);
               }
-              row[header[j]] = value.split(',').map(id => id.trim()).filter(id => id);
+              row['parentIds'] = value.split(',').map(id => id.trim()).filter(id => id);
             } else {
-              row[header[j]] = value;
+              // Normalise known keys to camelCase expected by the app
+              switch (columnKey) {
+                case 'classid':
+                  row['classId'] = value;
+                  break;
+                case 'name':
+                  row['name'] = value;
+                  break;
+                case 'email':
+                  row['email'] = value;
+                  break;
+                case 'phone':
+                  row['phone'] = value;
+                  break;
+                default:
+                  row[columnKey] = value;
+              }
             }
           }
           
@@ -74,7 +91,7 @@ export async function parseCSV<T extends Record<string, any>>(
             errors.push(`Row ${i}: Name is required`);
             continue;
           }
-          
+
           if ('classId' in row && !row.classId) {
             errors.push(`Row ${i}: Class ID is required`);
             continue;
