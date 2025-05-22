@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Child } from '@/types';
 import { getAllStudents as getAllStudentsMock } from '../mockData';
+import { isValidUUID } from '@/utils/validators';
 
 // Get all students
 export const getAllStudents = async (): Promise<Child[]> => {
@@ -36,6 +37,10 @@ export const getAllStudents = async (): Promise<Child[]> => {
 
 // Get a student by ID
 export const getStudentById = async (id: string): Promise<Child | null> => {
+  if (!isValidUUID(id)) {
+    console.error(`Invalid student ID: ${id}`);
+    return null;
+  }
   try {
     const { data, error } = await supabase
       .from('students')
@@ -82,6 +87,10 @@ export const getStudentById = async (id: string): Promise<Child | null> => {
 // Get students for a specific parent
 export const getStudentsForParent = async (parentId: string): Promise<Child[]> => {
   try {
+    if (!isValidUUID(parentId)) {
+      console.error(`Invalid parent ID: ${parentId}`);
+      return [];
+    }
     // First get the student IDs related to this parent
     const { data: relations, error: relationsError } = await supabase
       .from('student_parents')
@@ -101,7 +110,10 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
     }
     
     // Then get the actual student records
-    const studentIds = relations.map(rel => rel.student_id);
+    const studentIds = relations.map(rel => rel.student_id).filter(isValidUUID);
+    if (studentIds.length === 0) {
+      return [];
+    }
     const { data: students, error: studentsError } = await supabase
       .from('students')
       .select('*')

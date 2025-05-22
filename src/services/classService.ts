@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Class } from '@/types';
+import { isValidUUID } from '@/utils/validators';
 
 // Fetch all classes
 export const getAllClasses = async (): Promise<Class[]> => {
@@ -27,6 +28,10 @@ export const getAllClasses = async (): Promise<Class[]> => {
 // Get a single class by ID
 export const getClassById = async (id: string): Promise<Class | null> => {
   try {
+    if (!isValidUUID(id)) {
+      console.error(`Invalid class ID: ${id}`);
+      return null;
+    }
     const { data, error } = await supabase
       .from('classes')
       .select('*')
@@ -79,6 +84,9 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
 // Update an existing class
 export const updateClass = async (id: string, classData: Partial<Class>): Promise<Class> => {
   try {
+    if (!isValidUUID(id)) {
+      throw new Error(`Invalid class ID: ${id}`);
+    }
     const updateData: Record<string, any> = {};
     if (classData.name !== undefined) updateData.name = classData.name;
     if (classData.grade !== undefined) updateData.grade = classData.grade;
@@ -106,6 +114,9 @@ export const updateClass = async (id: string, classData: Partial<Class>): Promis
 // Delete a class
 export const deleteClass = async (id: string): Promise<void> => {
   try {
+    if (!isValidUUID(id)) {
+      throw new Error(`Invalid class ID: ${id}`);
+    }
     const { error } = await supabase
       .from('classes')
       .delete()
