@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { getCurrentlyCalled } from '@/services/supabaseService';
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequestWithDetails } from '@/types/supabase';
+import { isValidUUID } from '@/utils/validators';
 import { getAllClasses } from '@/services/classService';
 import { Class } from '@/types';
 
@@ -59,12 +60,20 @@ export const useCalledStudents = () => {
         },
         async (payload) => {
           console.log('Realtime update received for pickup requests:', payload);
-          // Refetch data when there's a change
-          try {
-            const data = await getCurrentlyCalled(selectedClass);
-            setCalledChildren(data);
-          } catch (error) {
-            console.error("Error fetching called children after update:", error);
+          const newRow: any = payload.new;
+          if (
+            newRow &&
+            isValidUUID(newRow.student_id) &&
+            isValidUUID(newRow.parent_id)
+          ) {
+            try {
+              const data = await getCurrentlyCalled(selectedClass);
+              setCalledChildren(data);
+            } catch (error) {
+              console.error("Error fetching called children after update:", error);
+            }
+          } else {
+            console.warn('Ignored pickup request with invalid IDs', payload);
           }
         }
       )

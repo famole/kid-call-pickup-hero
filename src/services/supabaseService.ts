@@ -2,7 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequest } from '@/types';
 import { PickupRequestRow, PickupRequestWithDetails } from '@/types/supabase';
-import { getActivePickupRequests as getMockActivePickupRequests } from './mockData';
 
 // Function to get active pickup requests
 export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
@@ -14,7 +13,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     if (error) {
       console.error('Error fetching active pickup requests:', error);
-      return getMockActivePickupRequests(); // Fallback to mock data
+      throw new Error(error.message);
     }
     
     return (data as PickupRequestRow[]).map(item => ({
@@ -26,7 +25,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     })) as PickupRequest[];
   } catch (error) {
     console.error('Error in getActivePickupRequests:', error);
-    return getMockActivePickupRequests(); // Fallback to mock data
+    throw error;
   }
 };
 
