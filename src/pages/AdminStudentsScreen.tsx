@@ -63,7 +63,7 @@ const AdminStudentsScreen = () => {
           toast({
             title: "No Classes Found",
             description: "No classes were loaded from the database. Please ensure classes exist.",
-            variant: "warning"
+            variant: "default"
           });
         }
 
@@ -109,7 +109,8 @@ const AdminStudentsScreen = () => {
       const studentToAdd = {
         name: newStudent.name,
         classId: newStudent.classId,
-        parentIds: validParentIds
+        parentIds: validParentIds,
+        avatar: newStudent.avatar
       };
 
       console.log('Creating student:', studentToAdd);
@@ -148,7 +149,8 @@ const AdminStudentsScreen = () => {
     setNewStudent({
       name: student.name,
       classId: student.classId,
-      parentIds: validParentIds
+      parentIds: validParentIds,
+      avatar: student.avatar
     });
     setIsEditDialogOpen(true);
   };
@@ -179,14 +181,14 @@ const AdminStudentsScreen = () => {
       const validParentIds = newStudent.parentIds?.filter(id => isValidUUID(id)) || [];
       
       // Update student in Supabase
-      const updatedStudentData = {
+      const updatedStudentData: Partial<Omit<Child, 'id'>> = {
         name: newStudent.name,
         classId: newStudent.classId,
         parentIds: validParentIds
       };
       // If avatar is part of newStudent and should be updated, include it
       if (newStudent.avatar !== undefined) {
-        (updatedStudentData as Partial<Child>).avatar = newStudent.avatar;
+        updatedStudentData.avatar = newStudent.avatar;
       }
 
       const updatedStudent = await updateStudent(currentStudent.id, updatedStudentData);
@@ -270,7 +272,7 @@ const AdminStudentsScreen = () => {
         toast({
             title: "Import Warning",
             description: "No classes found in the system. Cannot validate class IDs from CSV.",
-            variant: "warning"
+            variant: "default"
         });
     }
   
@@ -281,7 +283,7 @@ const AdminStudentsScreen = () => {
         return null;
       }
       // Validate classId against currentClasses
-      if (!currentClasses.some(c => c.id === item.classId)) {
+      if (currentClasses.length > 0 && !currentClasses.some(c => c.id === item.classId)) {
         errorsEncountered.push(`Skipping student '${item.name}' - Class ID '${item.classId}' not found.`);
         return null;
       }
@@ -295,7 +297,7 @@ const AdminStudentsScreen = () => {
         name: item.name,
         classId: item.classId,
         parentIds: validParentIds,
-        avatar: item.avatar // Include avatar if present in CSV
+        avatar: item.avatar
       };
     }).filter(Boolean) as Omit<Child, 'id'>[];
   
@@ -310,7 +312,7 @@ const AdminStudentsScreen = () => {
          toast({
             title: "CSV Import Validation Issues",
             description: errorsEncountered.join(" "),
-            variant: "warning",
+            variant: "default",
             duration: 7000,
         });
       }
@@ -338,7 +340,7 @@ const AdminStudentsScreen = () => {
     toast({
       title: "Import Complete",
       description: `${successfullyImportedCount} students imported. ${studentsToCreate.length - successfullyImportedCount} failed. ${errorsEncountered.length > 0 ? 'Some rows had issues.' : ''}`,
-      variant: successfullyImportedCount > 0 && errorsEncountered.length === 0 ? "default" : "warning"
+      variant: (successfullyImportedCount > 0 && errorsEncountered.length === 0) || (successfullyImportedCount > 0 && errorsEncountered.length > 0) ? "default" : "destructive"
     });
   
     if (errorsEncountered.length > 0 && successfullyImportedCount < studentsToCreate.length) {
@@ -346,8 +348,8 @@ const AdminStudentsScreen = () => {
        toast({
             title: "CSV Import Report",
             description: `Details: ${errorsEncountered.slice(0,2).join(" ")}... (Check console for more details if any error)`, // Show first few errors
-            variant: "warning",
-            duration: 10000, // Longer duration for detailed messages
+            variant: "default",
+            duration: 10000
         });
     }
   
@@ -358,7 +360,7 @@ const AdminStudentsScreen = () => {
   // Function to export students as CSV
   const handleExportCSV = () => {
     // Create CSV content
-    const headers = "id,name,classId,parentIds,avatar\n"; // Added avatar
+    const headers = "id,name,classId,parentIds,avatar\n";
     const csvContent = studentList.map(student => {
       const validParentIds = student.parentIds.filter(isValidUUID);
       return `${student.id},"${student.name}",${student.classId},"${validParentIds.join(',')}",${student.avatar || ''}`;
@@ -384,7 +386,7 @@ const AdminStudentsScreen = () => {
   };
 
   const getClassName = (classId: string) => {
-    const classInfo = classList.find(c => c.id === classId); // Use fetched classList
+    const classInfo = classList.find(c => c.id === classId);
     return classInfo ? classInfo.name : 'Unknown Class';
   };
 
@@ -394,7 +396,7 @@ const AdminStudentsScreen = () => {
         onExportCSV={handleExportCSV}
         onImportCSV={() => setIsCSVModalOpen(true)}
         onAddStudent={() => {
-          setNewStudent({ name: '', classId: '', parentIds: [] }); // Reset for add
+          setNewStudent({ name: '', classId: '', parentIds: [] });
           setIsAddDialogOpen(true);
         }}
       />
@@ -425,7 +427,7 @@ const AdminStudentsScreen = () => {
         newStudent={newStudent}
         setNewStudent={setNewStudent}
         onSave={handleAddStudent}
-        isLoading={isLoading && isAddDialogOpen} // isLoading specific to this dialog
+        isLoading={isLoading && isAddDialogOpen}
       />
 
       {/* Edit Student Dialog */}
@@ -433,10 +435,10 @@ const AdminStudentsScreen = () => {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         classList={classList}
-        student={newStudent} // newStudent state is used for both add and edit forms
+        student={newStudent}
         setStudent={setNewStudent}
         onUpdate={handleUpdateStudent}
-        isLoading={isLoading && isEditDialogOpen} // isLoading specific to this dialog
+        isLoading={isLoading && isEditDialogOpen}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -445,7 +447,7 @@ const AdminStudentsScreen = () => {
         onOpenChange={setIsDeleteDialogOpen}
         student={currentStudent}
         onDelete={handleDeleteStudent}
-        isLoading={isLoading && isDeleteDialogOpen} // isLoading specific to this dialog
+        isLoading={isLoading && isDeleteDialogOpen}
       />
 
       {/* CSV Upload Modal */}
@@ -453,7 +455,7 @@ const AdminStudentsScreen = () => {
         isOpen={isCSVModalOpen}
         onClose={() => setIsCSVModalOpen(false)}
         onImport={handleCSVImport}
-        classList={classList} // Pass the fetched classList
+        classList={classList}
       />
     </div>
   );

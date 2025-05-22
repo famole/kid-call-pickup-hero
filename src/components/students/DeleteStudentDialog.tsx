@@ -10,19 +10,22 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Child } from '@/types';
+import { Loader2 } from 'lucide-react'; // Import Loader2
 
 interface DeleteStudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   student: Child | null;
   onDelete: () => void;
+  isLoading?: boolean; // Add isLoading prop
 }
 
 const DeleteStudentDialog = ({
   open,
   onOpenChange,
   student,
-  onDelete
+  onDelete,
+  isLoading = false // Destructure with a default value
 }: DeleteStudentDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,8 +37,27 @@ const DeleteStudentDialog = ({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={onDelete}>Delete</Button>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            disabled={isLoading} // Disable if loading
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={onDelete} 
+            disabled={isLoading} // Disable if loading
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete"
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -43,3 +65,4 @@ const DeleteStudentDialog = ({
 };
 
 export default DeleteStudentDialog;
+
