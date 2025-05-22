@@ -41,6 +41,8 @@ const AddStudentDialog = ({
   onSave,
   isLoading = false
 }: AddStudentDialogProps) => {
+  const studentNameId = React.useId();
+  const studentClassId = React.useId();
   // Validate that the classId is a valid UUID before setting it
   const handleClassChange = (classId: string) => {
     if (isValidUUID(classId)) {
@@ -68,10 +70,10 @@ const AddStudentDialog = ({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="studentName" className="required">Student Name</Label>
-            <Input 
-              id="studentName" 
-              value={newStudent.name || ''} 
+            <Label htmlFor={studentNameId} className="required">Student Name</Label>
+            <Input
+              id={studentNameId}
+              value={newStudent.name || ''}
               onChange={e => setNewStudent({...newStudent, name: e.target.value})}
               placeholder="e.g. John Doe"
               required
@@ -79,13 +81,13 @@ const AddStudentDialog = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="studentClass" className="required">Class</Label>
+            <Label htmlFor={studentClassId} className="required">Class</Label>
             <Select
               value={newStudent.classId || ''}
               onValueChange={handleClassChange}
               required
             >
-              <SelectTrigger id="studentClass">
+              <SelectTrigger id={studentClassId}>
                 <SelectValue placeholder="Select a class" />
               </SelectTrigger>
               <SelectContent>
