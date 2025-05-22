@@ -67,6 +67,9 @@ export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> 
 // Update an existing student
 export const updateStudent = async (id: string, student: Partial<Child>): Promise<Child> => {
   try {
+    if (!isValidUUID(id)) {
+      throw new Error(`Invalid student ID: ${id}`);
+    }
     const updateData: Record<string, any> = {};
     if (student.name !== undefined) updateData.name = student.name;
     if (student.classId !== undefined) updateData.class_id = student.classId;
@@ -143,6 +146,9 @@ export const updateStudent = async (id: string, student: Partial<Child>): Promis
 // Delete a student
 export const deleteStudent = async (id: string): Promise<void> => {
   try {
+    if (!isValidUUID(id)) {
+      throw new Error(`Invalid student ID: ${id}`);
+    }
     // First delete parent relationships
     const { error: relError } = await supabase
       .from('student_parents')

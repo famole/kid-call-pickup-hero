@@ -5,6 +5,7 @@ import { PickupRequestWithDetails } from '@/types/supabase';
 import { getStudentById } from './studentService';
 import { getClassById } from './classService';
 import { randomUUID } from 'crypto';
+import { isValidUUID } from '@/utils/validators';
 // Import the mapping of old student IDs to new UUIDs generated during migration
 import { studentIdMap } from './student/migrationUtils';
 
@@ -48,6 +49,9 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
 // Update the status of a pickup request
 export const updatePickupRequestStatus = async (id: string, status: PickupRequest['status']): Promise<PickupRequest | null> => {
   try {
+    if (!isValidUUID(id)) {
+      throw new Error(`Invalid pickup request ID: ${id}`);
+    }
     const { data, error } = await supabase
       .from('pickup_requests')
       .update({ status })
@@ -114,6 +118,10 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
 // Get active pickup requests for a specific parent
 export const getActivePickupRequestsForParent = async (parentId: string): Promise<PickupRequest[]> => {
   try {
+    if (!isValidUUID(parentId)) {
+      console.error(`Invalid parent ID: ${parentId}`);
+      return [];
+    }
     const { data, error } = await supabase
       .from('pickup_requests')
       .select('*')

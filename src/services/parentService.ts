@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Parent, ParentInput, StudentParentRelationship, ParentWithStudents } from "@/types/parent";
 import { Child } from "@/types";
+import { isValidUUID } from '@/utils/validators';
 
 // Fetch all parents
 export const getAllParents = async (): Promise<Parent[]> => {
@@ -80,6 +81,10 @@ export const getParentsWithStudents = async (): Promise<ParentWithStudents[]> =>
 
 // Get a single parent by ID
 export const getParentById = async (id: string): Promise<Parent | null> => {
+  if (!isValidUUID(id)) {
+    console.error(`Invalid parent ID: ${id}`);
+    return null;
+  }
   const { data, error } = await supabase
     .from('parents')
     .select('*')
@@ -132,6 +137,9 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
 
 // Update an existing parent
 export const updateParent = async (id: string, parentData: ParentInput): Promise<Parent> => {
+  if (!isValidUUID(id)) {
+    throw new Error(`Invalid parent ID: ${id}`);
+  }
   const { data, error } = await supabase
     .from('parents')
     .update({
@@ -161,6 +169,9 @@ export const updateParent = async (id: string, parentData: ParentInput): Promise
 
 // Delete a parent
 export const deleteParent = async (id: string): Promise<void> => {
+  if (!isValidUUID(id)) {
+    throw new Error(`Invalid parent ID: ${id}`);
+  }
   const { error } = await supabase
     .from('parents')
     .delete()
@@ -209,6 +220,9 @@ export const addStudentToParent = async (
 
 // Remove student-parent association
 export const removeStudentFromParent = async (relationshipId: string): Promise<void> => {
+  if (!isValidUUID(relationshipId)) {
+    throw new Error(`Invalid relationship ID: ${relationshipId}`);
+  }
   const { error } = await supabase
     .from('student_parents')
     .delete()
@@ -226,6 +240,9 @@ export const updateStudentParentRelationship = async (
   isPrimary: boolean,
   relationship?: string
 ): Promise<void> => {
+  if (!isValidUUID(relationshipId)) {
+    throw new Error(`Invalid relationship ID: ${relationshipId}`);
+  }
   const { error } = await supabase
     .from('student_parents')
     .update({
@@ -242,6 +259,10 @@ export const updateStudentParentRelationship = async (
 
 // Get all students for a parent
 export const getStudentsForParent = async (parentId: string): Promise<Child[]> => {
+  if (!isValidUUID(parentId)) {
+    console.error(`Invalid parent ID: ${parentId}`);
+    return [];
+  }
   const { data, error } = await supabase
     .from('student_parents')
     .select('student_id')
@@ -252,8 +273,7 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
     throw new Error(error.message);
   }
   
-  const studentIds = data.map(item => item.student_id);
-  
+  const studentIds = data.map(item => item.student_id).filter(isValidUUID);
   if (studentIds.length === 0) {
     return [];
   }
