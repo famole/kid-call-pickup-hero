@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, AlertCircle, FileCheck } from "lucide-react";
 import { parseCSV } from '@/utils/csvUtils';
 import { Child, Class } from '@/types';
+import { parentIdMap } from '@/services/parentMigrationUtils';
 import { useToast } from '@/hooks/use-toast';
 
 interface CSVUploadModalProps {
@@ -67,7 +68,7 @@ const CSVUploadModal: React.FC<CSVUploadModalProps> = ({
     setIsUploading(true);
 
     try {
-      const { data, errors } = await parseCSV<Partial<Child>>(file, classList);
+      const { data, errors } = await parseCSV<Partial<Child>>(file, classList, parentIdMap);
       
       if (errors.length > 0) {
         setParseErrors(errors);

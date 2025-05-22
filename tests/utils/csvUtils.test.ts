@@ -66,4 +66,28 @@ describe('parseCSV', () => {
     ]);
     expect(errors).toEqual(["Row 2: Valid email is required"]);
   });
+
+  it('maps numeric parent IDs using lookup', async () => {
+    const csv = `name,email,classId,parentIds\nAlice,alice@example.com,1,"1,2"`;
+    const file = createCSVFile(csv);
+    const lookup = { 1: 'uuid1', 2: 'uuid2' };
+    const { data, errors } = await parseCSV<any>(file, classes, lookup);
+
+    expect(errors).toEqual([]);
+    expect(data).toEqual([
+      { name: 'Alice', email: 'alice@example.com', classId: '1', parentIds: ['uuid1', 'uuid2'] },
+    ]);
+  });
+
+  it('reports unmapped numeric parent IDs', async () => {
+    const csv = `name,email,classId,parentIds\nAlice,alice@example.com,1,"1,3"`;
+    const file = createCSVFile(csv);
+    const lookup = { 1: 'uuid1' };
+    const { data, errors } = await parseCSV<any>(file, classes, lookup);
+
+    expect(data).toEqual([
+      { name: 'Alice', email: 'alice@example.com', classId: '1', parentIds: ['uuid1'] },
+    ]);
+    expect(errors).toEqual(["Row 1: Parent IDs not found for [3]"]);
+  });
 });
