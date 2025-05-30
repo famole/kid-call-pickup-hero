@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Child } from '@/types';
-import { getClassById } from '@/services/mockData';
+import { getClassById } from '@/services/classService';
 import { UserRound } from 'lucide-react';
 
 interface ChildCardProps {
@@ -12,7 +12,22 @@ interface ChildCardProps {
 }
 
 const ChildCard: React.FC<ChildCardProps> = ({ child, isSelected, isDisabled = false, onClick }) => {
-  const childClass = getClassById(child.classId);
+  const [childClass, setChildClass] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const loadClass = async () => {
+      if (child.classId) {
+        try {
+          const classData = await getClassById(child.classId);
+          setChildClass(classData);
+        } catch (error) {
+          console.error('Error loading class:', error);
+        }
+      }
+    };
+    
+    loadClass();
+  }, [child.classId]);
 
   return (
     <div

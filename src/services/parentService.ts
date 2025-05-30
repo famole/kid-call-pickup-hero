@@ -251,10 +251,8 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
     return [];
   }
   
-  // Fetch student details from mock data (for now)
-  // TODO: Replace with real API call once student table is created
-  const { getAllStudents } = await import('./mockData');
-  const allStudents = getAllStudents();
+  // Fetch student details from the student service
+  const allStudents = await getAllStudents();
   
   return allStudents.filter(student => studentIds.includes(student.id));
 };
