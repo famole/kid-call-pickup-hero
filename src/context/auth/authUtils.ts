@@ -45,7 +45,7 @@ export const createUserFromParentData = (parentData: any): User => {
     id: parentData.id,
     email: parentData.email,
     name: parentData.name || parentData.email?.split('@')[0] || 'User',
-    role: parentData.role || 'parent',
+    role: parentData.role || 'parent', // Use the role from the database
   };
 };
 
