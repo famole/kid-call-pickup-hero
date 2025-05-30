@@ -1,13 +1,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Child, Class, PickupRequest, User } from '@/types';
+import { PickupRequest } from '@/types';
 import { PickupRequestRow, PickupRequestWithDetails } from '@/types/supabase';
-import { 
-  getChildById, 
-  getClassById, 
-  getActivePickupRequests as getMockActivePickupRequests,
-  getCurrentlyCalled as getMockCurrentlyCalled
-} from './mockData';
+import { getStudentById } from './studentService';
+import { getClassById } from './classService';
 
 // Function to check if a string is a valid UUID
 const isValidUUID = (id: string): boolean => {
@@ -26,19 +22,19 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     if (error) {
       console.error('Error fetching active pickup requests:', error);
-      return getMockActivePickupRequests(); // Fallback to mock data
+      throw new Error(error.message);
     }
     
     return (data as PickupRequestRow[]).map(item => ({
       id: item.id,
-      childId: item.student_id, // Map from student_id to childId for internal consistency
+      childId: item.student_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
       status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
     })) as PickupRequest[];
   } catch (error) {
     console.error('Error in getActivePickupRequests:', error);
-    return getMockActivePickupRequests(); // Fallback to mock data
+    throw error;
   }
 };
 
@@ -48,16 +44,14 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     console.log(`Fetching called students with classId filter: ${classId || 'all'}`);
     
     // Start with the base query
-    let query = supabase
+    const { data: requestsData, error: requestsError } = await supabase
       .from('pickup_requests')
       .select('*')
       .eq('status', 'called');
     
-    const { data: requestsData, error: requestsError } = await query;
-    
     if (requestsError) {
       console.error('Error fetching called pickup requests:', requestsError);
-      return getMockCurrentlyCalled(); // Fallback to mock data
+      throw new Error(requestsError.message);
     }
     
     // Map the data to the expected format with child and class details
@@ -66,40 +60,15 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     for (const req of requestsData as PickupRequestRow[]) {
       // Get student details
       const studentId = req.student_id;
+      const child = await getStudentById(studentId);
+      let classInfo = null;
       
-      // Always use mock data for child lookup since we can't query with non-UUID values
-      const child = getChildById(studentId);
-      let classInfo: Class | null = null;
-      
-      // If we have a child with a valid classId that's a UUID, try to get real class data
-      if (child && child.classId) {
-        if (isValidUUID(child.classId)) {
-          try {
-            // Get class data from database if classId is a valid UUID
-            const { data: classData, error: classError } = await supabase
-              .from('classes')
-              .select('*')
-              .eq('id', child.classId)
-              .single();
-            
-            if (!classError && classData) {
-              classInfo = {
-                id: classData.id,
-                name: classData.name,
-                grade: classData.grade,
-                teacher: classData.teacher
-              };
-            } else {
-              // Fallback to mock for class data
-              classInfo = getClassById(child.classId);
-            }
-          } catch (error) {
-            console.error(`Error fetching class with id ${child.classId}:`, error);
-            classInfo = getClassById(child.classId); // Fallback to mock data
-          }
-        } else {
-          // If classId isn't a valid UUID, use mock data
-          classInfo = getClassById(child.classId);
+      // If we have a child with a valid classId that's a UUID, get class data
+      if (child && child.classId && isValidUUID(child.classId)) {
+        try {
+          classInfo = await getClassById(child.classId);
+        } catch (error) {
+          console.error(`Error fetching class with id ${child.classId}:`, error);
         }
       }
       
@@ -139,7 +108,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     return result;
   } catch (error) {
     console.error('Error in getCurrentlyCalled:', error);
-    return getMockCurrentlyCalled(); // Fallback to mock data
+    throw error;
   }
 };
 

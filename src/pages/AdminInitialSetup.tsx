@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -19,12 +20,43 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { classes, children, parents, pickupRequests } from '@/services/mockData';
 import { migrateClassesToSupabase } from '@/services/classService';
 import { migrateStudentsToSupabase } from '@/services/student';
 import { migratePickupRequestsToSupabase } from '@/services/pickupService';
 import { AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Class, Child, PickupRequest } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
+
+// Sample data for initial setup
+const sampleClasses: Class[] = [
+  { id: uuidv4(), name: 'Class 1A', grade: '1st Grade', teacher: 'Ms. Smith' },
+  { id: uuidv4(), name: 'Class 2B', grade: '2nd Grade', teacher: 'Mr. Johnson' },
+  { id: uuidv4(), name: 'Class 3C', grade: '3rd Grade', teacher: 'Mrs. Williams' },
+];
+
+const sampleChildren: Child[] = [
+  {
+    id: uuidv4(),
+    name: 'Emma Doe',
+    classId: sampleClasses[0].id,
+    parentIds: [],
+  },
+  {
+    id: uuidv4(),
+    name: 'Liam Doe',
+    classId: sampleClasses[1].id,
+    parentIds: [],
+  },
+  {
+    id: uuidv4(),
+    name: 'Olivia Smith',
+    classId: sampleClasses[0].id,
+    parentIds: [],
+  },
+];
+
+const samplePickupRequests: PickupRequest[] = [];
 
 const AdminInitialSetup = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,28 +75,28 @@ const AdminInitialSetup = () => {
     
     try {
       // Step 1: Migrate classes
-      await migrateClassesToSupabase(classes);
+      await migrateClassesToSupabase(sampleClasses);
       setMigrationStatus(prev => ({ ...prev, classes: true }));
       toast({
         title: "Classes Migrated",
-        description: `${classes.length} classes have been migrated to Supabase`,
+        description: `${sampleClasses.length} classes have been migrated to Supabase`,
       });
       
-      // Step 2: Migrate students and their parent relationships
-      await migrateStudentsToSupabase(children);
+      // Step 2: Migrate students
+      await migrateStudentsToSupabase(sampleChildren);
       setMigrationStatus(prev => ({ ...prev, students: true }));
       toast({
         title: "Students Migrated",
-        description: `${children.length} students have been migrated to Supabase`,
+        description: `${sampleChildren.length} students have been migrated to Supabase`,
       });
       
       // Step 3: Migrate pickup requests
-      if (pickupRequests.length > 0) {
-        await migratePickupRequestsToSupabase(pickupRequests);
+      if (samplePickupRequests.length > 0) {
+        await migratePickupRequestsToSupabase(samplePickupRequests);
         setMigrationStatus(prev => ({ ...prev, pickupRequests: true }));
         toast({
           title: "Pickup Requests Migrated",
-          description: `${pickupRequests.length} pickup requests have been migrated to Supabase`,
+          description: `${samplePickupRequests.length} pickup requests have been migrated to Supabase`,
         });
       } else {
         setMigrationStatus(prev => ({ ...prev, pickupRequests: true }));
@@ -78,7 +110,7 @@ const AdminInitialSetup = () => {
       setMigrationComplete(true);
       toast({
         title: "Migration Complete",
-        description: "All data has been successfully migrated to Supabase",
+        description: "All sample data has been successfully migrated to Supabase",
       });
     } catch (error) {
       console.error('Migration error:', error);
@@ -98,7 +130,7 @@ const AdminInitialSetup = () => {
         <CardHeader>
           <CardTitle className="text-2xl">Initial Data Setup</CardTitle>
           <CardDescription>
-            Migrate your mock data to the Supabase database
+            Migrate sample data to the Supabase database
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -106,7 +138,7 @@ const AdminInitialSetup = () => {
             <div className="flex items-center justify-between p-4 border rounded-md">
               <div>
                 <h3 className="font-medium">Classes</h3>
-                <p className="text-sm text-muted-foreground">{classes.length} classes to migrate</p>
+                <p className="text-sm text-muted-foreground">{sampleClasses.length} classes to migrate</p>
               </div>
               {migrationStatus.classes ? 
                 <CheckCircle2 className="h-5 w-5 text-green-500" /> : 
@@ -117,7 +149,7 @@ const AdminInitialSetup = () => {
             <div className="flex items-center justify-between p-4 border rounded-md">
               <div>
                 <h3 className="font-medium">Students</h3>
-                <p className="text-sm text-muted-foreground">{children.length} students to migrate</p>
+                <p className="text-sm text-muted-foreground">{sampleChildren.length} students to migrate</p>
               </div>
               {migrationStatus.students ? 
                 <CheckCircle2 className="h-5 w-5 text-green-500" /> : 
@@ -129,7 +161,7 @@ const AdminInitialSetup = () => {
               <div>
                 <h3 className="font-medium">Pickup Requests</h3>
                 <p className="text-sm text-muted-foreground">
-                  {pickupRequests.length} pickup requests to migrate
+                  {samplePickupRequests.length} pickup requests to migrate
                 </p>
               </div>
               {migrationStatus.pickupRequests ? 
@@ -152,7 +184,7 @@ const AdminInitialSetup = () => {
               disabled={isLoading}
               className="w-full sm:w-auto"
             >
-              {isLoading ? 'Migrating...' : 'Migrate Data to Supabase'}
+              {isLoading ? 'Migrating...' : 'Migrate Sample Data to Supabase'}
             </Button>
           )}
         </CardFooter>
@@ -163,7 +195,7 @@ const AdminInitialSetup = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Data Migration</AlertDialogTitle>
             <AlertDialogDescription>
-              This will migrate all mock data to your Supabase database. 
+              This will migrate sample data to your Supabase database. 
               If data with the same IDs already exists, it will be updated.
               Are you sure you want to proceed?
             </AlertDialogDescription>

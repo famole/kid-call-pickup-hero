@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
 import { AuthState } from '@/types/auth';
-import { mockUsers } from './mockData';
 import { 
   cleanupAuthState, 
   getParentData, 
@@ -64,20 +63,9 @@ export const useAuthProvider = (): AuthState & {
             // Fall back to auth user data if no parent record exists yet
             setUser(createUserFromAuthData(session.user));
           }
-        } else {
-          // Fall back to localStorage for development
-          const savedUser = localStorage.getItem('user');
-          if (savedUser) {
-            setUser(JSON.parse(savedUser));
-          }
         }
       } catch (error) {
         console.error("Error loading user:", error);
-        // Check localStorage as fallback
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-          setUser(JSON.parse(savedUser));
-        }
       } finally {
         setLoading(false);
       }
@@ -112,15 +100,6 @@ export const useAuthProvider = (): AuthState & {
       });
       
       if (error) {
-        // If Supabase auth fails, fall back to mock login for development
-        console.log("Supabase auth failed, trying mock auth:", error);
-        const mockUser = mockUsers.find(u => u.email === email);
-        if (mockUser) {
-          // Save to localStorage for development
-          localStorage.setItem('user', JSON.stringify(mockUser));
-          setUser(mockUser);
-          return Promise.resolve();
-        }
         throw error;
       }
       
@@ -157,8 +136,6 @@ export const useAuthProvider = (): AuthState & {
       console.error("Error during sign out:", error);
     }
     
-    // Also remove from localStorage for development
-    localStorage.removeItem('user');
     setUser(null);
     
     // Force page reload for a clean state

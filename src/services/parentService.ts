@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Parent, ParentInput, StudentParentRelationship, ParentWithStudents } from "@/types/parent";
 import { Child } from "@/types";
+import { getAllStudents } from "./studentService";
 
 // Fetch all parents
 export const getAllParents = async (): Promise<Parent[]> => {
@@ -40,7 +41,6 @@ export const getParentsWithStudents = async (): Promise<ParentWithStudents[]> =>
     
     if (studentParentError) {
       console.error(`Error fetching students for parent ${parent.id}:`, studentParentError);
-      // Add parent even if fetching students fails, with empty students array or undefined
       parentsWithStudents.push({
         ...parent,
         students: [], 
@@ -48,10 +48,8 @@ export const getParentsWithStudents = async (): Promise<ParentWithStudents[]> =>
       continue;
     }
     
-    // In a real app, you'd fetch this from your students table
-    // For now, using the provided mock data logic
-    const { getAllStudents } = await import('./mockData');
-    const allStudentsData = getAllStudents();
+    // Get all students to match against
+    const allStudentsData = await getAllStudents();
     
     const studentDetails = studentParentRows.map(spRow => {
       const student = allStudentsData.find(s => s.id === spRow.student_id);

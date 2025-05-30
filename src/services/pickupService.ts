@@ -8,7 +8,6 @@ import { getClassById } from './classService';
 // Create a new pickup request
 export const createPickupRequest = async (studentId: string, parentId: string): Promise<PickupRequest> => {
   try {
-    // Ensure we're sending proper UUID format IDs to Supabase
     console.log(`Creating pickup request for student: ${studentId}, parent: ${parentId}`);
     
     const { data, error } = await supabase
@@ -16,7 +15,7 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
       .insert({
         student_id: studentId,
         parent_id: parentId,
-        status: 'called' // Changed from 'pending' to 'called' to skip approval
+        status: 'called'
       })
       .select()
       .single();
@@ -35,10 +34,7 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
     };
   } catch (error) {
     console.error('Error in createPickupRequest:', error);
-    
-    // Fallback to mock data
-    const { createPickupRequest: createMockPickupRequest } = await import('./mockData');
-    return createMockPickupRequest(studentId, parentId);
+    throw error;
   }
 };
 
@@ -54,10 +50,7 @@ export const updatePickupRequestStatus = async (id: string, status: PickupReques
     
     if (error) {
       console.error('Error updating pickup request status:', error);
-      
-      // Fallback to mock data
-      const { updatePickupRequestStatus: updateMockStatus } = await import('./mockData');
-      return updateMockStatus(id, status);
+      throw new Error(error.message);
     }
     
     return {
@@ -69,10 +62,7 @@ export const updatePickupRequestStatus = async (id: string, status: PickupReques
     };
   } catch (error) {
     console.error('Error in updatePickupRequestStatus:', error);
-    
-    // Fallback to mock data
-    const { updatePickupRequestStatus: updateMockStatus } = await import('./mockData');
-    return updateMockStatus(id, status);
+    throw error;
   }
 };
 
@@ -86,10 +76,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     if (error) {
       console.error('Error fetching active pickup requests:', error);
-      
-      // Fallback to mock data
-      const { getActivePickupRequests: getMockActiveRequests } = await import('./mockData');
-      return getMockActiveRequests();
+      throw new Error(error.message);
     }
     
     return data.map(item => ({
@@ -101,10 +88,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     }));
   } catch (error) {
     console.error('Error in getActivePickupRequests:', error);
-    
-    // Fallback to mock data
-    const { getActivePickupRequests: getMockActiveRequests } = await import('./mockData');
-    return getMockActiveRequests();
+    throw error;
   }
 };
 
@@ -119,10 +103,7 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
     
     if (error) {
       console.error('Error fetching active pickup requests for parent:', error);
-      
-      // Fallback to mock data (filtered for parent)
-      const { getActivePickupRequests: getMockActiveRequests } = await import('./mockData');
-      return getMockActiveRequests().filter(req => req.parentId === parentId);
+      throw new Error(error.message);
     }
     
     return data.map(item => ({
@@ -134,10 +115,7 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
     }));
   } catch (error) {
     console.error('Error in getActivePickupRequestsForParent:', error);
-    
-    // Fallback to mock data (filtered for parent)
-    const { getActivePickupRequests: getMockActiveRequests } = await import('./mockData');
-    return getMockActiveRequests().filter(req => req.parentId === parentId);
+    throw error;
   }
 };
 
@@ -154,10 +132,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     
     if (error) {
       console.error('Error fetching called pickup requests:', error);
-      
-      // Fallback to mock data
-      const { getCurrentlyCalled: getMockCurrentlyCalled } = await import('./mockData');
-      return getMockCurrentlyCalled();
+      throw new Error(error.message);
     }
     
     // Get student and class details for each request
@@ -202,10 +177,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     return requestsWithDetails;
   } catch (error) {
     console.error('Error in getCurrentlyCalled:', error);
-    
-    // Fallback to mock data
-    const { getCurrentlyCalled: getMockCurrentlyCalled } = await import('./mockData');
-    return getMockCurrentlyCalled();
+    throw error;
   }
 };
 

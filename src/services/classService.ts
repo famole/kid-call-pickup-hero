@@ -1,6 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Class } from '@/types';
-import { isValidUUID } from '@/utils/validators';
 
 // Fetch all classes
 export const getAllClasses = async (): Promise<Class[]> => {
@@ -18,9 +18,7 @@ export const getAllClasses = async (): Promise<Class[]> => {
     return data as Class[];
   } catch (error) {
     console.error('Error in getAllClasses:', error);
-    // Fallback to mock data if there's an error
-    const { classes } = await import('./mockData');
-    return classes;
+    throw error;
   }
 };
 
@@ -35,19 +33,13 @@ export const getClassById = async (id: string): Promise<Class | null> => {
     
     if (error) {
       console.error('Error fetching class:', error);
-      
-      // Fallback to mock data
-      const { classes } = await import('./mockData');
-      return classes.find(cls => cls.id === id) || null;
+      return null;
     }
     
     return data as Class;
   } catch (error) {
     console.error('Error in getClassById:', error);
-    
-    // Fallback to mock data
-    const { getClassById: getMockClassById } = await import('./mockData');
-    return getMockClassById(id);
+    return null;
   }
 };
 
@@ -155,11 +147,6 @@ export const getClassesById = async (): Promise<Record<string, Class>> => {
     }, {} as Record<string, Class>);
   } catch (error) {
     console.error('Error in getClassesById:', error);
-    // Fallback to mock data
-    const { classes } = await import('./mockData');
-    return classes.reduce((acc, cls) => {
-      acc[cls.id] = cls;
-      return acc;
-    }, {} as Record<string, Class>);
+    throw error;
   }
 };
