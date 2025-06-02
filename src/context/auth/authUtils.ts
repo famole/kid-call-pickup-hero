@@ -66,7 +66,7 @@ export const createParentFromOAuthUser = async (authUser: any): Promise<any> => 
       name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
       email: authUser.email,
       phone: authUser.user_metadata?.phone || undefined,
-      role: 'parent'
+      role: 'parent' as const // Fix TypeScript error by explicitly typing as const
     };
 
     const { data, error } = await supabase
