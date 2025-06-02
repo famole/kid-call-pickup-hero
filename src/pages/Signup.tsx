@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { createParent } from '@/services/parentService';
+import { Separator } from '@/components/ui/separator';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -18,6 +19,7 @@ const Signup = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -42,6 +44,12 @@ const Signup = () => {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            name: name,
+            phone: phone
+          }
+        }
       });
 
       if (authError) throw authError;
@@ -74,6 +82,37 @@ const Signup = () => {
     }
   };
 
+  const handleGoogleSignup = async () => {
+    setIsGoogleLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // The redirect will happen automatically
+      toast({
+        title: 'Redirecting to Google...',
+        description: 'You will be redirected to complete the signup process.',
+      });
+    } catch (error: any) {
+      console.error('Google signup error:', error);
+      toast({
+        title: 'Google Signup Error',
+        description: error.message || 'Failed to signup with Google. Please try again.',
+        variant: 'destructive',
+      });
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
       <Card className="w-[400px] shadow-lg">
@@ -86,8 +125,46 @@ const Signup = () => {
             Sign up to access the School Pickup system
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+        
+        <CardContent className="space-y-4">
+          {/* Google Signup Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleSignup}
+            disabled={isGoogleLoading}
+          >
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="currentColor"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            {isGoogleLoading ? 'Signing up with Google...' : 'Continue with Google'}
+          </Button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+          
+          {/* Email/Password Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input
@@ -143,8 +220,6 @@ const Signup = () => {
                 minLength={6}
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
             <Button
               type="submit"
               className="w-full bg-school-primary hover:bg-school-primary/90"
@@ -152,17 +227,20 @@ const Signup = () => {
             >
               {isLoading ? 'Creating account...' : 'Sign Up'}
             </Button>
-            <div className="text-sm text-center">
-              Already have an account?{" "}
-              <span 
-                className="text-school-primary hover:underline cursor-pointer"
-                onClick={() => navigate('/login')}
-              >
-                Sign in
-              </span>
-            </div>
-          </CardFooter>
-        </form>
+          </form>
+        </CardContent>
+        
+        <CardFooter className="flex flex-col gap-4">
+          <div className="text-sm text-center">
+            Already have an account?{" "}
+            <span 
+              className="text-school-primary hover:underline cursor-pointer"
+              onClick={() => navigate('/login')}
+            >
+              Sign in
+            </span>
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );

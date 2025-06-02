@@ -7,7 +7,8 @@ import {
   cleanupAuthState, 
   getParentData, 
   createUserFromParentData, 
-  createUserFromAuthData
+  createUserFromAuthData,
+  createParentFromOAuthUser
 } from './authUtils';
 
 export const useAuthProvider = (): AuthState & {
@@ -29,15 +30,7 @@ export const useAuthProvider = (): AuthState & {
           try {
             // Defer data fetching to prevent deadlocks
             setTimeout(async () => {
-              // Get user data from our database
-              const parentData = await getParentData(session.user.email);
-                
-              if (parentData) {
-                setUser(createUserFromParentData(parentData));
-              } else {
-                // Fall back to auth user data
-                setUser(createUserFromAuthData(session.user));
-              }
+              await handleUserSession(session.user);
             }, 0);
           } catch (error) {
             console.error("Error in auth state change:", error);
@@ -53,16 +46,7 @@ export const useAuthProvider = (): AuthState & {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Get user data from our database based on the auth user
-          const parentData = await getParentData(session.user.email);
-            
-          if (parentData) {
-            // If we found parent data, use it to create our app user
-            setUser(createUserFromParentData(parentData));
-          } else {
-            // Fall back to auth user data if no parent record exists yet
-            setUser(createUserFromAuthData(session.user));
-          }
+          await handleUserSession(session.user);
         }
       } catch (error) {
         console.error("Error loading user:", error);
@@ -77,6 +61,30 @@ export const useAuthProvider = (): AuthState & {
       subscription.unsubscribe();
     };
   }, []);
+
+  const handleUserSession = async (authUser: any) => {
+    try {
+      // Get user data from our database based on the auth user
+      let parentData = await getParentData(authUser.email);
+      
+      // If no parent data exists and this is an OAuth user, create one
+      if (!parentData && authUser.app_metadata?.provider && authUser.app_metadata.provider !== 'email') {
+        parentData = await createParentFromOAuthUser(authUser);
+      }
+        
+      if (parentData) {
+        // If we found or created parent data, use it to create our app user
+        setUser(createUserFromParentData(parentData));
+      } else {
+        // Fall back to auth user data if no parent record exists yet
+        setUser(createUserFromAuthData(authUser));
+      }
+    } catch (error) {
+      console.error("Error handling user session:", error);
+      // Fall back to auth user data on error
+      setUser(createUserFromAuthData(authUser));
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -103,17 +111,9 @@ export const useAuthProvider = (): AuthState & {
         throw error;
       }
       
-      // Get user data from our database
+      // Handle user session
       if (data.user) {
-        const parentData = await getParentData(data.user.email);
-          
-        if (parentData) {
-          const appUser = createUserFromParentData(parentData);
-          setUser(appUser);
-        } else {
-          // Fall back to auth user data
-          setUser(createUserFromAuthData(data.user));
-        }
+        await handleUserSession(data.user);
       }
       
       return Promise.resolve();

@@ -54,7 +54,34 @@ export const createUserFromAuthData = (authUser: any): User => {
   return {
     id: authUser.id,
     email: authUser.email || '',
-    name: authUser.email?.split('@')[0] || 'User',
+    name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
     role: 'parent', // Default role
   };
+};
+
+// Create parent record from Google OAuth user
+export const createParentFromOAuthUser = async (authUser: any): Promise<any> => {
+  try {
+    const parentData = {
+      name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+      email: authUser.email,
+      phone: authUser.user_metadata?.phone || undefined,
+      role: 'parent'
+    };
+
+    const { data, error } = await supabase
+      .from('parents')
+      .insert(parentData)
+      .select()
+      .single();
+
+    if (error && error.code !== '23505') { // 23505 is unique violation error
+      throw error;
+    }
+
+    return data || parentData;
+  } catch (error) {
+    console.error("Error creating parent from OAuth user:", error);
+    return null;
+  }
 };
