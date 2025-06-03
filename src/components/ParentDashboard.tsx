@@ -1,7 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createPickupRequest, getActivePickupRequestsForParent } from '@/services/pickupService';
 import { getStudentsForParent } from '@/services/studentService';
+import { checkPickupAuthorization } from '@/services/pickupAuthorizationService';
+import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -12,9 +15,13 @@ import ParentDashboardHeader from './parent-dashboard/ParentDashboardHeader';
 import ChildrenSelectionCard from './parent-dashboard/ChildrenSelectionCard';
 import PickupStatusSidebar from './parent-dashboard/PickupStatusSidebar';
 
+interface ChildWithType extends Child {
+  isAuthorized?: boolean;
+}
+
 const ParentDashboard = () => {
   const { user } = useAuth();
-  const [children, setChildren] = useState<Child[]>([]);
+  const [children, setChildren] = useState<ChildWithType[]>([]);
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,7 +35,49 @@ const ParentDashboard = () => {
           setLoading(true);
           // Get children for this parent from the database
           const parentChildren = await getStudentsForParent(user.id);
-          setChildren(parentChildren);
+          
+          // Get all students from the database to check for authorized children
+          const { data: allStudents, error } = await supabase
+            .from('students')
+            .select('*');
+          
+          if (error) {
+            console.error('Error fetching all students:', error);
+          }
+          
+          const authorizedChildren: ChildWithType[] = [];
+          
+          if (allStudents) {
+            // Check each student to see if this parent is authorized to pick them up
+            for (const student of allStudents) {
+              // Skip if this is already the parent's own child
+              if (parentChildren.some(child => child.id === student.id)) {
+                continue;
+              }
+              
+              const isAuthorized = await checkPickupAuthorization(user.id, student.id);
+              if (isAuthorized) {
+                authorizedChildren.push({
+                  id: student.id,
+                  name: student.name,
+                  classId: student.class_id || '',
+                  parentIds: [], // This will be empty for authorized children
+                  avatar: student.avatar,
+                  isAuthorized: true
+                });
+              }
+            }
+          }
+          
+          // Mark parent's own children
+          const ownChildren: ChildWithType[] = parentChildren.map(child => ({
+            ...child,
+            isAuthorized: false
+          }));
+          
+          // Combine own children and authorized children
+          const allChildren = [...ownChildren, ...authorizedChildren];
+          setChildren(allChildren);
 
           // Check for active pickup requests
           const active = await getActivePickupRequestsForParent(user.id);

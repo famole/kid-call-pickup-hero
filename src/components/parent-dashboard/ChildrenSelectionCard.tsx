@@ -3,11 +3,15 @@ import React from 'react';
 import { Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserRound } from 'lucide-react';
+import { UserRound, Users, Heart } from 'lucide-react';
 import ChildCard from '@/components/ChildCard';
 
+interface ChildWithType extends Child {
+  isAuthorized?: boolean;
+}
+
 interface ChildrenSelectionCardProps {
-  children: Child[];
+  children: ChildWithType[];
   selectedChildren: string[];
   childrenWithActiveRequests: string[];
   isSubmitting: boolean;
@@ -23,6 +27,10 @@ const ChildrenSelectionCard: React.FC<ChildrenSelectionCardProps> = ({
   onToggleChildSelection,
   onRequestPickup
 }) => {
+  // Separate own children from authorized children
+  const ownChildren = children.filter(child => !child.isAuthorized);
+  const authorizedChildren = children.filter(child => child.isAuthorized);
+
   return (
     <Card className="h-fit">
       <CardHeader className="pb-4">
@@ -48,21 +56,55 @@ const ChildrenSelectionCard: React.FC<ChildrenSelectionCardProps> = ({
               </div>
             )}
             
-            {/* Children grid - responsive */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {children.map((child) => {
-                const hasActiveRequest = childrenWithActiveRequests.includes(child.id);
-                return (
-                  <ChildCard
-                    key={child.id}
-                    child={child}
-                    isSelected={selectedChildren.includes(child.id)}
-                    isDisabled={hasActiveRequest}
-                    onClick={() => !hasActiveRequest && onToggleChildSelection(child.id)}
-                  />
-                );
-              })}
-            </div>
+            {/* Own Children Section */}
+            {ownChildren.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 border-b pb-2">
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  Your Children
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {ownChildren.map((child) => {
+                    const hasActiveRequest = childrenWithActiveRequests.includes(child.id);
+                    return (
+                      <ChildCard
+                        key={child.id}
+                        child={child}
+                        isSelected={selectedChildren.includes(child.id)}
+                        isDisabled={hasActiveRequest}
+                        isAuthorized={false}
+                        onClick={() => !hasActiveRequest && onToggleChildSelection(child.id)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Authorized Children Section */}
+            {authorizedChildren.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 border-b pb-2">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  Authorized to Pick Up
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {authorizedChildren.map((child) => {
+                    const hasActiveRequest = childrenWithActiveRequests.includes(child.id);
+                    return (
+                      <ChildCard
+                        key={child.id}
+                        child={child}
+                        isSelected={selectedChildren.includes(child.id)}
+                        isDisabled={hasActiveRequest}
+                        isAuthorized={true}
+                        onClick={() => !hasActiveRequest && onToggleChildSelection(child.id)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </>
         )}
         
