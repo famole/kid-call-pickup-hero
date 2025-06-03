@@ -11,6 +11,13 @@ import {
   SheetDescription, 
   SheetFooter 
 } from "@/components/ui/sheet";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ParentWithStudents, ParentInput } from '@/types/parent';
 
 interface EditParentSheetProps {
@@ -31,15 +38,17 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
   const nameId = React.useId();
   const emailId = React.useId();
   const phoneId = React.useId();
+  const roleId = React.useId();
+  
   if (!selectedParent) return null;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Edit Parent</SheetTitle>
+          <SheetTitle>Edit User</SheetTitle>
           <SheetDescription>
-            Update parent information.
+            Update user information and role.
           </SheetDescription>
         </SheetHeader>
         <form onSubmit={onSubmit} className="space-y-4 py-4">
@@ -47,7 +56,7 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
             <Label htmlFor={nameId}>Name</Label>
             <Input
               id={nameId}
-              placeholder="Enter parent name" 
+              placeholder="Enter full name" 
               value={selectedParent.name}
               onChange={(e) => onSelectedParentChange({...selectedParent, name: e.target.value})}
               required
@@ -73,9 +82,29 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
               onChange={(e) => onSelectedParentChange({...selectedParent, phone: e.target.value})}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor={roleId}>Role</Label>
+            <Select
+              value={selectedParent.role || 'parent'}
+              onValueChange={(value: 'parent' | 'teacher' | 'admin') => 
+                onSelectedParentChange({...selectedParent, role: value})
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="parent">Parent</SelectItem>
+                <SelectItem value="teacher">Teacher</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <SheetFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">Update Parent</Button>
+            <Button type="submit">
+              Update {selectedParent.role === 'teacher' ? 'Teacher' : selectedParent.role === 'admin' ? 'Admin' : 'Parent'}
+            </Button>
           </SheetFooter>
         </form>
       </SheetContent>

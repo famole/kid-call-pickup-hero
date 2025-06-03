@@ -135,6 +135,7 @@ export const updateParent = async (id: string, parentData: ParentInput): Promise
       name: parentData.name,
       email: parentData.email,
       phone: parentData.phone || null,
+      role: parentData.role || 'parent',
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

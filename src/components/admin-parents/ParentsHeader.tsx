@@ -25,10 +25,10 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
     <div className="flex flex-row items-center justify-between">
       <div>
         <h3 className="text-2xl font-semibold leading-none tracking-tight">
-          Parents Management
+          Users Management
         </h3>
         <p className="text-sm text-muted-foreground">
-          Manage parents and their associated students
+          Manage parents, teachers, and admin users
         </p>
       </div>
       <div className="flex space-x-2">
@@ -39,7 +39,7 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
           onSubmit={onImportSubmit}
         />
         <Button onClick={onAddParent}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Parent
+          <PlusCircle className="mr-2 h-4 w-4" /> Add User
         </Button>
       </div>
     </div>

@@ -11,10 +11,15 @@ interface UseAddParentFormProps {
 export const useAddParentForm = ({ onParentAdded }: UseAddParentFormProps) => {
   const { toast } = useToast();
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
-  const [newParent, setNewParent] = useState<ParentInput>({ name: '', email: '', phone: '' });
+  const [newParent, setNewParent] = useState<ParentInput>({ 
+    name: '', 
+    email: '', 
+    phone: '',
+    role: 'parent'
+  });
 
   const openAddParentSheet = () => {
-    setNewParent({ name: '', email: '', phone: '' }); // Reset form
+    setNewParent({ name: '', email: '', phone: '', role: 'parent' }); // Reset form with default role
     setIsAddSheetOpen(true);
   };
 
@@ -45,13 +50,13 @@ export const useAddParentForm = ({ onParentAdded }: UseAddParentFormProps) => {
       onParentAdded(createdParentWithStudents);
       toast({
         title: "Success",
-        description: `Parent ${createdParent.name} has been created`,
+        description: `${createdParent.role === 'teacher' ? 'Teacher' : createdParent.role === 'admin' ? 'Admin' : 'Parent'} ${createdParent.name} has been created`,
       });
       closeAddParentSheet();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create parent",
+        description: `Failed to create ${newParent.role || 'parent'}`,
         variant: "destructive",
       });
     }
