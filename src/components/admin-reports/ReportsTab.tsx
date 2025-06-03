@@ -6,14 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Download, Calendar, BarChart3 } from 'lucide-react';
-import { getStudents } from '@/services/student';
+import { getAllStudents } from '@/services/student';
 import { getPickupHistoryByStudent, getPickupStatsByStudent, getAllPickupHistory } from '@/services/pickupHistoryService';
 import PickupHistoryTable from './PickupHistoryTable';
-import { Student } from '@/types';
+import { Child } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const ReportsTab = () => {
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<Child[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -25,7 +25,7 @@ const ReportsTab = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const studentsData = await getStudents();
+        const studentsData = await getAllStudents();
         setStudents(studentsData);
       } catch (error) {
         console.error('Error fetching students:', error);
