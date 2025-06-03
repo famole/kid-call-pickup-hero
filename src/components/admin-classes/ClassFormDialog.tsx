@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Class } from '@/types';
+import { ParentWithStudents } from '@/types/parent';
+import { getParentsWithStudents } from '@/services/parentService';
 
 interface ClassFormDialogProps {
   isOpen: boolean;
@@ -30,8 +39,37 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
   onSave,
   onClassDataChange
 }) => {
+  const [teachers, setTeachers] = useState<ParentWithStudents[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadTeachers = async () => {
+      if (isOpen) {
+        setLoading(true);
+        try {
+          const allParents = await getParentsWithStudents();
+          const teachersList = allParents.filter(parent => parent.role === 'teacher');
+          setTeachers(teachersList);
+        } catch (error) {
+          console.error('Failed to load teachers:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadTeachers();
+  }, [isOpen]);
+
   const handleInputChange = (field: keyof Class, value: string) => {
     onClassDataChange({ ...classData, [field]: value });
+  };
+
+  const handleTeacherChange = (teacherId: string) => {
+    const selectedTeacher = teachers.find(teacher => teacher.id === teacherId);
+    if (selectedTeacher) {
+      handleInputChange('teacher', selectedTeacher.name);
+    }
   };
 
   return (
@@ -64,12 +102,27 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="teacher">Teacher</Label>
-            <Input 
-              id="teacher" 
-              value={classData.teacher || ''}
-              onChange={e => handleInputChange('teacher', e.target.value)}
-              placeholder="e.g. Ms. Smith"
-            />
+            <Select 
+              value={teachers.find(t => t.name === classData.teacher)?.id || ''} 
+              onValueChange={handleTeacherChange}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={loading ? "Loading teachers..." : "Select a teacher"} />
+              </SelectTrigger>
+              <SelectContent>
+                {teachers.map((teacher) => (
+                  <SelectItem key={teacher.id} value={teacher.id}>
+                    {teacher.name}
+                  </SelectItem>
+                ))}
+                {teachers.length === 0 && !loading && (
+                  <SelectItem value="" disabled>
+                    No teachers available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

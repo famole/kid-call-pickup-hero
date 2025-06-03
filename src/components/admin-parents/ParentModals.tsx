@@ -1,34 +1,30 @@
 
 import React from 'react';
-import { ParentWithStudents } from '@/types/parent';
+import { ParentInput, ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import AddParentSheet from './AddParentSheet';
 import EditParentSheet from './EditParentSheet';
 import StudentManagementModal from './StudentManagementModal';
 
 interface ParentModalsProps {
-  // Add Parent Sheet
   isAddSheetOpen: boolean;
-  newParent: any;
-  onNewParentChange: (parent: any) => void;
+  newParent: ParentInput;
+  onNewParentChange: (parent: ParentInput) => void;
   onAddParentSubmit: (e: React.FormEvent) => Promise<void>;
   onAddSheetOpenChange: (open: boolean) => void;
-
-  // Edit Parent Sheet
   isEditSheetOpen: boolean;
   editingParent: ParentWithStudents | null;
   onEditingParentChange: (parent: ParentWithStudents) => void;
   onEditParentSubmit: (e: React.FormEvent) => Promise<void>;
   onEditSheetOpenChange: (open: boolean) => void;
-
-  // Student Management Modal
   isStudentModalOpen: boolean;
   selectedParent: ParentWithStudents | null;
   allStudents: Child[];
-  onStudentModalOpenChange: () => void;
-  onAddStudent: (parentId: string, studentId: string, relationship: string, isPrimary: boolean) => Promise<void>;
-  onRemoveStudent: (studentRelationshipId: string, parentId: string, studentId: string) => void;
-  onTogglePrimary: (studentRelationshipId: string, parentId: string, currentIsPrimary: boolean, currentRelationship?: string) => void;
+  onStudentModalOpenChange: (open: boolean) => void;
+  onAddStudent: (studentId: string, relationship: string) => Promise<void>;
+  onRemoveStudent: (studentId: string) => Promise<void>;
+  onTogglePrimary: (studentId: string) => Promise<void>;
+  userRole?: 'parent' | 'teacher' | 'admin';
 }
 
 const ParentModals: React.FC<ParentModalsProps> = ({
@@ -49,36 +45,39 @@ const ParentModals: React.FC<ParentModalsProps> = ({
   onAddStudent,
   onRemoveStudent,
   onTogglePrimary,
+  userRole = 'parent',
 }) => {
   return (
     <>
       <AddParentSheet
         isOpen={isAddSheetOpen}
-        onOpenChange={onAddSheetOpenChange}
-        newParent={newParent}
-        onNewParentChange={onNewParentChange}
+        parent={newParent}
+        onParentChange={onNewParentChange}
         onSubmit={onAddParentSubmit}
+        onOpenChange={onAddSheetOpenChange}
+        userRole={userRole}
       />
 
-      {editingParent && (
-        <EditParentSheet
-          isOpen={isEditSheetOpen}
-          onOpenChange={onEditSheetOpenChange}
-          selectedParent={editingParent}
-          onSelectedParentChange={onEditingParentChange}
-          onSubmit={onEditParentSubmit}
+      <EditParentSheet
+        isOpen={isEditSheetOpen}
+        parent={editingParent}
+        onParentChange={onEditingParentChange}
+        onSubmit={onEditParentSubmit}
+        onOpenChange={onEditSheetOpenChange}
+        userRole={userRole}
+      />
+
+      {userRole === 'parent' && (
+        <StudentManagementModal
+          isOpen={isStudentModalOpen}
+          parent={selectedParent}
+          allStudents={allStudents}
+          onOpenChange={onStudentModalOpenChange}
+          onAddStudent={onAddStudent}
+          onRemoveStudent={onRemoveStudent}
+          onTogglePrimary={onTogglePrimary}
         />
       )}
-      
-      <StudentManagementModal
-        isOpen={isStudentModalOpen}
-        onOpenChange={onStudentModalOpenChange}
-        parent={selectedParent}
-        allStudents={allStudents}
-        onAddStudent={onAddStudent}
-        onRemoveStudent={onRemoveStudent}
-        onTogglePrimary={onTogglePrimary}
-      />
     </>
   );
 };
