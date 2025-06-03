@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, Settings, Users, ClipboardList } from 'lucide-react';
+import { User, LogOut, Settings, Users, ClipboardList, Shield } from 'lucide-react';
 import Logo from './Logo';
 
 const Navigation = () => {
@@ -27,6 +27,7 @@ const Navigation = () => {
 
   const isAdmin = user?.role === 'admin';
   const isTeacherOrAdmin = user?.role === 'admin' || user?.role === 'teacher';
+  const isParent = user?.role === 'parent';
 
   return (
     <nav className="bg-white shadow-sm border-b">
@@ -48,6 +49,17 @@ const Navigation = () => {
                   >
                     <ClipboardList className="h-4 w-4 mr-2" />
                     Pickup Management
+                  </Button>
+                )}
+
+                {isParent && (
+                  <Button 
+                    variant="ghost" 
+                    className="text-gray-600 hover:text-gray-800"
+                    onClick={() => navigate('/pickup-authorizations')}
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Authorizations
                   </Button>
                 )}
                 
