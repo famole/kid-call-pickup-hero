@@ -68,7 +68,7 @@ export const useStudentManagement = ({
         students: [...(parent.students || []), newStudentEntry],
       };
 
-      setParents(prev => prev.map(p => p.id === parentId ? updatedParent : p));
+      setParents(parents.map(p => p.id === parentId ? updatedParent : p));
       setSelectedParent(updatedParent);
       
       toast({
@@ -99,7 +99,7 @@ export const useStudentManagement = ({
         students: parent.students.filter(s => s.parentRelationshipId !== studentRelationshipId),
       };
       
-      setParents(prev => prev.map(p => p.id === parentId ? updatedParent : p));
+      setParents(parents.map(p => p.id === parentId ? updatedParent : p));
       setSelectedParent(updatedParent);
       
       toast({
@@ -140,7 +140,7 @@ export const useStudentManagement = ({
         students: updatedStudents,
       };
       
-      setParents(prev => prev.map(p => p.id === parentId ? updatedParent : p));
+      setParents(parents.map(p => p.id === parentId ? updatedParent : p));
       setSelectedParent(updatedParent);
       
       toast({

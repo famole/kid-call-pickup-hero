@@ -3,21 +3,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { PlusCircle } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import {
@@ -26,14 +14,13 @@ import {
 } from '@/services/parentService';
 import { getAllStudents } from '@/services/studentService';
 
-// Import components and hooks
-import AddParentSheet from '@/components/admin-parents/AddParentSheet';
-import EditParentSheet from '@/components/admin-parents/EditParentSheet';
-import ImportParentsDialog from '@/components/admin-parents/ImportParentsDialog';
-import StudentManagementModal from '@/components/admin-parents/StudentManagementModal';
-import ParentTableRow from '@/components/admin-parents/ParentTableRow';
+// Import components
+import ParentsHeader from '@/components/admin-parents/ParentsHeader';
 import ParentSearch from '@/components/admin-parents/ParentSearch';
+import ParentsTable from '@/components/admin-parents/ParentsTable';
+import ParentModals from '@/components/admin-parents/ParentModals';
 
+// Import hooks
 import { useAddParentForm } from '@/hooks/useAddParentForm';
 import { useEditParentForm } from '@/hooks/useEditParentForm';
 import { useImportParents } from '@/hooks/useImportParents';
@@ -132,22 +119,15 @@ const AdminParentsScreen = () => {
   return (
     <div className="container mx-auto">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Parents Management</CardTitle>
-            <CardDescription>Manage parents and their associated students</CardDescription>
-          </div>
-          <div className="flex space-x-2">
-            <ImportParentsDialog
-              isOpen={importParentsHook.isImportDialogOpen}
-              onOpenChange={openState => openState ? importParentsHook.openImportDialog() : importParentsHook.closeImportDialog()}
-              onFileChange={importParentsHook.handleImportFileChange}
-              onSubmit={importParentsHook.handleImportSubmit}
-            />
-            <Button onClick={addParentForm.openAddParentSheet}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Parent
-            </Button>
-          </div>
+        <CardHeader>
+          <ParentsHeader
+            onAddParent={addParentForm.openAddParentSheet}
+            isImportDialogOpen={importParentsHook.isImportDialogOpen}
+            onOpenImportDialog={importParentsHook.openImportDialog}
+            onCloseImportDialog={importParentsHook.closeImportDialog}
+            onImportFileChange={importParentsHook.handleImportFileChange}
+            onImportSubmit={importParentsHook.handleImportSubmit}
+          />
         </CardHeader>
 
         <CardContent>
@@ -156,66 +136,32 @@ const AdminParentsScreen = () => {
             onSearchChange={setSearchTerm}
           />
           
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Students</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">Loading parents...</TableCell>
-                </TableRow>
-              ) : filteredParents.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">
-                    {searchTerm ? `No parents found matching "${searchTerm}".` : "No parents found. Add one to get started."}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredParents.map((parent) => (
-                  <ParentTableRow
-                    key={parent.id}
-                    parent={parent}
-                    onEdit={() => editParentForm.openEditParentSheet(parent)}
-                    onDelete={handleDeleteParent}
-                    onManageStudents={() => studentManagement.openStudentModal(parent)}
-                  />
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <ParentsTable
+            parents={filteredParents}
+            isLoading={isLoading}
+            searchTerm={searchTerm}
+            onEditParent={editParentForm.openEditParentSheet}
+            onDeleteParent={handleDeleteParent}
+            onManageStudents={studentManagement.openStudentModal}
+          />
         </CardContent>
       </Card>
 
-      <AddParentSheet
-        isOpen={addParentForm.isAddSheetOpen}
-        onOpenChange={openState => openState ? addParentForm.openAddParentSheet() : addParentForm.closeAddParentSheet()}
+      <ParentModals
+        isAddSheetOpen={addParentForm.isAddSheetOpen}
         newParent={addParentForm.newParent}
         onNewParentChange={addParentForm.handleNewParentChange}
-        onSubmit={addParentForm.handleAddParentSubmit}
-      />
-
-      {editParentForm.editingParent && (
-        <EditParentSheet
-          isOpen={editParentForm.isEditSheetOpen}
-          onOpenChange={openState => openState ? editParentForm.openEditParentSheet(editParentForm.editingParent!) : editParentForm.closeEditParentSheet()}
-          selectedParent={editParentForm.editingParent}
-          onSelectedParentChange={editParentForm.handleEditingParentChange}
-          onSubmit={editParentForm.handleEditParentSubmit}
-        />
-      )}
-      
-      <StudentManagementModal
-        isOpen={studentManagement.isStudentModalOpen}
-        onOpenChange={studentManagement.closeStudentModal}
-        parent={studentManagement.selectedParent}
+        onAddParentSubmit={addParentForm.handleAddParentSubmit}
+        onAddSheetOpenChange={openState => openState ? addParentForm.openAddParentSheet() : addParentForm.closeAddParentSheet()}
+        isEditSheetOpen={editParentForm.isEditSheetOpen}
+        editingParent={editParentForm.editingParent}
+        onEditingParentChange={editParentForm.handleEditingParentChange}
+        onEditParentSubmit={editParentForm.handleEditParentSubmit}
+        onEditSheetOpenChange={openState => openState ? (editParentForm.editingParent && editParentForm.openEditParentSheet(editParentForm.editingParent)) : editParentForm.closeEditParentSheet()}
+        isStudentModalOpen={studentManagement.isStudentModalOpen}
+        selectedParent={studentManagement.selectedParent}
         allStudents={allStudents}
+        onStudentModalOpenChange={studentManagement.closeStudentModal}
         onAddStudent={studentManagement.handleAddStudentToParent}
         onRemoveStudent={studentManagement.handleRemoveStudent}
         onTogglePrimary={studentManagement.handleTogglePrimary}
