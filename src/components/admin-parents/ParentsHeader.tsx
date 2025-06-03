@@ -10,7 +10,7 @@ interface ParentsHeaderProps {
   onOpenImportDialog: () => void;
   onCloseImportDialog: () => void;
   onImportFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onImportSubmit: () => void;
+  onImportSubmit: () => Promise<void>;
 }
 
 const ParentsHeader: React.FC<ParentsHeaderProps> = ({
