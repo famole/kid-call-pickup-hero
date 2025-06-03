@@ -18,6 +18,13 @@ interface ChildWithType extends Child {
   isAuthorized?: boolean;
 }
 
+// Function to check if a string is a valid UUID
+const isValidUUID = (id: string): boolean => {
+  if (!id) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
 const ParentDashboard = () => {
   const { user } = useAuth();
   const [children, setChildren] = useState<ChildWithType[]>([]);
@@ -81,11 +88,13 @@ const ParentDashboard = () => {
           // Get active requests for this parent
           const parentActiveRequests = await getActivePickupRequestsForParent(user.id);
           
-          // Get called requests for children this parent is authorized to pick up
+          // Get ALL called requests and filter for children this parent is authorized to pick up
           const authorizedChildIds = authorizedChildren.map(child => child.id);
           const additionalCalledRequests: PickupRequest[] = [];
           
           if (authorizedChildIds.length > 0) {
+            console.log('Checking for called requests for authorized children:', authorizedChildIds);
+            
             const { data: calledRequests, error: calledError } = await supabase
               .from('pickup_requests')
               .select('*')
@@ -93,13 +102,19 @@ const ParentDashboard = () => {
               .eq('status', 'called');
             
             if (!calledError && calledRequests) {
-              additionalCalledRequests.push(...calledRequests.map(req => ({
-                id: req.id,
-                studentId: req.student_id,
-                parentId: req.parent_id,
-                requestTime: new Date(req.request_time),
-                status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
-              })));
+              // Filter out requests with invalid IDs and map to our format
+              const validCalledRequests = calledRequests
+                .filter(req => isValidUUID(req.student_id) && isValidUUID(req.parent_id))
+                .map(req => ({
+                  id: req.id,
+                  studentId: req.student_id,
+                  parentId: req.parent_id,
+                  requestTime: new Date(req.request_time),
+                  status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+                }));
+              
+              console.log('Found valid called requests for authorized children:', validCalledRequests);
+              additionalCalledRequests.push(...validCalledRequests);
             }
           }
           
@@ -111,6 +126,7 @@ const ParentDashboard = () => {
             }
           });
           
+          console.log('Final combined active requests:', combinedRequests);
           setActiveRequests(combinedRequests);
         } catch (error) {
           console.error('Error loading parent dashboard data:', error);
@@ -148,13 +164,18 @@ const ParentDashboard = () => {
               .eq('status', 'called');
             
             if (!calledError && calledRequests) {
-              additionalCalledRequests.push(...calledRequests.map(req => ({
-                id: req.id,
-                studentId: req.student_id,
-                parentId: req.parent_id,
-                requestTime: new Date(req.request_time),
-                status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
-              })));
+              // Filter out requests with invalid IDs and map to our format
+              const validCalledRequests = calledRequests
+                .filter(req => isValidUUID(req.student_id) && isValidUUID(req.parent_id))
+                .map(req => ({
+                  id: req.id,
+                  studentId: req.student_id,
+                  parentId: req.parent_id,
+                  requestTime: new Date(req.request_time),
+                  status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+                }));
+              
+              additionalCalledRequests.push(...validCalledRequests);
             }
           }
           
@@ -218,13 +239,18 @@ const ParentDashboard = () => {
           .eq('status', 'called');
         
         if (!calledError && calledRequests) {
-          additionalCalledRequests.push(...calledRequests.map(req => ({
-            id: req.id,
-            studentId: req.student_id,
-            parentId: req.parent_id,
-            requestTime: new Date(req.request_time),
-            status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
-          })));
+          // Filter out requests with invalid IDs and map to our format
+          const validCalledRequests = calledRequests
+            .filter(req => isValidUUID(req.student_id) && isValidUUID(req.parent_id))
+            .map(req => ({
+              id: req.id,
+              studentId: req.student_id,
+              parentId: req.parent_id,
+              requestTime: new Date(req.request_time),
+              status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+            }));
+          
+          additionalCalledRequests.push(...validCalledRequests);
         }
       }
       

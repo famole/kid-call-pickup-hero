@@ -2,6 +2,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequest } from '@/types';
 
+// Function to check if a string is a valid UUID
+const isValidUUID = (id: string): boolean => {
+  if (!id) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
 // Get all active pickup requests (both pending and called)
 export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
   try {
@@ -22,9 +29,20 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
       return [];
     }
     
-    console.log(`Found ${data.length} active pickup requests`);
+    console.log(`Found ${data.length} active pickup requests (before filtering)`);
     
-    return data.map(item => ({
+    // Filter out requests with invalid student IDs
+    const validRequests = data.filter(item => {
+      const isValid = isValidUUID(item.student_id) && isValidUUID(item.parent_id);
+      if (!isValid) {
+        console.warn(`Filtering out request ${item.id} with invalid IDs: student_id=${item.student_id}, parent_id=${item.parent_id}`);
+      }
+      return isValid;
+    });
+    
+    console.log(`Found ${validRequests.length} valid active pickup requests`);
+    
+    return validRequests.map(item => ({
       id: item.id,
       studentId: item.student_id,
       parentId: item.parent_id,
@@ -59,9 +77,18 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
       return [];
     }
     
-    console.log(`Found ${data.length} active pickup requests for parent: ${parentId}`);
+    // Filter out requests with invalid student IDs
+    const validRequests = data.filter(item => {
+      const isValid = isValidUUID(item.student_id);
+      if (!isValid) {
+        console.warn(`Filtering out request ${item.id} with invalid student_id: ${item.student_id}`);
+      }
+      return isValid;
+    });
     
-    return data.map(item => ({
+    console.log(`Found ${validRequests.length} valid active pickup requests for parent: ${parentId}`);
+    
+    return validRequests.map(item => ({
       id: item.id,
       studentId: item.student_id,
       parentId: item.parent_id,
