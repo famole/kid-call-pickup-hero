@@ -1,9 +1,8 @@
-
 export type User = {
   id: string;
   email: string;
   name: string;
-  role: 'parent' | 'admin';
+  role: 'parent' | 'admin' | 'teacher';
   avatar?: string;
 };
 

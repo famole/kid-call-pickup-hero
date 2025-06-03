@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from 'react';
-import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickupService';
+import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickup';
 import { getStudentById } from '@/services/studentService';
 import { getClassById } from '@/services/classService';
 import { PickupRequestWithDetails } from '@/types/supabase';
-import { PickupRequest } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
 
 export const usePickupManagement = (classId?: string) => {
