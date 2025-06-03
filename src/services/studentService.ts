@@ -1,9 +1,12 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Child } from '@/types';
 
+// Import functions from the refactored modules
+export { getAllStudents, getStudentById, getStudentsForParent } from './student/getStudents';
+export { createStudent, updateStudent, deleteStudent } from './student/modifyStudents';
+
 // Get a single student by ID with improved error handling
-export const getStudentById = async (id: string): Promise<Child | null> => {
+export const getStudentByIdLegacy = async (id: string): Promise<Child | null> => {
   try {
     console.log(`Fetching student with id: ${id}`);
     
@@ -58,7 +61,7 @@ export const getStudentById = async (id: string): Promise<Child | null> => {
 };
 
 // Get all students
-export const getAllStudents = async (): Promise<Child[]> => {
+export const getAllStudentsLegacy = async (): Promise<Child[]> => {
   try {
     console.log('Fetching all students...');
     
