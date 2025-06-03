@@ -1,206 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { School, Pencil, Trash, Plus } from "lucide-react";
-import { useToast } from '@/hooks/use-toast';
-import { Class } from '@/types';
-import { getAllClasses, createClass, updateClass, deleteClass } from '@/services/classService';
-import { getAllStudents } from '@/services/studentService';
+import { School, Plus } from "lucide-react";
+import ClassListTable from '@/components/admin-classes/ClassListTable';
+import ClassFormDialog from '@/components/admin-classes/ClassFormDialog';
+import DeleteClassDialog from '@/components/admin-classes/DeleteClassDialog';
+import { useClassManagement } from '@/hooks/useClassManagement';
 
 const AdminClassesScreen = () => {
-  const [classList, setClassList] = useState<Class[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [currentClass, setCurrentClass] = useState<Class | null>(null);
-  const [newClass, setNewClass] = useState<Partial<Class>>({
-    name: '',
-    grade: '',
-    teacher: ''
-  });
-  const [loading, setLoading] = useState(true);
-  
-  const { toast } = useToast();
 
-  // Load classes
-  useEffect(() => {
-    const loadClasses = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllClasses();
-        setClassList(data);
-      } catch (error) {
-        console.error('Error loading classes:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load classes",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadClasses();
-  }, [toast]);
+  const {
+    classList,
+    loading,
+    currentClass,
+    classFormData,
+    setClassFormData,
+    handleAddClass,
+    handleUpdateClass,
+    handleDeleteClass,
+    prepareEditClass,
+    prepareDeleteClass,
+    resetForm
+  } = useClassManagement();
 
-  const handleAddClass = async () => {
-    if (!newClass.name || !newClass.grade || !newClass.teacher) {
-      toast({
-        title: "Error",
-        description: "All fields are required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const classToAdd = {
-        name: newClass.name,
-        grade: newClass.grade,
-        teacher: newClass.teacher
-      };
-
-      // Add to database
-      const createdClass = await createClass(classToAdd);
-      
-      // Update the local list
-      setClassList([...classList, createdClass]);
-      
-      toast({
-        title: "Class Added",
-        description: `${createdClass.name} has been added successfully`,
-      });
-      
-      // Reset form and close dialog
-      setNewClass({ name: '', grade: '', teacher: '' });
+  const handleAddDialogSave = async () => {
+    const success = await handleAddClass();
+    if (success) {
       setIsAddDialogOpen(false);
-    } catch (error) {
-      console.error('Error adding class:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add class. Please try again.",
-        variant: "destructive"
-      });
     }
   };
 
-  const handleEditClass = (classItem: Class) => {
-    setCurrentClass(classItem);
-    setNewClass({
-      name: classItem.name,
-      grade: classItem.grade,
-      teacher: classItem.teacher
-    });
+  const handleEditDialogSave = async () => {
+    const success = await handleUpdateClass();
+    if (success) {
+      setIsEditDialogOpen(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    const success = await handleDeleteClass();
+    if (success) {
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
+  const handleEditClass = (classItem: any) => {
+    prepareEditClass(classItem);
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateClass = async () => {
-    if (!currentClass || !newClass.name || !newClass.grade || !newClass.teacher) {
-      toast({
-        title: "Error",
-        description: "All fields are required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const updatedClass = await updateClass(currentClass.id, {
-        name: newClass.name,
-        grade: newClass.grade,
-        teacher: newClass.teacher
-      });
-
-      // Update class in the list
-      setClassList(classList.map(c => c.id === currentClass.id ? updatedClass : c));
-      
-      toast({
-        title: "Class Updated",
-        description: `${updatedClass.name} has been updated successfully`,
-      });
-      
-      // Reset form and close dialog
-      setNewClass({ name: '', grade: '', teacher: '' });
-      setIsEditDialogOpen(false);
-    } catch (error) {
-      console.error('Error updating class:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update class. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleDeletePrompt = (classItem: Class) => {
-    setCurrentClass(classItem);
+  const handleDeletePrompt = (classItem: any) => {
+    prepareDeleteClass(classItem);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteClass = async () => {
-    if (!currentClass) return;
+  const handleCloseAddDialog = () => {
+    setIsAddDialogOpen(false);
+    resetForm();
+  };
 
-    try {
-      // Check if there are students in this class
-      const students = await getAllStudents();
-      const studentsInClass = students.filter(student => student.classId === currentClass.id);
-      
-      if (studentsInClass.length > 0) {
-        toast({
-          title: "Cannot Delete Class",
-          description: `There are ${studentsInClass.length} students assigned to this class. Please reassign them first.`,
-          variant: "destructive"
-        });
-        setIsDeleteDialogOpen(false);
-        return;
-      }
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    resetForm();
+  };
 
-      // Delete class from the database
-      await deleteClass(currentClass.id);
-      
-      // Update the local list
-      setClassList(classList.filter(c => c.id !== currentClass.id));
-      
-      toast({
-        title: "Class Deleted",
-        description: `${currentClass.name} has been deleted successfully`,
-      });
-      
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error('Error deleting class:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete class. Please try again.",
-        variant: "destructive"
-      });
-      setIsDeleteDialogOpen(false);
-    }
+  const handleCloseDeleteDialog = () => {
+    setIsDeleteDialogOpen(false);
+    resetForm();
   };
 
   return (
@@ -217,169 +86,37 @@ const AdminClassesScreen = () => {
         </div>
       </header>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Class List</CardTitle>
-          <CardDescription>
-            Manage all school classes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary"></div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Teacher</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {classList.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      No classes found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  classList.map((classItem) => (
-                    <TableRow key={classItem.id}>
-                      <TableCell>{classItem.name}</TableCell>
-                      <TableCell>{classItem.grade}</TableCell>
-                      <TableCell>{classItem.teacher}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleEditClass(classItem)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-500 border-red-200 hover:bg-red-50"
-                          onClick={() => handleDeletePrompt(classItem)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <ClassListTable
+        classList={classList}
+        loading={loading}
+        onEditClass={handleEditClass}
+        onDeletePrompt={handleDeletePrompt}
+      />
 
-      {/* Add Class Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Class</DialogTitle>
-            <DialogDescription>
-              Create a new class for your school
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="className">Class Name</Label>
-              <Input 
-                id="className" 
-                value={newClass.name} 
-                onChange={e => setNewClass({...newClass, name: e.target.value})}
-                placeholder="e.g. Class 1A"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="grade">Grade</Label>
-              <Input 
-                id="grade" 
-                value={newClass.grade}
-                onChange={e => setNewClass({...newClass, grade: e.target.value})}
-                placeholder="e.g. 1st Grade"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="teacher">Teacher</Label>
-              <Input 
-                id="teacher" 
-                value={newClass.teacher}
-                onChange={e => setNewClass({...newClass, teacher: e.target.value})}
-                placeholder="e.g. Ms. Smith"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddClass}>Save Class</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ClassFormDialog
+        isOpen={isAddDialogOpen}
+        isEditMode={false}
+        classData={classFormData}
+        onClose={handleCloseAddDialog}
+        onSave={handleAddDialogSave}
+        onClassDataChange={setClassFormData}
+      />
 
-      {/* Edit Class Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Class</DialogTitle>
-            <DialogDescription>
-              Update class information
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="editClassName">Class Name</Label>
-              <Input 
-                id="editClassName" 
-                value={newClass.name} 
-                onChange={e => setNewClass({...newClass, name: e.target.value})}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="editGrade">Grade</Label>
-              <Input 
-                id="editGrade" 
-                value={newClass.grade}
-                onChange={e => setNewClass({...newClass, grade: e.target.value})}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="editTeacher">Teacher</Label>
-              <Input 
-                id="editTeacher" 
-                value={newClass.teacher}
-                onChange={e => setNewClass({...newClass, teacher: e.target.value})}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateClass}>Update Class</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ClassFormDialog
+        isOpen={isEditDialogOpen}
+        isEditMode={true}
+        classData={classFormData}
+        onClose={handleCloseEditDialog}
+        onSave={handleEditDialogSave}
+        onClassDataChange={setClassFormData}
+      />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Class</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {currentClass?.name}? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteClass}>Delete</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteClassDialog
+        isOpen={isDeleteDialogOpen}
+        classToDelete={currentClass}
+        onClose={handleCloseDeleteDialog}
+        onConfirmDelete={handleDeleteConfirm}
+      />
     </div>
   );
 };
