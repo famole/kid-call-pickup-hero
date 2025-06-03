@@ -17,13 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { createPickupAuthorization } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
 import { getParentsWithStudents } from '@/services/parentService';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
+import ParentSelector from './ParentSelector';
 
 interface AddAuthorizationDialogProps {
   isOpen: boolean;
@@ -164,21 +165,12 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="parent">Authorized Parent</Label>
-            <Select
+            <ParentSelector
+              parents={allParents}
               value={formData.authorizedParentId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, authorizedParentId: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a parent" />
-              </SelectTrigger>
-              <SelectContent>
-                {allParents.map((parent) => (
-                  <SelectItem key={parent.id} value={parent.id}>
-                    {parent.name} ({parent.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Search and select a parent"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

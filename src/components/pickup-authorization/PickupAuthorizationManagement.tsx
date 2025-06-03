@@ -3,19 +3,31 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Users, Plus, Trash2, Edit } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Calendar, Users, Plus, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import {
   getPickupAuthorizationsForParent,
   deletePickupAuthorization,
   PickupAuthorizationWithDetails
 } from '@/services/pickupAuthorizationService';
 import AddAuthorizationDialog from './AddAuthorizationDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const PickupAuthorizationManagement: React.FC = () => {
   const [authorizations, setAuthorizations] = useState<PickupAuthorizationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,24 +52,23 @@ const PickupAuthorizationManagement: React.FC = () => {
   };
 
   const handleDeleteAuthorization = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this authorization?')) {
-      return;
-    }
-
     try {
+      setDeletingId(id);
       await deletePickupAuthorization(id);
       setAuthorizations(prev => prev.filter(auth => auth.id !== id));
       toast({
         title: "Success",
-        description: "Authorization deleted successfully.",
+        description: "Authorization removed successfully.",
       });
     } catch (error) {
       console.error('Error deleting authorization:', error);
       toast({
         title: "Error",
-        description: "Failed to delete authorization.",
+        description: "Failed to remove authorization.",
         variant: "destructive",
       });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -154,13 +165,36 @@ const PickupAuthorizationManagement: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDeleteAuthorization(auth.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={deletingId === auth.id}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove Authorization</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to remove this pickup authorization for{' '}
+                              <strong>{auth.student?.name}</strong>? This will prevent{' '}
+                              <strong>{auth.authorizedParent?.name}</strong> from picking up your child.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteAuthorization(auth.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remove Authorization
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </div>
