@@ -6,10 +6,9 @@ import { PickupRequestWithDetails } from '@/types/supabase';
 import { getAllClasses } from '@/services/classService';
 import { Class } from '@/types';
 
-export const useCalledStudents = () => {
+export const useCalledStudents = (selectedClass?: string) => {
   const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>('all');
   const [loading, setLoading] = useState<boolean>(true);
   
   // Fetch all classes for the filter
@@ -147,17 +146,9 @@ export const useCalledStudents = () => {
     return grouped;
   }, [calledChildren]);
 
-  // Handle class change with logging
-  const handleClassChange = (value: string) => {
-    console.log("Selected class changed to:", value);
-    setSelectedClass(value);
-  };
-
   return {
     classes,
-    selectedClass,
     childrenByClass,
-    handleClassChange,
     loading,
   };
 };

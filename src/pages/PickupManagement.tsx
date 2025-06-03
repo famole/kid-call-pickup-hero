@@ -21,7 +21,7 @@ const PickupManagement: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState<string>('all');
 
   // Hooks for managing pickup data
-  const { childrenByClass, loading: calledLoading } = useCalledStudents();
+  const { childrenByClass, loading: calledLoading } = useCalledStudents(selectedClass);
   const { pendingRequests, loading: pendingLoading, markAsCalled } = usePickupManagement(selectedClass);
 
   // Check if user has permission to access this page
@@ -58,6 +58,7 @@ const PickupManagement: React.FC = () => {
   }
 
   const handleClassChange = (value: string) => {
+    console.log("PickupManagement: Selected class changed to:", value);
     setSelectedClass(value);
   };
 
