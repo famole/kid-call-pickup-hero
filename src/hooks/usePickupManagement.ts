@@ -20,7 +20,7 @@ export const usePickupManagement = (classId?: string) => {
       // Get student and class details for each request
       const requestsWithDetails = await Promise.all(pendingOnly.map(async (req) => {
         try {
-          const student = await getStudentById(req.childId);
+          const student = await getStudentById(req.studentId);
           const classInfo = student ? await getClassById(student.classId) : null;
           
           return {

@@ -26,7 +26,7 @@ const ChildRequestItem = ({ request, parentsCache }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const childData = await getStudentById(request.childId);
+        const childData = await getStudentById(request.studentId);
         setChild(childData);
         
         if (childData?.classId) {
@@ -34,7 +34,7 @@ const ChildRequestItem = ({ request, parentsCache }) => {
             const classData = await getClassById(childData.classId);
             setClassInfo(classData);
           } catch (error) {
-            console.error(`Error fetching class for child ${request.childId}:`, error);
+            console.error(`Error fetching class for child ${request.studentId}:`, error);
           }
         }
       } catch (error) {
@@ -43,7 +43,7 @@ const ChildRequestItem = ({ request, parentsCache }) => {
     };
     
     loadData();
-  }, [request.childId, request.id]);
+  }, [request.studentId, request.id]);
 
   const handleCallStudent = async () => {
     try {

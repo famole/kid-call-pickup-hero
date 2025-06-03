@@ -60,11 +60,11 @@ const ParentDashboard = () => {
     return () => clearInterval(interval);
   }, [user, toast]);
 
-  const toggleChildSelection = (childId: string) => {
+  const toggleChildSelection = (studentId: string) => {
     setSelectedChildren(prev => 
-      prev.includes(childId) 
-        ? prev.filter(id => id !== childId)
-        : [...prev, childId]
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
     );
   };
 
@@ -74,8 +74,8 @@ const ParentDashboard = () => {
     setIsSubmitting(true);
     try {
       // Create pickup requests for all selected children
-      const promises = selectedChildren.map(childId => 
-        createPickupRequest(childId, user.id)
+      const promises = selectedChildren.map(studentId => 
+        createPickupRequest(studentId, user.id)
       );
       await Promise.all(promises);
 
@@ -102,7 +102,7 @@ const ParentDashboard = () => {
   };
 
   // Check if any children have active requests (either pending or called)
-  const childrenWithActiveRequests = activeRequests.map(req => req.childId);
+  const childrenWithActiveRequests = activeRequests.map(req => req.studentId);
 
   return (
     <div className="min-h-screen bg-gray-50">

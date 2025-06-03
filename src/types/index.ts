@@ -23,7 +23,7 @@ export type Class = {
 
 export type PickupRequest = {
   id: string;
-  childId: string;
+  studentId: string;
   parentId: string;
   requestTime: Date;
   status: 'pending' | 'called' | 'completed' | 'cancelled';
