@@ -27,14 +27,23 @@ import { useImportParents } from '@/hooks/useImportParents';
 import { useStudentManagement } from '@/hooks/useStudentManagement';
 import { useParentSearch } from '@/hooks/useParentSearch';
 
-const AdminParentsScreen = () => {
+interface AdminParentsScreenProps {
+  userRole?: 'parent' | 'teacher' | 'admin';
+}
+
+const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'parent' }) => {
   const { toast } = useToast();
   const [parents, setParents] = useState<ParentWithStudents[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [allStudents, setAllStudents] = useState<Child[]>([]);
 
-  // Use the search hook
-  const { searchTerm, setSearchTerm, filteredParents } = useParentSearch(parents);
+  // Filter parents by role
+  const filteredParentsByRole = parents.filter(parent => 
+    parent.role === userRole || (!parent.role && userRole === 'parent')
+  );
+
+  // Use the search hook with filtered parents
+  const { searchTerm, setSearchTerm, filteredParents } = useParentSearch(filteredParentsByRole);
 
   const loadParents = useCallback(async () => {
     setIsLoading(true);
@@ -84,8 +93,11 @@ const AdminParentsScreen = () => {
     loadParents();
   };
   
-  // Initialize hooks
-  const addParentForm = useAddParentForm({ onParentAdded });
+  // Initialize hooks with role-specific settings
+  const addParentForm = useAddParentForm({ 
+    onParentAdded,
+    defaultRole: userRole 
+  });
   const editParentForm = useEditParentForm({ onParentUpdated });
   const importParentsHook = useImportParents({ onImportCompleted });
   const studentManagement = useStudentManagement({ 
@@ -97,7 +109,8 @@ const AdminParentsScreen = () => {
 
   // Handle parent deletion
   const handleDeleteParent = async (parentId: string) => {
-    if (!confirm("Are you sure you want to delete this parent? This action cannot be undone.")) {
+    const userTypeLabel = userRole === 'teacher' ? 'teacher' : userRole === 'admin' ? 'admin' : 'parent';
+    if (!confirm(`Are you sure you want to delete this ${userTypeLabel}? This action cannot be undone.`)) {
       return;
     }
     try {
@@ -105,14 +118,36 @@ const AdminParentsScreen = () => {
       setParents(prev => prev.filter(parent => parent.id !== parentId));
       toast({
         title: "Success",
-        description: "Parent has been deleted",
+        description: `${userTypeLabel.charAt(0).toUpperCase() + userTypeLabel.slice(1)} has been deleted`,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete parent",
+        description: `Failed to delete ${userTypeLabel}`,
         variant: "destructive",
       });
+    }
+  };
+
+  const getHeaderTitle = () => {
+    switch (userRole) {
+      case 'teacher':
+        return 'Teachers Management';
+      case 'admin':
+        return 'Admins Management';
+      default:
+        return 'Parents Management';
+    }
+  };
+
+  const getHeaderDescription = () => {
+    switch (userRole) {
+      case 'teacher':
+        return 'Manage teacher accounts and permissions';
+      case 'admin':
+        return 'Manage admin accounts and permissions';
+      default:
+        return 'Manage parent accounts and student relationships';
     }
   };
 
@@ -127,6 +162,9 @@ const AdminParentsScreen = () => {
             onCloseImportDialog={importParentsHook.closeImportDialog}
             onImportFileChange={importParentsHook.handleImportFileChange}
             onImportSubmit={importParentsHook.handleImportSubmit}
+            userRole={userRole}
+            headerTitle={getHeaderTitle()}
+            headerDescription={getHeaderDescription()}
           />
         </CardHeader>
 
@@ -143,6 +181,7 @@ const AdminParentsScreen = () => {
             onEditParent={editParentForm.openEditParentSheet}
             onDeleteParent={handleDeleteParent}
             onManageStudents={studentManagement.openStudentModal}
+            userRole={userRole}
           />
         </CardContent>
       </Card>
@@ -165,6 +204,7 @@ const AdminParentsScreen = () => {
         onAddStudent={studentManagement.handleAddStudentToParent}
         onRemoveStudent={studentManagement.handleRemoveStudent}
         onTogglePrimary={studentManagement.handleTogglePrimary}
+        userRole={userRole}
       />
     </div>
   );

@@ -11,6 +11,9 @@ interface ParentsHeaderProps {
   onCloseImportDialog: () => void;
   onImportFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onImportSubmit: () => Promise<void>;
+  userRole?: 'parent' | 'teacher' | 'admin';
+  headerTitle?: string;
+  headerDescription?: string;
 }
 
 const ParentsHeader: React.FC<ParentsHeaderProps> = ({
@@ -20,26 +23,50 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
   onCloseImportDialog,
   onImportFileChange,
   onImportSubmit,
+  userRole = 'parent',
+  headerTitle,
+  headerDescription,
 }) => {
+  const getButtonLabel = () => {
+    switch (userRole) {
+      case 'teacher':
+        return 'Add Teacher';
+      case 'admin':
+        return 'Add Admin';
+      default:
+        return 'Add Parent';
+    }
+  };
+
+  const defaultTitle = userRole === 'teacher' ? 'Teachers Management' : 
+                     userRole === 'admin' ? 'Admins Management' : 
+                     'Parents Management';
+
+  const defaultDescription = userRole === 'teacher' ? 'Manage teacher accounts and permissions' :
+                           userRole === 'admin' ? 'Manage admin accounts and permissions' :
+                           'Manage parent accounts and student relationships';
+
   return (
     <div className="flex flex-row items-center justify-between">
       <div>
         <h3 className="text-2xl font-semibold leading-none tracking-tight">
-          Users Management
+          {headerTitle || defaultTitle}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Manage parents, teachers, and admin users
+          {headerDescription || defaultDescription}
         </p>
       </div>
       <div className="flex space-x-2">
-        <ImportParentsDialog
-          isOpen={isImportDialogOpen}
-          onOpenChange={openState => openState ? onOpenImportDialog() : onCloseImportDialog()}
-          onFileChange={onImportFileChange}
-          onSubmit={onImportSubmit}
-        />
+        {userRole === 'parent' && (
+          <ImportParentsDialog
+            isOpen={isImportDialogOpen}
+            onOpenChange={openState => openState ? onOpenImportDialog() : onCloseImportDialog()}
+            onFileChange={onImportFileChange}
+            onSubmit={onImportSubmit}
+          />
+        )}
         <Button onClick={onAddParent}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add User
+          <PlusCircle className="mr-2 h-4 w-4" /> {getButtonLabel()}
         </Button>
       </div>
     </div>

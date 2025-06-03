@@ -2,24 +2,25 @@
 import { useState } from 'react';
 import { ParentInput, ParentWithStudents } from '@/types/parent';
 import { createParent } from '@/services/parentService';
-import { useToast } from "@/components/ui/use-toast"; // Corrected import path
+import { useToast } from "@/components/ui/use-toast";
 
 interface UseAddParentFormProps {
   onParentAdded: (newParent: ParentWithStudents) => void;
+  defaultRole?: 'parent' | 'teacher' | 'admin';
 }
 
-export const useAddParentForm = ({ onParentAdded }: UseAddParentFormProps) => {
+export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseAddParentFormProps) => {
   const { toast } = useToast();
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [newParent, setNewParent] = useState<ParentInput>({ 
     name: '', 
     email: '', 
     phone: '',
-    role: 'parent'
+    role: defaultRole
   });
 
   const openAddParentSheet = () => {
-    setNewParent({ name: '', email: '', phone: '', role: 'parent' }); // Reset form with default role
+    setNewParent({ name: '', email: '', phone: '', role: defaultRole });
     setIsAddSheetOpen(true);
   };
 
@@ -48,15 +49,19 @@ export const useAddParentForm = ({ onParentAdded }: UseAddParentFormProps) => {
         students: []
       };
       onParentAdded(createdParentWithStudents);
+      const userTypeLabel = createdParent.role === 'teacher' ? 'Teacher' : 
+                           createdParent.role === 'admin' ? 'Admin' : 'Parent';
       toast({
         title: "Success",
-        description: `${createdParent.role === 'teacher' ? 'Teacher' : createdParent.role === 'admin' ? 'Admin' : 'Parent'} ${createdParent.name} has been created`,
+        description: `${userTypeLabel} ${createdParent.name} has been created`,
       });
       closeAddParentSheet();
     } catch (error) {
+      const userTypeLabel = newParent.role === 'teacher' ? 'teacher' : 
+                           newParent.role === 'admin' ? 'admin' : 'parent';
       toast({
         title: "Error",
-        description: `Failed to create ${newParent.role || 'parent'}`,
+        description: `Failed to create ${userTypeLabel}`,
         variant: "destructive",
       });
     }

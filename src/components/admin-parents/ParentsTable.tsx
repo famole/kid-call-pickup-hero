@@ -18,6 +18,7 @@ interface ParentsTableProps {
   onEditParent: (parent: ParentWithStudents) => void;
   onDeleteParent: (parentId: string) => void;
   onManageStudents: (parent: ParentWithStudents) => void;
+  userRole?: 'parent' | 'teacher' | 'admin';
 }
 
 const ParentsTable: React.FC<ParentsTableProps> = ({
@@ -27,7 +28,21 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
   onEditParent,
   onDeleteParent,
   onManageStudents,
+  userRole = 'parent',
 }) => {
+  const getUserTypeLabel = () => {
+    switch (userRole) {
+      case 'teacher':
+        return 'teachers';
+      case 'admin':
+        return 'admins';
+      default:
+        return 'parents';
+    }
+  };
+
+  const shouldShowStudentsColumn = userRole === 'parent';
+
   return (
     <Table>
       <TableHeader>
@@ -35,19 +50,21 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Phone</TableHead>
-          <TableHead>Students</TableHead>
+          {shouldShowStudentsColumn && <TableHead>Students</TableHead>}
           <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {isLoading ? (
           <TableRow>
-            <TableCell colSpan={5} className="text-center">Loading parents...</TableCell>
+            <TableCell colSpan={shouldShowStudentsColumn ? 5 : 4} className="text-center">
+              Loading {getUserTypeLabel()}...
+            </TableCell>
           </TableRow>
         ) : parents.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={5} className="text-center">
-              {searchTerm ? `No parents found matching "${searchTerm}".` : "No parents found. Add one to get started."}
+            <TableCell colSpan={shouldShowStudentsColumn ? 5 : 4} className="text-center">
+              {searchTerm ? `No ${getUserTypeLabel()} found matching "${searchTerm}".` : `No ${getUserTypeLabel()} found. Add one to get started.`}
             </TableCell>
           </TableRow>
         ) : (
@@ -58,6 +75,8 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
               onEdit={() => onEditParent(parent)}
               onDelete={onDeleteParent}
               onManageStudents={() => onManageStudents(parent)}
+              userRole={userRole}
+              showStudentsColumn={shouldShowStudentsColumn}
             />
           ))
         )}
