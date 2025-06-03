@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createPickupRequest, getActivePickupRequestsForParent } from '@/services/pickupService';
@@ -5,7 +6,7 @@ import { getStudentsForParent } from '@/services/studentService';
 import { Child, PickupRequest } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCheck, UserRound } from 'lucide-react';
+import { CheckCheck, UserRound, Clock } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import ChildCard from './ChildCard';
 import Logo from '@/components/Logo';
@@ -82,7 +83,7 @@ const ParentDashboard = () => {
 
       toast({
         title: "Pickup Request Sent",
-        description: `Your ${selectedChildren.length > 1 ? 'children are' : 'child is'} now ready for pickup.`,
+        description: `Your ${selectedChildren.length > 1 ? 'children have' : 'child has'} been added to the pickup queue.`,
       });
 
       // Refresh the active requests list
@@ -102,6 +103,12 @@ const ParentDashboard = () => {
     }
   };
 
+  // Split requests by status
+  const pendingRequests = activeRequests.filter(req => req.status === 'pending');
+  const calledRequests = activeRequests.filter(req => req.status === 'called');
+  
+  // Check if any children have active requests (either pending or called)
+  const childrenWithActiveRequests = activeRequests.map(req => req.childId);
   const hasActiveRequests = activeRequests.length > 0;
 
   return (
@@ -153,15 +160,18 @@ const ParentDashboard = () => {
                       
                       {/* Children grid - responsive */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        {children.map((child) => (
-                          <ChildCard
-                            key={child.id}
-                            child={child}
-                            isSelected={selectedChildren.includes(child.id)}
-                            isDisabled={hasActiveRequests}
-                            onClick={() => !hasActiveRequests && toggleChildSelection(child.id)}
-                          />
-                        ))}
+                        {children.map((child) => {
+                          const hasActiveRequest = childrenWithActiveRequests.includes(child.id);
+                          return (
+                            <ChildCard
+                              key={child.id}
+                              child={child}
+                              isSelected={selectedChildren.includes(child.id)}
+                              isDisabled={hasActiveRequest}
+                              onClick={() => !hasActiveRequest && toggleChildSelection(child.id)}
+                            />
+                          );
+                        })}
                       </div>
                     </>
                   )}
@@ -170,7 +180,7 @@ const ParentDashboard = () => {
                   <div className="pt-4 border-t">
                     <Button 
                       className="w-full h-12 text-base font-medium bg-school-secondary hover:bg-school-secondary/90 disabled:opacity-50"
-                      disabled={isSubmitting || selectedChildren.length === 0 || hasActiveRequests}
+                      disabled={isSubmitting || selectedChildren.length === 0}
                       onClick={handleRequestPickup}
                     >
                       {isSubmitting ? (
@@ -184,39 +194,74 @@ const ParentDashboard = () => {
                         'Select Children First'
                       )}
                     </Button>
-                    
-                    {hasActiveRequests && (
-                      <p className="text-xs sm:text-sm text-center text-muted-foreground mt-2">
-                        You can't select more children while others are ready for pickup
-                      </p>
-                    )}
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Ready for Pickup Sidebar */}
-            <div className="xl:col-span-1">
-              <Card className="sticky top-4">
+            {/* Status Sidebar */}
+            <div className="xl:col-span-1 space-y-4">
+              {/* Pending Requests */}
+              {pendingRequests.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-orange-600" />
+                      In Queue
+                    </CardTitle>
+                    <CardDescription className="text-sm sm:text-base">
+                      Waiting to be called
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {pendingRequests.map((request) => {
+                        const child = children.find(c => c.id === request.childId);
+                        return (
+                          <div 
+                            key={request.id}
+                            className="p-3 border rounded-md flex items-center gap-3 bg-orange-50 border-orange-200"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-orange-300">
+                              <Clock className="h-5 w-5 text-orange-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm sm:text-base truncate">
+                                {child?.name || 'Unknown Child'}
+                              </div>
+                              <div className="text-xs sm:text-sm text-orange-600">
+                                In pickup queue
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Called - On the way */}
+              <Card className={calledRequests.length > 0 ? "sticky top-4" : ""}>
                 <CardHeader className="pb-4">
                   <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
                     <CheckCheck className="h-5 w-5 text-green-600" />
-                    Ready for Pickup
+                    On the Way
                   </CardTitle>
                   <CardDescription className="text-sm sm:text-base">
-                    Children currently called
+                    Children ready for pickup
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {activeRequests.length === 0 ? (
+                  {calledRequests.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-muted-foreground">
                       <CheckCheck className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                      <p className="text-sm sm:text-base">No active pickup requests</p>
-                      <p className="text-xs sm:text-sm mt-1">Select children above to request pickup</p>
+                      <p className="text-sm sm:text-base">No children called yet</p>
+                      <p className="text-xs sm:text-sm mt-1">They will appear here when ready</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {activeRequests.map((request) => {
+                      {calledRequests.map((request) => {
                         const child = children.find(c => c.id === request.childId);
                         return (
                           <div 
@@ -232,7 +277,7 @@ const ParentDashboard = () => {
                               </div>
                               <div className="text-xs sm:text-sm text-green-600 flex items-center gap-1">
                                 <CheckCheck className="h-3 w-3" /> 
-                                Ready for pickup!
+                                On the way!
                               </div>
                             </div>
                           </div>
@@ -241,7 +286,7 @@ const ParentDashboard = () => {
                       
                       <div className="bg-green-100 border border-green-300 rounded-lg p-3 mt-4">
                         <p className="text-xs sm:text-sm font-medium text-green-800 text-center">
-                          🎉 Your child{activeRequests.length > 1 ? 'ren are' : ' is'} ready! 
+                          🎉 Your child{calledRequests.length > 1 ? 'ren are' : ' is'} on the way! 
                           Please proceed to the pickup area.
                         </p>
                       </div>

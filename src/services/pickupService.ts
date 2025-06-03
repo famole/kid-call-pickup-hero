@@ -5,7 +5,7 @@ import { PickupRequestWithDetails } from '@/types/supabase';
 import { getStudentById } from './studentService';
 import { getClassById } from './classService';
 
-// Create a new pickup request
+// Create a new pickup request - now defaults to 'pending' status
 export const createPickupRequest = async (studentId: string, parentId: string): Promise<PickupRequest> => {
   try {
     console.log(`Creating pickup request for student: ${studentId}, parent: ${parentId}`);
@@ -15,7 +15,7 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
       .insert({
         student_id: studentId,
         parent_id: parentId,
-        status: 'called'
+        status: 'pending' // Changed from 'called' to 'pending'
       })
       .select()
       .single();
@@ -66,7 +66,7 @@ export const updatePickupRequestStatus = async (id: string, status: PickupReques
   }
 };
 
-// Get all active pickup requests
+// Get all active pickup requests (both pending and called)
 export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
   try {
     const { data, error } = await supabase
@@ -92,7 +92,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
   }
 };
 
-// Get active pickup requests for a specific parent
+// Get active pickup requests for a specific parent (both pending and called)
 export const getActivePickupRequestsForParent = async (parentId: string): Promise<PickupRequest[]> => {
   try {
     const { data, error } = await supabase
