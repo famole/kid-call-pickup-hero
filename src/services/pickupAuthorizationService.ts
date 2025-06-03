@@ -68,8 +68,8 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
     .from('pickup_authorizations')
     .select(`
       *,
-      authorizing_parent:authorizing_parent_id (id, name, email),
-      authorized_parent:authorized_parent_id (id, name, email)
+      authorizing_parent:parents!authorizing_parent_id (id, name, email),
+      authorized_parent:parents!authorized_parent_id (id, name, email)
     `)
     .order('created_at', { ascending: false });
 
