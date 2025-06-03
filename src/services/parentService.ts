@@ -97,7 +97,7 @@ export const getParentById = async (id: string): Promise<Parent | null> => {
 };
 
 // Create a new parent
-export const createParent = async (parentData: ParentInput & { role?: 'parent' | 'teacher' }): Promise<Parent> => {
+export const createParent = async (parentData: ParentInput): Promise<Parent> => {
   const { data, error } = await supabase
     .from('parents')
     .insert([
