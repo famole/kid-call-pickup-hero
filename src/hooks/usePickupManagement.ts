@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickup';
 import { getStudentById } from '@/services/studentService';
@@ -18,14 +19,24 @@ export const usePickupManagement = (classId?: string) => {
       
       // Get student and class details for each request
       const requestsWithDetails = await Promise.all(pendingOnly.map(async (req) => {
-        const student = await getStudentById(req.childId);
-        const classInfo = student ? await getClassById(student.classId) : null;
-        
-        return {
-          request: req,
-          child: student,
-          class: classInfo
-        };
+        try {
+          const student = await getStudentById(req.childId);
+          const classInfo = student ? await getClassById(student.classId) : null;
+          
+          return {
+            request: req,
+            child: student,
+            class: classInfo
+          };
+        } catch (error) {
+          console.error(`Error fetching details for request ${req.id}:`, error);
+          // Return request with null child and class if there's an error
+          return {
+            request: req,
+            child: null,
+            class: null
+          };
+        }
       }));
 
       // Filter by class if specified
@@ -48,18 +59,29 @@ export const usePickupManagement = (classId?: string) => {
   const markAsCalled = async (requestId: string) => {
     try {
       await updatePickupRequestStatus(requestId, 'called');
+      console.log(`Request ${requestId} marked as called, scheduling auto-completion in 5 minutes`);
       
-      // Schedule automatic status reset after 5 minutes
+      // Schedule automatic status reset after 5 minutes with proper error handling
       setTimeout(async () => {
         try {
+          console.log(`Auto-completing request ${requestId} after 5 minutes`);
           await updatePickupRequestStatus(requestId, 'completed');
           console.log(`Request ${requestId} automatically completed after 5 minutes`);
+          
+          // Refresh the pending requests after auto-completion
+          await fetchPendingRequests();
         } catch (error) {
           console.error(`Error auto-completing request ${requestId}:`, error);
+          // Even if auto-completion fails, we should still refresh to get current state
+          try {
+            await fetchPendingRequests();
+          } catch (refreshError) {
+            console.error(`Error refreshing requests after failed auto-completion:`, refreshError);
+          }
         }
       }, 5 * 60 * 1000); // 5 minutes
 
-      // Refresh the pending requests
+      // Refresh the pending requests immediately
       await fetchPendingRequests();
     } catch (error) {
       console.error("Error marking request as called:", error);
