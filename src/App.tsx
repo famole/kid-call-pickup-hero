@@ -9,6 +9,7 @@ import Index from './pages/Index';
 import AdminPanel from './pages/AdminPanel';
 import ViewerDisplay from './pages/ViewerDisplay';
 import PickupManagement from './pages/PickupManagement';
+import PickupAuthorizationPage from './pages/PickupAuthorizationPage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminInitialSetup from './pages/AdminInitialSetup';
@@ -68,6 +69,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PickupManagement />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Pickup authorizations for parents */}
+      <Route
+        path="/pickup-authorizations"
+        element={
+          <ProtectedRoute>
+            <PickupAuthorizationPage />
           </ProtectedRoute>
         }
       />
