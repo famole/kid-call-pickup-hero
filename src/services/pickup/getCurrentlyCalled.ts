@@ -28,7 +28,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
       return {
         request: {
           id: req.id,
-          childId: req.student_id,
+          studentId: req.student_id,
           parentId: req.parent_id,
           requestTime: new Date(req.request_time),
           status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'

@@ -11,7 +11,7 @@ interface ChildrenSelectionCardProps {
   selectedChildren: string[];
   childrenWithActiveRequests: string[];
   isSubmitting: boolean;
-  onToggleChildSelection: (childId: string) => void;
+  onToggleChildSelection: (studentId: string) => void;
   onRequestPickup: () => void;
 }
 

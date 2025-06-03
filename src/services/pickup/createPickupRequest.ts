@@ -24,7 +24,7 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
     
     return {
       id: data.id,
-      childId: data.student_id,
+      studentId: data.student_id,
       parentId: data.parent_id,
       requestTime: new Date(data.request_time),
       status: data.status as 'pending' | 'called' | 'completed' | 'cancelled'

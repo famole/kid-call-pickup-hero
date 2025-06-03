@@ -31,7 +31,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
       <CardContent>
         <div className="space-y-3">
           {pendingRequests.map((request) => {
-            const child = children.find(c => c.id === request.childId);
+            const child = children.find(c => c.id === request.studentId);
             return (
               <div 
                 key={request.id}

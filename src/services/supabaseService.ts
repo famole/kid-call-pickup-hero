@@ -27,7 +27,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     return (data as PickupRequestRow[]).map(item => ({
       id: item.id,
-      childId: item.student_id,
+      studentId: item.student_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
       status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -75,7 +75,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
       result.push({
         request: {
           id: req.id,
-          childId: req.student_id,
+          studentId: req.student_id,
           parentId: req.parent_id,
           requestTime: new Date(req.request_time),
           status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -119,7 +119,7 @@ export const migratePickupRequestsToSupabase = async (requests: PickupRequest[])
       .from('pickup_requests')
       .upsert({
         id: request.id,
-        student_id: request.childId,
+        student_id: request.studentId,
         parent_id: request.parentId,
         request_time: request.requestTime.toISOString(),
         status: request.status
