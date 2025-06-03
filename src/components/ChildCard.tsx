@@ -109,7 +109,10 @@ const ChildCard: React.FC<ChildCardProps> = ({
               {child.name}
             </h3>
             {isAuthorized && (
-              <Users className="h-4 w-4 text-blue-500" title="Authorized to pick up" />
+              <div className="flex items-center">
+                <Users className="h-4 w-4 text-blue-500" />
+                <span className="sr-only">Authorized to pick up</span>
+              </div>
             )}
           </div>
           <p className="text-sm text-muted-foreground">
