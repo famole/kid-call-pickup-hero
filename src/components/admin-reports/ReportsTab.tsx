@@ -1,14 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Download, Calendar, BarChart3 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { getAllStudents } from '@/services/student';
 import { getPickupHistoryByStudent, getPickupStatsByStudent, getAllPickupHistory } from '@/services/pickupHistoryService';
 import PickupHistoryTable from './PickupHistoryTable';
+import ReportFilters from './ReportFilters';
+import ReportActions from './ReportActions';
+import StudentStats from './StudentStats';
 import { Child } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -126,81 +125,24 @@ const ReportsTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="student-select">Student</Label>
-              <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select student" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Students</SelectItem>
-                  {students.map((student) => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <ReportFilters
+            students={students}
+            selectedStudent={selectedStudent}
+            onStudentChange={setSelectedStudent}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
+          />
 
-            <div>
-              <Label htmlFor="start-date">Start Date (Optional)</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                disabled={selectedStudent !== 'all'}
-              />
-            </div>
+          <ReportActions
+            onGenerateReport={handleGenerateReport}
+            onExportCSV={handleExportCSV}
+            loading={loading}
+            hasData={pickupHistory.length > 0}
+          />
 
-            <div>
-              <Label htmlFor="end-date">End Date (Optional)</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                disabled={selectedStudent !== 'all'}
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={handleGenerateReport} disabled={loading}>
-              <Calendar className="h-4 w-4 mr-2" />
-              {loading ? 'Generating...' : 'Generate Report'}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleExportCSV}
-              disabled={pickupHistory.length === 0}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
-
-          {stats && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Student Statistics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Pickups</p>
-                    <p className="text-2xl font-bold">{stats.totalPickups}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Average Duration</p>
-                    <p className="text-2xl font-bold">{stats.averageDuration} min</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <StudentStats stats={stats} />
         </CardContent>
       </Card>
 
