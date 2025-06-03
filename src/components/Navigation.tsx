@@ -1,142 +1,107 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/auth/AuthProvider';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Menu, UserPlus, Users, UserCheck } from 'lucide-react';
-import Logo from '@/components/Logo';
-import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu';
+import { User, LogOut, Settings, Users, ClipboardList } from 'lucide-react';
+import Logo from './Logo';
 
-const Navigation: React.FC = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+const Navigation = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-    setIsOpen(false);
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
-  const MobileMenu = () => (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle menu</span>
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-[250px] pt-10">
-        <div className="flex flex-col space-y-4 py-4">
-          {isAuthenticated && user?.role === 'admin' && (
-            <>
-              <Link 
-                to="/admin" 
-                className="px-4 py-2 text-gray-600 hover:text-school-primary hover:bg-gray-100 rounded-md flex items-center gap-2"
-                onClick={() => setIsOpen(false)}
-              >
-                <Users size={18} />
-                Admin Panel
-              </Link>
-              <Link 
-                to="/admin/parents" 
-                className="px-4 py-2 text-gray-600 hover:text-school-primary hover:bg-gray-100 rounded-md flex items-center gap-2"
-                onClick={() => setIsOpen(false)}
-              >
-                <UserCheck size={18} />
-                Parent Management
-              </Link>
-            </>
-          )}
-          
-          {isAuthenticated && (
-            <Link 
-              to="/viewer" 
-              className="px-4 py-2 text-gray-600 hover:text-school-primary hover:bg-gray-100 rounded-md"
-              onClick={() => setIsOpen(false)}
-            >
-              Viewer Display
-            </Link>
-          )}
-          
-          {isAuthenticated ? (
-            <Button variant="outline" onClick={handleLogout} className="mx-4">
-              Logout
-            </Button>
-          ) : (
-            <>
-              <Link 
-                to="/login" 
-                className="px-4 py-2 text-gray-600 hover:text-school-primary hover:bg-gray-100 rounded-md"
-                onClick={() => setIsOpen(false)}
-              >
-                Login
-              </Link>
-              <Link 
-                to="/signup" 
-                className="px-4 py-2 text-gray-600 hover:text-school-primary hover:bg-gray-100 rounded-md flex items-center gap-2"
-                onClick={() => setIsOpen(false)}
-              >
-                <UserPlus size={18} />
-                Sign Up
-              </Link>
-            </>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
+  const isAdmin = user?.role === 'admin';
+  const isTeacherOrAdmin = user?.role === 'admin' || user?.role === 'teacher';
 
   return (
-    <nav className="sticky top-0 z-10 bg-white border-b py-3 px-4 sm:px-6">
-      <div className="container mx-auto flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <Logo size="sm" className="text-school-primary" />
-          <span className="font-semibold text-xl">School Pickup</span>
-        </Link>
-        
-        {isMobile ? (
-          <MobileMenu />
-        ) : (
-          <div className="hidden md:flex items-center gap-4">
-            {isAuthenticated && user?.role === 'admin' && (
+    <nav className="bg-white shadow-sm border-b">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <Link to="/" className="flex items-center gap-2">
+            <Logo size="sm" className="text-school-primary" />
+            <span className="text-xl font-bold text-gray-800">School Pickup</span>
+          </Link>
+
+          <div className="flex items-center gap-4">
+            {user ? (
               <>
-                <Link to="/admin" className="text-gray-600 hover:text-school-primary flex items-center gap-1">
-                  <Users size={18} />
-                  Admin Panel
-                </Link>
-                <Link to="/admin/parents" className="text-gray-600 hover:text-school-primary flex items-center gap-1">
-                  <UserCheck size={18} />
-                  Parent Management
-                </Link>
+                {isTeacherOrAdmin && (
+                  <Button 
+                    variant="ghost" 
+                    className="text-gray-600 hover:text-gray-800"
+                    onClick={() => navigate('/pickup-management')}
+                  >
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    Pickup Management
+                  </Button>
+                )}
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="text-gray-600 hover:text-gray-800">
+                      <User className="h-4 w-4 mr-2" />
+                      {user.name}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem disabled>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{user.name}</span>
+                        <span className="text-sm text-muted-foreground">{user.email}</span>
+                        <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
+                      </div>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuSeparator />
+                    
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigate('/admin')}>
+                          <Settings className="h-4 w-4 mr-2" />
+                          Admin Panel
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate('/admin/parents')}>
+                          <Users className="h-4 w-4 mr-2" />
+                          Parent Management
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
-            )}
-            
-            {isAuthenticated && (
-              <Link to="/viewer" className="text-gray-600 hover:text-school-primary">
-                Viewer Display
-              </Link>
-            )}
-            
-            {isAuthenticated ? (
-              <Button variant="outline" onClick={handleLogout}>
-                Logout
-              </Button>
             ) : (
-              <>
-                <Link to="/login" className="text-gray-600 hover:text-school-primary">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" onClick={() => navigate('/login')}>
                   Login
-                </Link>
-                <Link to="/signup" className="text-gray-600 hover:text-school-primary flex items-center gap-1">
-                  <UserPlus size={18} />
+                </Button>
+                <Button onClick={() => navigate('/signup')}>
                   Sign Up
-                </Link>
-              </>
+                </Button>
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
     </nav>
   );

@@ -8,6 +8,7 @@ import Signup from './pages/Signup';
 import Index from './pages/Index';
 import AdminPanel from './pages/AdminPanel';
 import ViewerDisplay from './pages/ViewerDisplay';
+import PickupManagement from './pages/PickupManagement';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminInitialSetup from './pages/AdminInitialSetup';
@@ -61,7 +62,17 @@ function AppRoutes() {
         }
       />
       
-      {/* Viewer display */}
+      {/* Pickup management for admins and teachers */}
+      <Route
+        path="/pickup-management"
+        element={
+          <ProtectedRoute>
+            <PickupManagement />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Public viewer display */}
       <Route path="/viewer" element={<ViewerDisplay />} />
       
       {/* 404 route */}
