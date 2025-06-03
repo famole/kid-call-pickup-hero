@@ -24,15 +24,47 @@ export const usePickupRequests = (children: ChildWithType[]) => {
     if (!user) return;
 
     try {
+      // Get requests where this parent is the requester
       const parentActiveRequests = await getActivePickupRequestsForParent(user.id);
       
-      // Also check for called requests for authorized children
+      // Get all child IDs that belong to this parent (both own children and authorized children)
+      const ownChildIds = children
+        .filter(child => !child.isAuthorized)
+        .map(child => child.id);
+      
       const authorizedChildIds = children
         .filter(child => child.isAuthorized)
         .map(child => child.id);
       
-      const additionalCalledRequests: PickupRequest[] = [];
+      const allChildIds = [...ownChildIds, ...authorizedChildIds];
       
+      // Get requests for children that belong to this parent (regardless of who requested)
+      const additionalRequests: PickupRequest[] = [];
+      
+      if (ownChildIds.length > 0) {
+        const { data: ownChildRequests, error: ownChildError } = await supabase
+          .from('pickup_requests')
+          .select('*')
+          .in('student_id', ownChildIds)
+          .in('status', ['pending', 'called']);
+        
+        if (!ownChildError && ownChildRequests) {
+          // Filter out requests with invalid IDs and map to our format
+          const validOwnChildRequests = ownChildRequests
+            .filter(req => isValidUUID(req.student_id) && isValidUUID(req.parent_id))
+            .map(req => ({
+              id: req.id,
+              studentId: req.student_id,
+              parentId: req.parent_id,
+              requestTime: new Date(req.request_time),
+              status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+            }));
+          
+          additionalRequests.push(...validOwnChildRequests);
+        }
+      }
+      
+      // Also check for called requests for authorized children
       if (authorizedChildIds.length > 0) {
         const { data: calledRequests, error: calledError } = await supabase
           .from('pickup_requests')
@@ -52,13 +84,13 @@ export const usePickupRequests = (children: ChildWithType[]) => {
               status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
             }));
           
-          additionalCalledRequests.push(...validCalledRequests);
+          additionalRequests.push(...validCalledRequests);
         }
       }
       
-      // Combine both sets of requests, avoiding duplicates
+      // Combine all requests, avoiding duplicates
       const combinedRequests = [...parentActiveRequests];
-      additionalCalledRequests.forEach(req => {
+      additionalRequests.forEach(req => {
         if (!combinedRequests.some(existing => existing.id === req.id)) {
           combinedRequests.push(req);
         }
