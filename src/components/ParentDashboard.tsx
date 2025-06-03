@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createPickupRequest, getActivePickupRequestsForParent } from '@/services/pickupService';
@@ -79,9 +78,40 @@ const ParentDashboard = () => {
           const allChildren = [...ownChildren, ...authorizedChildren];
           setChildren(allChildren);
 
-          // Check for active pickup requests
-          const active = await getActivePickupRequestsForParent(user.id);
-          setActiveRequests(active);
+          // Get active requests for this parent
+          const parentActiveRequests = await getActivePickupRequestsForParent(user.id);
+          
+          // Get called requests for children this parent is authorized to pick up
+          const authorizedChildIds = authorizedChildren.map(child => child.id);
+          const additionalCalledRequests: PickupRequest[] = [];
+          
+          if (authorizedChildIds.length > 0) {
+            const { data: calledRequests, error: calledError } = await supabase
+              .from('pickup_requests')
+              .select('*')
+              .in('student_id', authorizedChildIds)
+              .eq('status', 'called');
+            
+            if (!calledError && calledRequests) {
+              additionalCalledRequests.push(...calledRequests.map(req => ({
+                id: req.id,
+                studentId: req.student_id,
+                parentId: req.parent_id,
+                requestTime: new Date(req.request_time),
+                status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+              })));
+            }
+          }
+          
+          // Combine both sets of requests, avoiding duplicates
+          const combinedRequests = [...parentActiveRequests];
+          additionalCalledRequests.forEach(req => {
+            if (!combinedRequests.some(existing => existing.id === req.id)) {
+              combinedRequests.push(req);
+            }
+          });
+          
+          setActiveRequests(combinedRequests);
         } catch (error) {
           console.error('Error loading parent dashboard data:', error);
           toast({
@@ -101,8 +131,42 @@ const ParentDashboard = () => {
     const interval = setInterval(async () => {
       if (user) {
         try {
-          const updated = await getActivePickupRequestsForParent(user.id);
-          setActiveRequests(updated);
+          const parentActiveRequests = await getActivePickupRequestsForParent(user.id);
+          
+          // Also check for called requests for authorized children
+          const authorizedChildIds = children
+            .filter(child => child.isAuthorized)
+            .map(child => child.id);
+          
+          const additionalCalledRequests: PickupRequest[] = [];
+          
+          if (authorizedChildIds.length > 0) {
+            const { data: calledRequests, error: calledError } = await supabase
+              .from('pickup_requests')
+              .select('*')
+              .in('student_id', authorizedChildIds)
+              .eq('status', 'called');
+            
+            if (!calledError && calledRequests) {
+              additionalCalledRequests.push(...calledRequests.map(req => ({
+                id: req.id,
+                studentId: req.student_id,
+                parentId: req.parent_id,
+                requestTime: new Date(req.request_time),
+                status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+              })));
+            }
+          }
+          
+          // Combine both sets of requests, avoiding duplicates
+          const combinedRequests = [...parentActiveRequests];
+          additionalCalledRequests.forEach(req => {
+            if (!combinedRequests.some(existing => existing.id === req.id)) {
+              combinedRequests.push(req);
+            }
+          });
+          
+          setActiveRequests(combinedRequests);
         } catch (error) {
           console.error('Error refreshing pickup requests:', error);
         }
@@ -137,8 +201,42 @@ const ParentDashboard = () => {
       });
 
       // Refresh the active requests list
-      const active = await getActivePickupRequestsForParent(user.id);
-      setActiveRequests(active);
+      const parentActiveRequests = await getActivePickupRequestsForParent(user.id);
+      
+      // Also check for called requests for authorized children
+      const authorizedChildIds = children
+        .filter(child => child.isAuthorized)
+        .map(child => child.id);
+      
+      const additionalCalledRequests: PickupRequest[] = [];
+      
+      if (authorizedChildIds.length > 0) {
+        const { data: calledRequests, error: calledError } = await supabase
+          .from('pickup_requests')
+          .select('*')
+          .in('student_id', authorizedChildIds)
+          .eq('status', 'called');
+        
+        if (!calledError && calledRequests) {
+          additionalCalledRequests.push(...calledRequests.map(req => ({
+            id: req.id,
+            studentId: req.student_id,
+            parentId: req.parent_id,
+            requestTime: new Date(req.request_time),
+            status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+          })));
+        }
+      }
+      
+      // Combine both sets of requests, avoiding duplicates
+      const combinedRequests = [...parentActiveRequests];
+      additionalCalledRequests.forEach(req => {
+        if (!combinedRequests.some(existing => existing.id === req.id)) {
+          combinedRequests.push(req);
+        }
+      });
+      
+      setActiveRequests(combinedRequests);
       
       // Clear the selection
       setSelectedChildren([]);
