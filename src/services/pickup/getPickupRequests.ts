@@ -17,7 +17,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     
     return data.map(item => ({
       id: item.id,
-      childId: item.student_id,
+      studentId: item.student_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
       status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
@@ -44,7 +44,7 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
     
     return data.map(item => ({
       id: item.id,
-      childId: item.student_id,
+      studentId: item.student_id,
       parentId: item.parent_id,
       requestTime: new Date(item.request_time),
       status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'

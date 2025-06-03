@@ -10,7 +10,7 @@ export const migratePickupRequestsToSupabase = async (requests: PickupRequest[])
       .upsert(
         requests.map(request => ({
           id: request.id,
-          student_id: request.childId,
+          student_id: request.studentId,
           parent_id: request.parentId,
           request_time: request.requestTime.toISOString(),
           status: request.status

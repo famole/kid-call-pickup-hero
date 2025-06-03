@@ -34,7 +34,7 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
         ) : (
           <div className="space-y-3">
             {calledRequests.map((request) => {
-              const child = children.find(c => c.id === request.childId);
+              const child = children.find(c => c.id === request.studentId);
               return (
                 <div 
                   key={request.id}
