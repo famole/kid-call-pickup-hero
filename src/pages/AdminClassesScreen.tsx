@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -234,6 +233,7 @@ const AdminClassesScreen = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Class ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Grade</TableHead>
                   <TableHead>Teacher</TableHead>
@@ -243,13 +243,14 @@ const AdminClassesScreen = () => {
               <TableBody>
                 {classList.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       No classes found
                     </TableCell>
                   </TableRow>
                 ) : (
                   classList.map((classItem) => (
                     <TableRow key={classItem.id}>
+                      <TableCell className="font-mono text-xs">{classItem.id}</TableCell>
                       <TableCell>{classItem.name}</TableCell>
                       <TableCell>{classItem.grade}</TableCell>
                       <TableCell>{classItem.teacher}</TableCell>
