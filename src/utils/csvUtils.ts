@@ -48,17 +48,21 @@ export async function parseCSV<T extends Record<string, any>>(
             const columnName = header[j].trim().toLowerCase();
             let value = values[j].trim();
             
-            // Special handling for classId (validate against classList)
-            if (columnName === 'classid' && classList && value) {
-              const classExists = classList.some(c => c.id === value);
-              if (!classExists) {
-                errors.push(`Row ${i}: Class ID '${value}' does not exist`);
+            // Special handling for className (resolve to classId)
+            if (columnName === 'classname' && classList && value) {
+              const foundClass = classList.find(c => 
+                c.name.toLowerCase() === value.toLowerCase()
+              );
+              if (!foundClass) {
+                errors.push(`Row ${i}: Class name '${value}' does not exist`);
                 continue;
               }
+              // Store the resolved class ID under the classId property
+              row['classId'] = foundClass.id;
+              row[header[j]] = value; // Keep original class name for reference
             }
-            
             // Special handling for parentIds (split comma-separated string)
-            if (columnName === 'parentids' && value) {
+            else if (columnName === 'parentids' && value) {
               // Handle quoted comma lists and regular comma lists
               if (value.startsWith('"') && value.endsWith('"')) {
                 value = value.substring(1, value.length - 1);
@@ -75,8 +79,8 @@ export async function parseCSV<T extends Record<string, any>>(
             continue;
           }
           
-          if ('classId' in row && !row.classId) {
-            errors.push(`Row ${i}: Class ID is required`);
+          if ('className' in row && !row.className) {
+            errors.push(`Row ${i}: Class name is required`);
             continue;
           }
           

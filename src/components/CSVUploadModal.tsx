@@ -110,7 +110,7 @@ const CSVUploadModal: React.FC<CSVUploadModalProps> = ({
         <DialogHeader>
           <DialogTitle>Import Students from CSV</DialogTitle>
           <DialogDescription>
-            Upload a CSV file with student data. The file should have columns for name and classId.
+            Upload a CSV file with student data. The file should have columns for name and className.
           </DialogDescription>
         </DialogHeader>
         
@@ -151,7 +151,7 @@ const CSVUploadModal: React.FC<CSVUploadModalProps> = ({
             </p>
             <ul className="text-xs text-blue-600 list-disc pl-5 mt-1">
               <li>name (required): Student's full name</li>
-              <li>classId (required): ID of the class (must match existing class IDs)</li>
+              <li>className (required): Name of the class (must match existing class names)</li>
               <li>parentIds (optional): Comma-separated list of parent IDs</li>
             </ul>
           </div>
