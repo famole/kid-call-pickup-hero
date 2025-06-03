@@ -105,108 +105,154 @@ const ParentDashboard = () => {
   const hasActiveRequests = activeRequests.length > 0;
 
   return (
-    <div className="container mx-auto py-4 sm:py-6 px-4">
-      <header className="mb-6 sm:mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Logo size="sm" className="text-school-primary" />
-          <h1 className="text-2xl sm:text-3xl font-bold">School Pickup</h1>
-        </div>
-        <div className="flex items-center">
-          <div className="flex-1">
-            <p className="text-base sm:text-lg text-gray-600">Welcome, {user?.name}</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-4 px-4 max-w-7xl">
+        <header className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <Logo size="sm" className="text-school-primary" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">School Pickup</h1>
+            </div>
+            <div className="sm:ml-auto">
+              <p className="text-sm sm:text-base text-gray-600">Welcome, {user?.name}</p>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school-primary"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Select Children for Pickup</CardTitle>
-                <CardDescription>
-                  Choose which children to pick up today
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {children.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12 text-muted-foreground">
-                    No children found in your account
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {children.map((child) => (
-                      <ChildCard
-                        key={child.id}
-                        child={child}
-                        isSelected={selectedChildren.includes(child.id)}
-                        isDisabled={hasActiveRequests}
-                        onClick={() => !hasActiveRequests && toggleChildSelection(child.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-                
-                <div className="mt-4 sm:mt-6">
-                  <Button 
-                    className="w-full bg-school-secondary hover:bg-school-secondary/90"
-                    disabled={isSubmitting || selectedChildren.length === 0 || hasActiveRequests}
-                    onClick={handleRequestPickup}
-                  >
-                    {isSubmitting ? 'Processing...' : selectedChildren.length > 0 ? 'Request Immediate Pickup' : 'Select Children First'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school-primary"></div>
           </div>
-
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Ready for Pickup</CardTitle>
-                <CardDescription>
-                  Children currently ready for pickup
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {activeRequests.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12 text-muted-foreground">
-                    No active pickup requests
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* Main Selection Card */}
+            <div className="xl:col-span-2">
+              <Card className="h-fit">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg sm:text-xl">Select Children for Pickup</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">
+                    Choose which children to pick up today
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {children.length === 0 ? (
+                    <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                      <UserRound className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-base sm:text-lg">No children found in your account</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Selected children count */}
+                      {selectedChildren.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                          <p className="text-sm font-medium text-blue-800">
+                            {selectedChildren.length} child{selectedChildren.length > 1 ? 'ren' : ''} selected for pickup
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Children grid - responsive */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        {children.map((child) => (
+                          <ChildCard
+                            key={child.id}
+                            child={child}
+                            isSelected={selectedChildren.includes(child.id)}
+                            isDisabled={hasActiveRequests}
+                            onClick={() => !hasActiveRequests && toggleChildSelection(child.id)}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Action button */}
+                  <div className="pt-4 border-t">
+                    <Button 
+                      className="w-full h-12 text-base font-medium bg-school-secondary hover:bg-school-secondary/90 disabled:opacity-50"
+                      disabled={isSubmitting || selectedChildren.length === 0 || hasActiveRequests}
+                      onClick={handleRequestPickup}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
+                          Processing...
+                        </>
+                      ) : selectedChildren.length > 0 ? (
+                        `Request Pickup for ${selectedChildren.length} Child${selectedChildren.length > 1 ? 'ren' : ''}`
+                      ) : (
+                        'Select Children First'
+                      )}
+                    </Button>
+                    
+                    {hasActiveRequests && (
+                      <p className="text-xs sm:text-sm text-center text-muted-foreground mt-2">
+                        You can't select more children while others are ready for pickup
+                      </p>
+                    )}
                   </div>
-                ) : (
-                  <div className="space-y-3 sm:space-y-4">
-                    {activeRequests.map((request) => {
-                      const child = children.find(c => c.id === request.childId);
-                      return (
-                        <div 
-                          key={request.id}
-                          className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200 call-animation"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border">
-                            <UserRound className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{child?.name || 'Unknown Child'}</div>
-                            <div className="text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1 text-green-600">
-                                <CheckCheck className="h-3 w-3" /> Ready for pickup!
-                              </span>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Ready for Pickup Sidebar */}
+            <div className="xl:col-span-1">
+              <Card className="sticky top-4">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                    <CheckCheck className="h-5 w-5 text-green-600" />
+                    Ready for Pickup
+                  </CardTitle>
+                  <CardDescription className="text-sm sm:text-base">
+                    Children currently called
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {activeRequests.length === 0 ? (
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                      <CheckCheck className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm sm:text-base">No active pickup requests</p>
+                      <p className="text-xs sm:text-sm mt-1">Select children above to request pickup</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {activeRequests.map((request) => {
+                        const child = children.find(c => c.id === request.childId);
+                        return (
+                          <div 
+                            key={request.id}
+                            className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200 call-animation"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-green-300">
+                              <UserRound className="h-5 w-5 text-green-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm sm:text-base truncate">
+                                {child?.name || 'Unknown Child'}
+                              </div>
+                              <div className="text-xs sm:text-sm text-green-600 flex items-center gap-1">
+                                <CheckCheck className="h-3 w-3" /> 
+                                Ready for pickup!
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        );
+                      })}
+                      
+                      <div className="bg-green-100 border border-green-300 rounded-lg p-3 mt-4">
+                        <p className="text-xs sm:text-sm font-medium text-green-800 text-center">
+                          🎉 Your child{activeRequests.length > 1 ? 'ren are' : ' is'} ready! 
+                          Please proceed to the pickup area.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
