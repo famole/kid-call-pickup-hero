@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +19,7 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [role, setRole] = useState<'parent' | 'teacher'>('parent');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login } = useAuth();
@@ -47,7 +49,8 @@ const Signup = () => {
         options: {
           data: {
             name: name,
-            phone: phone
+            phone: phone,
+            role: role
           }
         }
       });
@@ -55,16 +58,17 @@ const Signup = () => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2. Create parent record in the parents table
+        // 2. Create parent record in the parents table with selected role
         const parent = await createParent({
           name,
           email,
-          phone: phone || undefined
+          phone: phone || undefined,
+          role
         });
 
         toast({
           title: "Account created!",
-          description: "Your account has been created successfully.",
+          description: `Your ${role} account has been created successfully.`,
         });
 
         // 3. Log the user in
@@ -195,6 +199,18 @@ const Signup = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={role} onValueChange={(value: 'parent' | 'teacher') => setRole(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="parent">Parent</SelectItem>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

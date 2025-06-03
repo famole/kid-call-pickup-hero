@@ -20,6 +20,7 @@ export const getAllParents = async (): Promise<Parent[]> => {
     name: parent.name,
     email: parent.email,
     phone: parent.phone,
+    role: parent.role || 'parent', // Include role in the return
     createdAt: new Date(parent.created_at),
     updatedAt: new Date(parent.updated_at),
   }));
@@ -89,13 +90,14 @@ export const getParentById = async (id: string): Promise<Parent | null> => {
     name: data.name,
     email: data.email,
     phone: data.phone,
+    role: data.role || 'parent',
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
   };
 };
 
 // Create a new parent
-export const createParent = async (parentData: ParentInput): Promise<Parent> => {
+export const createParent = async (parentData: ParentInput & { role?: 'parent' | 'teacher' }): Promise<Parent> => {
   const { data, error } = await supabase
     .from('parents')
     .insert([
@@ -103,6 +105,7 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
         name: parentData.name,
         email: parentData.email,
         phone: parentData.phone || null,
+        role: parentData.role || 'parent',
       }
     ])
     .select()
@@ -118,6 +121,7 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
     name: data.name,
     email: data.email,
     phone: data.phone,
+    role: data.role || 'parent',
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
   };
@@ -147,6 +151,7 @@ export const updateParent = async (id: string, parentData: ParentInput): Promise
     name: data.name,
     email: data.email,
     phone: data.phone,
+    role: data.role || 'parent',
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
   };
