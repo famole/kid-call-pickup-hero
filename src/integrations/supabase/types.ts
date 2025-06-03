@@ -66,6 +66,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pickup_authorizations: {
+        Row: {
+          authorized_parent_id: string
+          authorizing_parent_id: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          start_date: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          authorized_parent_id: string
+          authorizing_parent_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          start_date: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          authorized_parent_id?: string
+          authorizing_parent_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          start_date?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_authorizations_authorized_parent_id_fkey"
+            columns: ["authorized_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_authorizations_authorizing_parent_id_fkey"
+            columns: ["authorizing_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pickup_requests: {
         Row: {
           id: string

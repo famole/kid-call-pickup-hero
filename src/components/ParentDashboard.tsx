@@ -1,10 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createPickupRequest, getActivePickupRequestsForParent } from '@/services/pickupService';
 import { getStudentsForParent } from '@/services/studentService';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ParentDashboardHeader from './parent-dashboard/ParentDashboardHeader';
 import ChildrenSelectionCard from './parent-dashboard/ChildrenSelectionCard';
 import PickupStatusSidebar from './parent-dashboard/PickupStatusSidebar';
@@ -114,24 +117,51 @@ const ParentDashboard = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school-primary"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* Main Selection Card */}
-            <div className="xl:col-span-2">
-              <ChildrenSelectionCard
+          <div className="space-y-6">
+            {/* Authorization Management Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Pickup Authorizations
+                </CardTitle>
+                <CardDescription>
+                  Manage who can pick up your children when you're not available
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">
+                  You can authorize other parents to pick up your children within specific date ranges. 
+                  This is useful for carpools, emergencies, or when you can't make it to pickup.
+                </p>
+                <Link to="/pickup-authorizations">
+                  <Button variant="outline">
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Authorizations
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              {/* Main Selection Card */}
+              <div className="xl:col-span-2">
+                <ChildrenSelectionCard
+                  children={children}
+                  selectedChildren={selectedChildren}
+                  childrenWithActiveRequests={childrenWithActiveRequests}
+                  isSubmitting={isSubmitting}
+                  onToggleChildSelection={toggleChildSelection}
+                  onRequestPickup={handleRequestPickup}
+                />
+              </div>
+
+              {/* Status Sidebar */}
+              <PickupStatusSidebar
+                activeRequests={activeRequests}
                 children={children}
-                selectedChildren={selectedChildren}
-                childrenWithActiveRequests={childrenWithActiveRequests}
-                isSubmitting={isSubmitting}
-                onToggleChildSelection={toggleChildSelection}
-                onRequestPickup={handleRequestPickup}
               />
             </div>
-
-            {/* Status Sidebar */}
-            <PickupStatusSidebar
-              activeRequests={activeRequests}
-              children={children}
-            />
           </div>
         )}
       </div>
