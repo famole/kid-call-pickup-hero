@@ -23,23 +23,21 @@ import { Child } from '@/types';
 import {
   getParentsWithStudents,
   deleteParent,
-  removeStudentFromParent,
-  updateStudentParentRelationship,
 } from '@/services/parentService';
 import { getAllStudents } from '@/services/studentService';
 
-// Import new components and hooks
+// Import components and hooks
 import AddParentSheet from '@/components/admin-parents/AddParentSheet';
 import EditParentSheet from '@/components/admin-parents/EditParentSheet';
 import ImportParentsDialog from '@/components/admin-parents/ImportParentsDialog';
-import AddStudentToParentDialog from '@/components/admin-parents/AddStudentToParentDialog';
+import StudentManagementModal from '@/components/admin-parents/StudentManagementModal';
 import ParentTableRow from '@/components/admin-parents/ParentTableRow';
 import ParentSearch from '@/components/admin-parents/ParentSearch';
 
 import { useAddParentForm } from '@/hooks/useAddParentForm';
 import { useEditParentForm } from '@/hooks/useEditParentForm';
 import { useImportParents } from '@/hooks/useImportParents';
-import { useAddStudentToParentForm } from '@/hooks/useAddStudentToParentForm';
+import { useStudentManagement } from '@/hooks/useStudentManagement';
 import { useParentSearch } from '@/hooks/useParentSearch';
 
 const AdminParentsScreen = () => {
@@ -94,10 +92,6 @@ const AdminParentsScreen = () => {
   const onParentUpdated = (updatedParent: ParentWithStudents) => {
     setParents(prev => prev.map(p => p.id === updatedParent.id ? updatedParent : p));
   };
-  
-  const onStudentAddedToParent = (updatedParent: ParentWithStudents) => {
-     setParents(prev => prev.map(p => p.id === updatedParent.id ? updatedParent : p));
-  };
 
   const onImportCompleted = () => {
     loadParents();
@@ -107,8 +101,12 @@ const AdminParentsScreen = () => {
   const addParentForm = useAddParentForm({ onParentAdded });
   const editParentForm = useEditParentForm({ onParentUpdated });
   const importParentsHook = useImportParents({ onImportCompleted });
-  const addStudentForm = useAddStudentToParentForm({ allStudents, onStudentAddedToParent });
-
+  const studentManagement = useStudentManagement({ 
+    allStudents, 
+    onParentUpdated, 
+    parents, 
+    setParents 
+  });
 
   // Handle parent deletion
   const handleDeleteParent = async (parentId: string) => {
@@ -126,90 +124,6 @@ const AdminParentsScreen = () => {
       toast({
         title: "Error",
         description: "Failed to delete parent",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle removing student from parent
-  const handleRemoveStudent = async (studentRelationshipId: string, parentId: string, studentId: string) => {
-    const parent = parents.find(p => p.id === parentId);
-    if (!parent || !parent.students) return;
-    
-    if (!confirm("Are you sure you want to remove this student from the parent?")) {
-      return;
-    }
-    
-    try {
-      await removeStudentFromParent(studentRelationshipId);
-      setParents(prev => prev.map(p => {
-        if (p.id === parentId) {
-          return {
-            ...p,
-            students: p.students?.filter(s => s.parentRelationshipId !== studentRelationshipId) || [],
-          };
-        }
-        return p;
-      }));
-      toast({
-        title: "Success",
-        description: "Student removed from parent successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to remove student from parent",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle toggling primary status
-  const handleTogglePrimary = async (studentRelationshipId: string, parentId: string, currentIsPrimary: boolean, currentRelationship?: string) => {
-    const parent = parents.find(p => p.id === parentId);
-    if (!parent || !parent.students) return;
-        
-    try {
-      await updateStudentParentRelationship(
-        studentRelationshipId, 
-        !currentIsPrimary, 
-        currentRelationship
-      );
-      setParents(prev => prev.map(p => {
-        if (p.id === parentId) {
-          // When a student is set to primary, others should be set to non-primary for that parent.
-          const newStudentsList = p.students?.map(s => {
-            if (s.parentRelationshipId === studentRelationshipId) {
-              return { ...s, isPrimary: !s.isPrimary }; // Toggle the selected student
-            } else if (!currentIsPrimary && s.isPrimary) { 
-              // If we are setting the current student to primary (!currentIsPrimary is true)
-              // and this 's' student is another primary one, set it to false.
-              return { ...s, isPrimary: false };
-            }
-            return s;
-          }) || [];
-
-          // If after toggling, no student is primary (e.g., unsetting the only primary one),
-          // and the list is not empty, it's often desired to make the first student primary.
-          // However, this can be complex. For now, we'll just handle the toggle and explicit unsetting of others.
-          // The API should ideally enforce one primary or the business logic here needs to be more robust.
-          // For this iteration, we ensure that if one is set to primary, others are unset.
-          
-          return {
-            ...p,
-            students: newStudentsList,
-          };
-        }
-        return p;
-      }));
-      toast({
-        title: "Success",
-        description: "Primary status updated successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update primary status",
         variant: "destructive",
       });
     }
@@ -270,9 +184,7 @@ const AdminParentsScreen = () => {
                     parent={parent}
                     onEdit={() => editParentForm.openEditParentSheet(parent)}
                     onDelete={handleDeleteParent}
-                    onAddStudent={() => addStudentForm.openAddStudentDialog(parent)}
-                    onTogglePrimary={handleTogglePrimary}
-                    onRemoveStudent={handleRemoveStudent}
+                    onManageStudents={() => studentManagement.openStudentModal(parent)}
                   />
                 ))
               )}
@@ -299,18 +211,14 @@ const AdminParentsScreen = () => {
         />
       )}
       
-      <AddStudentToParentDialog
-        isOpen={addStudentForm.isStudentDialogOpen}
-        onOpenChange={(openState) => openState ? addStudentForm.openAddStudentDialog(parents.find(p => p.name === addStudentForm.targetParentName)!) : addStudentForm.closeAddStudentDialog()}
-        selectedParentName={addStudentForm.targetParentName}
-        allStudents={addStudentForm.availableStudents}
-        selectedStudentId={addStudentForm.selectedStudentId}
-        onSelectedStudentIdChange={addStudentForm.setSelectedStudentId}
-        relationship={addStudentForm.relationship}
-        onRelationshipChange={addStudentForm.setRelationship}
-        isPrimary={addStudentForm.isPrimary}
-        onIsPrimaryChange={addStudentForm.setIsPrimary}
-        onSubmit={addStudentForm.handleAddStudentToParentSubmit}
+      <StudentManagementModal
+        isOpen={studentManagement.isStudentModalOpen}
+        onOpenChange={studentManagement.closeStudentModal}
+        parent={studentManagement.selectedParent}
+        allStudents={allStudents}
+        onAddStudent={studentManagement.handleAddStudentToParent}
+        onRemoveStudent={studentManagement.handleRemoveStudent}
+        onTogglePrimary={studentManagement.handleTogglePrimary}
       />
     </div>
   );
