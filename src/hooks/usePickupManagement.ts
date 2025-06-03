@@ -13,15 +13,29 @@ export const usePickupManagement = (classId?: string) => {
   const fetchPendingRequests = async () => {
     setLoading(true);
     try {
+      console.log('Fetching pending pickup requests...');
+      
       // Get all pending pickup requests
       const activeRequests = await getActivePickupRequests();
       const pendingOnly = activeRequests.filter(req => req.status === 'pending');
       
-      // Get student and class details for each request
+      console.log(`Found ${pendingOnly.length} pending requests`);
+      
+      // Get student and class details for each request with better error handling
       const requestsWithDetails = await Promise.all(pendingOnly.map(async (req) => {
         try {
+          console.log(`Processing request ${req.id} for student ${req.studentId}`);
+          
           const student = await getStudentById(req.studentId);
-          const classInfo = student ? await getClassById(student.classId) : null;
+          let classInfo = null;
+          
+          if (student && student.classId) {
+            try {
+              classInfo = await getClassById(student.classId);
+            } catch (classError) {
+              console.error(`Error fetching class ${student.classId}:`, classError);
+            }
+          }
           
           return {
             request: req,
@@ -42,11 +56,13 @@ export const usePickupManagement = (classId?: string) => {
       // Filter by class if specified
       let filteredRequests = requestsWithDetails;
       if (classId && classId !== 'all') {
+        console.log(`Filtering requests by classId: ${classId}`);
         filteredRequests = requestsWithDetails.filter(item => 
           item.child && item.class && String(item.child.classId) === String(classId)
         );
       }
 
+      console.log(`Final filtered requests count: ${filteredRequests.length}`);
       setPendingRequests(filteredRequests);
     } catch (error) {
       console.error("Error fetching pending requests:", error);
@@ -58,6 +74,8 @@ export const usePickupManagement = (classId?: string) => {
 
   const markAsCalled = async (requestId: string) => {
     try {
+      console.log(`Marking request ${requestId} as called`);
+      
       await updatePickupRequestStatus(requestId, 'called');
       console.log(`Request ${requestId} marked as called, scheduling auto-completion in 5 minutes`);
       

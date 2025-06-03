@@ -5,6 +5,8 @@ import { PickupRequest } from '@/types';
 // Update the status of a pickup request
 export const updatePickupRequestStatus = async (id: string, status: PickupRequest['status']): Promise<PickupRequest | null> => {
   try {
+    console.log(`Updating pickup request ${id} to status: ${status}`);
+    
     const { data, error } = await supabase
       .from('pickup_requests')
       .update({ status })
@@ -13,9 +15,16 @@ export const updatePickupRequestStatus = async (id: string, status: PickupReques
       .single();
     
     if (error) {
-      console.error('Error updating pickup request status:', error);
-      throw new Error(error.message);
+      console.error('Supabase error updating pickup request status:', error);
+      throw new Error(`Database error: ${error.message}`);
     }
+    
+    if (!data) {
+      console.warn(`No pickup request found with id: ${id}`);
+      return null;
+    }
+    
+    console.log(`Successfully updated pickup request ${id} to status: ${status}`);
     
     return {
       id: data.id,

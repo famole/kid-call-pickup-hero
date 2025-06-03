@@ -5,15 +5,24 @@ import { PickupRequest } from '@/types';
 // Get all active pickup requests (both pending and called)
 export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
   try {
+    console.log('Fetching active pickup requests...');
+    
     const { data, error } = await supabase
       .from('pickup_requests')
       .select('*')
       .in('status', ['pending', 'called']);
     
     if (error) {
-      console.error('Error fetching active pickup requests:', error);
-      throw new Error(error.message);
+      console.error('Supabase error fetching active pickup requests:', error);
+      throw new Error(`Database error: ${error.message}`);
     }
+    
+    if (!data) {
+      console.log('No active pickup requests found');
+      return [];
+    }
+    
+    console.log(`Found ${data.length} active pickup requests`);
     
     return data.map(item => ({
       id: item.id,
@@ -24,13 +33,16 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     }));
   } catch (error) {
     console.error('Error in getActivePickupRequests:', error);
-    throw error;
+    // Return empty array instead of throwing to prevent app crashes
+    return [];
   }
 };
 
 // Get active pickup requests for a specific parent (both pending and called)
 export const getActivePickupRequestsForParent = async (parentId: string): Promise<PickupRequest[]> => {
   try {
+    console.log(`Fetching active pickup requests for parent: ${parentId}`);
+    
     const { data, error } = await supabase
       .from('pickup_requests')
       .select('*')
@@ -38,9 +50,16 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
       .in('status', ['pending', 'called']);
     
     if (error) {
-      console.error('Error fetching active pickup requests for parent:', error);
-      throw new Error(error.message);
+      console.error('Supabase error fetching pickup requests for parent:', error);
+      throw new Error(`Database error: ${error.message}`);
     }
+    
+    if (!data) {
+      console.log(`No active pickup requests found for parent: ${parentId}`);
+      return [];
+    }
+    
+    console.log(`Found ${data.length} active pickup requests for parent: ${parentId}`);
     
     return data.map(item => ({
       id: item.id,
@@ -51,6 +70,7 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
     }));
   } catch (error) {
     console.error('Error in getActivePickupRequestsForParent:', error);
-    throw error;
+    // Return empty array instead of throwing to prevent app crashes
+    return [];
   }
 };
