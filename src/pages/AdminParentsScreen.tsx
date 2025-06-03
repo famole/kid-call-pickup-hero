@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/use-toast"; // Corrected import path
+import { useToast } from "@/components/ui/use-toast";
 import { PlusCircle } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
@@ -34,17 +34,22 @@ import EditParentSheet from '@/components/admin-parents/EditParentSheet';
 import ImportParentsDialog from '@/components/admin-parents/ImportParentsDialog';
 import AddStudentToParentDialog from '@/components/admin-parents/AddStudentToParentDialog';
 import ParentTableRow from '@/components/admin-parents/ParentTableRow';
+import ParentSearch from '@/components/admin-parents/ParentSearch';
 
 import { useAddParentForm } from '@/hooks/useAddParentForm';
 import { useEditParentForm } from '@/hooks/useEditParentForm';
 import { useImportParents } from '@/hooks/useImportParents';
 import { useAddStudentToParentForm } from '@/hooks/useAddStudentToParentForm';
+import { useParentSearch } from '@/hooks/useParentSearch';
 
 const AdminParentsScreen = () => {
   const { toast } = useToast();
   const [parents, setParents] = useState<ParentWithStudents[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [allStudents, setAllStudents] = useState<Child[]>([]);
+
+  // Use the search hook
+  const { searchTerm, setSearchTerm, filteredParents } = useParentSearch(parents);
 
   const loadParents = useCallback(async () => {
     setIsLoading(true);
@@ -95,13 +100,13 @@ const AdminParentsScreen = () => {
   };
 
   const onImportCompleted = () => {
-    loadParents(); // Refresh the parent list
+    loadParents();
   };
   
   // Initialize hooks
   const addParentForm = useAddParentForm({ onParentAdded });
   const editParentForm = useEditParentForm({ onParentUpdated });
-  const importParentsHook = useImportParents({ onImportCompleted }); // Renamed to avoid conflict
+  const importParentsHook = useImportParents({ onImportCompleted });
   const addStudentForm = useAddStudentToParentForm({ allStudents, onStudentAddedToParent });
 
 
@@ -232,6 +237,11 @@ const AdminParentsScreen = () => {
         </CardHeader>
 
         <CardContent>
+          <ParentSearch
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+          />
+          
           <Table>
             <TableHeader>
               <TableRow>
@@ -247,12 +257,14 @@ const AdminParentsScreen = () => {
                 <TableRow>
                   <TableCell colSpan={5} className="text-center">Loading parents...</TableCell>
                 </TableRow>
-              ) : parents.length === 0 ? (
+              ) : filteredParents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">No parents found. Add one to get started.</TableCell>
+                  <TableCell colSpan={5} className="text-center">
+                    {searchTerm ? `No parents found matching "${searchTerm}".` : "No parents found. Add one to get started."}
+                  </TableCell>
                 </TableRow>
               ) : (
-                parents.map((parent) => (
+                filteredParents.map((parent) => (
                   <ParentTableRow
                     key={parent.id}
                     parent={parent}
