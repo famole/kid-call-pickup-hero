@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminTabs from '@/components/AdminTabs';
 import AdminPanelHeader from '@/components/admin-panel/AdminPanelHeader';
 import PickupRequestsTab from '@/components/admin-pickup/PickupRequestsTab';
+import ReportsTab from '@/components/admin-reports/ReportsTab';
 import { useAdminPanelData } from '@/hooks/useAdminPanelData';
 
 const AdminPanel = () => {
@@ -35,9 +36,7 @@ const AdminPanel = () => {
         </TabsContent>
         
         <TabsContent value="reports">
-          <div className="text-center py-12 text-muted-foreground">
-            Reports section coming soon
-          </div>
+          <ReportsTab />
         </TabsContent>
       </Tabs>
     </div>

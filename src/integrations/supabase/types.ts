@@ -117,6 +117,39 @@ export type Database = {
           },
         ]
       }
+      pickup_history: {
+        Row: {
+          called_time: string | null
+          completed_time: string
+          created_at: string
+          id: string
+          parent_id: string
+          pickup_duration_minutes: number | null
+          request_time: string
+          student_id: string
+        }
+        Insert: {
+          called_time?: string | null
+          completed_time: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          pickup_duration_minutes?: number | null
+          request_time: string
+          student_id: string
+        }
+        Update: {
+          called_time?: string | null
+          completed_time?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          pickup_duration_minutes?: number | null
+          request_time?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       pickup_requests: {
         Row: {
           id: string
