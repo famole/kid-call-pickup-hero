@@ -69,8 +69,8 @@ export const useEditParentForm = ({ onParentUpdated }: UseEditParentFormProps) =
         });
       } else {
         toast({
-          title: "Error",
-          description: `Failed to update ${userTypeLabel}: ${error.message || 'Unknown error'}`,
+          title: "Unable to Update Account",
+          description: `We encountered an issue while updating the ${userTypeLabel} account. Please check your information and try again.`,
           variant: "destructive",
         });
       }

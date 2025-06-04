@@ -70,8 +70,8 @@ export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseA
         });
       } else {
         toast({
-          title: "Error",
-          description: `Failed to create ${userTypeLabel}: ${error.message || 'Unknown error'}`,
+          title: "Unable to Create Account",
+          description: `We encountered an issue while creating the ${userTypeLabel} account. Please check your information and try again.`,
           variant: "destructive",
         });
       }
