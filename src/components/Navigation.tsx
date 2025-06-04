@@ -32,10 +32,10 @@ const Navigation = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png" 
-              alt="Upsy" 
-              className="h-12 w-auto object-contain" 
+            <img
+              src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+              alt="Upsy"
+              className="h-18 w-auto object-contain"
             />
           </Link>
 
