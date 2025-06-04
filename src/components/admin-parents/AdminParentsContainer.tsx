@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Card,
@@ -133,7 +134,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
               onOpenImportDialog={() => {}}
               onCloseImportDialog={() => {}}
               onImportFileChange={() => {}}
-              onImportSubmit={() => {}}
+              onImportSubmit={() => Promise.resolve()} // Fixed: Return Promise<void>
               userRole={userRole}
               headerTitle={getHeaderTitle()}
               headerDescription={getHeaderDescription()}

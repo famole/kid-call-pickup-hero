@@ -2,9 +2,11 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { School, Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import ClassListTable from '@/components/admin-classes/ClassListTable';
 import ClassFormDialog from '@/components/admin-classes/ClassFormDialog';
 import DeleteClassDialog from '@/components/admin-classes/DeleteClassDialog';
+import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
 import { useClassManagement } from '@/hooks/useClassManagement';
 
 const AdminClassesScreen = () => {
@@ -86,12 +88,24 @@ const AdminClassesScreen = () => {
         </div>
       </header>
       
-      <ClassListTable
-        classList={classList}
-        loading={loading}
-        onEditClass={handleEditClass}
-        onDeletePrompt={handleDeletePrompt}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle>Class List</CardTitle>
+          <CardDescription>Manage all classes in the school</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <TableSkeleton rows={5} columns={4} />
+          ) : (
+            <ClassListTable
+              classList={classList}
+              loading={false}
+              onEditClass={handleEditClass}
+              onDeletePrompt={handleDeletePrompt}
+            />
+          )}
+        </CardContent>
+      </Card>
 
       <ClassFormDialog
         isOpen={isAddDialogOpen}

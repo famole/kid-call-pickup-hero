@@ -20,6 +20,8 @@ import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import StudentDetailsDialog from '@/components/students/StudentDetailsDialog';
 import StudentsHeader from '@/components/students/StudentsHeader';
+import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { isValidUUID } from '@/utils/validators';
 import { useStudentForm, NewStudentState } from '@/hooks/useStudentForm';
 import { useStudentActions } from '@/hooks/useStudentActions';
@@ -165,26 +167,42 @@ const AdminStudentsScreen = () => {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            Manage all students - {filteredStudents.length} of {studentList.length} students shown
+            {isLoading ? (
+              <Skeleton className="h-4 w-48" />
+            ) : (
+              `Manage all students - ${filteredStudents.length} of ${studentList.length} students shown`
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <StudentSearch
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            selectedClassId={selectedClassId}
-            onClassFilterChange={setSelectedClassId}
-            classList={classList}
-          />
-          
-          <StudentTable 
-            studentList={filteredStudents}
-            isLoading={isLoading}
-            getClassName={getClassName}
-            onEdit={handleEditStudent}
-            onDelete={handleDeletePrompt}
-            onViewDetails={handleViewDetails}
-          />
+          {isLoading ? (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-48" />
+              </div>
+              <TableSkeleton rows={8} columns={5} />
+            </div>
+          ) : (
+            <>
+              <StudentSearch
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                selectedClassId={selectedClassId}
+                onClassFilterChange={setSelectedClassId}
+                classList={classList}
+              />
+              
+              <StudentTable 
+                studentList={filteredStudents}
+                isLoading={false}
+                getClassName={getClassName}
+                onEdit={handleEditStudent}
+                onDelete={handleDeletePrompt}
+                onViewDetails={handleViewDetails}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 

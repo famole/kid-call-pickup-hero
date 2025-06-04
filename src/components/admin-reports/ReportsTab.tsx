@@ -8,6 +8,8 @@ import PickupHistoryTable from './PickupHistoryTable';
 import ReportFilters from './ReportFilters';
 import ReportActions from './ReportActions';
 import StudentStats from './StudentStats';
+import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Child } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,12 +20,14 @@ const ReportsTab = () => {
   const [endDate, setEndDate] = useState<string>('');
   const [pickupHistory, setPickupHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [studentsLoading, setStudentsLoading] = useState(true);
   const [stats, setStats] = useState<{ totalPickups: number; averageDuration: number } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
+        setStudentsLoading(true);
         const studentsData = await getAllStudents();
         setStudents(studentsData);
       } catch (error) {
@@ -33,6 +37,8 @@ const ReportsTab = () => {
           description: "Failed to load students",
           variant: "destructive",
         });
+      } finally {
+        setStudentsLoading(false);
       }
     };
 
@@ -125,30 +131,55 @@ const ReportsTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ReportFilters
-            students={students}
-            selectedStudent={selectedStudent}
-            onStudentChange={setSelectedStudent}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-            endDate={endDate}
-            onEndDateChange={setEndDate}
-          />
+          {studentsLoading ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+          ) : (
+            <>
+              <ReportFilters
+                students={students}
+                selectedStudent={selectedStudent}
+                onStudentChange={setSelectedStudent}
+                startDate={startDate}
+                onStartDateChange={setStartDate}
+                endDate={endDate}
+                onEndDateChange={setEndDate}
+              />
 
-          <ReportActions
-            onGenerateReport={handleGenerateReport}
-            onExportCSV={handleExportCSV}
-            loading={loading}
-            hasData={pickupHistory.length > 0}
-          />
+              <ReportActions
+                onGenerateReport={handleGenerateReport}
+                onExportCSV={handleExportCSV}
+                loading={loading}
+                hasData={pickupHistory.length > 0}
+              />
 
-          <StudentStats stats={stats} />
+              <StudentStats stats={stats} />
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {pickupHistory.length > 0 && (
+      {loading ? (
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent>
+            <TableSkeleton rows={6} columns={6} />
+          </CardContent>
+        </Card>
+      ) : pickupHistory.length > 0 ? (
         <PickupHistoryTable data={pickupHistory} />
-      )}
+      ) : null}
     </div>
   );
 };
