@@ -27,8 +27,8 @@ export const useEditParentForm = ({ onParentUpdated }: UseEditParentFormProps) =
     setEditingParent(parent);
   };
   
-  const handleEditParentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditParentSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!editingParent) return;
 
     try {

@@ -12,14 +12,14 @@ interface ParentModalsProps {
   isAddSheetOpen: boolean;
   newParent: ParentInput;
   onNewParentChange: (parent: ParentInput) => void;
-  onAddParentSubmit: (e: React.FormEvent) => Promise<void>;
+  onAddParentSubmit: (e?: React.FormEvent) => Promise<void>;
   onAddSheetOpenChange: (isOpen: boolean) => void;
 
   // Edit Parent Sheet
   isEditSheetOpen: boolean;
   editingParent: ParentWithStudents | null;
   onEditingParentChange: (parent: ParentWithStudents) => void;
-  onEditParentSubmit: (e: React.FormEvent) => Promise<void>;
+  onEditParentSubmit: (e?: React.FormEvent) => Promise<void>;
   onEditSheetOpenChange: (isOpen: boolean) => void;
 
   // Student Management Modal

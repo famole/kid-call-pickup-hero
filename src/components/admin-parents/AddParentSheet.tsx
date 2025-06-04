@@ -25,7 +25,7 @@ interface AddParentSheetProps {
   onOpenChange: (isOpen: boolean) => void;
   newParent: ParentInput;
   onNewParentChange: (parent: ParentInput) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e?: React.FormEvent) => Promise<void>;
   userRole?: 'parent' | 'teacher' | 'admin';
 }
 
