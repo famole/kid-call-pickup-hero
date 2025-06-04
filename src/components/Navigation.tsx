@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut, Settings, ClipboardList, Shield } from 'lucide-react';
-import Logo from './Logo';
 
 const Navigation = () => {
   const { user, logout } = useAuth();
@@ -33,9 +32,12 @@ const Navigation = () => {
     <nav className="bg-white shadow-sm border-b">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center gap-2">
-            <Logo size="sm" className="text-school-primary" />
-            <span className="text-xl font-bold text-gray-800">School Pickup</span>
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/d4eabeca-73bf-4f6d-87cd-701061cf1704.png" 
+              alt="Upsy" 
+              className="h-8 w-auto object-contain" 
+            />
           </Link>
 
           <div className="flex items-center gap-4">
