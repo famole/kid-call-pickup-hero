@@ -172,12 +172,12 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
         isAddSheetOpen={addParentForm.isAddSheetOpen}
         newParent={addParentForm.newParent}
         onNewParentChange={addParentForm.handleNewParentChange}
-        onAddParentSubmit={addParentForm.handleAddParentSubmit}
+        onAddParentSubmit={async () => await addParentForm.handleAddParentSubmit()}
         onAddSheetOpenChange={openState => openState ? addParentForm.openAddParentSheet() : addParentForm.closeAddParentSheet()}
         isEditSheetOpen={editParentForm.isEditSheetOpen}
         editingParent={editParentForm.editingParent}
         onEditingParentChange={editParentForm.handleEditingParentChange}
-        onEditParentSubmit={editParentForm.handleEditParentSubmit}
+        onEditParentSubmit={async () => await editParentForm.handleEditParentSubmit()}
         onEditSheetOpenChange={openState => openState ? (editParentForm.editingParent && editParentForm.openEditParentSheet(editParentForm.editingParent)) : editParentForm.closeEditParentSheet()}
         isStudentModalOpen={studentManagement.isStudentModalOpen}
         selectedParent={studentManagement.selectedParent}

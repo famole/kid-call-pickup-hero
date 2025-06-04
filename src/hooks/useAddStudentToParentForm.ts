@@ -98,10 +98,11 @@ export const useAddStudentToParentForm = ({ allStudents, classes, onStudentAdded
   };
   
   // Filter available students based on search and class filter
+  // FIXED: Only filter out students already assigned to THIS parent, not all students with parents
   const availableStudents = useMemo(() => {
     if (!targetParent) return allStudents;
     
-    // Get students not already assigned to this parent
+    // Get students not already assigned to THIS SPECIFIC parent
     const unassignedStudents = allStudents.filter(s => !targetParent.students?.find(ps => ps.id === s.id));
     
     let filtered = unassignedStudents;
