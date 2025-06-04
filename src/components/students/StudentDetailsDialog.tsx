@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Calendar, Users, Clock } from "lucide-react";
 import { Child, Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,6 +32,17 @@ interface StudentParentRelation {
   parentPhone?: string;
 }
 
+interface PickupAuthorization {
+  id: string;
+  authorizedParentId: string;
+  authorizedParentName: string;
+  authorizedParentEmail: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
 const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   open,
   onOpenChange,
@@ -39,11 +51,13 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   classList,
 }) => {
   const [parentRelations, setParentRelations] = useState<StudentParentRelation[]>([]);
+  const [pickupAuthorizations, setPickupAuthorizations] = useState<PickupAuthorization[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!student || !open) {
       setParentRelations([]);
+      setPickupAuthorizations([]);
       return;
     }
 
@@ -68,20 +82,55 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
 
         if (error) {
           console.error('Error fetching student relations:', error);
-          return;
+        } else {
+          const parentData: StudentParentRelation[] = relations.map(rel => ({
+            id: rel.id,
+            parentId: rel.parent_id,
+            parentName: rel.parents?.name || 'Unknown Parent',
+            relationship: rel.relationship || undefined,
+            isPrimary: rel.is_primary,
+            parentEmail: rel.parents?.email,
+            parentPhone: rel.parents?.phone,
+          }));
+
+          setParentRelations(parentData);
         }
 
-        const parentData: StudentParentRelation[] = relations.map(rel => ({
-          id: rel.id,
-          parentId: rel.parent_id,
-          parentName: rel.parents?.name || 'Unknown Parent',
-          relationship: rel.relationship || undefined,
-          isPrimary: rel.is_primary,
-          parentEmail: rel.parents?.email,
-          parentPhone: rel.parents?.phone,
-        }));
+        // Fetch pickup authorizations for this student
+        const { data: authorizations, error: authError } = await supabase
+          .from('pickup_authorizations')
+          .select(`
+            id,
+            authorized_parent_id,
+            start_date,
+            end_date,
+            is_active,
+            created_at,
+            parents!pickup_authorizations_authorized_parent_id_fkey(
+              name,
+              email
+            )
+          `)
+          .eq('student_id', student.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
 
-        setParentRelations(parentData);
+        if (authError) {
+          console.error('Error fetching pickup authorizations:', authError);
+        } else {
+          const authData: PickupAuthorization[] = authorizations.map(auth => ({
+            id: auth.id,
+            authorizedParentId: auth.authorized_parent_id,
+            authorizedParentName: auth.parents?.name || 'Unknown Parent',
+            authorizedParentEmail: auth.parents?.email || '',
+            startDate: auth.start_date,
+            endDate: auth.end_date,
+            isActive: auth.is_active,
+            createdAt: auth.created_at,
+          }));
+
+          setPickupAuthorizations(authData);
+        }
       } catch (error) {
         console.error('Error in fetchStudentDetails:', error);
       } finally {
@@ -100,6 +149,27 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
     .map(n => n[0])
     .join('')
     .toUpperCase();
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const isExpired = (endDate: string) => {
+    return new Date(endDate) < new Date();
+  };
+
+  const isActive = (startDate: string, endDate: string) => {
+    const today = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return today >= start && today <= end;
+  };
+
+  const getAuthorizationStatus = (startDate: string, endDate: string) => {
+    if (isExpired(endDate)) return { label: 'Expired', variant: 'destructive' as const };
+    if (isActive(startDate, endDate)) return { label: 'Active', variant: 'default' as const };
+    return { label: 'Scheduled', variant: 'outline' as const };
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -200,6 +270,60 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                 </div>
               ) : (
                 <p className="text-muted-foreground">No parent/guardian information available</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Pickup Authorizations */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Authorized Pickup Parents
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <p className="text-muted-foreground">Loading pickup authorizations...</p>
+              ) : pickupAuthorizations.length > 0 ? (
+                <div className="space-y-4">
+                  {pickupAuthorizations.map((auth) => {
+                    const status = getAuthorizationStatus(auth.startDate, auth.endDate);
+                    return (
+                      <div key={auth.id} className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold">{auth.authorizedParentName}</h4>
+                            <p className="text-sm text-muted-foreground">{auth.authorizedParentEmail}</p>
+                          </div>
+                          <Badge variant={status.variant}>{status.label}</Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Created {formatDate(auth.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Pickup Authorizations</h3>
+                  <p className="text-gray-500">
+                    No additional parents have been authorized to pick up this student.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
