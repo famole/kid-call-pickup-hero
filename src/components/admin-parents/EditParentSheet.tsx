@@ -23,24 +23,26 @@ import { ParentWithStudents, ParentInput } from '@/types/parent';
 interface EditParentSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  selectedParent: ParentWithStudents | null;
-  onSelectedParentChange: (parent: ParentWithStudents) => void;
+  parent: ParentWithStudents | null;
+  onParentChange: (parent: ParentWithStudents) => void;
   onSubmit: (e: React.FormEvent) => Promise<void>;
+  userRole?: 'parent' | 'teacher' | 'admin';
 }
 
 const EditParentSheet: React.FC<EditParentSheetProps> = ({
   isOpen,
   onOpenChange,
-  selectedParent,
-  onSelectedParentChange,
+  parent,
+  onParentChange,
   onSubmit,
+  userRole = 'parent',
 }) => {
   const nameId = React.useId();
   const emailId = React.useId();
   const phoneId = React.useId();
   const roleId = React.useId();
   
-  if (!selectedParent) return null;
+  if (!parent) return null;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -57,8 +59,8 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
             <Input
               id={nameId}
               placeholder="Enter full name" 
-              value={selectedParent.name}
-              onChange={(e) => onSelectedParentChange({...selectedParent, name: e.target.value})}
+              value={parent.name}
+              onChange={(e) => onParentChange({...parent, name: e.target.value})}
               required
             />
           </div>
@@ -68,8 +70,8 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
               id={emailId}
               type="email" 
               placeholder="Enter email address" 
-              value={selectedParent.email}
-              onChange={(e) => onSelectedParentChange({...selectedParent, email: e.target.value})}
+              value={parent.email}
+              onChange={(e) => onParentChange({...parent, email: e.target.value})}
               required
             />
           </div>
@@ -78,16 +80,16 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
             <Input
               id={phoneId}
               placeholder="Enter phone number" 
-              value={selectedParent.phone || ''}
-              onChange={(e) => onSelectedParentChange({...selectedParent, phone: e.target.value})}
+              value={parent.phone || ''}
+              onChange={(e) => onParentChange({...parent, phone: e.target.value})}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor={roleId}>Role</Label>
             <Select
-              value={selectedParent.role || 'parent'}
+              value={parent.role || 'parent'}
               onValueChange={(value: 'parent' | 'teacher' | 'admin') => 
-                onSelectedParentChange({...selectedParent, role: value})
+                onParentChange({...parent, role: value})
               }
             >
               <SelectTrigger>
@@ -103,7 +105,7 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
           <SheetFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit">
-              Update {selectedParent.role === 'teacher' ? 'Teacher' : selectedParent.role === 'admin' ? 'Admin' : 'Parent'}
+              Update {parent.role === 'teacher' ? 'Teacher' : parent.role === 'admin' ? 'Admin' : 'Parent'}
             </Button>
           </SheetFooter>
         </form>

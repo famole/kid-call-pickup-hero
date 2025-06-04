@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
@@ -107,6 +106,40 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
     setParents 
   });
 
+  // Wrapper functions to match the expected signatures in ParentModals
+  const handleAddStudentWrapper = async (studentId: string, relationship: string) => {
+    if (!studentManagement.selectedParent) return;
+    await studentManagement.handleAddStudentToParent(
+      studentManagement.selectedParent.id,
+      studentId,
+      relationship,
+      false // Default isPrimary to false
+    );
+  };
+
+  const handleRemoveStudentWrapper = async (studentId: string) => {
+    if (!studentManagement.selectedParent) return;
+    const student = studentManagement.selectedParent.students?.find(s => s.id === studentId);
+    if (!student) return;
+    await studentManagement.handleRemoveStudent(
+      student.parentRelationshipId,
+      studentManagement.selectedParent.id,
+      studentId
+    );
+  };
+
+  const handleTogglePrimaryWrapper = async (studentId: string) => {
+    if (!studentManagement.selectedParent) return;
+    const student = studentManagement.selectedParent.students?.find(s => s.id === studentId);
+    if (!student) return;
+    await studentManagement.handleTogglePrimary(
+      student.parentRelationshipId,
+      studentManagement.selectedParent.id,
+      student.isPrimary,
+      student.relationship
+    );
+  };
+
   // Handle parent deletion
   const handleDeleteParent = async (parentId: string) => {
     const userTypeLabel = userRole === 'teacher' ? 'teacher' : userRole === 'admin' ? 'admin' : 'parent';
@@ -201,9 +234,9 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
         selectedParent={studentManagement.selectedParent}
         allStudents={allStudents}
         onStudentModalOpenChange={studentManagement.closeStudentModal}
-        onAddStudent={studentManagement.handleAddStudentToParent}
-        onRemoveStudent={studentManagement.handleRemoveStudent}
-        onTogglePrimary={studentManagement.handleTogglePrimary}
+        onAddStudent={handleAddStudentWrapper}
+        onRemoveStudent={handleRemoveStudentWrapper}
+        onTogglePrimary={handleTogglePrimaryWrapper}
         userRole={userRole}
       />
     </div>
