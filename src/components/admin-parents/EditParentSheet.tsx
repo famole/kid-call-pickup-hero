@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,7 +108,7 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
           </div>
           <SheetFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">
+            <Button type="submit" className="bg-school-primary">
               Update {editingParent.role === 'teacher' ? 'Teacher' : editingParent.role === 'admin' ? 'Admin' : 'Parent'}
             </Button>
           </SheetFooter>

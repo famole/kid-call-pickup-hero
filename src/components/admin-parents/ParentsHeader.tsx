@@ -65,7 +65,7 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
             onSubmit={onImportSubmit}
           />
         )}
-        <Button onClick={onAddParent}>
+        <Button onClick={onAddParent} className="bg-school-primary">
           <PlusCircle className="mr-2 h-4 w-4" /> {getButtonLabel()}
         </Button>
       </div>

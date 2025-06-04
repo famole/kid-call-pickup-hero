@@ -29,7 +29,9 @@ const ImportParentsDialog: React.FC<ImportParentsDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline"><FileUp className="mr-2 h-4 w-4" /> Import</Button>
+        <Button variant="outline" className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
+          <FileUp className="mr-2 h-4 w-4" /> Import
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -41,7 +43,7 @@ const ImportParentsDialog: React.FC<ImportParentsDialogProps> = ({
         <Input type="file" accept=".csv" onChange={onFileChange} />
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={onSubmit}>Import</Button>
+          <Button onClick={onSubmit} className="bg-school-primary">Import</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
