@@ -60,6 +60,20 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Running tests
+
+This project uses Bun's built-in test runner. Execute all tests with:
+
+```sh
+bun run test
+```
+
+To generate a coverage report, run:
+
+```sh
+bun run coverage
+```
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/164bb4c6-3e1e-44df-b3a2-7094f661598c) and click on Share -> Publish.
