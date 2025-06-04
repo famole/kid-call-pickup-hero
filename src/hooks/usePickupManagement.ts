@@ -74,20 +74,29 @@ export const usePickupManagement = (classId?: string) => {
 
   const markAsCalled = async (requestId: string) => {
     try {
-      console.log(`Marking request ${requestId} as called`);
+      console.log(`Marking request ${requestId} as called at ${new Date().toISOString()}`);
       
       await updatePickupRequestStatus(requestId, 'called');
       console.log(`Request ${requestId} marked as called, scheduling auto-completion in 5 minutes`);
       
-      // Schedule automatic status reset after 5 minutes with proper error handling
-      setTimeout(async () => {
+      // Schedule automatic completion after 5 minutes
+      const timeoutId = setTimeout(async () => {
         try {
-          console.log(`Auto-completing request ${requestId} after 5 minutes`);
-          await updatePickupRequestStatus(requestId, 'completed');
-          console.log(`Request ${requestId} automatically completed after 5 minutes`);
+          console.log(`Auto-completing request ${requestId} after 5 minutes at ${new Date().toISOString()}`);
           
-          // Refresh the pending requests after auto-completion
-          await fetchPendingRequests();
+          // Check if the request is still in 'called' status before completing
+          const currentRequests = await getActivePickupRequests();
+          const currentRequest = currentRequests.find(req => req.id === requestId);
+          
+          if (currentRequest && currentRequest.status === 'called') {
+            await updatePickupRequestStatus(requestId, 'completed');
+            console.log(`Request ${requestId} automatically completed after 5 minutes`);
+            
+            // Refresh the pending requests after auto-completion
+            await fetchPendingRequests();
+          } else {
+            console.log(`Request ${requestId} no longer in 'called' status, skipping auto-completion`);
+          }
         } catch (error) {
           console.error(`Error auto-completing request ${requestId}:`, error);
           // Even if auto-completion fails, we should still refresh to get current state
@@ -98,6 +107,9 @@ export const usePickupManagement = (classId?: string) => {
           }
         }
       }, 5 * 60 * 1000); // 5 minutes
+
+      // Store the timeout ID for potential cleanup
+      console.log(`Timeout ${timeoutId} scheduled for request ${requestId}`);
 
       // Refresh the pending requests immediately
       await fetchPendingRequests();

@@ -11,6 +11,7 @@ import PendingPickupsTable from '@/components/pickup/PendingPickupsTable';
 import { useCalledStudents } from '@/hooks/useCalledStudents';
 import { usePickupManagement } from '@/hooks/usePickupManagement';
 import { getAllClasses } from '@/services/classService';
+import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickupRequests';
 import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, CheckCheck } from 'lucide-react';
@@ -38,6 +39,12 @@ const PickupManagement: React.FC = () => {
     };
     
     fetchClasses();
+    
+    // Start the auto-completion process
+    const stopAutoCompletion = startAutoCompletionProcess();
+    
+    // Cleanup on unmount
+    return stopAutoCompletion;
   }, []);
 
   // Show loading while checking auth

@@ -27,7 +27,7 @@ interface AdminParentsContainerProps {
   isLoading: boolean;
   allStudents: Child[];
   parents: ParentWithStudents[];
-  setParents: (updateFn: (prev: ParentWithStudents[]) => ParentWithStudents[]) => void;
+  setParents: (parents: ParentWithStudents[]) => void;
   onParentAdded: (newParent: ParentWithStudents) => void;
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
@@ -64,7 +64,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
     allStudents, 
     onParentUpdated, 
     parents, 
-    setParents 
+    setParents: (updateFn) => setParents(updateFn(parents))
   });
 
   // Wrapper functions to match the expected signatures in ParentModals
