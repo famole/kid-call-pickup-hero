@@ -18,6 +18,7 @@ import StudentSearch from '@/components/students/StudentSearch';
 import AddStudentDialog from '@/components/students/AddStudentDialog';
 import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
+import StudentDetailsDialog from '@/components/students/StudentDetailsDialog';
 import StudentsHeader from '@/components/students/StudentsHeader';
 import { isValidUUID } from '@/utils/validators';
 import { useStudentForm, NewStudentState } from '@/hooks/useStudentForm';
@@ -31,9 +32,10 @@ const AdminStudentsScreen = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<Child | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Main loading state for the screen
+  const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
   const { newStudent, setNewStudent, resetNewStudent } = useStudentForm();
@@ -77,7 +79,6 @@ const AdminStudentsScreen = () => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        // Get students directly using service, not a hook for this initial load
         const { getAllStudents: fetchAllStudents } = await import('@/services/studentService');
         const studentsPromise = fetchAllStudents();
         const classesPromise = getAllClasses(); 
@@ -86,12 +87,12 @@ const AdminStudentsScreen = () => {
         
         setStudentList(students);
         setClassList(fetchedClasses);
-        console.log('Fetched classes:', fetchedClasses); // Keep for debugging
+        console.log('Fetched classes:', fetchedClasses);
         if (fetchedClasses.length === 0) {
           toast({
             title: "No Classes Found",
             description: "No classes were loaded. Please ensure classes exist.",
-            variant: "default" // Changed from "warning"
+            variant: "default"
           });
         }
 
@@ -108,13 +109,13 @@ const AdminStudentsScreen = () => {
     };
     
     loadData();
-  }, [toast]); // Removed studentService from deps as it's imported inside
+  }, [toast]);
 
   const handleEditStudent = (student: Child) => {
     setCurrentStudent(student);
-    const validParentIds = student.parentIds?.filter(isValidUUID) || []; // Ensure parentIds is not undefined
+    const validParentIds = student.parentIds?.filter(isValidUUID) || [];
     
-    setNewStudent({ // Uses setNewStudent from useStudentForm
+    setNewStudent({
       name: student.name,
       classId: student.classId,
       parentIds: validParentIds,
@@ -126,6 +127,11 @@ const AdminStudentsScreen = () => {
   const handleDeletePrompt = (student: Child) => {
     setCurrentStudent(student);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleViewDetails = (student: Child) => {
+    setCurrentStudent(student);
+    setIsDetailsDialogOpen(true);
   };
   
   // Wrapper functions to call hook actions
@@ -150,7 +156,7 @@ const AdminStudentsScreen = () => {
         onExportCSV={onExportCSV}
         onImportCSV={() => setIsCSVModalOpen(true)}
         onAddStudent={() => {
-          resetNewStudent(); // Use reset from hook
+          resetNewStudent();
           setIsAddDialogOpen(true);
         }}
       />
@@ -173,10 +179,11 @@ const AdminStudentsScreen = () => {
           
           <StudentTable 
             studentList={filteredStudents}
-            isLoading={isLoading} // Pass the main loading state
+            isLoading={isLoading}
             getClassName={getClassName}
             onEdit={handleEditStudent}
             onDelete={handleDeletePrompt}
+            onViewDetails={handleViewDetails}
           />
         </CardContent>
       </Card>
@@ -186,10 +193,10 @@ const AdminStudentsScreen = () => {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         classList={classList}
-        newStudent={newStudent as NewStudentState} // Cast to satisfy AddStudentDialog if its types are strict
+        newStudent={newStudent as NewStudentState}
         setNewStudent={setNewStudent as React.Dispatch<React.SetStateAction<NewStudentState>>}
         onSave={onAddStudent}
-        isLoading={isLoading && isAddDialogOpen} // Use main loading state scoped to dialog
+        isLoading={isLoading && isAddDialogOpen}
       />
 
       {/* Edit Student Dialog */}
@@ -197,10 +204,10 @@ const AdminStudentsScreen = () => {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         classList={classList}
-        student={newStudent as NewStudentState} // Cast as needed
+        student={newStudent as NewStudentState}
         setStudent={setNewStudent as React.Dispatch<React.SetStateAction<NewStudentState>>}
         onUpdate={onUpdateStudent}
-        isLoading={isLoading && isEditDialogOpen} // Use main loading state scoped to dialog
+        isLoading={isLoading && isEditDialogOpen}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -209,7 +216,16 @@ const AdminStudentsScreen = () => {
         onOpenChange={setIsDeleteDialogOpen}
         student={currentStudent}
         onDelete={onDeleteStudent}
-        isLoading={isLoading && isDeleteDialogOpen} // Use main loading state scoped to dialog
+        isLoading={isLoading && isDeleteDialogOpen}
+      />
+
+      {/* Student Details Dialog */}
+      <StudentDetailsDialog
+        open={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+        student={currentStudent}
+        getClassName={getClassName}
+        classList={classList}
       />
 
       {/* CSV Upload Modal */}
@@ -217,7 +233,7 @@ const AdminStudentsScreen = () => {
         isOpen={isCSVModalOpen}
         onClose={() => setIsCSVModalOpen(false)}
         onImport={onImportCSV}
-        classList={classList} // Pass classList if CSVUploadModal needs it for validation hints
+        classList={classList}
       />
     </div>
   );

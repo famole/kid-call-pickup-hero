@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Card,
@@ -172,12 +171,12 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
         isAddSheetOpen={addParentForm.isAddSheetOpen}
         newParent={addParentForm.newParent}
         onNewParentChange={addParentForm.handleNewParentChange}
-        onAddParentSubmit={addParentForm.handleAddParentSubmit}
+        onAddParentSubmit={() => addParentForm.handleAddParentSubmit({} as React.FormEvent)}
         onAddSheetOpenChange={openState => openState ? addParentForm.openAddParentSheet() : addParentForm.closeAddParentSheet()}
         isEditSheetOpen={editParentForm.isEditSheetOpen}
         editingParent={editParentForm.editingParent}
         onEditingParentChange={editParentForm.handleEditingParentChange}
-        onEditParentSubmit={editParentForm.handleEditParentSubmit}
+        onEditParentSubmit={() => editParentForm.handleEditParentSubmit({} as React.FormEvent)}
         onEditSheetOpenChange={openState => openState ? (editParentForm.editingParent && editParentForm.openEditParentSheet(editParentForm.editingParent)) : editParentForm.closeEditParentSheet()}
         isStudentModalOpen={studentManagement.isStudentModalOpen}
         selectedParent={studentManagement.selectedParent}
