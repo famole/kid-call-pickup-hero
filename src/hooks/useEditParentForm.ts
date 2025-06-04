@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { ParentInput, ParentWithStudents } from '@/types/parent';
 import { updateParent } from '@/services/parentService';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface UseEditParentFormProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
@@ -70,7 +70,7 @@ export const useEditParentForm = ({ onParentUpdated }: UseEditParentFormProps) =
       } else {
         toast({
           title: "Error",
-          description: `Failed to update ${userTypeLabel}`,
+          description: `Failed to update ${userTypeLabel}: ${error.message || 'Unknown error'}`,
           variant: "destructive",
         });
       }
