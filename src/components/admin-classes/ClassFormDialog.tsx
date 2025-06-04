@@ -26,10 +26,10 @@ import { getParentsWithStudents } from '@/services/parentService';
 interface ClassFormDialogProps {
   isOpen: boolean;
   isEditMode: boolean;
-  classData: Partial<Class>;
+  classData: Partial<Class & { selectedTeachers?: string[] }>;
   onClose: () => void;
   onSave: () => void;
-  onClassDataChange: (data: Partial<Class>) => void;
+  onClassDataChange: (data: Partial<Class & { selectedTeachers?: string[] }>) => void;
 }
 
 const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
