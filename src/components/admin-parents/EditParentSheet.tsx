@@ -25,7 +25,7 @@ interface EditParentSheetProps {
   onOpenChange: (isOpen: boolean) => void;
   editingParent: ParentWithStudents | null;
   onEditingParentChange: (parent: ParentWithStudents) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e?: React.FormEvent) => Promise<void>;
   userRole?: 'parent' | 'teacher' | 'admin';
 }
 

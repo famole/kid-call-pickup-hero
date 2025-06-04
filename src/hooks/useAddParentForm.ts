@@ -32,8 +32,8 @@ export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseA
     setNewParent(parent);
   };
 
-  const handleAddParentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddParentSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!newParent.name || !newParent.email) {
       toast({
         title: "Error",
