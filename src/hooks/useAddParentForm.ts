@@ -56,14 +56,25 @@ export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseA
         description: `${userTypeLabel} ${createdParent.name} has been created`,
       });
       closeAddParentSheet();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error creating parent:', error);
       const userTypeLabel = newParent.role === 'teacher' ? 'teacher' : 
                            newParent.role === 'admin' ? 'admin' : 'parent';
-      toast({
-        title: "Error",
-        description: `Failed to create ${userTypeLabel}`,
-        variant: "destructive",
-      });
+      
+      // Handle specific database constraint violations
+      if (error.code === '23505' && error.message?.includes('parents_email_key')) {
+        toast({
+          title: "Email Already Exists",
+          description: `A ${userTypeLabel} with this email address already exists. Please use a different email.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `Failed to create ${userTypeLabel}`,
+          variant: "destructive",
+        });
+      }
     }
   };
 

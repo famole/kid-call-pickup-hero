@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { ParentInput, ParentWithStudents } from '@/types/parent';
 import { updateParent } from '@/services/parentService';
-import { useToast } from "@/components/ui/use-toast"; // Corrected import path
+import { useToast } from "@/components/ui/use-toast";
 
 interface UseEditParentFormProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
@@ -36,6 +36,7 @@ export const useEditParentForm = ({ onParentUpdated }: UseEditParentFormProps) =
         name: editingParent.name,
         email: editingParent.email,
         phone: editingParent.phone,
+        role: editingParent.role,
       };
       const updatedParentData = await updateParent(editingParent.id, parentInputData);
       
@@ -47,17 +48,32 @@ export const useEditParentForm = ({ onParentUpdated }: UseEditParentFormProps) =
 
       onParentUpdated(fullyUpdatedParent);
       
+      const userTypeLabel = updatedParentData.role === 'teacher' ? 'Teacher' : 
+                           updatedParentData.role === 'admin' ? 'Admin' : 'Parent';
       toast({
         title: "Success",
-        description: `Parent ${updatedParentData.name} has been updated`,
+        description: `${userTypeLabel} ${updatedParentData.name} has been updated`,
       });
       closeEditParentSheet();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update parent",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.error('Error updating parent:', error);
+      const userTypeLabel = editingParent.role === 'teacher' ? 'teacher' : 
+                           editingParent.role === 'admin' ? 'admin' : 'parent';
+      
+      // Handle specific database constraint violations
+      if (error.code === '23505' && error.message?.includes('parents_email_key')) {
+        toast({
+          title: "Email Already Exists",
+          description: `A ${userTypeLabel} with this email address already exists. Please use a different email.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `Failed to update ${userTypeLabel}`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
