@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -34,9 +33,9 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center">
             <img 
-              src="/lovable-uploads/d4eabeca-73bf-4f6d-87cd-701061cf1704.png" 
+              src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png" 
               alt="Upsy" 
-              className="h-8 w-auto object-contain" 
+              className="h-12 w-auto object-contain" 
             />
           </Link>
 
