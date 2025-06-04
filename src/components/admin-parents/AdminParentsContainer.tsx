@@ -13,6 +13,7 @@ import ParentSearch from './ParentSearch';
 import ParentClassFilter from './ParentClassFilter';
 import ParentsTable from './ParentsTable';
 import ParentModals from './ParentModals';
+import LoadingIndicator from './LoadingIndicator';
 
 // Import hooks
 import { useAddParentForm } from '@/hooks/useAddParentForm';
@@ -36,6 +37,7 @@ interface AdminParentsContainerProps {
   handleDeleteParent: (parentId: string) => Promise<void>;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;
+  loadingProgress?: string;
 }
 
 const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
@@ -51,6 +53,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
   handleDeleteParent,
   getHeaderTitle,
   getHeaderDescription,
+  loadingProgress,
 }) => {
   // Use the class filter hook
   const { 
@@ -119,6 +122,31 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
     );
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto">
+        <Card>
+          <CardHeader>
+            <ParentsHeader
+              onAddParent={() => {}} // Disable during loading
+              isImportDialogOpen={false}
+              onOpenImportDialog={() => {}}
+              onCloseImportDialog={() => {}}
+              onImportFileChange={() => {}}
+              onImportSubmit={() => {}}
+              userRole={userRole}
+              headerTitle={getHeaderTitle()}
+              headerDescription={getHeaderDescription()}
+            />
+          </CardHeader>
+          <CardContent>
+            <LoadingIndicator message={loadingProgress || "Loading parents..."} />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto">
       <Card>
@@ -156,7 +184,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
           
           <ParentsTable
             parents={filteredParents}
-            isLoading={isLoading}
+            isLoading={false} // We handle loading above
             searchTerm={searchTerm}
             onEditParent={editParentForm.openEditParentSheet}
             onDeleteParent={handleDeleteParent}

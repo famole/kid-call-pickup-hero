@@ -1,7 +1,7 @@
 
 import React from 'react';
 import AdminParentsContainer from '@/components/admin-parents/AdminParentsContainer';
-import { useAdminParentsData } from '@/hooks/useAdminParentsData';
+import { useOptimizedParentsData } from '@/hooks/useOptimizedParentsData';
 import { useAdminParentsActions } from '@/hooks/useAdminParentsActions';
 
 interface AdminParentsScreenProps {
@@ -15,10 +15,11 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
     filteredParentsByRole,
     isLoading,
     allStudents,
+    loadingProgress,
     onParentAdded,
     onParentUpdated,
     onImportCompleted,
-  } = useAdminParentsData({ userRole });
+  } = useOptimizedParentsData({ userRole });
 
   const {
     handleDeleteParent,
@@ -40,6 +41,7 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
       handleDeleteParent={handleDeleteParent}
       getHeaderTitle={getHeaderTitle}
       getHeaderDescription={getHeaderDescription}
+      loadingProgress={loadingProgress}
     />
   );
 };
