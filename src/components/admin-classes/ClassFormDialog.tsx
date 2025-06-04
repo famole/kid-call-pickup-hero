@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Class } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { getParentsWithStudents } from '@/services/parentService';
@@ -40,6 +41,7 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
   onClassDataChange
 }) => {
   const [teachers, setTeachers] = useState<ParentWithStudents[]>([]);
+  const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -61,24 +63,53 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
     loadTeachers();
   }, [isOpen]);
 
+  // Reset selected teachers when dialog opens/closes or classData changes
+  useEffect(() => {
+    if (isOpen && isEditMode && classData.teacher) {
+      // For backward compatibility, set the primary teacher if editing existing class
+      const primaryTeacher = teachers.find(t => t.name === classData.teacher);
+      if (primaryTeacher) {
+        setSelectedTeachers([primaryTeacher.id]);
+      }
+    } else {
+      setSelectedTeachers([]);
+    }
+  }, [isOpen, isEditMode, classData.teacher, teachers]);
+
   const handleInputChange = (field: keyof Class, value: string) => {
     onClassDataChange({ ...classData, [field]: value });
   };
 
-  const handleTeacherChange = (teacherId: string) => {
-    const selectedTeacher = teachers.find(teacher => teacher.id === teacherId);
-    if (selectedTeacher) {
-      handleInputChange('teacher', selectedTeacher.name);
+  const handleTeacherToggle = (teacherId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTeachers(prev => [...prev, teacherId]);
+    } else {
+      setSelectedTeachers(prev => prev.filter(id => id !== teacherId));
     }
+  };
+
+  const handleSave = () => {
+    // Update the primary teacher field for backward compatibility
+    if (selectedTeachers.length > 0) {
+      const primaryTeacher = teachers.find(t => t.id === selectedTeachers[0]);
+      if (primaryTeacher) {
+        onClassDataChange({ 
+          ...classData, 
+          teacher: primaryTeacher.name,
+          selectedTeachers 
+        });
+      }
+    }
+    onSave();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Class' : 'Add New Class'}</DialogTitle>
           <DialogDescription>
-            {isEditMode ? 'Update class information' : 'Create a new class for your school'}
+            {isEditMode ? 'Update class information and assign teachers' : 'Create a new class and assign teachers'}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -100,34 +131,44 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
               placeholder="e.g. 1st Grade"
             />
           </div>
+          
           <div className="grid gap-2">
-            <Label htmlFor="teacher">Teacher</Label>
-            <Select 
-              value={teachers.find(t => t.name === classData.teacher)?.id || ''} 
-              onValueChange={handleTeacherChange}
-              disabled={loading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={loading ? "Loading teachers..." : "Select a teacher"} />
-              </SelectTrigger>
-              <SelectContent>
+            <Label>Assign Teachers</Label>
+            {loading ? (
+              <div className="text-sm text-muted-foreground">Loading teachers...</div>
+            ) : teachers.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No teachers available</div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-3">
                 {teachers.map((teacher) => (
-                  <SelectItem key={teacher.id} value={teacher.id}>
-                    {teacher.name}
-                  </SelectItem>
+                  <div key={teacher.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={teacher.id}
+                      checked={selectedTeachers.includes(teacher.id)}
+                      onCheckedChange={(checked) => handleTeacherToggle(teacher.id, checked as boolean)}
+                    />
+                    <Label htmlFor={teacher.id} className="text-sm font-normal">
+                      {teacher.name} ({teacher.email})
+                    </Label>
+                  </div>
                 ))}
-                {teachers.length === 0 && !loading && (
-                  <SelectItem value="" disabled>
-                    No teachers available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+              </div>
+            )}
+            {selectedTeachers.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                {selectedTeachers.length} teacher(s) selected
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={onSave}>{isEditMode ? 'Update Class' : 'Save Class'}</Button>
+          <Button 
+            onClick={handleSave}
+            disabled={!classData.name || !classData.grade || selectedTeachers.length === 0}
+          >
+            {isEditMode ? 'Update Class' : 'Save Class'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

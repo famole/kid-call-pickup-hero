@@ -4,15 +4,17 @@ import { Class } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { getAllClasses, createClass, updateClass, deleteClass } from '@/services/classService';
 import { getAllStudents } from '@/services/studentService';
+import { addTeacherToClass, removeTeacherFromClass, getTeachersForClass } from '@/services/classTeacherService';
 
 export const useClassManagement = () => {
   const [classList, setClassList] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentClass, setCurrentClass] = useState<Class | null>(null);
-  const [classFormData, setClassFormData] = useState<Partial<Class>>({
+  const [classFormData, setClassFormData] = useState<Partial<Class & { selectedTeachers?: string[] }>>({
     name: '',
     grade: '',
-    teacher: ''
+    teacher: '',
+    selectedTeachers: []
   });
   
   const { toast } = useToast();
@@ -40,10 +42,10 @@ export const useClassManagement = () => {
   }, [toast]);
 
   const handleAddClass = async () => {
-    if (!classFormData.name || !classFormData.grade || !classFormData.teacher) {
+    if (!classFormData.name || !classFormData.grade || !classFormData.teacher || !classFormData.selectedTeachers?.length) {
       toast({
         title: "Error",
-        description: "All fields are required",
+        description: "All fields are required and at least one teacher must be selected",
         variant: "destructive"
       });
       return;
@@ -57,11 +59,19 @@ export const useClassManagement = () => {
       };
 
       const createdClass = await createClass(classToAdd);
+      
+      // Add teacher relationships
+      if (classFormData.selectedTeachers) {
+        for (const teacherId of classFormData.selectedTeachers) {
+          await addTeacherToClass(createdClass.id, teacherId);
+        }
+      }
+      
       setClassList([...classList, createdClass]);
       
       toast({
         title: "Class Added",
-        description: `${createdClass.name} has been added successfully`,
+        description: `${createdClass.name} has been added successfully with ${classFormData.selectedTeachers.length} teacher(s)`,
       });
       
       resetForm();
@@ -78,10 +88,10 @@ export const useClassManagement = () => {
   };
 
   const handleUpdateClass = async () => {
-    if (!currentClass || !classFormData.name || !classFormData.grade || !classFormData.teacher) {
+    if (!currentClass || !classFormData.name || !classFormData.grade || !classFormData.teacher || !classFormData.selectedTeachers?.length) {
       toast({
         title: "Error",
-        description: "All fields are required",
+        description: "All fields are required and at least one teacher must be selected",
         variant: "destructive"
       });
       return;
@@ -94,11 +104,32 @@ export const useClassManagement = () => {
         teacher: classFormData.teacher
       });
 
+      // Update teacher relationships
+      if (classFormData.selectedTeachers) {
+        // Get current teachers for the class
+        const currentTeachers = await getTeachersForClass(currentClass.id);
+        const currentTeacherIds = currentTeachers.map(t => t.id);
+        
+        // Remove teachers that are no longer selected
+        for (const teacherId of currentTeacherIds) {
+          if (!classFormData.selectedTeachers.includes(teacherId)) {
+            await removeTeacherFromClass(currentClass.id, teacherId);
+          }
+        }
+        
+        // Add new teachers
+        for (const teacherId of classFormData.selectedTeachers) {
+          if (!currentTeacherIds.includes(teacherId)) {
+            await addTeacherToClass(currentClass.id, teacherId);
+          }
+        }
+      }
+
       setClassList(classList.map(c => c.id === currentClass.id ? updatedClass : c));
       
       toast({
         title: "Class Updated",
-        description: `${updatedClass.name} has been updated successfully`,
+        description: `${updatedClass.name} has been updated successfully with ${classFormData.selectedTeachers.length} teacher(s)`,
       });
       
       resetForm();
@@ -151,13 +182,29 @@ export const useClassManagement = () => {
     }
   };
 
-  const prepareEditClass = (classItem: Class) => {
+  const prepareEditClass = async (classItem: Class) => {
     setCurrentClass(classItem);
-    setClassFormData({
-      name: classItem.name,
-      grade: classItem.grade,
-      teacher: classItem.teacher
-    });
+    
+    try {
+      // Get assigned teachers for this class
+      const assignedTeachers = await getTeachersForClass(classItem.id);
+      const teacherIds = assignedTeachers.map(t => t.id);
+      
+      setClassFormData({
+        name: classItem.name,
+        grade: classItem.grade,
+        teacher: classItem.teacher,
+        selectedTeachers: teacherIds
+      });
+    } catch (error) {
+      console.error('Error loading teachers for class:', error);
+      setClassFormData({
+        name: classItem.name,
+        grade: classItem.grade,
+        teacher: classItem.teacher,
+        selectedTeachers: []
+      });
+    }
   };
 
   const prepareDeleteClass = (classItem: Class) => {
@@ -165,7 +212,12 @@ export const useClassManagement = () => {
   };
 
   const resetForm = () => {
-    setClassFormData({ name: '', grade: '', teacher: '' });
+    setClassFormData({ 
+      name: '', 
+      grade: '', 
+      teacher: '',
+      selectedTeachers: []
+    });
     setCurrentClass(null);
   };
 

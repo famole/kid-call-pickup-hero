@@ -64,7 +64,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
     allStudents, 
     onParentUpdated, 
     parents, 
-    setParents: (updateFn) => setParents(updateFn(parents))
+    setParents
   });
 
   // Wrapper functions to match the expected signatures in ParentModals
