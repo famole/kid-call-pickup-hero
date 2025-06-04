@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -13,6 +14,7 @@ import {
 } from '@/services/classService'; 
 import CSVUploadModal from '@/components/CSVUploadModal';
 import StudentTable from '@/components/students/StudentTable';
+import StudentSearch from '@/components/students/StudentSearch';
 import AddStudentDialog from '@/components/students/AddStudentDialog';
 import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
@@ -21,6 +23,7 @@ import { isValidUUID } from '@/utils/validators';
 import { useStudentForm, NewStudentState } from '@/hooks/useStudentForm';
 import { useStudentActions } from '@/hooks/useStudentActions';
 import { useStudentCSV } from '@/hooks/useStudentCSV';
+import { useStudentSearch } from '@/hooks/useStudentSearch';
 
 const AdminStudentsScreen = () => {
   const [studentList, setStudentList] = useState<Child[]>([]);
@@ -34,6 +37,15 @@ const AdminStudentsScreen = () => {
   
   const { toast } = useToast();
   const { newStudent, setNewStudent, resetNewStudent } = useStudentForm();
+
+  // Use the search hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedClassId,
+    setSelectedClassId,
+    filteredStudents
+  } = useStudentSearch(studentList);
 
   const { 
     handleAddStudentAction, 
@@ -127,7 +139,6 @@ const AdminStudentsScreen = () => {
   const onImportCSV = (data: Partial<Child>[]) => handleCSVImportAction(data);
   const onExportCSV = () => handleExportCSVAction(studentList);
 
-
   const getClassName = (classId: string) => {
     const classInfo = classList.find(c => c.id === classId);
     return classInfo ? classInfo.name : 'Unknown Class';
@@ -148,12 +159,20 @@ const AdminStudentsScreen = () => {
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            Manage all students
+            Manage all students - {filteredStudents.length} of {studentList.length} students shown
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <StudentSearch
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedClassId={selectedClassId}
+            onClassFilterChange={setSelectedClassId}
+            classList={classList}
+          />
+          
           <StudentTable 
-            studentList={studentList}
+            studentList={filteredStudents}
             isLoading={isLoading} // Pass the main loading state
             getClassName={getClassName}
             onEdit={handleEditStudent}
