@@ -12,7 +12,8 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
       .insert({
         student_id: studentId,
         parent_id: parentId,
-        status: 'pending' // Changed from 'called' to 'pending'
+        status: 'pending', // Changed from 'called' to 'pending'
+        request_time: new Date().toISOString()
       })
       .select()
       .single();
