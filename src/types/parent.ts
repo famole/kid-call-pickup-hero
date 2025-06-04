@@ -32,5 +32,6 @@ export type ParentWithStudents = Parent & {
     isPrimary: boolean;
     relationship?: string;
     parentRelationshipId: string; // The ID of the student_parents table row
+    classId?: string; // Add classId for filtering
   }[];
 };

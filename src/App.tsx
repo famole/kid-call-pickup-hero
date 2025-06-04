@@ -13,7 +13,6 @@ import PickupAuthorizationPage from './pages/PickupAuthorizationPage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminInitialSetup from './pages/AdminInitialSetup';
-import ParentManagement from './pages/ParentManagement';
 
 function App() {
   return (
@@ -51,14 +50,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AdminInitialSetup />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/parents"
-        element={
-          <ProtectedRoute requireAdmin={true}>
-            <ParentManagement />
           </ProtectedRoute>
         }
       />

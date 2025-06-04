@@ -113,6 +113,7 @@ export const getParentsWithStudents = async (): Promise<ParentWithStudents[]> =>
       continue;
     }
     
+    // Get all students data with their class information
     const allStudentsData = await getAllStudents();
     
     const studentDetails = studentParentRows.map(spRow => {
@@ -123,6 +124,7 @@ export const getParentsWithStudents = async (): Promise<ParentWithStudents[]> =>
         isPrimary: spRow.is_primary,
         relationship: spRow.relationship || undefined,
         parentRelationshipId: spRow.id,
+        classId: student ? student.classId : '', // Include classId for filtering
       };
     });
     

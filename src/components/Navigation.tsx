@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, Settings, Users, ClipboardList, Shield } from 'lucide-react';
+import { User, LogOut, Settings, ClipboardList, Shield } from 'lucide-react';
 import Logo from './Logo';
 
 const Navigation = () => {
@@ -86,10 +86,6 @@ const Navigation = () => {
                         <DropdownMenuItem onClick={() => navigate('/admin')}>
                           <Settings className="h-4 w-4 mr-2" />
                           Admin Panel
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/admin/parents')}>
-                          <Users className="h-4 w-4 mr-2" />
-                          Parent Management
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                       </>

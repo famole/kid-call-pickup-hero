@@ -11,6 +11,7 @@ import { Child } from '@/types';
 // Import components
 import ParentsHeader from './ParentsHeader';
 import ParentSearch from './ParentSearch';
+import ParentClassFilter from './ParentClassFilter';
 import ParentsTable from './ParentsTable';
 import ParentModals from './ParentModals';
 
@@ -20,6 +21,7 @@ import { useEditParentForm } from '@/hooks/useEditParentForm';
 import { useImportParents } from '@/hooks/useImportParents';
 import { useStudentManagement } from '@/hooks/useStudentManagement';
 import { useParentSearch } from '@/hooks/useParentSearch';
+import { useParentClassFilter } from '@/hooks/useParentClassFilter';
 
 interface AdminParentsContainerProps {
   userRole?: 'parent' | 'teacher' | 'admin';
@@ -50,8 +52,17 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
   getHeaderTitle,
   getHeaderDescription,
 }) => {
-  // Use the search hook with filtered parents
-  const { searchTerm, setSearchTerm, filteredParents } = useParentSearch(filteredParentsByRole);
+  // Use the class filter hook
+  const { 
+    classes, 
+    selectedClassId, 
+    setSelectedClassId, 
+    filteredParentsByClass,
+    isLoadingClasses 
+  } = useParentClassFilter({ parents: filteredParentsByRole });
+
+  // Use the search hook with class-filtered parents
+  const { searchTerm, setSearchTerm, filteredParents } = useParentSearch(filteredParentsByClass);
 
   // Initialize hooks with role-specific settings
   const addParentForm = useAddParentForm({ 
@@ -119,10 +130,22 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
         </CardHeader>
 
         <CardContent>
-          <ParentSearch
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <div className="flex-1">
+              <ParentSearch
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+              />
+            </div>
+            {userRole === 'parent' && (
+              <ParentClassFilter
+                classes={classes}
+                selectedClassId={selectedClassId}
+                onClassChange={setSelectedClassId}
+                isLoading={isLoadingClasses}
+              />
+            )}
+          </div>
           
           <ParentsTable
             parents={filteredParents}
