@@ -35,7 +35,7 @@ const Navigation = () => {
             <img
               src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
               alt="Upsy"
-              className="h-18 w-auto object-contain"
+              className="h-16 w-auto object-contain"
             />
           </Link>
 
