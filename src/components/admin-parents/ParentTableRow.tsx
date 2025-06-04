@@ -5,7 +5,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Users } from "lucide-react";
+import { Edit, Trash2, Users, UserPlus } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 
 interface ParentTableRowProps {
@@ -13,6 +13,7 @@ interface ParentTableRowProps {
   onEdit: () => void;
   onDelete: (parentId: string) => void;
   onManageStudents: () => void;
+  onAddStudentToParent: () => void;
   userRole?: 'parent' | 'teacher' | 'admin';
   showStudentsColumn: boolean;
 }
@@ -22,6 +23,7 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
   onEdit,
   onDelete,
   onManageStudents,
+  onAddStudentToParent,
   userRole = 'parent',
   showStudentsColumn,
 }) => {
@@ -46,9 +48,14 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
             <Trash2 className="h-4 w-4" />
           </Button>
           {showStudentsColumn && (
-            <Button variant="outline" size="sm" onClick={onManageStudents}>
-              <Users className="h-4 w-4" />
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={onManageStudents}>
+                <Users className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={onAddStudentToParent}>
+                <UserPlus className="h-4 w-4" />
+              </Button>
+            </>
           )}
         </div>
       </TableCell>

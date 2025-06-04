@@ -25,7 +25,7 @@ interface AddParentSheetProps {
   onOpenChange: (isOpen: boolean) => void;
   newParent: ParentInput;
   onNewParentChange: (parent: ParentInput) => void;
-  onSubmit: () => Promise<void>;
+  onSubmit: (e: React.FormEvent) => Promise<void>;
   userRole?: 'parent' | 'teacher' | 'admin';
 }
 
@@ -44,7 +44,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit();
+    await onSubmit(e);
   };
   
   return (
