@@ -22,6 +22,7 @@ import { useImportParents } from '@/hooks/useImportParents';
 import { useStudentManagement } from '@/hooks/useStudentManagement';
 import { useParentSearch } from '@/hooks/useParentSearch';
 import { useParentClassFilter } from '@/hooks/useParentClassFilter';
+import { useAddStudentToParentForm } from '@/hooks/useAddStudentToParentForm';
 
 interface AdminParentsContainerProps {
   userRole?: 'parent' | 'teacher' | 'admin';
@@ -76,6 +77,13 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
     onParentUpdated, 
     parents, 
     setParents
+  });
+
+  // Add the new hook for adding students to parents
+  const addStudentToParentForm = useAddStudentToParentForm({
+    allStudents,
+    classes,
+    onStudentAddedToParent: onParentUpdated,
   });
 
   // Wrapper functions to match the expected signatures in ParentModals
@@ -154,6 +162,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
             onEditParent={editParentForm.openEditParentSheet}
             onDeleteParent={handleDeleteParent}
             onManageStudents={studentManagement.openStudentModal}
+            onAddStudentToParent={addStudentToParentForm.openAddStudentDialog}
             userRole={userRole}
           />
         </CardContent>
@@ -177,6 +186,10 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
         onAddStudent={handleAddStudentWrapper}
         onRemoveStudent={handleRemoveStudentWrapper}
         onTogglePrimary={handleTogglePrimaryWrapper}
+        // Add student to parent form props
+        isAddStudentDialogOpen={addStudentToParentForm.isStudentDialogOpen}
+        addStudentForm={addStudentToParentForm}
+        classes={classes}
         userRole={userRole}
       />
     </div>
