@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -104,7 +105,10 @@ const Navigation = () => {
                 <Button variant="ghost" onClick={() => navigate('/login')}>
                   Login
                 </Button>
-                <Button onClick={() => navigate('/signup')}>
+                <Button 
+                  className="bg-school-primary hover:bg-school-primary/90"
+                  onClick={() => navigate('/signup')}
+                >
                   Sign Up
                 </Button>
               </div>

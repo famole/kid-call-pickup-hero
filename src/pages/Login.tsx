@@ -85,8 +85,12 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
       <Card className="w-[350px] shadow-lg">
         <CardHeader className="space-y-1 flex flex-col items-center">
-          <div className="bg-school-primary w-12 h-12 rounded-full flex items-center justify-center mb-2">
-            <School className="h-6 w-6 text-white" />
+          <div className="mb-4">
+            <img
+              src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+              alt="Upsy"
+              className="h-16 w-auto object-contain"
+            />
           </div>
           <CardTitle className="text-2xl text-center">School Pickup</CardTitle>
           <CardDescription className="text-center">
@@ -164,16 +168,6 @@ const Login = () => {
             </Button>
           </form>
         </CardContent>
-        
-        <div className="p-4 pt-0 text-center text-sm">
-          <p className="text-muted-foreground">
-            Demo credentials: <br />
-            Parent: parent@example.com <br />
-            Teacher: teacher@example.com <br />
-            Admin: admin@example.com <br />
-            (any password will work with Supabase Auth)
-          </p>
-        </div>
       </Card>
     </div>
   );
