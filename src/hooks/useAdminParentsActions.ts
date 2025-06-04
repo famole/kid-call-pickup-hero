@@ -14,7 +14,7 @@ export const useAdminParentsActions = ({
 }: UseAdminParentsActionsProps) => {
   const { toast } = useToast();
 
-  const handleDeleteParent = async (parentId: string) => {
+  const handleDeleteParent = async (parentId: string): Promise<void> => {
     const userTypeLabel = userRole === 'teacher' ? 'teacher' : userRole === 'admin' ? 'admin' : 'parent';
     if (!confirm(`Are you sure you want to delete this ${userTypeLabel}? This action cannot be undone.`)) {
       return;

@@ -2,14 +2,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ParentWithStudents } from "@/types/parent";
 
-// Optimized function to get parents with students using a single query with joins
+// Optimized function to get parents with students using proper joins
 export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStudents[]> => {
   console.log('Starting optimized parents fetch...');
   const startTime = performance.now();
 
   try {
-    // Single query with joins to get all data at once
-    const { data: parentsData, error: parentsError } = await supabase
+    // First, get all parents with their student relationships
+    const { data: parentStudentData, error: relationError } = await supabase
       .from('parents')
       .select(`
         id,
@@ -19,100 +19,63 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
         role,
         created_at,
         updated_at,
-        student_parents!inner(
+        student_parents (
           id,
           student_id,
           relationship,
-          is_primary,
-          students!inner(
-            id,
-            name,
-            class_id
-          )
+          is_primary
         )
       `)
       .order('name');
 
-    if (parentsError) {
-      console.error('Error fetching parents with students:', parentsError);
-      throw new Error(parentsError.message);
+    if (relationError) {
+      console.error('Error fetching parents with student relationships:', relationError);
+      throw new Error(relationError.message);
     }
 
-    console.log(`Raw data fetched in ${performance.now() - startTime}ms`);
+    console.log(`Parent-student relationships fetched in ${performance.now() - startTime}ms`);
+
+    // Get all students separately to join with the relationships
+    const { data: studentsData, error: studentsError } = await supabase
+      .from('students')
+      .select('id, name, class_id');
+
+    if (studentsError) {
+      console.error('Error fetching students:', studentsError);
+      throw new Error(studentsError.message);
+    }
+
+    console.log(`Students data fetched in ${performance.now() - startTime}ms`);
+
+    // Create a map of students for quick lookup
+    const studentsMap = new Map(studentsData.map(student => [student.id, student]));
 
     // Transform the data to match our ParentWithStudents type
-    const parentsMap = new Map<string, ParentWithStudents>();
+    const result: ParentWithStudents[] = parentStudentData.map((parentData: any) => {
+      const students = parentData.student_parents?.map((relation: any) => {
+        const studentInfo = studentsMap.get(relation.student_id);
+        return {
+          id: relation.student_id,
+          name: studentInfo ? studentInfo.name : 'Unknown Student',
+          isPrimary: relation.is_primary,
+          relationship: relation.relationship || undefined,
+          parentRelationshipId: relation.id,
+          classId: studentInfo ? studentInfo.class_id : undefined,
+        };
+      }) || [];
 
-    parentsData.forEach((parentData: any) => {
-      const parentId = parentData.id;
-      
-      if (!parentsMap.has(parentId)) {
-        parentsMap.set(parentId, {
-          id: parentData.id,
-          name: parentData.name,
-          email: parentData.email,
-          phone: parentData.phone,
-          role: parentData.role || 'parent',
-          createdAt: new Date(parentData.created_at),
-          updatedAt: new Date(parentData.updated_at),
-          students: [],
-        });
-      }
-
-      const parent = parentsMap.get(parentId)!;
-      
-      // Add student if it exists and hasn't been added yet
-      if (parentData.student_parents?.students) {
-        const studentData = parentData.student_parents.students;
-        const existingStudent = parent.students?.find(s => s.id === studentData.id);
-        
-        if (!existingStudent) {
-          parent.students!.push({
-            id: studentData.id,
-            name: studentData.name,
-            isPrimary: parentData.student_parents.is_primary,
-            relationship: parentData.student_parents.relationship || undefined,
-            parentRelationshipId: parentData.student_parents.id,
-            classId: studentData.class_id,
-          });
-        }
-      }
+      return {
+        id: parentData.id,
+        name: parentData.name,
+        email: parentData.email,
+        phone: parentData.phone,
+        role: parentData.role || 'parent',
+        createdAt: new Date(parentData.created_at),
+        updatedAt: new Date(parentData.updated_at),
+        students,
+      };
     });
 
-    // Also get parents with no students
-    const { data: parentsWithoutStudents, error: noStudentsError } = await supabase
-      .from('parents')
-      .select(`
-        id,
-        name,
-        email,
-        phone,
-        role,
-        created_at,
-        updated_at
-      `)
-      .not('id', 'in', `(${Array.from(parentsMap.keys()).map(id => `'${id}'`).join(',')})`)
-      .order('name');
-
-    if (noStudentsError) {
-      console.error('Error fetching parents without students:', noStudentsError);
-    } else {
-      parentsWithoutStudents.forEach((parentData: any) => {
-        parentsMap.set(parentData.id, {
-          id: parentData.id,
-          name: parentData.name,
-          email: parentData.email,
-          phone: parentData.phone,
-          role: parentData.role || 'parent',
-          createdAt: new Date(parentData.created_at),
-          updatedAt: new Date(parentData.updated_at),
-          students: [],
-        });
-      });
-    }
-
-    const result = Array.from(parentsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-    
     console.log(`Optimized parents fetch completed in ${performance.now() - startTime}ms for ${result.length} parents`);
     
     return result;

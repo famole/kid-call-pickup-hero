@@ -4,6 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentsWithStudentsOptimized } from '@/services/parent/optimizedParentOperations';
+import { getParentsWithStudentsLegacy } from '@/services/parentService';
 import { getAllStudents } from '@/services/studentService';
 
 interface UseOptimizedParentsDataProps {
@@ -30,7 +31,18 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
       const startTime = performance.now();
       console.log('Starting parents data load...');
       
-      const data = await getParentsWithStudentsOptimized();
+      let data: ParentWithStudents[];
+      
+      try {
+        // Try optimized version first
+        data = await getParentsWithStudentsOptimized();
+      } catch (optimizedError) {
+        console.warn('Optimized query failed, falling back to legacy method:', optimizedError);
+        setLoadingProgress('Falling back to legacy loading method...');
+        
+        // Fallback to legacy method
+        data = await getParentsWithStudentsLegacy();
+      }
       
       const loadTime = performance.now() - startTime;
       console.log(`Parents loaded in ${loadTime.toFixed(2)}ms`);
