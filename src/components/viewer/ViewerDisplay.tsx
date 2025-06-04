@@ -17,12 +17,12 @@ const ViewerDisplay: React.FC = () => {
 
   const { data: classes = [], isLoading: classesLoading } = useQuery({
     queryKey: ['classes'],
-    queryFn: getAllClasses,
+    queryFn: () => getAllClasses(),
   });
 
   const { data: calledStudents = [], isLoading: studentsLoading, refetch } = useQuery({
     queryKey: ['currently-called'],
-    queryFn: getCurrentlyCalled,
+    queryFn: () => getCurrentlyCalled(),
     refetchInterval: 2000,
     staleTime: 1000,
   });

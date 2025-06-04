@@ -123,12 +123,12 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
         isAddSheetOpen={hooks.addParentForm.isAddSheetOpen}
         newParent={hooks.addParentForm.newParent}
         onNewParentChange={hooks.addParentForm.handleNewParentChange}
-        onAddParentSubmit={() => hooks.addParentForm.handleAddParentSubmit({} as React.FormEvent)}
+        onAddParentSubmit={hooks.addParentForm.handleAddParentSubmit}
         onAddSheetOpenChange={openState => openState ? hooks.addParentForm.openAddParentSheet() : hooks.addParentForm.closeAddParentSheet()}
         isEditSheetOpen={hooks.editParentForm.isEditSheetOpen}
         editingParent={hooks.editParentForm.editingParent}
         onEditingParentChange={hooks.editParentForm.handleEditingParentChange}
-        onEditParentSubmit={() => hooks.editParentForm.handleEditParentSubmit({} as React.FormEvent)}
+        onEditParentSubmit={hooks.editParentForm.handleEditParentSubmit}
         onEditSheetOpenChange={openState => openState ? (hooks.editParentForm.editingParent && hooks.editParentForm.openEditParentSheet(hooks.editParentForm.editingParent)) : hooks.editParentForm.closeEditParentSheet()}
         isStudentModalOpen={hooks.studentManagement.isStudentModalOpen}
         selectedParent={hooks.studentManagement.selectedParent}
