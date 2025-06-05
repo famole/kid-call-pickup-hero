@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Check, ChevronsUpDown, Search, X, Users } from 'lucide-react';
+import { Check, ChevronDown, Search, Filter, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,9 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ParentWithSharedStudents {
   id: string;
@@ -33,7 +31,6 @@ interface SharedStudentsParentSelectorProps {
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
-  disabled?: boolean;
   showOnlySharedParents: boolean;
   onToggleFilter: () => void;
   parentsWhoShareStudents: ParentWithSharedStudents[];
@@ -43,58 +40,44 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
   parents,
   value,
   onValueChange,
-  placeholder = "Search and select a parent...",
-  disabled = false,
+  placeholder = "Select a parent",
   showOnlySharedParents,
   onToggleFilter,
   parentsWhoShareStudents,
 }) => {
   const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
 
-  const selectedParent = parents.find(parent => parent.id === value);
+  const selectedParent = parents.find((parent) => parent.id === value);
 
-  const filteredParents = parents.filter(parent => {
-    if (!searchValue.trim()) return true;
-    
-    const searchTerm = searchValue.toLowerCase();
-    
-    // Search by parent name
-    if (parent.name.toLowerCase().includes(searchTerm)) return true;
-    
-    // Search by parent email
-    if (parent.email.toLowerCase().includes(searchTerm)) return true;
-    
-    // Search by shared children names
-    if (parent.sharedStudentNames && parent.sharedStudentNames.length > 0) {
-      return parent.sharedStudentNames.some(name =>
-        name.toLowerCase().includes(searchTerm)
-      );
-    }
-    
-    return false;
-  });
-
-  const clearSelection = () => {
-    onValueChange('');
-    setSearchValue('');
-  };
-
-  const isSharedParent = (parentId: string) => {
-    return parentsWhoShareStudents.some(p => p.id === parentId);
-  };
+  const displayParents = showOnlySharedParents ? parentsWhoShareStudents : parents;
 
   return (
-    <div className="w-full space-y-3">
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="shared-parents-filter"
-          checked={showOnlySharedParents}
-          onCheckedChange={onToggleFilter}
-        />
-        <Label htmlFor="shared-parents-filter" className="text-sm">
-          Only show parents who share students with me ({parentsWhoShareStudents.length})
-        </Label>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onToggleFilter}
+          className={cn(
+            "flex items-center gap-2 text-xs",
+            showOnlySharedParents && "bg-school-primary/10 text-school-primary border-school-primary"
+          )}
+        >
+          <Filter className="h-3 w-3" />
+          {showOnlySharedParents ? "Shared Parents Only" : "All Parents"}
+          {showOnlySharedParents && parentsWhoShareStudents.length > 0 && (
+            <span className="bg-school-primary text-white rounded-full px-1.5 py-0.5 text-xs min-w-[1.25rem] h-5 flex items-center justify-center">
+              {parentsWhoShareStudents.length}
+            </span>
+          )}
+        </Button>
+        {parentsWhoShareStudents.length > 0 && (
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            <Users className="h-3 w-3" />
+            <span>{parentsWhoShareStudents.length} parent(s) share children with you</span>
+          </div>
+        )}
       </div>
 
       <Popover open={open} onOpenChange={setOpen}>
@@ -103,153 +86,73 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between h-auto min-h-10 px-3 py-2"
-            disabled={disabled}
+            className="w-full justify-between"
           >
-            <div className="flex-1 text-left">
-              {selectedParent ? (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm truncate">
-                        {selectedParent.name}
-                      </span>
-                      {isSharedParent(selectedParent.id) && (
-                        <Badge variant="secondary" className="text-xs px-1 py-0">
-                          <Users className="h-3 w-3 mr-1" />
-                          Shared
-                        </Badge>
-                      )}
-                    </div>
-                    {!disabled && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 hover:bg-gray-100 ml-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          clearSelection();
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500 truncate">
-                    {selectedParent.email}
-                  </div>
-                  {selectedParent.sharedStudentNames && selectedParent.sharedStudentNames.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <span className="text-xs text-gray-400">Shared children:</span>
-                      {selectedParent.sharedStudentNames.slice(0, 2).map((name, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="outline" 
-                          className="text-xs px-1 py-0 bg-school-primary/10 text-school-primary border-school-primary/20"
-                        >
-                          {name}
-                        </Badge>
-                      ))}
-                      {selectedParent.sharedStudentNames.length > 2 && (
-                        <Badge variant="outline" className="text-xs px-1 py-0">
-                          +{selectedParent.sharedStudentNames.length - 2} more
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center text-gray-500">
-                  <Search className="h-4 w-4 mr-2" />
-                  <span className="text-sm">{placeholder}</span>
-                </div>
-              )}
-            </div>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            {selectedParent ? (
+              <div className="flex flex-col items-start min-w-0 flex-1">
+                <span className="truncate">{selectedParent.name}</span>
+                {selectedParent.sharedStudentNames && selectedParent.sharedStudentNames.length > 0 && (
+                  <span className="text-xs text-school-primary truncate">
+                    Shares: {selectedParent.sharedStudentNames.join(', ')}
+                  </span>
+                )}
+              </div>
+            ) : (
+              placeholder
+            )}
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent 
-          className="w-full p-0" 
-          style={{ width: 'var(--radix-popover-trigger-width)' }}
-          align="start"
-        >
+        <PopoverContent className="w-full p-0" align="start">
           <Command>
             <div className="flex items-center border-b px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <CommandInput 
-                placeholder="Search by name, email, or shared children..." 
-                value={searchValue}
-                onValueChange={setSearchValue}
-                className="flex-1 border-0 focus:ring-0"
-              />
+              <CommandInput placeholder="Search parents..." className="flex h-11" />
             </div>
-            <CommandList className="max-h-60">
-              <CommandEmpty className="py-6 text-center text-sm">
-                <div className="space-y-2">
-                  <Search className="h-8 w-8 text-gray-300 mx-auto" />
-                  <p>No parents found</p>
-                  <p className="text-xs text-gray-500">
-                    Try adjusting the filter or search terms
-                  </p>
-                </div>
-              </CommandEmpty>
-              <CommandGroup>
-                {filteredParents.map((parent) => (
-                  <CommandItem
-                    key={parent.id}
-                    value={parent.id}
-                    onSelect={(currentValue) => {
-                      onValueChange(currentValue === value ? "" : currentValue);
-                      setOpen(false);
-                      setSearchValue('');
-                    }}
-                    className="px-3 py-3"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-3 h-4 w-4 flex-shrink-0",
-                        value === parent.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex-1 space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm truncate">
-                          {parent.name}
-                        </span>
-                        {isSharedParent(parent.id) && (
-                          <Badge variant="secondary" className="text-xs px-1 py-0">
-                            <Users className="h-3 w-3 mr-1" />
-                            Shared
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 truncate">
-                        {parent.email}
-                      </div>
-                      {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          <span className="text-xs text-gray-400">Shared children:</span>
-                          {parent.sharedStudentNames.slice(0, 2).map((name, index) => (
-                            <Badge 
-                              key={index} 
-                              variant="outline" 
-                              className="text-xs px-1 py-0 bg-school-primary/10 text-school-primary border-school-primary/20"
-                            >
-                              {name}
-                            </Badge>
-                          ))}
-                          {parent.sharedStudentNames.length > 2 && (
-                            <span className="text-xs text-gray-400">
-                              +{parent.sharedStudentNames.length - 2} more
-                            </span>
+            <ScrollArea className="h-60">
+              <CommandList>
+                <CommandEmpty>No parents found.</CommandEmpty>
+                <CommandGroup>
+                  {displayParents.map((parent) => (
+                    <CommandItem
+                      key={parent.id}
+                      value={`${parent.name} ${parent.email}`}
+                      onSelect={() => {
+                        onValueChange(parent.id);
+                        setOpen(false);
+                      }}
+                      className="flex items-center justify-between cursor-pointer"
+                    >
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="truncate">{parent.name}</span>
+                          {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Users className="h-3 w-3 text-school-primary" />
+                              <span className="text-xs text-school-primary">
+                                {parent.sharedStudentNames.length}
+                              </span>
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
+                        <span className="text-xs text-gray-500 truncate w-full">{parent.email}</span>
+                        {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
+                          <span className="text-xs text-school-primary truncate w-full">
+                            Shares: {parent.sharedStudentNames.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                      <Check
+                        className={cn(
+                          "ml-2 h-4 w-4 flex-shrink-0",
+                          value === parent.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </ScrollArea>
           </Command>
         </PopoverContent>
       </Popover>

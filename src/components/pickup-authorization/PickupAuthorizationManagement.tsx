@@ -169,6 +169,12 @@ const PickupAuthorizationManagement: React.FC = () => {
                       
                       <div className="space-y-2">
                         <p className="text-sm text-gray-600 break-words">
+                          <span className="font-medium">Created by:</span>{' '}
+                          <span className="block sm:inline mt-1 sm:mt-0">
+                            {auth.authorizingParent?.name || 'Unknown Parent'}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600 break-words">
                           <span className="font-medium">Authorized to:</span>{' '}
                           <span className="block sm:inline mt-1 sm:mt-0">
                             {auth.authorizedParent?.name || 'Unknown Parent'}
