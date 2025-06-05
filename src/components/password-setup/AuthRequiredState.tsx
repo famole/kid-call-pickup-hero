@@ -8,7 +8,7 @@ const AuthRequiredState = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
       <Card className="w-[400px] shadow-lg">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <CardTitle className="text-2xl text-center">Authentication Required</CardTitle>

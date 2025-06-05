@@ -83,7 +83,7 @@ const PasswordSetupForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
       <Card className="w-[400px] shadow-lg">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="bg-school-primary w-12 h-12 rounded-full flex items-center justify-center mb-2">

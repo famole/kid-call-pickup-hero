@@ -16,6 +16,15 @@ const PasswordSetup = () => {
     user
   } = usePasswordSetupLogic();
 
+  console.log('PasswordSetup render state:', {
+    isInitialized,
+    authCheckComplete,
+    loading,
+    user: user?.email,
+    isOAuthUser,
+    parentData: parentData?.email
+  });
+
   // Show loading state while initializing or while auth is loading
   if (!isInitialized || loading) {
     return <LoadingState />;
