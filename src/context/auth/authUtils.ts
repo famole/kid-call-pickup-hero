@@ -40,7 +40,7 @@ export const getParentData = async (email: string | null) => {
 };
 
 // Check if parent is preloaded and needs password setup
-export const checkPreloadedParentStatus = async (email: string | null) => {
+export const checkPreloadedParentStatus = async (email: string | null, isOAuthUser: boolean = false) => {
   if (!email) return { isPreloaded: false, needsPasswordSetup: false };
   
   try {
@@ -52,9 +52,23 @@ export const checkPreloadedParentStatus = async (email: string | null) => {
       
     if (error) throw error;
     
+    // If this is an OAuth user and they're preloaded but password_set is false,
+    // update it to true since OAuth users don't need passwords
+    if (isOAuthUser && parentData?.is_preloaded && !parentData?.password_set) {
+      await supabase
+        .from('parents')
+        .update({ password_set: true })
+        .eq('email', email);
+      
+      return {
+        isPreloaded: parentData?.is_preloaded || false,
+        needsPasswordSetup: false // OAuth users never need password setup
+      };
+    }
+    
     return {
       isPreloaded: parentData?.is_preloaded || false,
-      needsPasswordSetup: parentData?.is_preloaded && !parentData?.password_set
+      needsPasswordSetup: parentData?.is_preloaded && !parentData?.password_set && !isOAuthUser
     };
   } catch (error) {
     console.error("Error checking preloaded parent status:", error);

@@ -65,17 +65,20 @@ export const useAuthProvider = (): AuthState & {
 
   const handleUserSession = async (authUser: any) => {
     try {
+      // Check if this is an OAuth user
+      const isOAuthUser = authUser.app_metadata?.provider && authUser.app_metadata.provider !== 'email';
+      
       // Get user data from our database based on the auth user
       let parentData = await getParentData(authUser.email);
       
       // If no parent data exists and this is an OAuth user, create one
-      if (!parentData && authUser.app_metadata?.provider && authUser.app_metadata.provider !== 'email') {
+      if (!parentData && isOAuthUser) {
         parentData = await createParentFromOAuthUser(authUser);
       }
         
       if (parentData) {
         // Check if this is a preloaded parent who needs password setup
-        const { needsPasswordSetup } = await checkPreloadedParentStatus(authUser.email);
+        const { needsPasswordSetup } = await checkPreloadedParentStatus(authUser.email, isOAuthUser);
         
         if (needsPasswordSetup) {
           // Redirect to password setup page
