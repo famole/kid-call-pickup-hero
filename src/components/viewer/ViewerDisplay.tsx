@@ -27,6 +27,8 @@ const ViewerDisplay: React.FC = () => {
     staleTime: 1000,
   });
 
+  console.log('Called students data:', calledStudents);
+  console.log('Students loading:', studentsLoading);
 
   // Filter students by selected class
   const filteredStudents = selectedClass === 'all' 
@@ -35,6 +37,7 @@ const ViewerDisplay: React.FC = () => {
         return String(item.child?.classId) === selectedClass;
       });
 
+  console.log('Filtered students:', filteredStudents);
 
   // Group students by class for display
   const groupedByClass = filteredStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
@@ -46,8 +49,10 @@ const ViewerDisplay: React.FC = () => {
     return groups;
   }, {});
 
+  console.log('Grouped by class:', groupedByClass);
 
   const handleClassChange = (value: string) => {
+    console.log('Class filter changed to:', value);
     setSelectedClass(value);
   };
 

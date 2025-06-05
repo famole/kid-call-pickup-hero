@@ -25,13 +25,19 @@ export const getParentData = async (email: string | null) => {
   if (!email) return null;
   
   try {
+    console.log('Fetching parent data for email:', email);
     const { data: parentData, error } = await supabase
       .from('parents')
       .select('*')
       .eq('email', email)
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching parent data:', error);
+      return null;
+    }
+    
+    console.log('Parent data retrieved:', parentData ? 'Success' : 'No data');
     return parentData;
   } catch (error) {
     console.error("Error fetching parent data:", error);
@@ -50,7 +56,10 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
       .eq('email', email)
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error checking preloaded status:', error);
+      return { isPreloaded: false, needsPasswordSetup: false };
+    }
     
     // If this is an OAuth user and they're preloaded but password_set is false,
     // update it to true since OAuth users don't need passwords
@@ -99,6 +108,8 @@ export const createUserFromAuthData = (authUser: any): User => {
 // Create parent record from Google OAuth user
 export const createParentFromOAuthUser = async (authUser: any): Promise<any> => {
   try {
+    console.log('Creating parent record for OAuth user:', authUser.email);
+    
     const parentData = {
       name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
       email: authUser.email,
@@ -115,9 +126,11 @@ export const createParentFromOAuthUser = async (authUser: any): Promise<any> => 
       .single();
 
     if (error && error.code !== '23505') { // 23505 is unique violation error
+      console.error('Error creating parent from OAuth:', error);
       throw error;
     }
 
+    console.log('Parent record created successfully');
     return data || parentData;
   } catch (error) {
     console.error("Error creating parent from OAuth user:", error);

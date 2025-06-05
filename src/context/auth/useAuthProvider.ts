@@ -22,6 +22,7 @@ export const useAuthProvider = (): AuthState & {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         
         if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -43,6 +44,7 @@ export const useAuthProvider = (): AuthState & {
       try {
         // Try to get session from Supabase
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Initial session check:', session?.user?.email);
         
         if (session?.user) {
           await handleUserSession(session.user);
@@ -63,23 +65,31 @@ export const useAuthProvider = (): AuthState & {
 
   const handleUserSession = async (authUser: any) => {
     try {
+      console.log('Handling user session for:', authUser.email);
+      
       // Check if this is an OAuth user
       const isOAuthUser =
         !!(authUser.app_metadata?.provider &&
           authUser.app_metadata.provider !== 'email');
       
+      console.log('Is OAuth user:', isOAuthUser);
       
       // Get user data from our database based on the auth user
       let parentData = await getParentData(authUser.email);
+      console.log('Parent data found:', parentData ? 'Yes' : 'No');
       
       // If no parent data exists and this is an OAuth user, create one
       if (!parentData && isOAuthUser) {
+        console.log('Creating parent from OAuth user');
         parentData = await createParentFromOAuthUser(authUser);
       }
 
       if (parentData) {
+        console.log('Using parent data, role:', parentData.role);
+        
         // For preloaded users who haven't set up their account yet
         if (parentData.is_preloaded && !parentData.password_set) {
+          console.log('User needs password setup');
           // Set the user so password setup page can access their info
           setUser(createUserFromParentData(parentData));
 
@@ -91,8 +101,11 @@ export const useAuthProvider = (): AuthState & {
         }
 
         // If we found or created parent data, use it to create our app user
-        setUser(createUserFromParentData(parentData));
+        const user = createUserFromParentData(parentData);
+        console.log('Created user with role:', user.role);
+        setUser(user);
       } else {
+        console.log('Using fallback auth user data');
         // Fall back to auth user data if no parent record exists yet
         setUser(createUserFromAuthData(authUser));
       }

@@ -5,12 +5,28 @@ import { PickupRequest } from '@/types';
 // Create a new pickup request - now defaults to 'pending' status
 export const createPickupRequest = async (studentId: string, parentId: string): Promise<PickupRequest> => {
   try {
+    console.log('Creating pickup request for student:', studentId, 'parent:', parentId);
+    
+    // First, verify that the parent has permission to request pickup for this student
+    const { data: relationshipCheck, error: relationshipError } = await supabase
+      .from('student_parents')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('parent_id', parentId)
+      .single();
+
+    if (relationshipError || !relationshipCheck) {
+      console.error('Parent is not authorized for this student:', relationshipError);
+      throw new Error('You are not authorized to request pickup for this student.');
+    }
+
+    console.log('Parent authorization verified');
     
     const { data, error } = await supabase
       .from('pickup_requests')
       .insert({
-        student_id: studentId, // Now properly handled as UUID
-        parent_id: parentId,   // Now properly handled as UUID
+        student_id: studentId,
+        parent_id: parentId,
         status: 'pending',
         request_time: new Date().toISOString()
       })
@@ -21,6 +37,8 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
       console.error('Error creating pickup request:', error);
       throw new Error(error.message);
     }
+    
+    console.log('Pickup request created successfully:', data.id);
     
     return {
       id: data.id,
