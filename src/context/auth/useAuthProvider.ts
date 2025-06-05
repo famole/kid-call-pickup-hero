@@ -6,10 +6,10 @@ import { AuthState } from '@/types/auth';
 import { 
   cleanupAuthState, 
   getParentData, 
-  createUserFromParentData, 
+  createUserFromParentData,
   createUserFromAuthData,
   createParentFromOAuthUser,
-  checkPreloadedParentStatus
+  
 } from './authUtils';
 
 export const useAuthProvider = (): AuthState & {
@@ -66,7 +66,9 @@ export const useAuthProvider = (): AuthState & {
   const handleUserSession = async (authUser: any) => {
     try {
       // Check if this is an OAuth user
-      const isOAuthUser = authUser.app_metadata?.provider && authUser.app_metadata.provider !== 'email';
+      const isOAuthUser =
+        !!(authUser.app_metadata?.provider &&
+          authUser.app_metadata.provider !== 'email');
       
       // Get user data from our database based on the auth user
       let parentData = await getParentData(authUser.email);
@@ -75,17 +77,24 @@ export const useAuthProvider = (): AuthState & {
       if (!parentData && isOAuthUser) {
         parentData = await createParentFromOAuthUser(authUser);
       }
-        
+
       if (parentData) {
-        // Check if this is a preloaded parent who needs password setup
-        const { needsPasswordSetup } = await checkPreloadedParentStatus(authUser.email, isOAuthUser);
-        
-        if (needsPasswordSetup) {
+        if (isOAuthUser && parentData.is_preloaded && !parentData.password_set) {
+          await supabase
+            .from('parents')
+            .update({ password_set: true })
+            .eq('email', authUser.email);
+
+          // Reflect the update locally
+          parentData.password_set = true;
+        }
+
+        if (parentData.is_preloaded && !parentData.password_set) {
           // Redirect to password setup page
           window.location.href = '/password-setup';
           return;
         }
-        
+
         // If we found or created parent data, use it to create our app user
         setUser(createUserFromParentData(parentData));
       } else {
