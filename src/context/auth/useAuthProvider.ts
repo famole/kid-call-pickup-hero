@@ -8,7 +8,8 @@ import {
   getParentData, 
   createUserFromParentData, 
   createUserFromAuthData,
-  createParentFromOAuthUser
+  createParentFromOAuthUser,
+  checkPreloadedParentStatus
 } from './authUtils';
 
 export const useAuthProvider = (): AuthState & {
@@ -73,6 +74,15 @@ export const useAuthProvider = (): AuthState & {
       }
         
       if (parentData) {
+        // Check if this is a preloaded parent who needs password setup
+        const { needsPasswordSetup } = await checkPreloadedParentStatus(authUser.email);
+        
+        if (needsPasswordSetup) {
+          // Redirect to password setup page
+          window.location.href = '/password-setup';
+          return;
+        }
+        
         // If we found or created parent data, use it to create our app user
         setUser(createUserFromParentData(parentData));
       } else {

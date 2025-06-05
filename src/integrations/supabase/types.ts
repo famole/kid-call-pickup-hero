@@ -77,7 +77,9 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_preloaded: boolean | null
           name: string
+          password_set: boolean | null
           phone: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           updated_at: string
@@ -86,7 +88,9 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          is_preloaded?: boolean | null
           name: string
+          password_set?: boolean | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
@@ -95,7 +99,9 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_preloaded?: boolean | null
           name?: string
+          password_set?: boolean | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string

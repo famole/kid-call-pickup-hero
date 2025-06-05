@@ -39,6 +39,29 @@ export const getParentData = async (email: string | null) => {
   }
 };
 
+// Check if parent is preloaded and needs password setup
+export const checkPreloadedParentStatus = async (email: string | null) => {
+  if (!email) return { isPreloaded: false, needsPasswordSetup: false };
+  
+  try {
+    const { data: parentData, error } = await supabase
+      .from('parents')
+      .select('is_preloaded, password_set')
+      .eq('email', email)
+      .single();
+      
+    if (error) throw error;
+    
+    return {
+      isPreloaded: parentData?.is_preloaded || false,
+      needsPasswordSetup: parentData?.is_preloaded && !parentData?.password_set
+    };
+  } catch (error) {
+    console.error("Error checking preloaded parent status:", error);
+    return { isPreloaded: false, needsPasswordSetup: false };
+  }
+};
+
 // Create a User object from parent data
 export const createUserFromParentData = (parentData: any): User => {
   return {
@@ -66,7 +89,9 @@ export const createParentFromOAuthUser = async (authUser: any): Promise<any> => 
       name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
       email: authUser.email,
       phone: authUser.user_metadata?.phone || undefined,
-      role: 'parent' as const // Default to parent for OAuth users
+      role: 'parent' as const, // Default to parent for OAuth users
+      is_preloaded: false, // OAuth users are not preloaded
+      password_set: true // OAuth users don't need password setup
     };
 
     const { data, error } = await supabase

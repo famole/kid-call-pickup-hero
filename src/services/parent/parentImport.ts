@@ -1,6 +1,6 @@
 
 import { ParentInput } from "@/types/parent";
-import { createParent } from "./parentOperations";
+import { supabase } from "@/integrations/supabase/client";
 
 // CSV import functionality
 export const importParentsFromCSV = async (
@@ -11,7 +11,26 @@ export const importParentsFromCSV = async (
   
   for (const parent of parents) {
     try {
-      await createParent(parent);
+      // Mark imported parents as preloaded and needing password setup
+      const parentData = {
+        name: parent.name,
+        email: parent.email,
+        phone: parent.phone || null,
+        role: parent.role || 'parent',
+        is_preloaded: true,
+        password_set: false
+      };
+
+      const { data, error } = await supabase
+        .from('parents')
+        .insert([parentData])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
       successCount++;
     } catch (error: any) {
       errorMessages.push(`Failed to import ${parent.name}: ${error.message}`);
