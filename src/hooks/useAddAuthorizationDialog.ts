@@ -77,7 +77,6 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       setParentsWhoShareStudents(enhancedSharedParents);
       setAllParents(enhancedSharedParents);
 
-      console.log('Parents who share students:', enhancedSharedParents);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({

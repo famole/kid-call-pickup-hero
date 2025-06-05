@@ -31,9 +31,7 @@ export const useCalledStudents = (selectedClass?: string) => {
       setLoading(true);
       try {
         // Pass the selectedClass to the service
-        console.log(`Fetching called students with classId filter: ${selectedClass}`);
         const data = await getCurrentlyCalled(selectedClass);
-        console.log("Fetched called children:", data);
         setCalledChildren(data);
       } catch (error) {
         console.error("Error fetching called children:", error);
@@ -57,7 +55,6 @@ export const useCalledStudents = (selectedClass?: string) => {
           filter: 'status=eq.called'
         },
         async (payload) => {
-          console.log('Realtime update received for pickup requests:', payload);
           // Refetch data when there's a change
           try {
             const data = await getCurrentlyCalled(selectedClass);
@@ -80,7 +77,6 @@ export const useCalledStudents = (selectedClass?: string) => {
           table: 'students'
         },
         async () => {
-          console.log('Student data updated');
           try {
             const data = await getCurrentlyCalled(selectedClass);
             setCalledChildren(data);
@@ -101,7 +97,6 @@ export const useCalledStudents = (selectedClass?: string) => {
           table: 'classes'
         },
         async () => {
-          console.log('Class data updated');
           try {
             const classData = await getAllClasses();
             setClasses(classData);
@@ -124,12 +119,10 @@ export const useCalledStudents = (selectedClass?: string) => {
 
   // Group children by class
   const childrenByClass = useMemo(() => {
-    console.log("Grouping children by class, total children:", calledChildren.length);
     const grouped: Record<string, PickupRequestWithDetails[]> = {};
     
     calledChildren.forEach(item => {
       if (!item.child || !item.class) {
-        console.log("Skipping item with missing child or class data", item);
         return;
       }
       
@@ -142,7 +135,6 @@ export const useCalledStudents = (selectedClass?: string) => {
       grouped[classId].push(item);
     });
     
-    console.log("Grouped children by class:", grouped);
     return grouped;
   }, [calledChildren]);
 

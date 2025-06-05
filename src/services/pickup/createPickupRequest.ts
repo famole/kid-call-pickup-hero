@@ -5,7 +5,6 @@ import { PickupRequest } from '@/types';
 // Create a new pickup request - now defaults to 'pending' status
 export const createPickupRequest = async (studentId: string, parentId: string): Promise<PickupRequest> => {
   try {
-    console.log(`Creating pickup request for student: ${studentId}, parent: ${parentId}`);
     
     const { data, error } = await supabase
       .from('pickup_requests')

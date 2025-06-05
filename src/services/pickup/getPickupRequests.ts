@@ -12,7 +12,6 @@ const isValidUUID = (id: string): boolean => {
 // Get all active pickup requests (both pending and called)
 export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
   try {
-    console.log('Fetching active pickup requests...');
     
     const { data, error } = await supabase
       .from('pickup_requests')
@@ -25,11 +24,9 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
     }
     
     if (!data) {
-      console.log('No active pickup requests found');
       return [];
     }
     
-    console.log(`Found ${data.length} active pickup requests (before filtering)`);
     
     // Filter out requests with invalid student IDs
     const validRequests = data.filter(item => {
@@ -40,7 +37,6 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
       return isValid;
     });
     
-    console.log(`Found ${validRequests.length} valid active pickup requests`);
     
     return validRequests.map(item => ({
       id: item.id,
@@ -59,7 +55,6 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
 // Get active pickup requests for a specific parent (both pending and called)
 export const getActivePickupRequestsForParent = async (parentId: string): Promise<PickupRequest[]> => {
   try {
-    console.log(`Fetching active pickup requests for parent: ${parentId}`);
     
     const { data, error } = await supabase
       .from('pickup_requests')
@@ -73,7 +68,6 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
     }
     
     if (!data) {
-      console.log(`No active pickup requests found for parent: ${parentId}`);
       return [];
     }
     
@@ -86,7 +80,6 @@ export const getActivePickupRequestsForParent = async (parentId: string): Promis
       return isValid;
     });
     
-    console.log(`Found ${validRequests.length} valid active pickup requests for parent: ${parentId}`);
     
     return validRequests.map(item => ({
       id: item.id,

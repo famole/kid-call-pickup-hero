@@ -8,7 +8,6 @@ export const updatePickupRequestStatus = async (
   status: PickupRequest['status']
 ): Promise<PickupRequest | null> => {
   try {
-    console.log(`Updating pickup request ${id} to status: ${status}`);
 
     const updateData: Record<string, unknown> = { status };
 
@@ -34,7 +33,6 @@ export const updatePickupRequestStatus = async (
       return null;
     }
     
-    console.log(`Successfully updated pickup request ${id} to status: ${status}`);
     
     return {
       id: data.id,

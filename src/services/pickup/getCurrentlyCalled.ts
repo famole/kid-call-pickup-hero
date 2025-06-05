@@ -14,7 +14,6 @@ const isValidUUID = (id: string): boolean => {
 // Get currently called pickup requests with details, optionally filtered by class
 export const getCurrentlyCalled = async (classId?: string): Promise<PickupRequestWithDetails[]> => {
   try {
-    console.log(`Fetching currently called with classId filter: ${classId || 'all'}`);
     
     // Base query to get called pickup requests
     const { data, error } = await supabase
@@ -36,7 +35,6 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
       return isValid;
     });
     
-    console.log(`Found ${validRequests.length} valid called requests`);
     
     // Get student and class details for each request
     const requestsWithDetails = await Promise.all(validRequests.map(async (req) => {
@@ -75,7 +73,6 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     
     // Filter by class if a classId is provided and it's not 'all'
     if (classId && classId !== 'all') {
-      console.log(`Filtering by classId: ${classId}`);
       const filtered = validRequestsWithDetails.filter(item => {
         if (!item.child || !item.class) {
           return false;
@@ -86,7 +83,6 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
         const filterClassId = String(classId);
         
         const match = childClassId === filterClassId;
-        console.log(`Comparing IDs: ${childClassId} vs ${filterClassId}, match: ${match}`);
         
         return match;
       });

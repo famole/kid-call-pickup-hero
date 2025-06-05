@@ -8,7 +8,6 @@ export { createStudent, updateStudent, deleteStudent } from './student/modifyStu
 // Get a single student by ID with improved error handling
 export const getStudentByIdLegacy = async (id: string): Promise<Child | null> => {
   try {
-    console.log(`Fetching student with id: ${id}`);
     
     // Validate the ID format (should be UUID)
     if (!id || typeof id !== 'string') {
@@ -33,7 +32,6 @@ export const getStudentByIdLegacy = async (id: string): Promise<Child | null> =>
       return null;
     }
     
-    console.log(`Successfully fetched student: ${data.name}`);
     
     // Get parent IDs for this student
     const { data: parentData, error: parentError } = await supabase
@@ -63,7 +61,6 @@ export const getStudentByIdLegacy = async (id: string): Promise<Child | null> =>
 // Get all students
 export const getAllStudentsLegacy = async (): Promise<Child[]> => {
   try {
-    console.log('Fetching all students...');
     
     const { data, error } = await supabase
       .from('students')
@@ -76,11 +73,9 @@ export const getAllStudentsLegacy = async (): Promise<Child[]> => {
     }
     
     if (!data) {
-      console.log('No students found');
       return [];
     }
     
-    console.log(`Found ${data.length} students`);
     
     // Get parent relationships for all students
     const studentIds = data.map(s => s.id);

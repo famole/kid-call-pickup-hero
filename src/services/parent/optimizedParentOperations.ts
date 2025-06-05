@@ -4,7 +4,6 @@ import { ParentWithStudents } from "@/types/parent";
 
 // Optimized function to get parents with students using proper joins
 export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStudents[]> => {
-  console.log('Starting optimized parents fetch...');
   const startTime = performance.now();
 
   try {
@@ -33,7 +32,6 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       throw new Error(relationError.message);
     }
 
-    console.log(`Parent-student relationships fetched in ${performance.now() - startTime}ms`);
 
     // Get all students separately to join with the relationships
     const { data: studentsData, error: studentsError } = await supabase
@@ -45,7 +43,6 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       throw new Error(studentsError.message);
     }
 
-    console.log(`Students data fetched in ${performance.now() - startTime}ms`);
 
     // Create a map of students for quick lookup
     const studentsMap = new Map(studentsData.map(student => [student.id, student]));
@@ -76,7 +73,6 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       };
     });
 
-    console.log(`Optimized parents fetch completed in ${performance.now() - startTime}ms for ${result.length} parents`);
     
     return result;
   } catch (error) {
