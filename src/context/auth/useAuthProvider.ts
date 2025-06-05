@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
@@ -8,7 +9,6 @@ import {
   createUserFromParentData,
   createUserFromAuthData,
   createParentFromOAuthUser,
-  
 } from './authUtils';
 
 export const useAuthProvider = (): AuthState & {
@@ -80,12 +80,11 @@ export const useAuthProvider = (): AuthState & {
       }
 
       if (parentData) {
-        // For OAuth users who are preloaded but password_set is false, 
-        // let them go to the password setup page for confirmation
+        // For preloaded users who haven't set up their account yet
         if (parentData.is_preloaded && !parentData.password_set) {
-          // Don't auto-update for OAuth users - let them confirm on the setup page
-          // Redirect to password setup page only if we're not already there
+          // Only redirect if we're not already on the password setup page
           if (window.location.pathname !== '/password-setup') {
+            console.log('Redirecting preloaded user to password setup');
             window.location.href = '/password-setup';
           }
           return;

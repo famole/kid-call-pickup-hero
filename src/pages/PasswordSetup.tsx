@@ -18,20 +18,24 @@ const PasswordSetup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [parentData, setParentData] = useState<any>(null);
   const [isOAuthUser, setIsOAuthUser] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Redirect if not authenticated
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
+    const initializePasswordSetup = async () => {
+      // Don't redirect if not authenticated - let them access login
+      if (!isAuthenticated) {
+        console.log('User not authenticated, staying on password setup page');
+        setIsInitialized(true);
+        return;
+      }
 
-    // Check if user is preloaded and needs password setup
-    const checkPreloadedStatus = async () => {
-      if (!user?.email) return;
+      if (!user?.email) {
+        setIsInitialized(true);
+        return;
+      }
 
       try {
         // Get current session to check if it's OAuth
@@ -48,6 +52,7 @@ const PasswordSetup = () => {
 
         if (error) {
           console.error('Error checking parent status:', error);
+          setIsInitialized(true);
           return;
         }
 
@@ -55,14 +60,19 @@ const PasswordSetup = () => {
 
         // If not preloaded or password already set, redirect to main app
         if (!parentDataResult?.is_preloaded || parentDataResult?.password_set) {
+          console.log('User does not need password setup, redirecting to main app');
           navigate('/');
+          return;
         }
+
+        setIsInitialized(true);
       } catch (error) {
         console.error('Error checking preloaded status:', error);
+        setIsInitialized(true);
       }
     };
 
-    checkPreloadedStatus();
+    initializePasswordSetup();
   }, [isAuthenticated, user, navigate]);
 
   const handlePasswordSetup = async (e: React.FormEvent) => {
@@ -160,12 +170,43 @@ const PasswordSetup = () => {
     }
   };
 
+  // Show loading state while initializing
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
+        <div className="text-center">
+          <p className="text-xl">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show a message instead of redirecting
   if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
+        <Card className="w-[400px] shadow-lg">
+          <CardHeader className="space-y-1 flex flex-col items-center">
+            <CardTitle className="text-2xl text-center">Authentication Required</CardTitle>
+            <CardDescription className="text-center">
+              Please log in to access the password setup page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={() => navigate('/login')}
+              className="w-full bg-school-primary hover:bg-school-primary/90"
+            >
+              Go to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // OAuth user confirmation flow
-  if (isOAuthUser) {
+  if (isOAuthUser && parentData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
         <Card className="w-[500px] shadow-lg">
@@ -180,27 +221,25 @@ const PasswordSetup = () => {
           </CardHeader>
           
           <CardContent className="space-y-6">
-            {parentData && (
-              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <h3 className="font-semibold text-lg">Your Account Information</h3>
-                <div className="space-y-2">
+            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+              <h3 className="font-semibold text-lg">Your Account Information</h3>
+              <div className="space-y-2">
+                <div>
+                  <span className="font-medium">Name:</span> {parentData.name}
+                </div>
+                <div>
+                  <span className="font-medium">Email:</span> {parentData.email}
+                </div>
+                {parentData.phone && (
                   <div>
-                    <span className="font-medium">Name:</span> {parentData.name}
+                    <span className="font-medium">Phone:</span> {parentData.phone}
                   </div>
-                  <div>
-                    <span className="font-medium">Email:</span> {parentData.email}
-                  </div>
-                  {parentData.phone && (
-                    <div>
-                      <span className="font-medium">Phone:</span> {parentData.phone}
-                    </div>
-                  )}
-                  <div>
-                    <span className="font-medium">Role:</span> {parentData.role || 'Parent'}
-                  </div>
+                )}
+                <div>
+                  <span className="font-medium">Role:</span> {parentData.role || 'Parent'}
                 </div>
               </div>
-            )}
+            </div>
             
             <div className="text-sm text-gray-600 space-y-2">
               <p>
