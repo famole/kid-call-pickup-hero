@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import Navigation from '@/components/Navigation';
 import ParentDashboard from '@/components/ParentDashboard';
 
 const Index = () => {
@@ -26,15 +27,18 @@ const Index = () => {
     );
   }
 
-  // If authenticated, render based on role
-  if (user?.role === 'admin') {
-    // Admins still see the parent dashboard on the homepage
-    // They can navigate to the admin panel via the navigation
-    return <ParentDashboard />;
+  // If authenticated, render with navigation
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <ParentDashboard />
+      </div>
+    );
   }
 
-  // Default to parent dashboard for authenticated users
-  return <ParentDashboard />;
+  // This shouldn't be reached due to the useEffect redirect, but just in case
+  return null;
 };
 
 export default Index;
