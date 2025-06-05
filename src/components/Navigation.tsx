@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 
@@ -27,6 +27,9 @@ const Navigation = () => {
   const isAdmin = user?.role === 'admin';
   const isTeacherOrAdmin = user?.role === 'admin' || user?.role === 'teacher';
   const isParent = user?.role === 'parent';
+
+  console.log('Current user:', user);
+  console.log('Is admin:', isAdmin);
 
   return (
     <nav className="bg-white shadow-sm border-b w-full">
