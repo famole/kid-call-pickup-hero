@@ -64,7 +64,7 @@ function App() {
                 <ParentManagement />
               </ProtectedRoute>
             } />
-            <Route path="/pickup-authorization" element={
+            <Route path="/pickup-authorizations" element={
               <ProtectedRoute>
                 <PickupAuthorizationPage />
               </ProtectedRoute>
