@@ -82,6 +82,9 @@ export const useAuthProvider = (): AuthState & {
       if (parentData) {
         // For preloaded users who haven't set up their account yet
         if (parentData.is_preloaded && !parentData.password_set) {
+          // Set the user so password setup page can access their info
+          setUser(createUserFromParentData(parentData));
+
           // Only redirect if we're not already on the password setup page
           if (window.location.pathname !== '/password-setup') {
             console.log('Redirecting preloaded user to password setup');
