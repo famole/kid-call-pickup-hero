@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import Navigation from '@/components/Navigation';
 import PickupAuthorizationManagement from '@/components/pickup-authorization/PickupAuthorizationManagement';
 
 const PickupAuthorizationPage: React.FC = () => {
@@ -24,6 +25,7 @@ const PickupAuthorizationPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navigation />
       <div className="container mx-auto py-4 px-4 sm:py-6 sm:px-6 max-w-4xl">
         <div className="mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
