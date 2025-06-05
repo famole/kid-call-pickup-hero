@@ -115,7 +115,7 @@ const PickupAuthorizationManagement: React.FC = () => {
             </div>
             <Button 
               onClick={() => setIsAddDialogOpen(true)}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-school-primary hover:bg-school-primary/90"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -133,7 +133,7 @@ const PickupAuthorizationManagement: React.FC = () => {
               </p>
               <Button 
                 onClick={() => setIsAddDialogOpen(true)}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto bg-school-primary hover:bg-school-primary/90"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Authorization
@@ -155,7 +155,11 @@ const PickupAuthorizationManagement: React.FC = () => {
                             isExpired(auth.endDate) ? "destructive" : 
                             isActive(auth.startDate, auth.endDate) ? "default" : "outline"
                           }
-                          className="w-fit"
+                          className={`w-fit ${
+                            !auth.isActive ? "" : 
+                            isExpired(auth.endDate) ? "" : 
+                            isActive(auth.startDate, auth.endDate) ? "bg-school-primary hover:bg-school-primary/90" : ""
+                          }`}
                         >
                           {!auth.isActive ? "Inactive" : 
                            isExpired(auth.endDate) ? "Expired" : 
