@@ -29,8 +29,8 @@ const Navigation = () => {
   const isParent = user?.role === 'parent';
 
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="container mx-auto px-4">
+    <nav className="bg-white shadow-sm border-b w-full">
+      <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center">
             <img
@@ -50,7 +50,7 @@ const Navigation = () => {
                     onClick={() => navigate('/pickup-management')}
                   >
                     <ClipboardList className="h-4 w-4 mr-2" />
-                    Pickup Management
+                    <span className="hidden sm:inline">Pickup Management</span>
                   </Button>
                 )}
 
@@ -61,7 +61,7 @@ const Navigation = () => {
                     onClick={() => navigate('/pickup-authorizations')}
                   >
                     <Shield className="h-4 w-4 mr-2" />
-                    Authorizations
+                    <span className="hidden sm:inline">Authorizations</span>
                   </Button>
                 )}
                 
@@ -69,10 +69,10 @@ const Navigation = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="text-gray-600 hover:text-gray-800">
                       <User className="h-4 w-4 mr-2" />
-                      {user.name}
+                      <span className="hidden sm:inline">{user.name}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-56 bg-white">
                     <DropdownMenuItem disabled>
                       <div className="flex flex-col">
                         <span className="font-medium">{user.name}</span>

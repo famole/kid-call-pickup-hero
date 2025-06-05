@@ -19,7 +19,7 @@ const Index = () => {
   // Show loading indicator while checking auth status
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center w-full">
         <div className="text-center">
           <p className="text-xl">Loading...</p>
         </div>
@@ -30,9 +30,11 @@ const Index = () => {
   // If authenticated, render with navigation
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen w-full bg-gray-50">
         <Navigation />
-        <ParentDashboard />
+        <div className="w-full">
+          <ParentDashboard />
+        </div>
       </div>
     );
   }
