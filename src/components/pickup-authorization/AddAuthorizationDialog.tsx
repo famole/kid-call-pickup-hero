@@ -24,6 +24,9 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
   const {
     children,
     allParents,
+    parentsWhoShareStudents,
+    showOnlySharedParents,
+    toggleParentFilter,
     loading,
     formData,
     updateFormData,
@@ -36,7 +39,12 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Add Pickup Authorization</DialogTitle>
           <DialogDescription>
-            Allow another parent to pick up your child within a specific date range.
+            Allow another parent to pick up your child within a specific date range. 
+            {parentsWhoShareStudents.length > 0 && (
+              <span className="block mt-1 text-school-primary">
+                {parentsWhoShareStudents.length} parent(s) share children with you.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -48,6 +56,9 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
           onSubmit={handleSubmit}
           onUpdateFormData={updateFormData}
           onCancel={() => onOpenChange(false)}
+          showOnlySharedParents={showOnlySharedParents}
+          onToggleParentFilter={toggleParentFilter}
+          parentsWhoShareStudents={parentsWhoShareStudents}
         />
       </DialogContent>
     </Dialog>

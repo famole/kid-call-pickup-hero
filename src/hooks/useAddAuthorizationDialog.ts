@@ -1,9 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { createPickupAuthorization } from '@/services/pickupAuthorizationService';
+import { createPickupAuthorization, getParentsWhoShareStudents } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
-import { getParentsWithStudents } from '@/services/parentService';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
@@ -15,11 +14,18 @@ interface FormData {
   endDate: string;
 }
 
+interface ParentWithSharedStudents extends ParentWithStudents {
+  sharedStudentIds?: string[];
+  sharedStudentNames?: string[];
+}
+
 export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded: () => void, onOpenChange: (open: boolean) => void) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [children, setChildren] = useState<Child[]>([]);
-  const [allParents, setAllParents] = useState<ParentWithStudents[]>([]);
+  const [allParents, setAllParents] = useState<ParentWithSharedStudents[]>([]);
+  const [parentsWhoShareStudents, setParentsWhoShareStudents] = useState<ParentWithSharedStudents[]>([]);
+  const [showOnlySharedParents, setShowOnlySharedParents] = useState(true);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     studentId: '',
@@ -50,10 +56,28 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       const userChildren = await getStudentsForParent(user.id);
       setChildren(userChildren);
 
-      // Load all parents (excluding current user)
-      const parents = await getParentsWithStudents();
-      const otherParents = parents.filter(parent => parent.email !== user.email);
-      setAllParents(otherParents);
+      // Load parents who share students with current user
+      const { parents: sharedParents, sharedStudents } = await getParentsWhoShareStudents();
+      
+      // Enhance parent data with shared student information
+      const enhancedSharedParents = sharedParents.map(parent => {
+        const sharedStudentIds = sharedStudents[parent.id] || [];
+        const sharedStudentNames = userChildren
+          .filter(child => sharedStudentIds.includes(child.id))
+          .map(child => child.name);
+        
+        return {
+          ...parent,
+          students: parent.students || [],
+          sharedStudentIds,
+          sharedStudentNames,
+        };
+      });
+
+      setParentsWhoShareStudents(enhancedSharedParents);
+      setAllParents(enhancedSharedParents);
+
+      console.log('Parents who share students:', enhancedSharedParents);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -66,6 +90,14 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
 
   const updateFormData = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toggleParentFilter = () => {
+    setShowOnlySharedParents(!showOnlySharedParents);
+  };
+
+  const getDisplayParents = () => {
+    return showOnlySharedParents ? parentsWhoShareStudents : allParents;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,10 +124,15 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     setLoading(true);
     try {
       await createPickupAuthorization(formData);
+      
+      const selectedParent = allParents.find(p => p.id === formData.authorizedParentId);
+      const selectedChild = children.find(c => c.id === formData.studentId);
+      
       toast({
         title: "Success",
-        description: "Pickup authorization created successfully.",
+        description: `Pickup authorization created for ${selectedParent?.name} to pick up ${selectedChild?.name}.`,
       });
+      
       onAuthorizationAdded();
       onOpenChange(false);
       setFormData({
@@ -118,7 +155,10 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
 
   return {
     children,
-    allParents,
+    allParents: getDisplayParents(),
+    parentsWhoShareStudents,
+    showOnlySharedParents,
+    toggleParentFilter,
     loading,
     formData,
     updateFormData,

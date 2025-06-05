@@ -99,6 +99,67 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
   return authorizations;
 };
 
+// Get parents who share students with the current parent
+export const getParentsWhoShareStudents = async (): Promise<{
+  parents: any[];
+  sharedStudents: Record<string, string[]>;
+}> => {
+  const currentParentId = await getCurrentParentId();
+  
+  // Get all students associated with the current parent
+  const { data: currentParentStudents, error: studentsError } = await supabase
+    .from('student_parents')
+    .select('student_id')
+    .eq('parent_id', currentParentId);
+
+  if (studentsError) {
+    console.error('Error fetching current parent students:', studentsError);
+    throw new Error(studentsError.message);
+  }
+
+  if (!currentParentStudents || currentParentStudents.length === 0) {
+    return { parents: [], sharedStudents: {} };
+  }
+
+  const studentIds = currentParentStudents.map(sp => sp.student_id);
+
+  // Get all other parents who are associated with these students
+  const { data: sharedParentRelations, error: sharedError } = await supabase
+    .from('student_parents')
+    .select(`
+      parent_id,
+      student_id,
+      parent:parents!parent_id (id, name, email)
+    `)
+    .in('student_id', studentIds)
+    .neq('parent_id', currentParentId);
+
+  if (sharedError) {
+    console.error('Error fetching shared parents:', sharedError);
+    throw new Error(sharedError.message);
+  }
+
+  // Group by parent and track shared students
+  const parentMap = new Map();
+  const sharedStudents: Record<string, string[]> = {};
+
+  for (const relation of sharedParentRelations) {
+    const parentId = relation.parent_id;
+    
+    if (!parentMap.has(parentId)) {
+      parentMap.set(parentId, relation.parent);
+      sharedStudents[parentId] = [];
+    }
+    
+    sharedStudents[parentId].push(relation.student_id);
+  }
+
+  return {
+    parents: Array.from(parentMap.values()),
+    sharedStudents
+  };
+};
+
 // Update a pickup authorization
 export const updatePickupAuthorization = async (
   id: string,

@@ -11,8 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Child } from '@/types';
-import { ParentWithStudents } from '@/types/parent';
-import ParentSelector from './ParentSelector';
+import SharedStudentsParentSelector from './SharedStudentsParentSelector';
 
 interface FormData {
   studentId: string;
@@ -21,14 +20,25 @@ interface FormData {
   endDate: string;
 }
 
+interface ParentWithSharedStudents {
+  id: string;
+  name: string;
+  email: string;
+  sharedStudentNames?: string[];
+  students?: any[];
+}
+
 interface AddAuthorizationFormProps {
   children: Child[];
-  allParents: ParentWithStudents[];
+  allParents: ParentWithSharedStudents[];
   formData: FormData;
   loading: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onUpdateFormData: (field: keyof FormData, value: string) => void;
   onCancel: () => void;
+  showOnlySharedParents: boolean;
+  onToggleParentFilter: () => void;
+  parentsWhoShareStudents: ParentWithSharedStudents[];
 }
 
 const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
@@ -39,6 +49,9 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
   onSubmit,
   onUpdateFormData,
   onCancel,
+  showOnlySharedParents,
+  onToggleParentFilter,
+  parentsWhoShareStudents,
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -63,11 +76,14 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
 
       <div className="space-y-2">
         <Label htmlFor="parent">Authorized Parent</Label>
-        <ParentSelector
+        <SharedStudentsParentSelector
           parents={allParents}
           value={formData.authorizedParentId}
           onValueChange={(value) => onUpdateFormData('authorizedParentId', value)}
           placeholder="Search and select a parent"
+          showOnlySharedParents={showOnlySharedParents}
+          onToggleFilter={onToggleParentFilter}
+          parentsWhoShareStudents={parentsWhoShareStudents}
         />
       </div>
 
