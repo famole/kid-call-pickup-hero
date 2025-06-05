@@ -19,19 +19,21 @@ const PasswordSetup = () => {
   const [parentData, setParentData] = useState<any>(null);
   const [isOAuthUser, setIsOAuthUser] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { user, isAuthenticated } = useAuth();
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     const initializePasswordSetup = async () => {
-      // Don't redirect if not authenticated - let them access login
-      if (!isAuthenticated) {
-        console.log('User not authenticated, staying on password setup page');
-        setIsInitialized(true);
+      // Wait for auth loading to complete
+      if (loading) {
         return;
       }
-
+      
+      setAuthCheckComplete(true);
+      
+      // If no user after auth loading is complete, they need to login
       if (!user?.email) {
         setIsInitialized(true);
         return;
@@ -73,7 +75,7 @@ const PasswordSetup = () => {
     };
 
     initializePasswordSetup();
-  }, [isAuthenticated, user, navigate]);
+  }, [loading, user, navigate]);
 
   const handlePasswordSetup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,8 +172,8 @@ const PasswordSetup = () => {
     }
   };
 
-  // Show loading state while initializing
-  if (!isInitialized) {
+  // Show loading state while initializing or while auth is loading
+  if (!isInitialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
         <div className="text-center">
@@ -181,8 +183,8 @@ const PasswordSetup = () => {
     );
   }
 
-  // If not authenticated, show a message instead of redirecting
-  if (!isAuthenticated) {
+  // Only show authentication required if auth check is complete and no user
+  if (authCheckComplete && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
         <Card className="w-[400px] shadow-lg">
