@@ -7,20 +7,22 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
   try {
     console.log('Creating pickup request for student:', studentId, 'parent:', parentId);
     
-    // First, verify that the parent has permission to request pickup for this student
-    const { data: relationshipCheck, error: relationshipError } = await supabase
-      .from('student_parents')
-      .select('id')
-      .eq('student_id', studentId)
-      .eq('parent_id', parentId)
-      .single();
+    // Use the server-side helper to verify parent-student relationship
+    const { data: isAuthorized, error: authError } = await supabase.rpc('is_parent_of_student', {
+      student_id: studentId
+    });
 
-    if (relationshipError || !relationshipCheck) {
-      console.error('Parent is not authorized for this student:', relationshipError);
+    if (authError) {
+      console.error('Error checking parent authorization:', authError);
+      throw new Error('Unable to verify parent authorization.');
+    }
+
+    if (!isAuthorized) {
+      console.error('Parent is not authorized for this student');
       throw new Error('You are not authorized to request pickup for this student.');
     }
 
-    console.log('Parent authorization verified');
+    console.log('Parent authorization verified via server function');
     
     const { data, error } = await supabase
       .from('pickup_requests')

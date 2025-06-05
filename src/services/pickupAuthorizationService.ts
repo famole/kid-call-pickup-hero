@@ -41,10 +41,17 @@ export interface PickupAuthorizationWithDetails extends PickupAuthorization {
 export const createPickupAuthorization = async (
   authorizationData: PickupAuthorizationInput
 ): Promise<PickupAuthorization> => {
+  // Use the server-side helper to get current parent ID
+  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+  
+  if (parentError || !currentParentId) {
+    throw new Error('Unable to authenticate parent');
+  }
+
   const { data, error } = await supabase
     .from('pickup_authorizations')
     .insert({
-      authorizing_parent_id: (await getCurrentParentId()),
+      authorizing_parent_id: currentParentId,
       authorized_parent_id: authorizationData.authorizedParentId,
       student_id: authorizationData.studentId,
       start_date: authorizationData.startDate,
@@ -104,7 +111,12 @@ export const getParentsWhoShareStudents = async (): Promise<{
   parents: any[];
   sharedStudents: Record<string, string[]>;
 }> => {
-  const currentParentId = await getCurrentParentId();
+  // Use the server-side helper to get current parent ID
+  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+  
+  if (parentError || !currentParentId) {
+    throw new Error('Unable to authenticate parent');
+  }
   
   // Get all students associated with the current parent
   const { data: currentParentStudents, error: studentsError } = await supabase
@@ -224,26 +236,6 @@ export const checkPickupAuthorization = async (
   }
 
   return data.length > 0;
-};
-
-// Helper function to get current parent ID from auth
-const getCurrentParentId = async (): Promise<string> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email) {
-    throw new Error('User not authenticated');
-  }
-
-  const { data: parent, error } = await supabase
-    .from('parents')
-    .select('id')
-    .eq('email', user.email)
-    .single();
-
-  if (error || !parent) {
-    throw new Error('Parent not found');
-  }
-
-  return parent.id;
 };
 
 // Helper function to map database response to our interface

@@ -30,6 +30,20 @@ export const useParentDashboardData = () => {
           // Get children for this parent from the database
           const parentChildren = await getStudentsForParent(user.id);
           
+          // Use server-side helper to get current parent ID and verify access
+          const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+          
+          if (parentError || !currentParentId) {
+            console.error('Error getting current parent ID:', parentError);
+            // Fallback to just the parent's own children
+            const ownChildren: ChildWithType[] = parentChildren.map(child => ({
+              ...child,
+              isAuthorized: false
+            }));
+            setChildren(ownChildren);
+            return;
+          }
+          
           // Get all students from the database to check for authorized children
           const { data: allStudents, error } = await supabase
             .from('students')

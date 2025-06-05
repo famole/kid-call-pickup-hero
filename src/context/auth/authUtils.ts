@@ -20,12 +20,37 @@ export const cleanupAuthState = () => {
   });
 };
 
-// Get parent data from Supabase
+// Get parent data using server-side helper
 export const getParentData = async (email: string | null) => {
   if (!email) return null;
   
   try {
     console.log('Fetching parent data for email:', email);
+    
+    // Use the server-side helper to get user role first
+    const { data: role, error: roleError } = await supabase.rpc('get_user_role', {
+      user_email: email
+    });
+    
+    if (roleError) {
+      console.error('Error fetching user role:', roleError);
+      // Fallback to direct query if RPC fails
+      const { data: parentData, error } = await supabase
+        .from('parents')
+        .select('*')
+        .eq('email', email)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching parent data:', error);
+        return null;
+      }
+      
+      console.log('Parent data retrieved via fallback:', parentData ? 'Success' : 'No data');
+      return parentData;
+    }
+    
+    // If we have a role, fetch the full parent data
     const { data: parentData, error } = await supabase
       .from('parents')
       .select('*')
