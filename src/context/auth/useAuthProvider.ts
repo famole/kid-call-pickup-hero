@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
@@ -70,6 +69,8 @@ export const useAuthProvider = (): AuthState & {
         !!(authUser.app_metadata?.provider &&
           authUser.app_metadata.provider !== 'email');
       
+      console.log('Handling user session for OAuth user:', isOAuthUser);
+      
       // Get user data from our database based on the auth user
       let parentData = await getParentData(authUser.email);
       
@@ -79,17 +80,10 @@ export const useAuthProvider = (): AuthState & {
       }
 
       if (parentData) {
-        if (isOAuthUser && parentData.is_preloaded && !parentData.password_set) {
-          await supabase
-            .from('parents')
-            .update({ password_set: true })
-            .eq('email', authUser.email);
-
-          // Reflect the update locally
-          parentData.password_set = true;
-        }
-
+        // For OAuth users who are preloaded but password_set is false, 
+        // let them go to the password setup page for confirmation
         if (parentData.is_preloaded && !parentData.password_set) {
+          // Don't auto-update for OAuth users - let them confirm on the setup page
           // Redirect to password setup page only if we're not already there
           if (window.location.pathname !== '/password-setup') {
             window.location.href = '/password-setup';
