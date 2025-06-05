@@ -13,25 +13,37 @@ export const usePasswordSetupLogic = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('usePasswordSetupLogic effect triggered:', { loading, user: user?.email });
+    
     const initializePasswordSetup = async () => {
+      // Reset state when starting initialization
+      setIsInitialized(false);
+      setAuthCheckComplete(false);
+      
       // Wait for auth loading to complete
       if (loading) {
+        console.log('Auth still loading, waiting...');
         return;
       }
       
+      console.log('Auth loading complete, checking user:', user?.email);
       setAuthCheckComplete(true);
       
       // If no user after auth loading is complete, they need to login
       if (!user?.email) {
+        console.log('No user found, showing auth required state');
         setIsInitialized(true);
         return;
       }
 
       try {
+        console.log('Checking OAuth status and parent data for user:', user.email);
+        
         // Get current session to check if it's OAuth
         const { data: { session } } = await supabase.auth.getSession();
         const isOAuth = !!(session?.user?.app_metadata?.provider && 
                           session?.user?.app_metadata?.provider !== 'email');
+        console.log('User is OAuth user:', isOAuth);
         setIsOAuthUser(isOAuth);
 
         const { data: parentDataResult, error } = await supabase
@@ -46,6 +58,7 @@ export const usePasswordSetupLogic = () => {
           return;
         }
 
+        console.log('Parent data found:', parentDataResult);
         setParentData(parentDataResult);
 
         // If not preloaded or password already set, redirect to main app
@@ -55,6 +68,7 @@ export const usePasswordSetupLogic = () => {
           return;
         }
 
+        console.log('User needs password setup, initializing flow');
         setIsInitialized(true);
       } catch (error) {
         console.error('Error checking preloaded status:', error);
@@ -63,7 +77,7 @@ export const usePasswordSetupLogic = () => {
     };
 
     initializePasswordSetup();
-  }, [loading, user, navigate]);
+  }, [loading, user, navigate]); // Make sure to depend on both loading and user
 
   return {
     parentData,
