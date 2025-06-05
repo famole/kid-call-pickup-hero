@@ -9,9 +9,9 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
     const { data, error } = await supabase
       .from('pickup_requests')
       .insert({
-        student_id: studentId,
-        parent_id: parentId,
-        status: 'pending', // Changed from 'called' to 'pending'
+        student_id: studentId, // Now properly handled as UUID
+        parent_id: parentId,   // Now properly handled as UUID
+        status: 'pending',
         request_time: new Date().toISOString()
       })
       .select()

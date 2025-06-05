@@ -43,6 +43,20 @@ export type Database = {
             referencedRelation: "parents"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_class_teachers_class"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_class_teachers_teacher"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
         ]
       }
       classes: {
@@ -144,6 +158,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_pickup_auth_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pickup_authorizations_authorized_parent_id_fkey"
             columns: ["authorized_parent_id"]
             isOneToOne: false
@@ -214,7 +235,22 @@ export type Database = {
           status?: string | null
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_pickup_requests_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pickup_requests_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_parents: {
         Row: {
@@ -242,6 +278,13 @@ export type Database = {
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_student_parents_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "student_parents_parent_id_fkey"
             columns: ["parent_id"]

@@ -5,8 +5,8 @@ import { Database } from '@/integrations/supabase/types';
 // Define a type for the pickup_requests table shape in our database
 export interface PickupRequestRow {
   id: string;
-  student_id: string;
-  parent_id: string;
+  student_id: string; // Now a proper UUID string
+  parent_id: string;  // Now a proper UUID string
   request_time: string;
   status: 'pending' | 'called' | 'completed' | 'cancelled';
 }
