@@ -100,44 +100,53 @@ const PickupAuthorizationManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Pickup Authorizations
-            </CardTitle>
-            <CardDescription>
-              Manage who can pick up your children and when
-            </CardDescription>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                Pickup Authorizations
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Manage who can pick up your children and when
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="w-full sm:w-auto"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Authorization
+            </Button>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Authorization
-          </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           {authorizations.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No authorizations yet</h3>
-              <p className="text-gray-500 mb-4">
+            <div className="text-center py-8 px-4">
+              <Users className="h-16 w-16 sm:h-20 sm:w-20 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2">No authorizations yet</h3>
+              <p className="text-gray-500 mb-6 text-sm sm:text-base max-w-md mx-auto">
                 You haven't created any pickup authorizations. Add one to allow other parents to pick up your children.
               </p>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Button 
+                onClick={() => setIsAddDialogOpen(true)}
+                className="w-full sm:w-auto"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Authorization
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {authorizations.map((auth) => (
-                <div key={auth.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">
+                <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+                        <h4 className="font-medium text-base truncate">
                           {auth.student?.name || 'Unknown Student'}
                         </h4>
                         <Badge 
@@ -146,49 +155,60 @@ const PickupAuthorizationManagement: React.FC = () => {
                             isExpired(auth.endDate) ? "destructive" : 
                             isActive(auth.startDate, auth.endDate) ? "default" : "outline"
                           }
+                          className="w-fit"
                         >
                           {!auth.isActive ? "Inactive" : 
                            isExpired(auth.endDate) ? "Expired" : 
                            isActive(auth.startDate, auth.endDate) ? "Active" : "Scheduled"}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        Authorized to: <span className="font-medium">
-                          {auth.authorizedParent?.name || 'Unknown Parent'} ({auth.authorizedParent?.email})
-                        </span>
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
+                      
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600 break-words">
+                          <span className="font-medium">Authorized to:</span>{' '}
+                          <span className="block sm:inline mt-1 sm:mt-0">
+                            {auth.authorizedParent?.name || 'Unknown Parent'}
+                          </span>
+                        </p>
+                        <p className="text-xs text-gray-500 break-all">
+                          {auth.authorizedParent?.email}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="break-words">
+                            {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    
+                    <div className="flex justify-end sm:flex-shrink-0">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button 
                             variant="outline" 
                             size="sm"
                             disabled={deletingId === auth.id}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4" />
+                            <span className="ml-2 sm:hidden">Remove</span>
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="mx-4 max-w-md">
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Remove Authorization</AlertDialogTitle>
-                            <AlertDialogDescription>
+                            <AlertDialogTitle className="text-lg">Remove Authorization</AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm">
                               Are you sure you want to remove this pickup authorization for{' '}
                               <strong>{auth.student?.name}</strong>? This will prevent{' '}
                               <strong>{auth.authorizedParent?.name}</strong> from picking up your child.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDeleteAuthorization(auth.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               Remove Authorization
                             </AlertDialogAction>

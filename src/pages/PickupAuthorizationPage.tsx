@@ -24,10 +24,12 @@ const PickupAuthorizationPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-6 px-4 max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Pickup Authorizations</h1>
-          <p className="text-gray-600">
+      <div className="container mx-auto py-4 px-4 sm:py-6 sm:px-6 max-w-4xl">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            Pickup Authorizations
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600">
             Manage who can pick up your children and when they're authorized to do so.
           </p>
         </div>
