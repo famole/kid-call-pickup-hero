@@ -90,8 +90,10 @@ export const useAuthProvider = (): AuthState & {
         }
 
         if (parentData.is_preloaded && !parentData.password_set) {
-          // Redirect to password setup page
-          window.location.href = '/password-setup';
+          // Redirect to password setup page only if we're not already there
+          if (window.location.pathname !== '/password-setup') {
+            window.location.href = '/password-setup';
+          }
           return;
         }
 
