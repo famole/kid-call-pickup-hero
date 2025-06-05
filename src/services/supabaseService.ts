@@ -41,7 +41,6 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
 // Function to get currently called children with details
 export const getCurrentlyCalled = async (classId?: string): Promise<PickupRequestWithDetails[]> => {
   try {
-    console.log(`Fetching called students with classId filter: ${classId || 'all'}`);
     
     // Start with the base query
     const { data: requestsData, error: requestsError } = await supabase
@@ -87,7 +86,6 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     
     // If classId is specified and not 'all', filter the results
     if (classId && classId !== 'all') {
-      console.log(`Filtering results by classId: ${classId}`);
       
       return result.filter(item => {
         if (!item.child || !item.class) {
@@ -99,7 +97,6 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
         const filterClassId = String(classId);
         
         const match = childClassId === filterClassId;
-        console.log(`Comparing class IDs: ${childClassId} vs ${filterClassId}, match: ${match}`);
         
         return match;
       });

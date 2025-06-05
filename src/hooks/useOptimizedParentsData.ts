@@ -29,7 +29,6 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     
     try {
       const startTime = performance.now();
-      console.log('Starting parents data load...');
       
       let data: ParentWithStudents[];
       
@@ -45,7 +44,6 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
       }
       
       const loadTime = performance.now() - startTime;
-      console.log(`Parents loaded in ${loadTime.toFixed(2)}ms`);
       
       setParents(data);
       setLoadingProgress(`Loaded ${data.length} parents`);

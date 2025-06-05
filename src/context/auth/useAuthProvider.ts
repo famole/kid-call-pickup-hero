@@ -22,7 +22,6 @@ export const useAuthProvider = (): AuthState & {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
         
         if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -69,7 +68,6 @@ export const useAuthProvider = (): AuthState & {
         !!(authUser.app_metadata?.provider &&
           authUser.app_metadata.provider !== 'email');
       
-      console.log('Handling user session for OAuth user:', isOAuthUser);
       
       // Get user data from our database based on the auth user
       let parentData = await getParentData(authUser.email);
@@ -87,7 +85,6 @@ export const useAuthProvider = (): AuthState & {
 
           // Only redirect if we're not already on the password setup page
           if (window.location.pathname !== '/password-setup') {
-            console.log('Redirecting preloaded user to password setup');
             window.location.href = '/password-setup';
           }
           return;

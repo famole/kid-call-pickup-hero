@@ -89,7 +89,6 @@ const AdminStudentsScreen = () => {
         
         setStudentList(students);
         setClassList(fetchedClasses);
-        console.log('Fetched classes:', fetchedClasses);
         if (fetchedClasses.length === 0) {
           toast({
             title: "No Classes Found",

@@ -30,7 +30,6 @@ const ViewerDisplay: React.FC = () => {
   }, []);
 
   const handleClassChange = (value: string) => {
-    console.log("ViewerDisplay: Selected class changed to:", value);
     setSelectedClass(value);
   };
 

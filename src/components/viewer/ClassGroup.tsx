@@ -14,7 +14,6 @@ const ClassGroup: React.FC<ClassGroupProps> = ({ classId, students }) => {
   
   useEffect(() => {
     prevStudentCountRef.current = students.length;
-    console.log(`ClassGroup updated for class ${classId} with ${students.length} students`);
   }, [students, classId]);
   
   if (!students || students.length === 0) return null;

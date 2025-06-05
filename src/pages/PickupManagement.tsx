@@ -65,7 +65,6 @@ const PickupManagement: React.FC = () => {
   }
 
   const handleClassChange = (value: string) => {
-    console.log("PickupManagement: Selected class changed to:", value);
     setSelectedClass(value);
   };
 

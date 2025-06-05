@@ -13,18 +13,15 @@ export const usePickupManagement = (classId?: string) => {
   const fetchPendingRequests = async () => {
     setLoading(true);
     try {
-      console.log('Fetching pending pickup requests...');
       
       // Get all pending pickup requests
       const activeRequests = await getActivePickupRequests();
       const pendingOnly = activeRequests.filter(req => req.status === 'pending');
       
-      console.log(`Found ${pendingOnly.length} pending requests`);
       
       // Get student and class details for each request with better error handling
       const requestsWithDetails = await Promise.all(pendingOnly.map(async (req) => {
         try {
-          console.log(`Processing request ${req.id} for student ${req.studentId}`);
           
           const student = await getStudentById(req.studentId);
           let classInfo = null;
@@ -56,13 +53,11 @@ export const usePickupManagement = (classId?: string) => {
       // Filter by class if specified
       let filteredRequests = requestsWithDetails;
       if (classId && classId !== 'all') {
-        console.log(`Filtering requests by classId: ${classId}`);
         filteredRequests = requestsWithDetails.filter(item => 
           item.child && item.class && String(item.child.classId) === String(classId)
         );
       }
 
-      console.log(`Final filtered requests count: ${filteredRequests.length}`);
       setPendingRequests(filteredRequests);
     } catch (error) {
       console.error("Error fetching pending requests:", error);
@@ -74,15 +69,12 @@ export const usePickupManagement = (classId?: string) => {
 
   const markAsCalled = async (requestId: string) => {
     try {
-      console.log(`Marking request ${requestId} as called at ${new Date().toISOString()}`);
       
       await updatePickupRequestStatus(requestId, 'called');
-      console.log(`Request ${requestId} marked as called, scheduling auto-completion in 5 minutes`);
       
       // Schedule automatic completion after 5 minutes
       const timeoutId = setTimeout(async () => {
         try {
-          console.log(`Auto-completing request ${requestId} after 5 minutes at ${new Date().toISOString()}`);
           
           // Check if the request is still in 'called' status before completing
           const currentRequests = await getActivePickupRequests();
@@ -90,12 +82,10 @@ export const usePickupManagement = (classId?: string) => {
           
           if (currentRequest && currentRequest.status === 'called') {
             await updatePickupRequestStatus(requestId, 'completed');
-            console.log(`Request ${requestId} automatically completed after 5 minutes`);
             
             // Refresh the pending requests after auto-completion
             await fetchPendingRequests();
           } else {
-            console.log(`Request ${requestId} no longer in 'called' status, skipping auto-completion`);
           }
         } catch (error) {
           console.error(`Error auto-completing request ${requestId}:`, error);
@@ -109,7 +99,6 @@ export const usePickupManagement = (classId?: string) => {
       }, 5 * 60 * 1000); // 5 minutes
 
       // Store the timeout ID for potential cleanup
-      console.log(`Timeout ${timeoutId} scheduled for request ${requestId}`);
 
       // Refresh the pending requests immediately
       await fetchPendingRequests();
@@ -134,7 +123,6 @@ export const usePickupManagement = (classId?: string) => {
           filter: 'status=eq.pending'
         },
         async (payload) => {
-          console.log('Realtime update received for pending pickup requests:', payload);
           await fetchPendingRequests();
         }
       )

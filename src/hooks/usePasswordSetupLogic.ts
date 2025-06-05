@@ -13,7 +13,6 @@ export const usePasswordSetupLogic = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('usePasswordSetupLogic effect triggered:', { loading, user: user?.email });
     
     const initializePasswordSetup = async () => {
       // Reset state when starting initialization
@@ -22,28 +21,23 @@ export const usePasswordSetupLogic = () => {
       
       // Wait for auth loading to complete
       if (loading) {
-        console.log('Auth still loading, waiting...');
         return;
       }
       
-      console.log('Auth loading complete, checking user:', user?.email);
       setAuthCheckComplete(true);
       
       // If no user after auth loading is complete, they need to login
       if (!user?.email) {
-        console.log('No user found, showing auth required state');
         setIsInitialized(true);
         return;
       }
 
       try {
-        console.log('Checking OAuth status and parent data for user:', user.email);
         
         // Get current session to check if it's OAuth
         const { data: { session } } = await supabase.auth.getSession();
         const isOAuth = !!(session?.user?.app_metadata?.provider && 
                           session?.user?.app_metadata?.provider !== 'email');
-        console.log('User is OAuth user:', isOAuth);
         setIsOAuthUser(isOAuth);
 
         const { data: parentDataResult, error } = await supabase
@@ -58,17 +52,14 @@ export const usePasswordSetupLogic = () => {
           return;
         }
 
-        console.log('Parent data found:', parentDataResult);
         setParentData(parentDataResult);
 
         // If not preloaded or password already set, redirect to main app
         if (!parentDataResult?.is_preloaded || parentDataResult?.password_set) {
-          console.log('User does not need password setup, redirecting to main app');
           navigate('/');
           return;
         }
 
-        console.log('User needs password setup, initializing flow');
         setIsInitialized(true);
       } catch (error) {
         console.error('Error checking preloaded status:', error);
