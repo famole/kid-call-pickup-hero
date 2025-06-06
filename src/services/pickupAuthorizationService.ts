@@ -217,10 +217,16 @@ export const deletePickupAuthorization = async (id: string): Promise<void> => {
 
 // Check if a parent is authorized to pick up a student on a specific date
 export const checkPickupAuthorization = async (
-  parentId: string,
   studentId: string,
   date: string = new Date().toISOString().split('T')[0]
 ): Promise<boolean> => {
+  const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+
+  if (parentError || !parentId) {
+    console.error('Unable to determine current parent ID:', parentError);
+    return false;
+  }
+
   const { data, error } = await supabase
     .from('pickup_authorizations')
     .select('id')

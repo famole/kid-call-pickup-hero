@@ -27,11 +27,17 @@ export const useParentDashboardData = () => {
       if (user) {
         try {
           setLoading(true);
-          // Get children for this parent from the database
-          const parentChildren = await getStudentsForParent(user.id);
-          
-          // Use server-side helper to get current parent ID and verify access
+          // Use server-side helper to get current parent ID
           const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+
+          if (parentError || !currentParentId) {
+            console.error('Error getting current parent ID:', parentError);
+            setChildren([]);
+            return;
+          }
+
+          // Get children for this parent from the database
+          const parentChildren = await getStudentsForParent(currentParentId);
           
           if (parentError || !currentParentId) {
             console.error('Error getting current parent ID:', parentError);
@@ -63,7 +69,7 @@ export const useParentDashboardData = () => {
                 continue;
               }
               
-              const isAuthorized = await checkPickupAuthorization(user.id, student.id);
+              const isAuthorized = await checkPickupAuthorization(student.id);
               if (isAuthorized) {
                 authorizedChildren.push({
                   id: student.id,
