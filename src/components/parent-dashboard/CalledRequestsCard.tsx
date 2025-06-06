@@ -21,11 +21,11 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
     <Card className="w-full">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Car className="h-5 w-5 text-green-600" />
-          On the Way
+          <Car className="h-5 w-5 text-green-600 animate-bounce" />
+          🚗 On the Way 🎉
         </CardTitle>
         <CardDescription>
-          Ready for pickup
+          Ready for pickup - Your ride is here! 🌟
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -35,17 +35,17 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
             return (
               <div 
                 key={request.id}
-                className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200"
+                className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200 animate-pulse hover:animate-none transition-all duration-300 hover:shadow-md"
               >
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-green-300 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-green-300 flex-shrink-0 animate-bounce">
                   <Car className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">
-                    {child?.name || 'Unknown Child'}
+                    🎒 {child?.name || 'Unknown Child'}
                   </div>
-                  <div className="text-xs text-green-600">
-                    Ready for pickup
+                  <div className="text-xs text-green-600 font-semibold">
+                    ✨ Ready for pickup! Head to the pickup area! 🚙
                   </div>
                 </div>
               </div>
