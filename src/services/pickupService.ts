@@ -16,13 +16,14 @@ export const createPickupRequest = async (studentId: string, parentId: string): 
     // Ensure we're sending proper UUID format IDs to Supabase
     console.log(`Creating pickup request for student: ${studentId}, parent: ${parentId}`);
     
-    const { data, error } = await supabase
-      .from('pickup_requests')
-      .insert({
-        student_id: studentId,
-        parent_id: parentId,
-        status: 'called' // Changed from 'pending' to 'called' to skip approval
-      })
+      const { data, error } = await supabase
+        .from('pickup_requests')
+        .insert({
+          student_id: studentId,
+          parent_id: parentId,
+          // Use 'pending' to satisfy row-level security policies
+          status: 'pending'
+        })
       .select()
       .single();
     
