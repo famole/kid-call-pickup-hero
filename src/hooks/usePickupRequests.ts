@@ -25,7 +25,7 @@ export const usePickupRequests = (children: ChildWithType[]) => {
 
     try {
       // Get requests where this parent is the requester
-      const parentActiveRequests = await getActivePickupRequestsForParent(user.id);
+      const parentActiveRequests = await getActivePickupRequestsForParent();
       
       // Get all child IDs that belong to this parent (both own children and authorized children)
       const ownChildIds = children

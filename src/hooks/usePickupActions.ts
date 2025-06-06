@@ -24,8 +24,8 @@ export const usePickupActions = (refreshPickupRequests: () => Promise<void>) => 
     setIsSubmitting(true);
     try {
       // Create pickup requests for all selected children
-      const promises = selectedChildren.map(studentId => 
-        createPickupRequest(studentId, user.id)
+      const promises = selectedChildren.map(studentId =>
+        createPickupRequest(studentId)
       );
       await Promise.all(promises);
 

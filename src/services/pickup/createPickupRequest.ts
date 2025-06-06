@@ -3,9 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { PickupRequest } from '@/types';
 
 // Create a new pickup request - now defaults to 'pending' status
-export const createPickupRequest = async (studentId: string, parentId: string): Promise<PickupRequest> => {
+export const createPickupRequest = async (studentId: string): Promise<PickupRequest> => {
   try {
-    console.log('Creating pickup request for student:', studentId, 'parent:', parentId);
+    console.log('Creating pickup request for student:', studentId);
+
+    // Get the authenticated parent's ID from the server
+    const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+
+    if (parentError || !parentId) {
+      console.error('Unable to determine current parent ID:', parentError);
+      throw new Error('Authentication error.');
+    }
     
     // Use the server-side helper to verify parent-student relationship
     const { data: isAuthorized, error: authError } = await supabase.rpc('is_parent_of_student', {

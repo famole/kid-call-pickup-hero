@@ -44,9 +44,15 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
 };
 
 // Get active pickup requests for a specific parent (both pending and called)
-export const getActivePickupRequestsForParent = async (parentId: string): Promise<PickupRequest[]> => {
+export const getActivePickupRequestsForParent = async (): Promise<PickupRequest[]> => {
   try {
-    
+    const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+
+    if (parentError || !parentId) {
+      console.error('Unable to determine current parent ID:', parentError);
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('pickup_requests')
       .select('*')

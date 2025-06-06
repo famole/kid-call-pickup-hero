@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { createPickupAuthorization, getParentsWhoShareStudents } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
+import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
@@ -52,8 +53,16 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     if (!user) return;
 
     try {
+      // Get current parent ID from the server
+      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+
+      if (parentError || !currentParentId) {
+        console.error('Error getting current parent ID:', parentError);
+        return;
+      }
+
       // Load user's children
-      const userChildren = await getStudentsForParent(user.id);
+      const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
 
       // Load parents who share students with current user
