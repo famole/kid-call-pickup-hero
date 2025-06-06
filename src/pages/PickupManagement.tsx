@@ -15,6 +15,7 @@ import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickup
 import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, CheckCheck } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const PickupManagement: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -74,16 +75,20 @@ const PickupManagement: React.FC = () => {
       <div className="w-full">
         <div className="container mx-auto py-6 px-4">
           <div className="mb-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Pickup Management</h2>
                 <p className="text-base sm:text-lg text-muted-foreground">Manage student pickup requests and calls</p>
               </div>
-              <ClassFilter 
-                selectedClass={selectedClass} 
-                classes={classes} 
-                onChange={handleClassChange} 
-              />
+              {classes.length > 0 ? (
+                <ClassFilter 
+                  selectedClass={selectedClass} 
+                  classes={classes} 
+                  onChange={handleClassChange} 
+                />
+              ) : (
+                <Skeleton className="h-10 w-48" />
+              )}
             </div>
           </div>
 
@@ -99,7 +104,7 @@ const PickupManagement: React.FC = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pending">
+            <TabsContent value="pending" className="space-y-6">
               <PendingPickupsTable 
                 requests={pendingRequests}
                 onMarkAsCalled={markAsCalled}
@@ -107,7 +112,7 @@ const PickupManagement: React.FC = () => {
               />
             </TabsContent>
 
-            <TabsContent value="called">
+            <TabsContent value="called" className="space-y-6">
               {calledLoading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary mx-auto mb-4"></div>
@@ -116,7 +121,7 @@ const PickupManagement: React.FC = () => {
               ) : Object.keys(childrenByClass).length === 0 ? (
                 <NoStudents />
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {Object.entries(childrenByClass).map(([classId, students]) => (
                     <ClassGroup key={classId} classId={classId} students={students} />
                   ))}

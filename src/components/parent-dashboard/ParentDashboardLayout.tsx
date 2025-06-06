@@ -3,7 +3,6 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import ParentDashboardHeader from './ParentDashboardHeader';
 import ChildrenSelectionCard from './ChildrenSelectionCard';
-import PickupStatusSidebar from './PickupStatusSidebar';
 import PendingRequestsCard from './PendingRequestsCard';
 import CalledRequestsCard from './CalledRequestsCard';
 import { Child, PickupRequest } from '@/types';
@@ -45,7 +44,7 @@ const ParentDashboardLayout: React.FC<ParentDashboardLayoutProps> = ({
         <div className="w-full space-y-6">
           {/* Status Cards - Only show when there's data */}
           {(pendingRequests.length > 0 || calledRequests.length > 0) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               {pendingRequests.length > 0 && (
                 <PendingRequestsCard 
                   pendingRequests={pendingRequests}
