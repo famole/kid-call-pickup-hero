@@ -21,7 +21,7 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
     <Card className="w-full">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Car className="h-5 w-5 text-green-600 animate-bounce" />
+          <Car className="h-5 w-5 text-green-600 animate-bounce-twice" />
           🚗 On the Way 🎉
         </CardTitle>
         <CardDescription>
@@ -35,9 +35,9 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
             return (
               <div 
                 key={request.id}
-                className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200 animate-pulse hover:animate-none transition-all duration-300 hover:shadow-md"
+                className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200 animate-pulse-twice hover:shadow-md transition-shadow duration-300"
               >
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-green-300 flex-shrink-0 animate-bounce">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-green-300 flex-shrink-0 animate-bounce-twice">
                   <Car className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1 min-w-0">
