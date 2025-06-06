@@ -17,6 +17,11 @@ const PickupStatusSidebar: React.FC<PickupStatusSidebarProps> = ({
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
   const calledRequests = activeRequests.filter(req => req.status === 'called');
 
+  // Don't render anything if there are no requests
+  if (pendingRequests.length === 0 && calledRequests.length === 0) {
+    return null;
+  }
+
   return (
     <div className="xl:col-span-1 space-y-4">
       <PendingRequestsCard 
