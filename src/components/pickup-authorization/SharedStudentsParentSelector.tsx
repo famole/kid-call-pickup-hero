@@ -109,50 +109,48 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
               <CommandInput placeholder="Search parents..." className="flex h-11" />
             </div>
-            <ScrollArea className="h-60">
-              <CommandList>
-                <CommandEmpty>No parents found.</CommandEmpty>
-                <CommandGroup>
-                  {displayParents.map((parent) => (
-                    <CommandItem
-                      key={parent.id}
-                      value={`${parent.name} ${parent.email}`}
-                      onSelect={() => {
-                        onValueChange(parent.id);
-                        setOpen(false);
-                      }}
-                      className="flex items-center justify-between cursor-pointer"
-                    >
-                      <div className="flex flex-col items-start min-w-0 flex-1">
-                        <div className="flex items-center gap-2 w-full">
-                          <span className="truncate">{parent.name}</span>
-                          {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Users className="h-3 w-3 text-school-primary" />
-                              <span className="text-xs text-school-primary">
-                                {parent.sharedStudentNames.length}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-xs text-gray-500 truncate w-full">{parent.email}</span>
+            <CommandList className="max-h-[300px] overflow-y-auto">
+              <CommandEmpty>No parents found.</CommandEmpty>
+              <CommandGroup>
+                {displayParents.map((parent) => (
+                  <CommandItem
+                    key={parent.id}
+                    value={`${parent.name} ${parent.email}`}
+                    onSelect={() => {
+                      onValueChange(parent.id);
+                      setOpen(false);
+                    }}
+                    className="flex items-center justify-between cursor-pointer"
+                  >
+                    <div className="flex flex-col items-start min-w-0 flex-1">
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="truncate">{parent.name}</span>
                         {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
-                          <span className="text-xs text-school-primary truncate w-full">
-                            Shares: {parent.sharedStudentNames.join(', ')}
-                          </span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Users className="h-3 w-3 text-school-primary" />
+                            <span className="text-xs text-school-primary">
+                              {parent.sharedStudentNames.length}
+                            </span>
+                          </div>
                         )}
                       </div>
-                      <Check
-                        className={cn(
-                          "ml-2 h-4 w-4 flex-shrink-0",
-                          value === parent.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </ScrollArea>
+                      <span className="text-xs text-gray-500 truncate w-full">{parent.email}</span>
+                      {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
+                        <span className="text-xs text-school-primary truncate w-full">
+                          Shares: {parent.sharedStudentNames.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                    <Check
+                      className={cn(
+                        "ml-2 h-4 w-4 flex-shrink-0",
+                        value === parent.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
