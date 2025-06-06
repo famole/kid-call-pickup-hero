@@ -71,6 +71,13 @@ export const createPickupAuthorization = async (
 
 // Get pickup authorizations for the current parent
 export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthorizationWithDetails[]> => {
+  // Get the current parent's ID via server-side helper
+  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+
+  if (parentError || !currentParentId) {
+    throw new Error('Unable to authenticate parent');
+  }
+
   const { data, error } = await supabase
     .from('pickup_authorizations')
     .select(`
@@ -78,6 +85,7 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
       authorizing_parent:parents!authorizing_parent_id (id, name, email),
       authorized_parent:parents!authorized_parent_id (id, name, email)
     `)
+    .eq('authorizing_parent_id', currentParentId)
     .order('created_at', { ascending: false });
 
   if (error) {
