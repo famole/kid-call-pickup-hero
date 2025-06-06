@@ -40,9 +40,10 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
           <DialogTitle>Add Pickup Authorization</DialogTitle>
           <DialogDescription>
             Allow another parent to pick up your child within a specific date range. 
+            You can choose from all parents in the system.
             {parentsWhoShareStudents.length > 0 && (
               <span className="block mt-1 text-school-primary">
-                {parentsWhoShareStudents.length} parent(s) share children with you.
+                {parentsWhoShareStudents.length} parent(s) share children with you and can be filtered for easier selection.
               </span>
             )}
           </DialogDescription>

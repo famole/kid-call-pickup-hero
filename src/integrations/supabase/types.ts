@@ -338,6 +338,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_email: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
@@ -345,6 +349,14 @@ export type Database = {
       get_user_role: {
         Args: { user_email: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_teacher: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       is_parent_of_student: {
         Args: { student_id: string }
