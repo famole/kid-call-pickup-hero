@@ -15,14 +15,13 @@ import { Separator } from '@/components/ui/separator';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<'parent' | 'teacher'>('parent');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const { login } = useAuth();
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -31,10 +30,10 @@ const Signup = () => {
     setIsLoading(true);
     
     // Basic validation
-    if (password !== confirmPassword) {
+    if (email !== confirmEmail) {
       toast({
         title: "Error",
-        description: "Passwords do not match.",
+        description: "Email addresses do not match.",
         variant: "destructive",
       });
       setIsLoading(false);
@@ -42,38 +41,39 @@ const Signup = () => {
     }
 
     try {
-      // 1. Create Supabase auth user
+      // 1. Create Supabase auth user without password - they'll set it after email confirmation
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        password,
+        password: 'temp_password_' + Math.random().toString(36), // Temporary password
         options: {
           data: {
             name: name,
             phone: phone,
             role: role
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/password-setup`
         }
       });
 
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2. Create parent record in the parents table with selected role
+        // 2. Create parent record with password_set: false so they go through password setup
         const parent = await createParent({
           name,
           email,
           phone: phone || undefined,
-          role
+          role,
+          is_preloaded: false, // This is a new signup, not preloaded
+          password_set: false // They need to set their password after email confirmation
         });
 
+        setShowEmailConfirmation(true);
+        
         toast({
-          title: "Account created!",
-          description: `Your ${role} account has been created successfully.`,
+          title: "Check your email!",
+          description: `We've sent a confirmation link to ${email}. Click the link to complete your signup and set your password.`,
         });
-
-        // 3. Log the user in
-        await login(email, password);
-        navigate('/');
       }
     } catch (error: any) {
       toast({
@@ -116,6 +116,51 @@ const Signup = () => {
       setIsGoogleLoading(false);
     }
   };
+
+  if (showEmailConfirmation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
+        <Card className="w-[400px] shadow-lg">
+          <CardHeader className="space-y-1 flex flex-col items-center">
+            <div className="bg-school-primary w-12 h-12 rounded-full flex items-center justify-center mb-2">
+              <UserPlus className="h-6 w-6 text-white" />
+            </div>
+            <CardTitle className="text-2xl text-center">Check Your Email</CardTitle>
+            <CardDescription className="text-center">
+              We've sent a confirmation link to <strong>{email}</strong>
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-gray-600">
+                Click the link in your email to verify your account and set your password.
+              </p>
+              <p className="text-xs text-gray-500">
+                Didn't receive the email? Check your spam folder.
+              </p>
+            </div>
+          </CardContent>
+          
+          <CardFooter>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setShowEmailConfirmation(false);
+                setEmail('');
+                setConfirmEmail('');
+                setName('');
+                setPhone('');
+              }}
+            >
+              Back to Signup
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
@@ -191,6 +236,17 @@ const Signup = () => {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="confirmEmail">Confirm Email</Label>
+              <Input
+                id="confirmEmail"
+                type="email"
+                placeholder="name@example.com"
+                value={confirmEmail}
+                onChange={(e) => setConfirmEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="phone">Phone (optional)</Label>
               <Input
                 id="phone"
@@ -212,29 +268,8 @@ const Signup = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-              />
+            <div className="text-sm text-gray-500">
+              You'll set your password after confirming your email address.
             </div>
             <Button
               type="submit"

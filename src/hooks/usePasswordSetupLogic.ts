@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/auth/AuthProvider';
@@ -54,15 +53,23 @@ export const usePasswordSetupLogic = () => {
 
         setParentData(parentDataResult);
 
-        // If not preloaded or password already set, redirect to main app
-        if (!parentDataResult?.is_preloaded || parentDataResult?.password_set) {
+        // If password already set, redirect to main app
+        if (parentDataResult?.password_set) {
           navigate('/');
           return;
         }
 
-        setIsInitialized(true);
+        // If user needs password setup (either preloaded OR new signup that hasn't set password)
+        if (!parentDataResult?.password_set) {
+          // Stay on password setup page
+          setIsInitialized(true);
+          return;
+        }
+
+        // Otherwise redirect to main app
+        navigate('/');
       } catch (error) {
-        console.error('Error checking preloaded status:', error);
+        console.error('Error checking password setup status:', error);
         setIsInitialized(true);
       }
     };

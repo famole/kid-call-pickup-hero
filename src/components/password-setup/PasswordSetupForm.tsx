@@ -91,7 +91,7 @@ const PasswordSetupForm = () => {
           </div>
           <CardTitle className="text-2xl text-center">Set Your Password</CardTitle>
           <CardDescription className="text-center">
-            Welcome! Please set a password for your account to continue.
+            Welcome! Please set a secure password for your account to continue.
           </CardDescription>
         </CardHeader>
         
@@ -162,7 +162,7 @@ const PasswordSetupForm = () => {
               className="w-full bg-school-primary hover:bg-school-primary/90"
               disabled={isLoading}
             >
-              {isLoading ? 'Setting Password...' : 'Set Password'}
+              {isLoading ? 'Setting Password...' : 'Set Password & Continue'}
             </Button>
           </form>
         </CardContent>
