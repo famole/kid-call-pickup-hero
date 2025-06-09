@@ -55,21 +55,25 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
 
       const parent = parentsMap.get(parentId)!;
       
-      // Add student if not already added
-      if (parentRow.student_parents?.students) {
-        const student = parentRow.student_parents.students;
-        const existingStudent = parent.students?.find(s => s.id === student.id);
-        
-        if (!existingStudent) {
-          parent.students?.push({
-            id: student.id,
-            name: student.name,
-            isPrimary: parentRow.student_parents.is_primary,
-            relationship: parentRow.student_parents.relationship,
-            parentRelationshipId: parentRow.student_parents.id,
-            classId: student.class_id
-          });
-        }
+      // Process each student_parent relationship
+      if (parentRow.student_parents && Array.isArray(parentRow.student_parents)) {
+        parentRow.student_parents.forEach(studentParent => {
+          if (studentParent.students) {
+            const student = studentParent.students;
+            const existingStudent = parent.students?.find(s => s.id === student.id);
+            
+            if (!existingStudent) {
+              parent.students?.push({
+                id: student.id,
+                name: student.name,
+                isPrimary: studentParent.is_primary,
+                relationship: studentParent.relationship,
+                parentRelationshipId: studentParent.id,
+                classId: student.class_id
+              });
+            }
+          }
+        });
       }
     });
 
@@ -128,7 +132,11 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
     }
 
     if (!data) {
-      return { ownChildren: [], authorizedChildren: [] };
+      return { 
+        ownChildren: [], 
+        authorizedChildren: [], 
+        allChildren: [] 
+      };
     }
 
     // Process own children
