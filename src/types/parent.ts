@@ -14,6 +14,8 @@ export type ParentInput = {
   email: string;
   phone?: string;
   role?: 'parent' | 'teacher' | 'admin';
+  is_preloaded?: boolean;
+  password_set?: boolean;
 };
 
 export type StudentParentRelationship = {
