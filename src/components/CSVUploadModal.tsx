@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useId } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ const CSVUploadModal: React.FC<CSVUploadModalProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
+  const csvInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -109,18 +110,18 @@ const CSVUploadModal: React.FC<CSVUploadModalProps> = ({
         <DialogHeader>
           <DialogTitle>Import Students from CSV</DialogTitle>
           <DialogDescription>
-            Upload a CSV file with student data. The file should have columns for name and classId.
+            Upload a CSV file with student data. The file should have columns for name and className.
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="csvFile">CSV File</Label>
-            <Input 
+            <Label htmlFor={csvInputId}>CSV File</Label>
+            <Input
               ref={fileInputRef}
-              id="csvFile" 
-              type="file" 
-              accept=".csv,text/csv" 
+              id={csvInputId}
+              type="file"
+              accept=".csv,text/csv"
               onChange={handleFileChange}
             />
             {file && (
@@ -150,7 +151,7 @@ const CSVUploadModal: React.FC<CSVUploadModalProps> = ({
             </p>
             <ul className="text-xs text-blue-600 list-disc pl-5 mt-1">
               <li>name (required): Student's full name</li>
-              <li>classId (required): ID of the class (must match existing class IDs)</li>
+              <li>className (required): Name of the class (must match existing class names)</li>
               <li>parentIds (optional): Comma-separated list of parent IDs</li>
             </ul>
           </div>

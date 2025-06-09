@@ -9,6 +9,56 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      class_teachers: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_teachers_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_teachers_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_class_teachers_class"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_class_teachers_teacher"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           created_at: string
@@ -41,25 +91,125 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_preloaded: boolean | null
           name: string
+          password_set: boolean | null
           phone: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
+          is_preloaded?: boolean | null
           name: string
+          password_set?: boolean | null
           phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
+          is_preloaded?: boolean | null
           name?: string
+          password_set?: boolean | null
           phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pickup_authorizations: {
+        Row: {
+          authorized_parent_id: string
+          authorizing_parent_id: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          start_date: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          authorized_parent_id: string
+          authorizing_parent_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          start_date: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          authorized_parent_id?: string
+          authorizing_parent_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          start_date?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pickup_auth_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_authorizations_authorized_parent_id_fkey"
+            columns: ["authorized_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_authorizations_authorizing_parent_id_fkey"
+            columns: ["authorizing_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pickup_history: {
+        Row: {
+          called_time: string | null
+          completed_time: string
+          created_at: string
+          id: string
+          parent_id: string
+          pickup_duration_minutes: number | null
+          request_time: string
+          student_id: string
+        }
+        Insert: {
+          called_time?: string | null
+          completed_time: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          pickup_duration_minutes?: number | null
+          request_time: string
+          student_id: string
+        }
+        Update: {
+          called_time?: string | null
+          completed_time?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          pickup_duration_minutes?: number | null
+          request_time?: string
+          student_id?: string
         }
         Relationships: []
       }
@@ -85,7 +235,22 @@ export type Database = {
           status?: string | null
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_pickup_requests_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pickup_requests_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_parents: {
         Row: {
@@ -113,6 +278,13 @@ export type Database = {
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_student_parents_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "student_parents_parent_id_fkey"
             columns: ["parent_id"]
@@ -162,10 +334,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_parent_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_email: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_role: {
+        Args: { user_email: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_teacher: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_parent_of_student: {
+        Args: { student_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "parent" | "admin" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -280,6 +479,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["parent", "admin", "teacher"],
+    },
   },
 } as const

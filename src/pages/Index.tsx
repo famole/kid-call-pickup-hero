@@ -1,7 +1,8 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/auth/AuthProvider';
+import { useAuth } from '@/context/AuthContext';
+import Navigation from '@/components/Navigation';
 import ParentDashboard from '@/components/ParentDashboard';
 
 const Index = () => {
@@ -18,7 +19,7 @@ const Index = () => {
   // Show loading indicator while checking auth status
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center w-full">
         <div className="text-center">
           <p className="text-xl">Loading...</p>
         </div>
@@ -26,15 +27,20 @@ const Index = () => {
     );
   }
 
-  // If authenticated, render based on role
-  if (user?.role === 'admin') {
-    // Admins still see the parent dashboard on the homepage
-    // They can navigate to the admin panel via the navigation
-    return <ParentDashboard />;
+  // If authenticated, render with navigation
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen w-full bg-gray-50">
+        <Navigation />
+        <div className="w-full">
+          <ParentDashboard />
+        </div>
+      </div>
+    );
   }
 
-  // Default to parent dashboard for authenticated users
-  return <ParentDashboard />;
+  // This shouldn't be reached due to the useEffect redirect, but just in case
+  return null;
 };
 
 export default Index;

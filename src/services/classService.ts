@@ -18,9 +18,7 @@ export const getAllClasses = async (): Promise<Class[]> => {
     return data as Class[];
   } catch (error) {
     console.error('Error in getAllClasses:', error);
-    // Fallback to mock data if there's an error
-    const { classes } = await import('./mockData');
-    return classes;
+    throw error;
   }
 };
 
@@ -35,19 +33,13 @@ export const getClassById = async (id: string): Promise<Class | null> => {
     
     if (error) {
       console.error('Error fetching class:', error);
-      
-      // Fallback to mock data
-      const { classes } = await import('./mockData');
-      return classes.find(cls => cls.id === id) || null;
+      return null;
     }
     
     return data as Class;
   } catch (error) {
     console.error('Error in getClassById:', error);
-    
-    // Fallback to mock data
-    const { getClassById: getMockClassById } = await import('./mockData');
-    return getMockClassById(id);
+    return null;
   }
 };
 
@@ -141,6 +133,20 @@ export const migrateClassesToSupabase = async (classes: Class[]): Promise<void> 
     }
   } catch (error) {
     console.error('Error in migrateClassesToSupabase:', error);
+    throw error;
+  }
+};
+
+// Get classes by ID lookup - utility function to help with class ID validation
+export const getClassesById = async (): Promise<Record<string, Class>> => {
+  try {
+    const classes = await getAllClasses();
+    return classes.reduce((acc, cls) => {
+      acc[cls.id] = cls;
+      return acc;
+    }, {} as Record<string, Class>);
+  } catch (error) {
+    console.error('Error in getClassesById:', error);
     throw error;
   }
 };

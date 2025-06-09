@@ -3,7 +3,7 @@ export type User = {
   id: string;
   email: string;
   name: string;
-  role: 'parent' | 'admin';
+  role: 'parent' | 'admin' | 'teacher';
   avatar?: string;
 };
 
@@ -24,7 +24,7 @@ export type Class = {
 
 export type PickupRequest = {
   id: string;
-  childId: string;
+  studentId: string;
   parentId: string;
   requestTime: Date;
   status: 'pending' | 'called' | 'completed' | 'cancelled';

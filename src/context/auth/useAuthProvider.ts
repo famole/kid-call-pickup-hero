@@ -3,12 +3,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
 import { AuthState } from '@/types/auth';
-import { mockUsers } from './mockData';
 import { 
   cleanupAuthState, 
   getParentData, 
-  createUserFromParentData, 
-  createUserFromAuthData
+  createUserFromParentData,
+  createUserFromAuthData,
+  createParentFromOAuthUser,
 } from './authUtils';
 
 export const useAuthProvider = (): AuthState & {
@@ -22,7 +22,7 @@ export const useAuthProvider = (): AuthState & {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
+        console.log('Auth state change:', event, session?.user?.email);
         
         if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -30,15 +30,7 @@ export const useAuthProvider = (): AuthState & {
           try {
             // Defer data fetching to prevent deadlocks
             setTimeout(async () => {
-              // Get user data from our database
-              const parentData = await getParentData(session.user.email);
-                
-              if (parentData) {
-                setUser(createUserFromParentData(parentData));
-              } else {
-                // Fall back to auth user data
-                setUser(createUserFromAuthData(session.user));
-              }
+              await handleUserSession(session.user);
             }, 0);
           } catch (error) {
             console.error("Error in auth state change:", error);
@@ -52,32 +44,13 @@ export const useAuthProvider = (): AuthState & {
       try {
         // Try to get session from Supabase
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Initial session check:', session?.user?.email);
         
         if (session?.user) {
-          // Get user data from our database based on the auth user
-          const parentData = await getParentData(session.user.email);
-            
-          if (parentData) {
-            // If we found parent data, use it to create our app user
-            setUser(createUserFromParentData(parentData));
-          } else {
-            // Fall back to auth user data if no parent record exists yet
-            setUser(createUserFromAuthData(session.user));
-          }
-        } else {
-          // Fall back to localStorage for development
-          const savedUser = localStorage.getItem('user');
-          if (savedUser) {
-            setUser(JSON.parse(savedUser));
-          }
+          await handleUserSession(session.user);
         }
       } catch (error) {
         console.error("Error loading user:", error);
-        // Check localStorage as fallback
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-          setUser(JSON.parse(savedUser));
-        }
       } finally {
         setLoading(false);
       }
@@ -89,6 +62,59 @@ export const useAuthProvider = (): AuthState & {
       subscription.unsubscribe();
     };
   }, []);
+
+  const handleUserSession = async (authUser: any) => {
+    try {
+      console.log('Handling user session for:', authUser.email);
+      
+      // Check if this is an OAuth user
+      const isOAuthUser =
+        !!(authUser.app_metadata?.provider &&
+          authUser.app_metadata.provider !== 'email');
+      
+      console.log('Is OAuth user:', isOAuthUser);
+      
+      // Get user data from our database based on the auth user
+      let parentData = await getParentData(authUser.email);
+      console.log('Parent data found:', parentData ? 'Yes' : 'No');
+      
+      // If no parent data exists and this is an OAuth user, create one
+      if (!parentData && isOAuthUser) {
+        console.log('Creating parent from OAuth user');
+        parentData = await createParentFromOAuthUser(authUser);
+      }
+
+      if (parentData) {
+        console.log('Using parent data, role:', parentData.role);
+        
+        // For preloaded users who haven't set up their account yet
+        if (parentData.is_preloaded && !parentData.password_set) {
+          console.log('User needs password setup');
+          // Set the user so password setup page can access their info
+          setUser(createUserFromParentData(parentData));
+
+          // Only redirect if we're not already on the password setup page
+          if (window.location.pathname !== '/password-setup') {
+            window.location.href = '/password-setup';
+          }
+          return;
+        }
+
+        // If we found or created parent data, use it to create our app user
+        const user = createUserFromParentData(parentData);
+        console.log('Created user with role:', user.role);
+        setUser(user);
+      } else {
+        console.log('Using fallback auth user data');
+        // Fall back to auth user data if no parent record exists yet
+        setUser(createUserFromAuthData(authUser));
+      }
+    } catch (error) {
+      console.error("Error handling user session:", error);
+      // Fall back to auth user data on error
+      setUser(createUserFromAuthData(authUser));
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -112,29 +138,12 @@ export const useAuthProvider = (): AuthState & {
       });
       
       if (error) {
-        // If Supabase auth fails, fall back to mock login for development
-        console.log("Supabase auth failed, trying mock auth:", error);
-        const mockUser = mockUsers.find(u => u.email === email);
-        if (mockUser) {
-          // Save to localStorage for development
-          localStorage.setItem('user', JSON.stringify(mockUser));
-          setUser(mockUser);
-          return Promise.resolve();
-        }
         throw error;
       }
       
-      // Get user data from our database
+      // Handle user session
       if (data.user) {
-        const parentData = await getParentData(data.user.email);
-          
-        if (parentData) {
-          const appUser = createUserFromParentData(parentData);
-          setUser(appUser);
-        } else {
-          // Fall back to auth user data
-          setUser(createUserFromAuthData(data.user));
-        }
+        await handleUserSession(data.user);
       }
       
       return Promise.resolve();
@@ -157,8 +166,6 @@ export const useAuthProvider = (): AuthState & {
       console.error("Error during sign out:", error);
     }
     
-    // Also remove from localStorage for development
-    localStorage.removeItem('user');
     setUser(null);
     
     // Force page reload for a clean state

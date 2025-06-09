@@ -6,7 +6,12 @@ import { isValidUUID } from '@/utils/validators';
 // Create a new student
 export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> => {
   try {
-    console.log('Creating student with data:', student);
+    
+    // Validate the class ID before proceeding
+    if (student.classId && !isValidUUID(student.classId)) {
+      console.error('Invalid class ID format:', student.classId);
+      throw new Error('Invalid class ID format. Must be a UUID.');
+    }
     
     // Insert the student record
     const { data, error } = await supabase
@@ -24,13 +29,11 @@ export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> 
       throw new Error(error.message);
     }
     
-    console.log('Student created successfully:', data);
     
     // Add parent relationships if provided
     if (student.parentIds && student.parentIds.length > 0) {
       // Filter out non-UUID parentIds
       const validParentIds = student.parentIds.filter(id => isValidUUID(id));
-      console.log(`Filtered parent IDs: ${validParentIds.length} valid out of ${student.parentIds.length} total`);
       
       if (validParentIds.length > 0) {
         const parentRelations = validParentIds.map(parentId => ({
@@ -39,7 +42,6 @@ export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> 
           is_primary: validParentIds.indexOf(parentId) === 0 // First parent is primary
         }));
         
-        console.log('Creating parent relationships:', parentRelations);
         
         const { error: relError } = await supabase
           .from('student_parents')
@@ -99,7 +101,6 @@ export const updateStudent = async (id: string, student: Partial<Child>): Promis
       // Then add new ones - filter out non-UUID values
       if (student.parentIds.length > 0) {
         const validParentIds = student.parentIds.filter(pid => isValidUUID(pid));
-        console.log(`Filtered parent IDs for update: ${validParentIds.length} valid out of ${student.parentIds.length} total`);
         
         if (validParentIds.length > 0) {
           const parentRelations = validParentIds.map(parentId => ({

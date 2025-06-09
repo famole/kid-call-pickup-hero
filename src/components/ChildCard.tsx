@@ -1,39 +1,136 @@
 
 import React from 'react';
 import { Child } from '@/types';
-import { getClassById } from '@/services/mockData';
-import { UserRound } from 'lucide-react';
+import { getClassById } from '@/services/classService';
+import { UserRound, Check, Users } from 'lucide-react';
 
 interface ChildCardProps {
   child: Child;
   isSelected: boolean;
   isDisabled?: boolean;
+  isAuthorized?: boolean;
   onClick: () => void;
 }
 
-const ChildCard: React.FC<ChildCardProps> = ({ child, isSelected, isDisabled = false, onClick }) => {
-  const childClass = getClassById(child.classId);
+const ChildCard: React.FC<ChildCardProps> = ({ 
+  child, 
+  isSelected, 
+  isDisabled = false, 
+  isAuthorized = false,
+  onClick 
+}) => {
+  const [childClass, setChildClass] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const loadClass = async () => {
+      if (child.classId) {
+        try {
+          const classData = await getClassById(child.classId);
+          setChildClass(classData);
+        } catch (error) {
+          console.error('Error loading class:', error);
+        }
+      }
+    };
+    
+    loadClass();
+  }, [child.classId]);
+
+  const getCardStyles = () => {
+    if (isSelected) {
+      return isAuthorized 
+        ? 'border-blue-500 bg-blue-50 shadow-md scale-105' 
+        : 'border-school-secondary bg-green-50 shadow-md scale-105';
+    }
+    
+    if (isAuthorized) {
+      return 'border-blue-200 bg-blue-25 hover:border-blue-300 hover:shadow-sm';
+    }
+    
+    return 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm';
+  };
+
+  const getIconStyles = () => {
+    if (isSelected) {
+      return isAuthorized 
+        ? 'bg-blue-100 border-2 border-blue-300' 
+        : 'bg-green-100 border-2 border-green-300';
+    }
+    
+    return isAuthorized 
+      ? 'bg-blue-100' 
+      : 'bg-blue-100';
+  };
+
+  const getIconColor = () => {
+    if (isSelected) {
+      return isAuthorized ? 'text-blue-600' : 'text-green-600';
+    }
+    
+    return isAuthorized ? 'text-blue-600' : 'text-blue-600';
+  };
+
+  const getTextColor = () => {
+    if (isSelected) {
+      return isAuthorized ? 'text-blue-800' : 'text-green-800';
+    }
+    
+    return 'text-gray-800';
+  };
+
+  const getCheckStyles = () => {
+    return isAuthorized 
+      ? 'bg-blue-500' 
+      : 'bg-green-500';
+  };
 
   return (
     <div
-      className={`child-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'opacity-60' : 'cursor-pointer'}`}
+      className={`
+        relative p-4 border-2 rounded-lg transition-all duration-200 
+        ${getCardStyles()}
+        ${isDisabled 
+          ? 'opacity-60 cursor-not-allowed' 
+          : 'cursor-pointer hover:scale-102'
+        }
+      `}
       onClick={isDisabled ? undefined : onClick}
     >
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-          <UserRound className="h-6 w-6 text-blue-600" />
+        <div className={`
+          w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200
+          ${getIconStyles()}
+        `}>
+          <UserRound className={`h-6 w-6 ${getIconColor()}`} />
         </div>
-        <div>
-          <h3 className="font-semibold text-lg">{child.name}</h3>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className={`font-semibold text-lg ${getTextColor()}`}>
+              {child.name}
+            </h3>
+            {isAuthorized && (
+              <div className="flex items-center">
+                <Users className="h-4 w-4 text-blue-500" />
+                <span className="sr-only">Authorized to pick up</span>
+              </div>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">
             {childClass ? childClass.name : 'Unknown Class'}
           </p>
+          {isAuthorized && (
+            <p className="text-xs text-blue-600 font-medium">
+              Authorized pickup
+            </p>
+          )}
         </div>
       </div>
 
       {isSelected && (
         <div className="absolute top-2 right-2">
-          <div className="w-4 h-4 rounded-full bg-school-secondary"></div>
+          <div className={`w-6 h-6 rounded-full ${getCheckStyles()} flex items-center justify-center`}>
+            <Check className="h-4 w-4 text-white" />
+          </div>
         </div>
       )}
     </div>

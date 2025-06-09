@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Child } from '@/types';
-import { getAllStudents as getAllStudentsMock } from '../mockData';
 
 // Get all students
 export const getAllStudents = async (): Promise<Child[]> => {
@@ -13,9 +12,7 @@ export const getAllStudents = async (): Promise<Child[]> => {
     
     if (error) {
       console.error('Error fetching students:', error);
-      
-      // Fallback to mock data
-      return getAllStudentsMock();
+      throw new Error(error.message);
     }
     
     // Transform database structure to match our application's structure
@@ -28,9 +25,7 @@ export const getAllStudents = async (): Promise<Child[]> => {
     }));
   } catch (error) {
     console.error('Error in getAllStudents:', error);
-    
-    // Fallback to mock data
-    return getAllStudentsMock();
+    throw error;
   }
 };
 
@@ -45,17 +40,14 @@ export const getStudentById = async (id: string): Promise<Child | null> => {
     
     if (error) {
       console.error('Error fetching student:', error);
-      
-      // Fallback to mock data
-      const { getChildById } = await import('../mockData');
-      return getChildById(id);
+      return null;
     }
     
-    // Get parent IDs for this student - Using UUID validation to prevent invalid input errors
+    // Get parent IDs for this student
     const { data: parentRelations, error: parentsError } = await supabase
       .from('student_parents')
       .select('parent_id')
-      .eq('student_id', data.id); // Use the validated UUID from the student record
+      .eq('student_id', data.id);
     
     if (parentsError) {
       console.error('Error fetching student parents:', parentsError);
@@ -72,10 +64,7 @@ export const getStudentById = async (id: string): Promise<Child | null> => {
     };
   } catch (error) {
     console.error('Error in getStudentById:', error);
-    
-    // Fallback to mock data
-    const { getChildById } = await import('../mockData');
-    return getChildById(id);
+    return null;
   }
 };
 
@@ -90,10 +79,7 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
     
     if (relationsError) {
       console.error('Error fetching student relations:', relationsError);
-      
-      // Fallback to mock data
-      const { getChildrenForParent } = await import('../mockData');
-      return getChildrenForParent(parentId);
+      throw new Error(relationsError.message);
     }
     
     if (!relations || relations.length === 0) {
@@ -109,10 +95,7 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
     
     if (studentsError) {
       console.error('Error fetching students:', studentsError);
-      
-      // Fallback to mock data
-      const { getChildrenForParent } = await import('../mockData');
-      return getChildrenForParent(parentId);
+      throw new Error(studentsError.message);
     }
     
     // Transform the data to match our application's structure
@@ -125,9 +108,6 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
     }));
   } catch (error) {
     console.error('Error in getStudentsForParent:', error);
-    
-    // Fallback to mock data
-    const { getChildrenForParent } = await import('../mockData');
-    return getChildrenForParent(parentId);
+    throw error;
   }
 };

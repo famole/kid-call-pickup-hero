@@ -1,14 +1,37 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import ViewerHeader from '@/components/viewer/ViewerHeader';
 import ClassFilter from '@/components/viewer/ClassFilter';
 import ClassGroup from '@/components/viewer/ClassGroup';
 import NoStudents from '@/components/viewer/NoStudents';
 import { useCalledStudents } from '@/hooks/useCalledStudents';
+import { getAllClasses } from '@/services/classService';
+import { Class } from '@/types';
 
 const ViewerDisplay: React.FC = () => {
-  const { classes, selectedClass, childrenByClass, handleClassChange, loading } = useCalledStudents();
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>('all');
+
+  const { childrenByClass, loading } = useCalledStudents(selectedClass);
+
+  // Fetch all classes for the filter
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const classData = await getAllClasses();
+        setClasses(classData);
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+      }
+    };
+    
+    fetchClasses();
+  }, []);
+
+  const handleClassChange = (value: string) => {
+    setSelectedClass(value);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-school-background">

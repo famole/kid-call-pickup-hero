@@ -12,7 +12,6 @@ interface ClassFilterProps {
 const ClassFilter: React.FC<ClassFilterProps> = ({ selectedClass, classes, onChange }) => {
   // Add console logs to debug the filter behavior
   const handleChange = (value: string) => {
-    console.log("ClassFilter: Selected class changed to:", value);
     onChange(value);
   };
 

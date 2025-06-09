@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -9,19 +10,23 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Child, Class } from '@/types';
 import { 
-  getAllStudents, 
-  createStudent, 
-  updateStudent, 
-  deleteStudent 
-} from '@/services/studentService';
-import { classes } from '@/services/mockData';
+  getAllClasses 
+} from '@/services/classService'; 
 import CSVUploadModal from '@/components/CSVUploadModal';
 import StudentTable from '@/components/students/StudentTable';
+import StudentSearch from '@/components/students/StudentSearch';
 import AddStudentDialog from '@/components/students/AddStudentDialog';
 import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
+import StudentDetailsDialog from '@/components/students/StudentDetailsDialog';
 import StudentsHeader from '@/components/students/StudentsHeader';
+import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { isValidUUID } from '@/utils/validators';
+import { useStudentForm, NewStudentState } from '@/hooks/useStudentForm';
+import { useStudentActions } from '@/hooks/useStudentActions';
+import { useStudentCSV } from '@/hooks/useStudentCSV';
+import { useStudentSearch } from '@/hooks/useStudentSearch';
 
 const AdminStudentsScreen = () => {
   const [studentList, setStudentList] = useState<Child[]>([]);
@@ -29,33 +34,74 @@ const AdminStudentsScreen = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<Child | null>(null);
-  const [newStudent, setNewStudent] = useState<Partial<Child>>({
-    name: '',
-    classId: '',
-    parentIds: []
-  });
   const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
+  const { newStudent, setNewStudent, resetNewStudent } = useStudentForm();
+
+  // Use the search hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedClassId,
+    setSelectedClassId,
+    filteredStudents
+  } = useStudentSearch(studentList);
+
+  const { 
+    handleAddStudentAction, 
+    handleUpdateStudentAction, 
+    handleDeleteStudentAction 
+  } = useStudentActions({
+    studentList,
+    setStudentList,
+    classList,
+    setIsLoading,
+    resetStudentForm: resetNewStudent,
+    setIsAddDialogOpen,
+    setIsEditDialogOpen,
+    setIsDeleteDialogOpen,
+    setCurrentStudent,
+  });
+
+  const { 
+    handleCSVImportAction, 
+    handleExportCSVAction 
+  } = useStudentCSV({
+    setStudentList,
+    setIsLoading,
+    setIsCSVModalOpen,
+  });
 
   // Load students and classes
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        // Get students from Supabase
-        const students = await getAllStudents();
-        setStudentList(students);
+        const { getAllStudents: fetchAllStudents } = await import('@/services/studentService');
+        const studentsPromise = fetchAllStudents();
+        const classesPromise = getAllClasses(); 
+
+        const [students, fetchedClasses] = await Promise.all([studentsPromise, classesPromise]);
         
-        // For now, we're still using mock classes
-        setClassList(classes);
+        setStudentList(students);
+        setClassList(fetchedClasses);
+        if (fetchedClasses.length === 0) {
+          toast({
+            title: "No Classes Found",
+            description: "No classes were loaded. Please ensure classes exist.",
+            variant: "default"
+          });
+        }
+
       } catch (error) {
         console.error('Failed to load data:', error);
         toast({
           title: "Error",
-          description: "Failed to load student data",
+          description: "Failed to load student or class data",
           variant: "destructive"
         });
       } finally {
@@ -66,112 +112,17 @@ const AdminStudentsScreen = () => {
     loadData();
   }, [toast]);
 
-  const handleAddStudent = async () => {
-    if (!newStudent.name || !newStudent.classId) {
-      toast({
-        title: "Error",
-        description: "Name and Class are required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      // Create student in Supabase
-      // Ensure we're sending valid UUIDs for parentIds
-      const validParentIds = newStudent.parentIds?.filter(id => isValidUUID(id)) || [];
-      
-      const studentToAdd = {
-        name: newStudent.name,
-        classId: newStudent.classId,
-        parentIds: validParentIds
-      };
-
-      console.log('Creating student:', studentToAdd);
-      const createdStudent = await createStudent(studentToAdd);
-      console.log('Created student:', createdStudent);
-      
-      // Update local state
-      setStudentList(prev => [...prev, createdStudent]);
-      
-      toast({
-        title: "Student Added",
-        description: `${createdStudent.name} has been added successfully`,
-      });
-      
-      // Reset form and close dialog
-      setNewStudent({ name: '', classId: '', parentIds: [] });
-      setIsAddDialogOpen(false);
-    } catch (error) {
-      console.error('Error adding student:', error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to add student";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleEditStudent = (student: Child) => {
     setCurrentStudent(student);
-    // Make sure we're not passing non-UUID values
-    const validParentIds = student.parentIds.filter(isValidUUID);
+    const validParentIds = student.parentIds?.filter(isValidUUID) || [];
     
     setNewStudent({
       name: student.name,
       classId: student.classId,
-      parentIds: validParentIds
+      parentIds: validParentIds,
+      avatar: student.avatar
     });
     setIsEditDialogOpen(true);
-  };
-
-  const handleUpdateStudent = async () => {
-    if (!currentStudent || !newStudent.name || !newStudent.classId) {
-      toast({
-        title: "Error",
-        description: "Name and Class are required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      // Make sure we're sending valid UUIDs for parentIds
-      const validParentIds = newStudent.parentIds?.filter(id => isValidUUID(id)) || [];
-      
-      // Update student in Supabase
-      const updatedStudent = await updateStudent(currentStudent.id, {
-        name: newStudent.name,
-        classId: newStudent.classId,
-        parentIds: validParentIds
-      });
-
-      // Update local state
-      setStudentList(studentList.map(s => s.id === updatedStudent.id ? updatedStudent : s));
-      
-      toast({
-        title: "Student Updated",
-        description: `${updatedStudent.name} has been updated successfully`,
-      });
-      
-      // Reset form and close dialog
-      setNewStudent({ name: '', classId: '', parentIds: [] });
-      setIsEditDialogOpen(false);
-    } catch (error) {
-      console.error('Error updating student:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update student in database",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleDeletePrompt = (student: Child) => {
@@ -179,157 +130,78 @@ const AdminStudentsScreen = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteStudent = async () => {
-    if (!currentStudent) return;
-
-    try {
-      setIsLoading(true);
-      // Delete student from Supabase
-      await deleteStudent(currentStudent.id);
-      
-      // Update local state
-      setStudentList(studentList.filter(s => s.id !== currentStudent.id));
-      
-      toast({
-        title: "Student Deleted",
-        description: `${currentStudent.name} has been deleted successfully`,
-      });
-      
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error('Error deleting student:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete student from database",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+  const handleViewDetails = (student: Child) => {
+    setCurrentStudent(student);
+    setIsDetailsDialogOpen(true);
+  };
+  
+  // Wrapper functions to call hook actions
+  const onAddStudent = () => handleAddStudentAction(newStudent);
+  const onUpdateStudent = () => {
+    if (currentStudent) {
+      handleUpdateStudentAction(currentStudent.id, newStudent);
     }
   };
-
-  const handleCSVImport = async (parsedData: Partial<Child>[]) => {
-    if (!parsedData || parsedData.length === 0) {
-      toast({
-        title: "Error",
-        description: "No valid data found in CSV",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate all entries
-    const validData = parsedData.filter(item => 
-      item.name && item.classId && 
-      classList.some(c => c.id === item.classId)
-    );
-
-    if (validData.length !== parsedData.length) {
-      toast({
-        title: "Warning",
-        description: `Only ${validData.length} out of ${parsedData.length} entries were valid and will be imported.`,
-      });
-    }
-
-    try {
-      setIsLoading(true);
-      const importedStudents: Child[] = [];
-      
-      // Create students one by one
-      for (const item of validData) {
-        try {
-          // Ensure we're only sending valid UUIDs for parentIds
-          const validParentIds = item.parentIds?.filter(id => isValidUUID(id)) || [];
-          
-          const student = await createStudent({
-            name: item.name!,
-            classId: item.classId!,
-            parentIds: validParentIds
-          });
-          
-          importedStudents.push(student);
-        } catch (error) {
-          console.error('Error importing student:', error);
-        }
-      }
-
-      // Update student list with new students
-      setStudentList(prev => [...prev, ...importedStudents]);
-
-      toast({
-        title: "Students Imported",
-        description: `${importedStudents.length} students have been imported successfully`,
-      });
-      
-      setIsCSVModalOpen(false);
-    } catch (error) {
-      console.error('Error importing students:', error);
-      toast({
-        title: "Error",
-        description: "Failed to import students",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Function to export students as CSV
-  const handleExportCSV = () => {
-    // Create CSV content
-    const headers = "id,name,classId,parentIds\n";
-    const csvContent = studentList.map(student => {
-      const validParentIds = student.parentIds.filter(isValidUUID);
-      return `${student.id},"${student.name}",${student.classId},"${validParentIds.join(',')}"`;
-    }).join("\n");
-
-    const finalCsvContent = headers + csvContent;
-    
-    // Create blob and download
-    const blob = new Blob([finalCsvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `students_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast({
-      title: "Export Complete",
-      description: `${studentList.length} students exported to CSV`,
-    });
-  };
+  const onDeleteStudent = () => handleDeleteStudentAction(currentStudent);
+  const onImportCSV = (data: Partial<Child>[]) => handleCSVImportAction(data);
+  const onExportCSV = () => handleExportCSVAction(studentList);
 
   const getClassName = (classId: string) => {
-    const classInfo = classes.find(c => c.id === classId);
+    const classInfo = classList.find(c => c.id === classId);
     return classInfo ? classInfo.name : 'Unknown Class';
   };
 
   return (
     <div className="container mx-auto py-6">
       <StudentsHeader 
-        onExportCSV={handleExportCSV}
+        onExportCSV={onExportCSV}
         onImportCSV={() => setIsCSVModalOpen(true)}
-        onAddStudent={() => setIsAddDialogOpen(true)}
+        onAddStudent={() => {
+          resetNewStudent();
+          setIsAddDialogOpen(true);
+        }}
       />
       
       <Card>
         <CardHeader>
           <CardTitle>Student List</CardTitle>
           <CardDescription>
-            Manage all students
+            {isLoading ? (
+              <Skeleton className="h-4 w-48" />
+            ) : (
+              `Manage all students - ${filteredStudents.length} of ${studentList.length} students shown`
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <StudentTable 
-            studentList={studentList}
-            isLoading={isLoading}
-            getClassName={getClassName}
-            onEdit={handleEditStudent}
-            onDelete={handleDeletePrompt}
-          />
+          {isLoading ? (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-48" />
+              </div>
+              <TableSkeleton rows={8} columns={5} />
+            </div>
+          ) : (
+            <>
+              <StudentSearch
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                selectedClassId={selectedClassId}
+                onClassFilterChange={setSelectedClassId}
+                classList={classList}
+              />
+              
+              <StudentTable 
+                studentList={filteredStudents}
+                isLoading={false}
+                getClassName={getClassName}
+                onEdit={handleEditStudent}
+                onDelete={handleDeletePrompt}
+                onViewDetails={handleViewDetails}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -338,10 +210,10 @@ const AdminStudentsScreen = () => {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         classList={classList}
-        newStudent={newStudent}
-        setNewStudent={setNewStudent}
-        onSave={handleAddStudent}
-        isLoading={isLoading}
+        newStudent={newStudent as NewStudentState}
+        setNewStudent={setNewStudent as React.Dispatch<React.SetStateAction<NewStudentState>>}
+        onSave={onAddStudent}
+        isLoading={isLoading && isAddDialogOpen}
       />
 
       {/* Edit Student Dialog */}
@@ -349,9 +221,10 @@ const AdminStudentsScreen = () => {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         classList={classList}
-        student={newStudent}
-        setStudent={setNewStudent}
-        onUpdate={handleUpdateStudent}
+        student={newStudent as NewStudentState}
+        setStudent={setNewStudent as React.Dispatch<React.SetStateAction<NewStudentState>>}
+        onUpdate={onUpdateStudent}
+        isLoading={isLoading && isEditDialogOpen}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -359,14 +232,24 @@ const AdminStudentsScreen = () => {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         student={currentStudent}
-        onDelete={handleDeleteStudent}
+        onDelete={onDeleteStudent}
+        isLoading={isLoading && isDeleteDialogOpen}
+      />
+
+      {/* Student Details Dialog */}
+      <StudentDetailsDialog
+        open={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+        student={currentStudent}
+        getClassName={getClassName}
+        classList={classList}
       />
 
       {/* CSV Upload Modal */}
       <CSVUploadModal
         isOpen={isCSVModalOpen}
         onClose={() => setIsCSVModalOpen(false)}
-        onImport={handleCSVImport}
+        onImport={onImportCSV}
         classList={classList}
       />
     </div>
