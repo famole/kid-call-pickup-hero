@@ -81,6 +81,10 @@ const Login = () => {
     }
   };
 
+  const handleFirstTimeSetup = () => {
+    navigate('/password-setup');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
       <Card className="w-[350px] shadow-lg">
@@ -167,7 +171,40 @@ const Login = () => {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
+          
+          {/* First Time Setup Button */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                First time here?
+              </span>
+            </div>
+          </div>
+          
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleFirstTimeSetup}
+          >
+            Set up your account
+          </Button>
         </CardContent>
+        
+        <CardFooter className="flex flex-col gap-4">
+          <div className="text-sm text-center">
+            New to the system?{" "}
+            <span 
+              className="text-school-primary hover:underline cursor-pointer"
+              onClick={() => navigate('/signup')}
+            >
+              Sign up
+            </span>
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );
