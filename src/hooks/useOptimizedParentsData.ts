@@ -3,8 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
-import { getParentsWithStudentsOptimized } from '@/services/parent/optimizedParentOperations';
-import { getParentsWithStudentsLegacy } from '@/services/parentService';
+import { getParentsWithStudentsOptimized } from '@/services/parent/optimizedParentQueries';
 import { getAllStudents } from '@/services/studentService';
 
 interface UseOptimizedParentsDataProps {
@@ -17,41 +16,38 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
   const [isLoading, setIsLoading] = useState(true);
   const [allStudents, setAllStudents] = useState<Child[]>([]);
   const [loadingProgress, setLoadingProgress] = useState<string>('Initializing...');
+  const [lastFetch, setLastFetch] = useState<number>(0);
 
   // Filter parents by role
   const filteredParentsByRole = parents.filter(parent => 
     parent.role === userRole || (!parent.role && userRole === 'parent')
   );
 
-  const loadParents = useCallback(async () => {
+  const loadParents = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && now - lastFetch < 10000) { // Cache for 10 seconds
+      return;
+    }
+
     setIsLoading(true);
     setLoadingProgress('Loading parents data...');
     
     try {
       const startTime = performance.now();
       
-      let data: ParentWithStudents[];
-      
-      try {
-        // Try optimized version first
-        data = await getParentsWithStudentsOptimized();
-      } catch (optimizedError) {
-        console.warn('Optimized query failed, falling back to legacy method:', optimizedError);
-        setLoadingProgress('Falling back to legacy loading method...');
-        
-        // Fallback to legacy method
-        data = await getParentsWithStudentsLegacy();
-      }
+      // Use optimized query
+      const data = await getParentsWithStudentsOptimized();
       
       const loadTime = performance.now() - startTime;
       
       setParents(data);
       setLoadingProgress(`Loaded ${data.length} parents`);
+      setLastFetch(now);
       
-      if (loadTime > 1000) {
+      if (loadTime > 2000) {
         toast({
           title: "Performance Notice",
-          description: `Parents loaded in ${(loadTime / 1000).toFixed(1)}s. Consider pagination for better performance.`,
+          description: `Parents loaded in ${(loadTime / 1000).toFixed(1)}s. Data has been optimized.`,
         });
       }
     } catch (error) {
@@ -65,11 +61,11 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, lastFetch]);
 
   const loadStudents = useCallback(async () => {
-    setLoadingProgress('Loading students data...');
     try {
+      setLoadingProgress('Loading students data...');
       const studentsData = await getAllStudents();
       setAllStudents(studentsData);
       setLoadingProgress(`Loaded ${studentsData.length} students`);
@@ -87,7 +83,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([loadParents(), loadStudents()]);
+      await Promise.all([loadParents(true), loadStudents()]);
       setIsLoading(false);
       setLoadingProgress('Data loaded successfully');
     };
@@ -104,7 +100,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
   };
 
   const onImportCompleted = () => {
-    loadParents();
+    loadParents(true);
   };
 
   return {
@@ -117,5 +113,6 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     onParentAdded,
     onParentUpdated,
     onImportCompleted,
+    refetch: () => loadParents(true)
   };
 };

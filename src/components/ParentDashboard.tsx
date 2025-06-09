@@ -1,21 +1,19 @@
 
 import React from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { useParentDashboardData } from '@/hooks/useParentDashboardData';
-import { usePickupRequests } from '@/hooks/usePickupRequests';
+import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
 import { usePickupActions } from '@/hooks/usePickupActions';
 import ParentDashboardLayout from './parent-dashboard/ParentDashboardLayout';
 
 const ParentDashboard = () => {
   const { toast } = useToast();
-  const { children, loading } = useParentDashboardData();
-  const { activeRequests, refreshPickupRequests } = usePickupRequests(children);
+  const { children, activeRequests, loading, refetch } = useOptimizedParentDashboard();
   const { 
     selectedChildren, 
     isSubmitting, 
     toggleChildSelection, 
     handleRequestPickup 
-  } = usePickupActions(refreshPickupRequests);
+  } = usePickupActions(refetch);
 
   // Check if any children have active requests (either pending or called)
   const childrenWithActiveRequests = activeRequests.map(req => req.studentId);

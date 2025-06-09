@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllClasses } from '@/services/classService';
-import { getCurrentlyCalled } from '@/services/pickup/getCurrentlyCalled';
+import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
 import { PickupRequestWithDetails } from '@/types/supabase';
-import { Class } from '@/types';
 import ViewerHeader from './ViewerHeader';
 import ClassFilter from './ClassFilter';
 import NoStudents from './NoStudents';
@@ -18,29 +17,18 @@ const ViewerDisplay: React.FC = () => {
   const { data: classes = [], isLoading: classesLoading } = useQuery({
     queryKey: ['classes'],
     queryFn: () => getAllClasses(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  const { data: calledStudents = [], isLoading: studentsLoading, refetch } = useQuery({
-    queryKey: ['currently-called'],
-    queryFn: () => getCurrentlyCalled(),
+  const { data: calledStudents = [], isLoading: studentsLoading } = useQuery({
+    queryKey: ['called-students-optimized', selectedClass],
+    queryFn: () => getCalledStudentsOptimized(selectedClass),
     refetchInterval: 2000,
     staleTime: 1000,
   });
 
-  console.log('Called students data:', calledStudents);
-  console.log('Students loading:', studentsLoading);
-
-  // Filter students by selected class
-  const filteredStudents = selectedClass === 'all' 
-    ? calledStudents 
-    : calledStudents.filter((item: PickupRequestWithDetails) => {
-        return String(item.child?.classId) === selectedClass;
-      });
-
-  console.log('Filtered students:', filteredStudents);
-
   // Group students by class for display
-  const groupedByClass = filteredStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
+  const groupedByClass = calledStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
     const classId = item.child?.classId || 'unknown';
     if (!groups[classId]) {
       groups[classId] = [];
@@ -49,10 +37,7 @@ const ViewerDisplay: React.FC = () => {
     return groups;
   }, {});
 
-  console.log('Grouped by class:', groupedByClass);
-
   const handleClassChange = (value: string) => {
-    console.log('Class filter changed to:', value);
     setSelectedClass(value);
   };
 
@@ -68,7 +53,7 @@ const ViewerDisplay: React.FC = () => {
               {studentsLoading ? (
                 <Skeleton className="h-4 w-48" />
               ) : (
-                `${filteredStudents.length} student${filteredStudents.length !== 1 ? 's' : ''} currently called`
+                `${calledStudents.length} student${calledStudents.length !== 1 ? 's' : ''} currently called`
               )}
             </p>
           </div>

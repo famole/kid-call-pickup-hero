@@ -6,3 +6,9 @@ export { getActivePickupRequests, getActivePickupRequestsForParent } from './get
 export { getCurrentlyCalled } from './getCurrentlyCalled';
 export { migratePickupRequestsToSupabase } from './migratePickupRequests';
 export { autoCompleteExpiredPickupRequests, startAutoCompletionProcess } from './autoCompletePickupRequests';
+
+// Export new optimized functions
+export { 
+  getPickupRequestsWithDetailsBatch, 
+  getCalledStudentsOptimized 
+} from './optimizedPickupQueries';
