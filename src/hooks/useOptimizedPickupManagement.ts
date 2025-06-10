@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getPickupRequestsWithDetailsBatch } from '@/services/pickup/optimizedPickupQueries';
 import { updatePickupRequestStatus } from '@/services/pickup';
 import { PickupRequestWithDetails } from '@/types/supabase';
@@ -8,12 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 export const useOptimizedPickupManagement = (classId?: string) => {
   const [pendingRequests, setPendingRequests] = useState<PickupRequestWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [lastFetch, setLastFetch] = useState<number>(0);
+  const lastFetchRef = useRef<number>(0);
 
   const fetchPendingRequests = useCallback(async (forceRefresh = false) => {
     // Implement simple caching - don't fetch if we fetched recently
     const now = Date.now();
-    if (!forceRefresh && now - lastFetch < 2000) {
+    if (!forceRefresh && now - lastFetchRef.current < 2000) {
       return;
     }
 
@@ -31,14 +31,14 @@ export const useOptimizedPickupManagement = (classId?: string) => {
       }
 
       setPendingRequests(filteredRequests);
-      setLastFetch(now);
+      lastFetchRef.current = now;
     } catch (error) {
       console.error("Error fetching pending requests:", error);
       setPendingRequests([]);
     } finally {
       setLoading(false);
     }
-  }, [classId, lastFetch]);
+  }, [classId]); // Removed lastFetch from dependencies
 
   const markAsCalled = async (requestId: string) => {
     try {
@@ -78,9 +78,12 @@ export const useOptimizedPickupManagement = (classId?: string) => {
         },
         async () => {
           // Debounce rapid changes
-          setTimeout(() => {
-            fetchPendingRequests(true);
-          }, 500);
+          const now = Date.now();
+          if (now - lastFetchRef.current > 1000) {
+            setTimeout(() => {
+              fetchPendingRequests(true);
+            }, 500);
+          }
         }
       )
       .subscribe();

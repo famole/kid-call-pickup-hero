@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
 import { getAllClasses } from '@/services/classService';
 import { PickupRequestWithDetails } from '@/types/supabase';
@@ -10,7 +10,7 @@ export const useOptimizedCalledStudents = (selectedClass?: string) => {
   const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [lastFetch, setLastFetch] = useState<number>(0);
+  const lastFetchRef = useRef<number>(0);
   
   // Cache classes data
   useEffect(() => {
@@ -28,7 +28,7 @@ export const useOptimizedCalledStudents = (selectedClass?: string) => {
   
   const fetchCalledChildren = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
-    if (!forceRefresh && now - lastFetch < 1000) {
+    if (!forceRefresh && now - lastFetchRef.current < 1000) {
       return;
     }
 
@@ -36,14 +36,14 @@ export const useOptimizedCalledStudents = (selectedClass?: string) => {
     try {
       const data = await getCalledStudentsOptimized(selectedClass);
       setCalledChildren(data);
-      setLastFetch(now);
+      lastFetchRef.current = now;
     } catch (error) {
       console.error("Error fetching called children:", error);
       setCalledChildren([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedClass, lastFetch]);
+  }, [selectedClass]); // Removed lastFetch from dependencies
   
   useEffect(() => {
     fetchCalledChildren(true);
@@ -61,9 +61,12 @@ export const useOptimizedCalledStudents = (selectedClass?: string) => {
         },
         async () => {
           // Debounce rapid changes
-          setTimeout(() => {
-            fetchCalledChildren(true);
-          }, 300);
+          const now = Date.now();
+          if (now - lastFetchRef.current > 1000) {
+            setTimeout(() => {
+              fetchCalledChildren(true);
+            }, 300);
+          }
         }
       )
       .subscribe();

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
 import { getActivePickupRequestsForParent } from '@/services/pickup';
@@ -15,13 +15,13 @@ export const useOptimizedParentDashboard = () => {
   const [children, setChildren] = useState<ChildWithType[]>([]);
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lastFetch, setLastFetch] = useState<number>(0);
+  const lastFetchRef = useRef<number>(0);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) return;
 
     const now = Date.now();
-    if (!forceRefresh && now - lastFetch < 3000) {
+    if (!forceRefresh && now - lastFetchRef.current < 3000) {
       return;
     }
 
@@ -36,13 +36,13 @@ export const useOptimizedParentDashboard = () => {
 
       setChildren(dashboardData.allChildren);
       setActiveRequests(pickupRequests);
-      setLastFetch(now);
+      lastFetchRef.current = now;
     } catch (error) {
       console.error('Error loading parent dashboard data:', error);
     } finally {
       setLoading(false);
     }
-  }, [user?.email, lastFetch]);
+  }, [user?.email]); // Removed lastFetch from dependencies
 
   useEffect(() => {
     if (user?.email) {
@@ -64,10 +64,13 @@ export const useOptimizedParentDashboard = () => {
           table: 'pickup_requests'
         },
         async () => {
-          // Debounce rapid changes
-          setTimeout(() => {
-            loadDashboardData(true);
-          }, 500);
+          // Debounce rapid changes - only refresh if enough time has passed
+          const now = Date.now();
+          if (now - lastFetchRef.current > 2000) {
+            setTimeout(() => {
+              loadDashboardData(true);
+            }, 500);
+          }
         }
       )
       .subscribe();
