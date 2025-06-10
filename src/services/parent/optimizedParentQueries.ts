@@ -99,7 +99,7 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
         id,
         name,
         email,
-        student_parents!inner (
+        student_parents (
           id,
           relationship,
           is_primary,
@@ -110,7 +110,7 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
             avatar
           )
         ),
-        pickup_authorizations_authorized_parent_id_fkey!inner (
+        pickup_authorizations_authorized_parent_id_fkey (
           student_id,
           start_date,
           end_date,
@@ -124,14 +124,15 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
         )
       `)
       .eq('email', parentEmail)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error fetching parent dashboard data:', error);
       throw new Error(error.message);
     }
 
     if (!data) {
+      console.log('No parent found for email:', parentEmail);
       return { 
         ownChildren: [], 
         authorizedChildren: [], 
