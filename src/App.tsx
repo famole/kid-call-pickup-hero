@@ -16,6 +16,7 @@ import ParentManagement from '@/pages/ParentManagement';
 import ViewerDisplay from '@/pages/ViewerDisplay';
 import PickupAuthorizationPage from '@/pages/PickupAuthorizationPage';
 import AdminInitialSetup from '@/pages/AdminInitialSetup';
+import StressTestPage from '@/pages/StressTestPage';
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -72,6 +73,11 @@ function App() {
             <Route path="/admin/setup" element={
               <ProtectedRoute>
                 <AdminInitialSetup />
+              </ProtectedRoute>
+            } />
+            <Route path="/stress-test" element={
+              <ProtectedRoute>
+                <StressTestPage />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

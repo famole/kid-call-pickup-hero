@@ -5,9 +5,9 @@ import { Navigate } from 'react-router-dom';
 import StressTestPanel from '@/components/admin-panel/StressTestPanel';
 
 const StressTestPage: React.FC = () => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
-  if (!user || !isAdmin()) {
+  if (!user || user.role !== 'admin') {
     return <Navigate to="/login" replace />;
   }
 
