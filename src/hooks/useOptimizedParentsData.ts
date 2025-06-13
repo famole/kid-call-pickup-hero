@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
@@ -16,7 +16,10 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
   const [isLoading, setIsLoading] = useState(true);
   const [allStudents, setAllStudents] = useState<Child[]>([]);
   const [loadingProgress, setLoadingProgress] = useState<string>('Initializing...');
-  const [lastFetch, setLastFetch] = useState<number>(0);
+  
+  // Use ref to track last fetch time to prevent dependency issues
+  const lastFetchRef = useRef<number>(0);
+  const isInitializedRef = useRef<boolean>(false);
 
   // Filter parents by role
   const filteredParentsByRole = parents.filter(parent => 
@@ -25,7 +28,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
 
   const loadParents = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
-    if (!forceRefresh && now - lastFetch < 10000) { // Cache for 10 seconds
+    if (!forceRefresh && now - lastFetchRef.current < 10000) { // Cache for 10 seconds
       return;
     }
 
@@ -42,7 +45,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
       
       setParents(data);
       setLoadingProgress(`Loaded ${data.length} parents`);
-      setLastFetch(now);
+      lastFetchRef.current = now;
       
       if (loadTime > 2000) {
         toast({
@@ -61,7 +64,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     } finally {
       setIsLoading(false);
     }
-  }, [toast, lastFetch]);
+  }, [toast]);
 
   const loadStudents = useCallback(async () => {
     try {
@@ -80,28 +83,38 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     }
   }, [toast]);
 
+  // Only run the effect once on mount
   useEffect(() => {
+    if (isInitializedRef.current) {
+      return;
+    }
+
     const loadData = async () => {
       setIsLoading(true);
       await Promise.all([loadParents(true), loadStudents()]);
       setIsLoading(false);
       setLoadingProgress('Data loaded successfully');
+      isInitializedRef.current = true;
     };
     
     loadData();
-  }, [loadParents, loadStudents]);
+  }, []); // Empty dependency array to run only once
 
-  const onParentAdded = (newParent: ParentWithStudents) => {
+  const onParentAdded = useCallback((newParent: ParentWithStudents) => {
     setParents(prev => [...prev, newParent]);
-  };
+  }, []);
 
-  const onParentUpdated = (updatedParent: ParentWithStudents) => {
+  const onParentUpdated = useCallback((updatedParent: ParentWithStudents) => {
     setParents(prev => prev.map(p => p.id === updatedParent.id ? updatedParent : p));
-  };
+  }, []);
 
-  const onImportCompleted = () => {
+  const onImportCompleted = useCallback(() => {
     loadParents(true);
-  };
+  }, [loadParents]);
+
+  const refetch = useCallback(() => {
+    return loadParents(true);
+  }, [loadParents]);
 
   return {
     parents,
@@ -113,6 +126,6 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     onParentAdded,
     onParentUpdated,
     onImportCompleted,
-    refetch: () => loadParents(true)
+    refetch
   };
 };
