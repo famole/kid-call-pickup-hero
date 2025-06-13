@@ -22,10 +22,10 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Clock className="h-5 w-5 text-orange-600" />
-          In Queue
+          📋 In Queue ⏳
         </CardTitle>
         <CardDescription>
-          Waiting to be called
+          🚶‍♀️ Waiting to be called 📢
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -42,10 +42,10 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">
-                    {child?.name || 'Unknown Child'}
+                    🎒 {child?.name || 'Unknown Child'}
                   </div>
                   <div className="text-xs text-orange-600">
-                    In pickup queue
+                    ⏰ In pickup queue 📍
                   </div>
                 </div>
               </div>
