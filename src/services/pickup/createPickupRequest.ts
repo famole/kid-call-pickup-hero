@@ -15,7 +15,7 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
       throw new Error('Authentication error.');
     }
     
-    // Use the server-side helper to verify parent-student relationship
+    // Use the updated server-side helper to verify parent-student relationship or authorization
     const { data: isAuthorized, error: authError } = await supabase.rpc('is_parent_of_student', {
       student_id: studentId
     });
@@ -30,7 +30,7 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
       throw new Error('You are not authorized to request pickup for this student.');
     }
 
-    console.log('Parent authorization verified via server function');
+    console.log('Parent authorization verified via enhanced server function (includes pickup authorizations)');
     
     const { data, error } = await supabase
       .from('pickup_requests')
