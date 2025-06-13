@@ -17,7 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, CheckCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const PickupManagement: React.FC = () => {
+interface PickupManagementProps {
+  showNavigation?: boolean;
+}
+
+const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = true }) => {
   const { user, loading: authLoading } = useAuth();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
@@ -71,7 +75,7 @@ const PickupManagement: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
-      <Navigation />
+      {showNavigation && <Navigation />}
       <div className="w-full">
         <div className="container mx-auto py-6 px-4">
           <div className="mb-6">
