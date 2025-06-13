@@ -47,6 +47,7 @@ class StressTestRunner {
   private startTime: number = 0;
   private authorizedStudents: any[] = [];
   private allParents: any[] = [];
+  private currentParentId: string | null = null;
 
   constructor(config: StressTestConfig) {
     this.config = config;
@@ -66,8 +67,27 @@ class StressTestRunner {
   async initialize() {
     console.log('🚀 Initializing stress test data...');
     try {
+      // Get current user's parent ID
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user?.email) {
+        throw new Error('No authenticated user found. Please log in to run stress tests.');
+      }
+
+      // Get the parent record for the current user
+      const { data: parentData, error: parentError } = await supabase
+        .from('parents')
+        .select('id')
+        .eq('email', user.user.email)
+        .single();
+
+      if (parentError || !parentData) {
+        throw new Error('Parent record not found for the current user. Please ensure your account is properly set up.');
+      }
+
+      this.currentParentId = parentData.id;
+
       // Get the current parent's authorized students only
-      this.authorizedStudents = await getStudentsForParent();
+      this.authorizedStudents = await getStudentsForParent(this.currentParentId);
       this.allParents = await getAllParents();
       
       if (this.authorizedStudents.length === 0) {
@@ -313,8 +333,24 @@ export const createDefaultTestScenarios = (authorizedStudents: any[], allParents
     name: 'Database Read Heavy',
     weight: 0.1,
     operation: async () => {
+      // Get current user's parent ID for the read operations
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user?.email) {
+        throw new Error('No authenticated user');
+      }
+
+      const { data: parentData } = await supabase
+        .from('parents')
+        .select('id')
+        .eq('email', user.user.email)
+        .single();
+
+      if (!parentData) {
+        throw new Error('Parent not found');
+      }
+
       await Promise.all([
-        getStudentsForParent(),
+        getStudentsForParent(parentData.id),
         getAllParents(),
         getActivePickupRequests()
       ]);
@@ -339,7 +375,23 @@ export async function runStressTest(customConfig?: Partial<StressTestConfig>): P
   
   // Create scenarios with authorized data only
   if (config.testScenarios.length === 0) {
-    const authorizedStudents = await getStudentsForParent();
+    // Get current user's parent ID
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user?.email) {
+      throw new Error('No authenticated user found');
+    }
+
+    const { data: parentData } = await supabase
+      .from('parents')
+      .select('id')
+      .eq('email', user.user.email)
+      .single();
+
+    if (!parentData) {
+      throw new Error('Parent record not found');
+    }
+
+    const authorizedStudents = await getStudentsForParent(parentData.id);
     const allParents = await getAllParents();
     config.testScenarios = createDefaultTestScenarios(authorizedStudents, allParents);
   }
