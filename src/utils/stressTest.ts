@@ -5,6 +5,7 @@ import { updatePickupRequestStatus } from "@/services/pickup/updatePickupRequest
 import { getActivePickupRequests } from "@/services/pickup/getPickupRequests";
 import { getAllStudents } from "@/services/student/getStudents";
 import { getAllParents } from "@/services/parentService";
+import { getStudentsForParent } from "@/services/parentService";
 
 export interface StressTestConfig {
   concurrentUsers: number;
@@ -44,8 +45,8 @@ class StressTestRunner {
   private config: StressTestConfig;
   private results: StressTestResults;
   private startTime: number = 0;
-  private students: any[] = [];
-  private parents: any[] = [];
+  private authorizedStudents: any[] = [];
+  private allParents: any[] = [];
 
   constructor(config: StressTestConfig) {
     this.config = config;
@@ -65,27 +66,31 @@ class StressTestRunner {
   async initialize() {
     console.log('🚀 Initializing stress test data...');
     try {
-      // Load test data
-      this.students = await getAllStudents();
-      this.parents = await getAllParents();
+      // Get the current parent's authorized students only
+      this.authorizedStudents = await getStudentsForParent();
+      this.allParents = await getAllParents();
       
-      if (this.students.length === 0 || this.parents.length === 0) {
-        throw new Error('No test data available. Please ensure students and parents exist in the database.');
+      if (this.authorizedStudents.length === 0) {
+        throw new Error('No authorized students found for the current user. Please ensure you have students associated with your account to run the stress test.');
       }
 
-      console.log(`📊 Loaded ${this.students.length} students and ${this.parents.length} parents for testing`);
+      if (this.allParents.length === 0) {
+        throw new Error('No parents found in the database. Please ensure parent data exists.');
+      }
+
+      console.log(`📊 Loaded ${this.authorizedStudents.length} authorized students and ${this.allParents.length} parents for testing`);
     } catch (error) {
       console.error('❌ Failed to initialize test data:', error);
       throw error;
     }
   }
 
-  private getRandomStudent() {
-    return this.students[Math.floor(Math.random() * this.students.length)];
+  private getRandomAuthorizedStudent() {
+    return this.authorizedStudents[Math.floor(Math.random() * this.authorizedStudents.length)];
   }
 
   private getRandomParent() {
-    return this.parents[Math.floor(Math.random() * this.parents.length)];
+    return this.allParents[Math.floor(Math.random() * this.allParents.length)];
   }
 
   private async executeOperation(scenario: TestScenario, userId: string): Promise<void> {
@@ -165,6 +170,7 @@ class StressTestRunner {
     console.log(`👥 Concurrent users: ${this.config.concurrentUsers}`);
     console.log(`⏱️ Duration: ${this.config.testDurationMs}ms`);
     console.log(`🔄 Operations per user: ${this.config.operationsPerUser}`);
+    console.log(`📚 Authorized students available: ${this.authorizedStudents.length}`);
     
     this.startTime = performance.now();
 
@@ -271,13 +277,16 @@ class StressTestRunner {
   }
 }
 
-// Predefined test scenarios
-export const createDefaultTestScenarios = (students: any[], parents: any[]): TestScenario[] => [
+// Predefined test scenarios that use only authorized students
+export const createDefaultTestScenarios = (authorizedStudents: any[], allParents: any[]): TestScenario[] => [
   {
     name: 'Create Pickup Request',
     weight: 0.4,
     operation: async () => {
-      const student = students[Math.floor(Math.random() * students.length)];
+      if (authorizedStudents.length === 0) {
+        throw new Error('No authorized students available');
+      }
+      const student = authorizedStudents[Math.floor(Math.random() * authorizedStudents.length)];
       await createPickupRequest(student.id);
     }
   },
@@ -305,7 +314,7 @@ export const createDefaultTestScenarios = (students: any[], parents: any[]): Tes
     weight: 0.1,
     operation: async () => {
       await Promise.all([
-        getAllStudents(),
+        getStudentsForParent(),
         getAllParents(),
         getActivePickupRequests()
       ]);
@@ -328,11 +337,11 @@ export async function runStressTest(customConfig?: Partial<StressTestConfig>): P
   const testRunner = new StressTestRunner(config);
   await testRunner.initialize();
   
-  // Create scenarios with loaded data
+  // Create scenarios with authorized data only
   if (config.testScenarios.length === 0) {
-    const students = await getAllStudents();
-    const parents = await getAllParents();
-    config.testScenarios = createDefaultTestScenarios(students, parents);
+    const authorizedStudents = await getStudentsForParent();
+    const allParents = await getAllParents();
+    config.testScenarios = createDefaultTestScenarios(authorizedStudents, allParents);
   }
 
   return await testRunner.run();
