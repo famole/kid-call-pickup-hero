@@ -1,4 +1,3 @@
-
 export type User = {
   id: string;
   email: string;
@@ -13,6 +12,7 @@ export type Child = {
   classId: string;
   parentIds: string[];
   avatar?: string;
+  isAuthorized?: boolean;
 };
 
 export type Class = {
