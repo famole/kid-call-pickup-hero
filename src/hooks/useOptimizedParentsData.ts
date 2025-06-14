@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { ParentWithStudents } from '@/types/parent';
@@ -21,10 +20,21 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
   const lastFetchRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
 
-  // Filter parents by role
-  const filteredParentsByRole = parents.filter(parent => 
-    parent.role === userRole || (!parent.role && userRole === 'parent')
-  );
+  // Filter parents by role with improved logic
+  const filteredParentsByRole = parents.filter(parent => {
+    console.log(`Filtering parent ${parent.name} with role: ${parent.role} for userRole: ${userRole}`);
+    
+    if (userRole === 'teacher') {
+      return parent.role === 'teacher';
+    } else if (userRole === 'admin') {
+      return parent.role === 'admin';
+    } else {
+      // For 'parent' role, include those with 'parent' role or no role set
+      return parent.role === 'parent' || !parent.role;
+    }
+  });
+
+  console.log(`Filtered ${filteredParentsByRole.length} users for role: ${userRole}`);
 
   const loadParents = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
@@ -38,10 +48,14 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     try {
       const startTime = performance.now();
       
+      console.log(`Loading parents data for userRole: ${userRole}`);
+      
       // Use optimized query
       const data = await getParentsWithStudentsOptimized();
       
       const loadTime = performance.now() - startTime;
+      
+      console.log(`Loaded ${data.length} total parents/users from database`);
       
       setParents(data);
       setLoadingProgress(`Loaded ${data.length} parents`);
@@ -64,7 +78,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, userRole]);
 
   const loadStudents = useCallback(async () => {
     try {
