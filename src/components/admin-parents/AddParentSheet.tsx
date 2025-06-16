@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ interface AddParentSheetProps {
   newParent: ParentInput;
   onNewParentChange: (parent: ParentInput) => void;
   onSubmit: (e?: React.FormEvent) => Promise<void>;
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
 const AddParentSheet: React.FC<AddParentSheetProps> = ({
@@ -45,6 +46,22 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
     e.preventDefault();
     await onSubmit(e);
   };
+
+  // Determine available roles based on current user's role
+  const getAvailableRoles = () => {
+    switch (userRole) {
+      case 'superadmin':
+        return ['parent', 'teacher', 'admin', 'superadmin'];
+      case 'admin':
+        return ['parent', 'teacher', 'admin'];
+      case 'teacher':
+        return ['parent', 'teacher'];
+      default:
+        return ['parent'];
+    }
+  };
+
+  const availableRoles = getAvailableRoles();
   
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -52,7 +69,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
         <SheetHeader>
           <SheetTitle>Add New User</SheetTitle>
           <SheetDescription>
-            Create a new parent or teacher account. They can be associated with students if needed.
+            Create a new user account. They can be associated with students if needed.
           </SheetDescription>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -90,7 +107,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
             <Label htmlFor={roleId}>Role</Label>
             <Select
               value={newParent.role || 'parent'}
-              onValueChange={(value: 'parent' | 'teacher' | 'admin') => 
+              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin') => 
                 onNewParentChange({...newParent, role: value})
               }
             >
@@ -98,16 +115,18 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="parent">Parent</SelectItem>
-                <SelectItem value="teacher">Teacher</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                {availableRoles.map((role) => (
+                  <SelectItem key={role} value={role}>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <SheetFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" className="bg-school-primary">
-              Add {newParent.role === 'teacher' ? 'Teacher' : newParent.role === 'admin' ? 'Admin' : 'Parent'}
+              Add {newParent.role?.charAt(0).toUpperCase() + newParent.role?.slice(1) || 'User'}
             </Button>
           </SheetFooter>
         </form>

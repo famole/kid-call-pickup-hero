@@ -11,7 +11,7 @@ interface ParentsHeaderProps {
   onCloseImportDialog: () => void;
   onImportFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onImportSubmit: () => Promise<void>;
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   headerTitle?: string;
   headerDescription?: string;
 }
@@ -29,6 +29,8 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
 }) => {
   const getButtonLabel = () => {
     switch (userRole) {
+      case 'superadmin':
+        return 'Add Superadmin';
       case 'teacher':
         return 'Add Teacher';
       case 'admin':
@@ -38,11 +40,13 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
     }
   };
 
-  const defaultTitle = userRole === 'teacher' ? 'Teachers Management' : 
+  const defaultTitle = userRole === 'superadmin' ? 'Superadmins Management' :
+                     userRole === 'teacher' ? 'Teachers Management' : 
                      userRole === 'admin' ? 'Admins Management' : 
                      'Parents Management';
 
-  const defaultDescription = userRole === 'teacher' ? 'Manage teacher accounts and permissions' :
+  const defaultDescription = userRole === 'superadmin' ? 'Manage superadmin accounts and permissions' :
+                           userRole === 'teacher' ? 'Manage teacher accounts and permissions' :
                            userRole === 'admin' ? 'Manage admin accounts and permissions' :
                            'Manage parent accounts and student relationships';
 

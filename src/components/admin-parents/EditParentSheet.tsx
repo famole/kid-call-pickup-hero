@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ParentWithStudents, ParentInput } from '@/types/parent';
+import { useAuth } from '@/context/auth/AuthProvider';
 
 interface EditParentSheetProps {
   isOpen: boolean;
@@ -25,7 +27,7 @@ interface EditParentSheetProps {
   editingParent: ParentWithStudents | null;
   onEditingParentChange: (parent: ParentWithStudents) => void;
   onSubmit: (e?: React.FormEvent) => Promise<void>;
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
 const EditParentSheet: React.FC<EditParentSheetProps> = ({
@@ -36,6 +38,7 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
   onSubmit,
   userRole = 'parent',
 }) => {
+  const { user } = useAuth();
   const nameId = React.useId();
   const emailId = React.useId();
   const phoneId = React.useId();
@@ -45,6 +48,38 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
     e.preventDefault();
     await onSubmit(e);
   };
+
+  // Determine available roles based on current user's role
+  const getAvailableRoles = () => {
+    switch (userRole) {
+      case 'superadmin':
+        return ['parent', 'teacher', 'admin', 'superadmin'];
+      case 'admin':
+        return ['parent', 'teacher', 'admin'];
+      case 'teacher':
+        return ['parent', 'teacher'];
+      default:
+        return ['parent'];
+    }
+  };
+
+  // Check if current user can edit this parent's role
+  const canEditRole = () => {
+    if (!editingParent || !user) return false;
+    
+    // Users can't change their own role
+    if (editingParent.email === user.email) return false;
+    
+    // Role hierarchy: superadmin > admin > teacher > parent
+    const roleHierarchy = { parent: 1, teacher: 2, admin: 3, superadmin: 4 };
+    const currentUserLevel = roleHierarchy[user.role as keyof typeof roleHierarchy] || 0;
+    const targetUserLevel = roleHierarchy[editingParent.role as keyof typeof roleHierarchy] || 0;
+    
+    return currentUserLevel > targetUserLevel;
+  };
+
+  const availableRoles = getAvailableRoles();
+  const roleEditable = canEditRole();
   
   if (!editingParent) return null;
 
@@ -92,24 +127,32 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
             <Label htmlFor={roleId}>Role</Label>
             <Select
               value={editingParent.role || 'parent'}
-              onValueChange={(value: 'parent' | 'teacher' | 'admin') => 
+              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin') => 
                 onEditingParentChange({...editingParent, role: value})
               }
+              disabled={!roleEditable}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="parent">Parent</SelectItem>
-                <SelectItem value="teacher">Teacher</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                {availableRoles.map((role) => (
+                  <SelectItem key={role} value={role}>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            {!roleEditable && (
+              <p className="text-xs text-muted-foreground">
+                You cannot modify this user's role or your own role.
+              </p>
+            )}
           </div>
           <SheetFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" className="bg-school-primary">
-              Update {editingParent.role === 'teacher' ? 'Teacher' : editingParent.role === 'admin' ? 'Admin' : 'Parent'}
+              Update {editingParent.role?.charAt(0).toUpperCase() + editingParent.role?.slice(1) || 'User'}
             </Button>
           </SheetFooter>
         </form>

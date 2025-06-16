@@ -334,6 +334,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_user: {
+        Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
+        Returns: boolean
+      }
       get_current_parent_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -350,7 +354,15 @@ export type Database = {
         Args: { user_email: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_role_level: {
+        Args: { user_role: Database["public"]["Enums"]["app_role"] }
+        Returns: number
+      }
       is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_superadmin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }

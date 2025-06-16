@@ -4,7 +4,7 @@ export type Parent = {
   name: string;
   email: string;
   phone?: string;
-  role?: 'parent' | 'teacher' | 'admin';
+  role?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   createdAt: Date;
   updatedAt: Date;
 };
@@ -13,7 +13,7 @@ export type ParentInput = {
   name: string;
   email: string;
   phone?: string;
-  role?: 'parent' | 'teacher' | 'admin';
+  role?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   is_preloaded?: boolean;
   password_set?: boolean;
 };
