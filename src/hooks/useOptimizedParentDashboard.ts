@@ -10,6 +10,19 @@ interface ChildWithType extends Child {
   isAuthorized?: boolean;
 }
 
+// Type for the real-time payload
+interface RealtimePayload {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new?: {
+    student_id?: string;
+    [key: string]: any;
+  };
+  old?: {
+    student_id?: string;
+    [key: string]: any;
+  };
+}
+
 export const useOptimizedParentDashboard = () => {
   const { user } = useAuth();
   const [children, setChildren] = useState<ChildWithType[]>([]);
@@ -94,14 +107,14 @@ export const useOptimizedParentDashboard = () => {
           schema: 'public',
           table: 'pickup_requests'
         },
-        async (payload) => {
+        async (payload: RealtimePayload) => {
           console.log('Real-time pickup request change detected:', payload);
           
           // Check if this change affects any of the parent's children
           const currentChildren = children.map(child => child.id);
           const affectedStudentId = payload.new?.student_id || payload.old?.student_id;
           
-          if (currentChildren.includes(affectedStudentId)) {
+          if (affectedStudentId && currentChildren.includes(affectedStudentId)) {
             console.log('Pickup request change affects parent\'s child, refreshing dashboard');
             // Debounce rapid changes
             const now = Date.now();
