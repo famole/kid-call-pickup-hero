@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { ParentWithStudents } from '@/types/parent';
@@ -6,7 +7,7 @@ import { getParentsWithStudentsOptimized } from '@/services/parent/optimizedPare
 import { getAllStudents } from '@/services/studentService';
 
 interface UseOptimizedParentsDataProps {
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
 export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedParentsDataProps) => {
@@ -24,7 +25,9 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
   const filteredParentsByRole = parents.filter(parent => {
     console.log(`Filtering parent ${parent.name} with role: ${parent.role} for userRole: ${userRole}`);
     
-    if (userRole === 'teacher') {
+    if (userRole === 'superadmin') {
+      return parent.role === 'superadmin';
+    } else if (userRole === 'teacher') {
       return parent.role === 'teacher';
     } else if (userRole === 'admin') {
       return parent.role === 'admin';

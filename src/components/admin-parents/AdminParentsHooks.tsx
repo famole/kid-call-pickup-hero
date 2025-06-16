@@ -8,7 +8,7 @@ import { ParentWithStudents } from '@/types/parent';
 import { Child, Class } from '@/types';
 
 interface UseAdminParentsHooksProps {
-  userRole: 'parent' | 'teacher' | 'admin';
+  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
   allStudents: Child[];
   classes: Class[];
   parents: ParentWithStudents[];
