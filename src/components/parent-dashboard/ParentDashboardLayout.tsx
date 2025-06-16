@@ -5,6 +5,7 @@ import ParentDashboardHeader from './ParentDashboardHeader';
 import ChildrenSelectionCard from './ChildrenSelectionCard';
 import PendingRequestsCard from './PendingRequestsCard';
 import CalledRequestsCard from './CalledRequestsCard';
+import AuthorizedPickupNotification from './AuthorizedPickupNotification';
 import { Child, PickupRequest } from '@/types';
 
 interface ChildWithType extends Child {
@@ -36,12 +37,23 @@ const ParentDashboardLayout: React.FC<ParentDashboardLayoutProps> = ({
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
   const calledRequests = activeRequests.filter(req => req.status === 'called');
 
+  // Find requests that were made by authorized users (not the current parent)
+  const authorizedUserRequests = activeRequests.filter(req => req.parentId !== user?.id);
+
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <div className="w-full max-w-none py-4 px-4 sm:px-6 lg:px-8">
         <ParentDashboardHeader userName={user?.name} />
 
         <div className="w-full space-y-6">
+          {/* Authorized User Pickup Notifications */}
+          {authorizedUserRequests.length > 0 && (
+            <AuthorizedPickupNotification 
+              requests={authorizedUserRequests}
+              children={children}
+            />
+          )}
+
           {/* Status Cards - Only show when there's data */}
           {(pendingRequests.length > 0 || calledRequests.length > 0) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">

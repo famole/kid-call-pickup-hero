@@ -1,4 +1,3 @@
-
 // Re-export all pickup service functions for backwards compatibility
 export { createPickupRequest } from './createPickupRequest';
 export { updatePickupRequestStatus } from './updatePickupRequest';
@@ -12,3 +11,5 @@ export {
   getPickupRequestsWithDetailsBatch, 
   getCalledStudentsOptimized 
 } from './optimizedPickupQueries';
+
+export { getParentAffectedPickupRequests } from './getParentAffectedPickupRequests';

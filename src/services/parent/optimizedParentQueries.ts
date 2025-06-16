@@ -1,7 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
+import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 
 export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStudents[]> => {
   try {
@@ -203,6 +203,27 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
     return { allChildren };
   } catch (error) {
     console.error('Error in getParentDashboardDataOptimized:', error);
+    throw error;
+  }
+};
+
+// Enhanced function that gets all pickup requests affecting a parent's children
+export const getParentDashboardWithRealTimeData = async (parentEmail: string) => {
+  try {
+    console.log('Fetching complete parent dashboard data for:', parentEmail);
+    
+    // Get basic dashboard data
+    const dashboardData = await getParentDashboardDataOptimized(parentEmail);
+    
+    // Get all pickup requests that affect this parent's children
+    const affectedPickupRequests = await getParentAffectedPickupRequests();
+    
+    return {
+      ...dashboardData,
+      affectedPickupRequests
+    };
+  } catch (error) {
+    console.error('Error in getParentDashboardWithRealTimeData:', error);
     throw error;
   }
 };
