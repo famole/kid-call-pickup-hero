@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { ParentInput, ParentWithStudents } from '@/types/parent';
-import { addParent } from '@/services/parentService';
+import { createParent } from '@/services/parentService';
 import { useToast } from "@/components/ui/use-toast";
 
 interface UseAddParentFormProps {
@@ -43,8 +43,12 @@ export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseA
     }
 
     try {
-      const addedParent = await addParent(newParent);
-      onParentAdded(addedParent);
+      const createdParent = await createParent(newParent);
+      const createdParentWithStudents: ParentWithStudents = {
+        ...createdParent,
+        students: []
+      };
+      onParentAdded(createdParentWithStudents);
       toast({
         title: "Success",
         description: `${newParent.role?.charAt(0).toUpperCase() + newParent.role?.slice(1) || 'User'} has been added`,

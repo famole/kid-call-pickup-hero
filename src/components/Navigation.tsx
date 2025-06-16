@@ -24,12 +24,12 @@ const Navigation = () => {
     }
   };
 
-  const isAdmin = user?.role === 'admin';
-  const isTeacherOrAdmin = user?.role === 'admin' || user?.role === 'teacher';
+  const isAdminOrSuperAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isTeacherOrAdmin = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
   const isParent = user?.role === 'parent';
 
   console.log('Current user:', user);
-  console.log('Is admin:', isAdmin);
+  console.log('Is admin or superadmin:', isAdminOrSuperAdmin);
 
   return (
     <nav className="bg-white shadow-sm border-b w-full">
@@ -86,7 +86,7 @@ const Navigation = () => {
                     
                     <DropdownMenuSeparator />
                     
-                    {isAdmin && (
+                    {isAdminOrSuperAdmin && (
                       <>
                         <DropdownMenuItem onClick={() => navigate('/admin')}>
                           <Settings className="h-4 w-4 mr-2" />
