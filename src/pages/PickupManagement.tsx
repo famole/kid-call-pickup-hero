@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -30,8 +29,8 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const { childrenByClass, loading: calledLoading } = useCalledStudents(selectedClass);
   const { pendingRequests, loading: pendingLoading, markAsCalled } = usePickupManagement(selectedClass);
 
-  // Check if user has permission to access this page
-  const hasPermission = user?.role === 'admin' || user?.role === 'teacher';
+  // Check if user has permission to access this page - include superadmin
+  const hasPermission = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
 
   useEffect(() => {
     const fetchClasses = async () => {
