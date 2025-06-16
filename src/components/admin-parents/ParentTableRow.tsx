@@ -14,7 +14,7 @@ interface ParentTableRowProps {
   onDelete: (parentId: string) => void;
   onManageStudents: () => void;
   onAddStudentToParent: () => void;
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   showStudentsColumn: boolean;
 }
 

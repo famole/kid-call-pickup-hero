@@ -5,7 +5,7 @@ import { useOptimizedParentsData } from '@/hooks/useOptimizedParentsData';
 import { useAdminParentsActions } from '@/hooks/useAdminParentsActions';
 
 interface AdminParentsScreenProps {
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
 const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'parent' }) => {

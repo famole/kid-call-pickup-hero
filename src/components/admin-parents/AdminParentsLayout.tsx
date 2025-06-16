@@ -19,7 +19,7 @@ import { useAdminParentsHooks } from './AdminParentsHooks';
 import { createStudentWrappers } from './AdminParentsWrappers';
 
 interface AdminParentsLayoutProps {
-  userRole: 'parent' | 'teacher' | 'admin';
+  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
   filteredParentsByRole: ParentWithStudents[];
   isLoading: boolean;
   allStudents: Child[];
