@@ -38,7 +38,7 @@ export const useOptimizedPickupManagement = (classId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [classId]); // Removed lastFetch from dependencies
+  }, [classId]);
 
   const markAsCalled = async (requestId: string) => {
     try {
@@ -47,14 +47,8 @@ export const useOptimizedPickupManagement = (classId?: string) => {
       // Optimistically update the local state
       setPendingRequests(prev => prev.filter(req => req.request.id !== requestId));
       
-      // Schedule auto-completion
-      setTimeout(async () => {
-        try {
-          await updatePickupRequestStatus(requestId, 'completed');
-        } catch (error) {
-          console.error(`Error auto-completing request ${requestId}:`, error);
-        }
-      }, 5 * 60 * 1000);
+      // Note: Auto-completion is now handled by the server-side cron job
+      console.log('Request marked as called. Server will auto-complete after 5 minutes.');
       
     } catch (error) {
       console.error("Error marking request as called:", error);
@@ -77,6 +71,7 @@ export const useOptimizedPickupManagement = (classId?: string) => {
           filter: 'status=eq.pending'
         },
         async () => {
+          console.log('Real-time pickup request change detected');
           // Debounce rapid changes
           const now = Date.now();
           if (now - lastFetchRef.current > 1000) {

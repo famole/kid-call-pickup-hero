@@ -13,16 +13,18 @@ export const usePickupManagement = (classId?: string) => {
   const fetchPendingRequests = async () => {
     setLoading(true);
     try {
+      console.log('Fetching pending pickup requests...');
       
       // Get all pending pickup requests
       const activeRequests = await getActivePickupRequests();
       const pendingOnly = activeRequests.filter(req => req.status === 'pending');
       
+      console.log(`Found ${pendingOnly.length} pending requests`);
       
       // Get student and class details for each request with better error handling
       const requestsWithDetails = await Promise.all(pendingOnly.map(async (req) => {
         try {
-          
+          console.log(`Fetching details for request ${req.id}`);
           const student = await getStudentById(req.studentId);
           let classInfo = null;
           
@@ -69,37 +71,12 @@ export const usePickupManagement = (classId?: string) => {
 
   const markAsCalled = async (requestId: string) => {
     try {
-      
+      console.log(`Marking request ${requestId} as called`);
       await updatePickupRequestStatus(requestId, 'called');
       
-      // Schedule automatic completion after 5 minutes
-      const timeoutId = setTimeout(async () => {
-        try {
-          
-          // Check if the request is still in 'called' status before completing
-          const currentRequests = await getActivePickupRequests();
-          const currentRequest = currentRequests.find(req => req.id === requestId);
-          
-          if (currentRequest && currentRequest.status === 'called') {
-            await updatePickupRequestStatus(requestId, 'completed');
-            
-            // Refresh the pending requests after auto-completion
-            await fetchPendingRequests();
-          } else {
-          }
-        } catch (error) {
-          console.error(`Error auto-completing request ${requestId}:`, error);
-          // Even if auto-completion fails, we should still refresh to get current state
-          try {
-            await fetchPendingRequests();
-          } catch (refreshError) {
-            console.error(`Error refreshing requests after failed auto-completion:`, refreshError);
-          }
-        }
-      }, 5 * 60 * 1000); // 5 minutes
-
-      // Store the timeout ID for potential cleanup
-
+      // Note: Auto-completion is now handled by the server-side cron job
+      console.log('Request marked as called. Server will auto-complete after 5 minutes.');
+      
       // Refresh the pending requests immediately
       await fetchPendingRequests();
     } catch (error) {
@@ -123,6 +100,7 @@ export const usePickupManagement = (classId?: string) => {
           filter: 'status=eq.pending'
         },
         async (payload) => {
+          console.log('Real-time pickup request change detected:', payload);
           await fetchPendingRequests();
         }
       )

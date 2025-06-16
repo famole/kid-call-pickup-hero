@@ -334,6 +334,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_complete_expired_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       can_manage_user: {
         Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean

@@ -1,58 +1,35 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Function to auto-complete pickup requests that have been called for more than 5 minutes
+// Function to manually trigger auto-completion (calls the database function)
 export const autoCompleteExpiredPickupRequests = async (): Promise<void> => {
   try {
+    console.log('Triggering manual auto-completion of expired pickup requests...');
     
-    // Calculate 5 minutes ago
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    // Call the database function directly
+    const { error } = await supabase.rpc('auto_complete_expired_requests');
     
-    // Find all requests that are 'called' and older than 5 minutes
-    const { data: expiredRequests, error: fetchError } = await supabase
-      .from('pickup_requests')
-      .select('*')
-      .eq('status', 'called')
-      .lt('request_time', fiveMinutesAgo);
-    
-    if (fetchError) {
-      console.error('Error fetching expired pickup requests:', fetchError);
+    if (error) {
+      console.error('Error calling auto_complete_expired_requests function:', error);
       return;
     }
     
-    if (!expiredRequests || expiredRequests.length === 0) {
-      return;
-    }
-    
-    
-    // Update all expired requests to 'completed'
-    const { error: updateError } = await supabase
-      .from('pickup_requests')
-      .update({ status: 'completed' })
-      .eq('status', 'called')
-      .lt('request_time', fiveMinutesAgo);
-    
-    if (updateError) {
-      console.error('Error auto-completing expired pickup requests:', updateError);
-      return;
-    }
-    
+    console.log('Manual auto-completion completed successfully');
   } catch (error) {
     console.error('Error in autoCompleteExpiredPickupRequests:', error);
   }
 };
 
-// Function to start periodic auto-completion checks
+// Function to start periodic auto-completion checks (now optional since we have server-side cron)
 export const startAutoCompletionProcess = (): (() => void) => {
+  console.log('Server-side auto-completion is active via cron job. Client-side backup started.');
   
-  // Run immediately
-  autoCompleteExpiredPickupRequests();
-  
-  // Then run every minute
-  const intervalId = setInterval(autoCompleteExpiredPickupRequests, 60 * 1000);
+  // Run a backup check every 2 minutes as a fallback
+  const intervalId = setInterval(autoCompleteExpiredPickupRequests, 2 * 60 * 1000);
   
   // Return cleanup function
   return () => {
+    console.log('Stopping client-side auto-completion backup');
     clearInterval(intervalId);
   };
 };
