@@ -9,14 +9,21 @@ interface ChildWithType extends Child {
   isAuthorized?: boolean;
 }
 
+interface ParentInfo {
+  id: string;
+  name: string;
+}
+
 interface AuthorizedPickupNotificationProps {
   requests: PickupRequest[];
   children: ChildWithType[];
+  parentInfo?: ParentInfo[];
 }
 
 const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> = ({
   requests,
-  children
+  children,
+  parentInfo = []
 }) => {
   if (requests.length === 0) {
     return null;
@@ -37,6 +44,7 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
         <div className="space-y-3">
           {requests.map((request) => {
             const child = children.find(c => c.id === request.studentId);
+            const requester = parentInfo.find(p => p.id === request.parentId);
             const statusColor = request.status === 'pending' ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-green-100 text-green-800 border-green-200';
             const statusText = request.status === 'pending' ? '⏳ Pending' : '🚗 Called for Pickup';
             
@@ -52,10 +60,10 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm">
-                        👶 {child?.name || 'Unknown Child'}
+                        {child?.name || 'Unknown Child'}
                       </div>
                       <div className="text-xs text-blue-600">
-                        📋 Pickup requested by authorized user
+                        📋 Pickup requested by {requester?.name || 'authorized user'}
                       </div>
                     </div>
                   </div>

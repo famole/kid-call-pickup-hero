@@ -7,7 +7,7 @@ import ParentDashboardLayout from './parent-dashboard/ParentDashboardLayout';
 
 const ParentDashboard = () => {
   const { toast } = useToast();
-  const { children, activeRequests, loading, refetch } = useOptimizedParentDashboard();
+  const { children, activeRequests, parentInfo, loading, refetch } = useOptimizedParentDashboard();
   const { 
     selectedChildren, 
     isSubmitting, 
@@ -33,6 +33,7 @@ const ParentDashboard = () => {
       selectedChildren={selectedChildren}
       isSubmitting={isSubmitting}
       childrenWithActiveRequests={childrenWithActiveRequests}
+      parentInfo={parentInfo}
       onToggleChildSelection={toggleChildSelection}
       onRequestPickup={handleRequestPickup}
     />

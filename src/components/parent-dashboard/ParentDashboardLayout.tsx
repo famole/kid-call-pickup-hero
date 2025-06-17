@@ -12,12 +12,18 @@ interface ChildWithType extends Child {
   isAuthorized?: boolean;
 }
 
+interface ParentInfo {
+  id: string;
+  name: string;
+}
+
 interface ParentDashboardLayoutProps {
   children: ChildWithType[];
   activeRequests: PickupRequest[];
   selectedChildren: string[];
   isSubmitting: boolean;
   childrenWithActiveRequests: string[];
+  parentInfo?: ParentInfo[];
   onToggleChildSelection: (studentId: string) => void;
   onRequestPickup: () => void;
 }
@@ -28,6 +34,7 @@ const ParentDashboardLayout: React.FC<ParentDashboardLayoutProps> = ({
   selectedChildren,
   isSubmitting,
   childrenWithActiveRequests,
+  parentInfo = [],
   onToggleChildSelection,
   onRequestPickup
 }) => {
@@ -40,6 +47,9 @@ const ParentDashboardLayout: React.FC<ParentDashboardLayoutProps> = ({
   // Find requests that were made by authorized users (not the current parent)
   const authorizedUserRequests = activeRequests.filter(req => req.parentId !== user?.id);
 
+  // Only show status cards if there are no authorized user requests to avoid redundancy
+  const shouldShowStatusCards = authorizedUserRequests.length === 0;
+
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <div className="w-full max-w-none py-4 px-4 sm:px-6 lg:px-8">
@@ -51,11 +61,12 @@ const ParentDashboardLayout: React.FC<ParentDashboardLayoutProps> = ({
             <AuthorizedPickupNotification 
               requests={authorizedUserRequests}
               children={children}
+              parentInfo={parentInfo}
             />
           )}
 
-          {/* Status Cards - Only show when there's data */}
-          {(pendingRequests.length > 0 || calledRequests.length > 0) && (
+          {/* Status Cards - Only show when there are no authorized notifications to avoid redundancy */}
+          {shouldShowStatusCards && (pendingRequests.length > 0 || calledRequests.length > 0) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               {pendingRequests.length > 0 && (
                 <PendingRequestsCard 

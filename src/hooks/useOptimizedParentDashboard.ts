@@ -10,6 +10,11 @@ interface ChildWithType extends Child {
   isAuthorized?: boolean;
 }
 
+interface ParentInfo {
+  id: string;
+  name: string;
+}
+
 // Type for the real-time payload
 interface RealtimePayload {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE';
@@ -27,6 +32,7 @@ export const useOptimizedParentDashboard = () => {
   const { user } = useAuth();
   const [children, setChildren] = useState<ChildWithType[]>([]);
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
+  const [parentInfo, setParentInfo] = useState<ParentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const lastFetchRef = useRef<number>(0);
 
@@ -73,6 +79,19 @@ export const useOptimizedParentDashboard = () => {
             }
           });
           setActiveRequests(combinedRequests);
+
+          // Fetch parent information for the requests
+          const parentIds = [...new Set(combinedRequests.map(req => req.parentId))];
+          if (parentIds.length > 0) {
+            const { data: parents, error: parentsError } = await supabase
+              .from('parents')
+              .select('id, name')
+              .in('id', parentIds);
+
+            if (!parentsError && parents) {
+              setParentInfo(parents);
+            }
+          }
         } else {
           setActiveRequests(pickupRequests);
         }
@@ -136,6 +155,7 @@ export const useOptimizedParentDashboard = () => {
   return {
     children,
     activeRequests,
+    parentInfo,
     loading,
     refetch: () => loadDashboardData(true)
   };
