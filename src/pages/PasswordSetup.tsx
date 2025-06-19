@@ -16,14 +16,14 @@ const PasswordSetup = () => {
     user
   } = usePasswordSetupLogic();
 
-
   // Show loading state while initializing or while auth is loading
   if (!isInitialized || loading) {
     return <LoadingState />;
   }
 
-  // Only show authentication required if auth check is complete and no user
-  if (authCheckComplete && !user) {
+  // Only show authentication required if auth check is complete, no user, AND no parent data
+  // This prevents authenticated users from being blocked
+  if (authCheckComplete && !user && !parentData) {
     return <AuthRequiredState />;
   }
 
