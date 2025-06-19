@@ -25,8 +25,8 @@ export const getPickupHistoryByStudent = async (studentId: string): Promise<Pick
       .from('pickup_history')
       .select(`
         *,
-        students!inner(name),
-        parents!inner(name)
+        students!fk_pickup_history_student(name),
+        parents!fk_pickup_history_parent(name)
       `)
       .eq('student_id', studentId)
       .order('completed_time', { ascending: false });
@@ -61,8 +61,8 @@ export const getAllPickupHistory = async (
       .from('pickup_history')
       .select(`
         *,
-        students!inner(name),
-        parents!inner(name)
+        students!fk_pickup_history_student(name),
+        parents!fk_pickup_history_parent(name)
       `)
       .order('completed_time', { ascending: false });
 
