@@ -44,32 +44,71 @@ const PasswordSetupForm = () => {
     setIsLoading(true);
 
     try {
-      // Update the user's password in Supabase Auth
-      const { error: authError } = await supabase.auth.updateUser({
-        password: password
-      });
+      // Get email from URL parameters if user is not authenticated (preloaded account scenario)
+      const urlParams = new URLSearchParams(window.location.search);
+      const emailFromUrl = urlParams.get('email');
+      const userEmail = user?.email || emailFromUrl;
 
-      if (authError) {
-        throw authError;
+      if (!userEmail) {
+        throw new Error('No email found for password setup');
       }
 
-      // Update the parent record to mark password as set
-      const { error: updateError } = await supabase
-        .from('parents')
-        .update({ password_set: true })
-        .eq('email', user?.email);
+      // If user is not authenticated, we need to sign them up first (for preloaded accounts)
+      if (!user) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: userEmail,
+          password: password,
+        });
 
-      if (updateError) {
-        throw updateError;
+        if (authError) {
+          throw authError;
+        }
+
+        // Update the parent record to mark password as set
+        const { error: updateError } = await supabase
+          .from('parents')
+          .update({ password_set: true })
+          .eq('email', userEmail);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        toast({
+          title: "Account Setup Complete",
+          description: "Your password has been set. Please check your email to verify your account.",
+        });
+
+        // Redirect to login page for email verification
+        navigate('/login');
+      } else {
+        // User is already authenticated, just update password
+        const { error: authError } = await supabase.auth.updateUser({
+          password: password
+        });
+
+        if (authError) {
+          throw authError;
+        }
+
+        // Update the parent record to mark password as set
+        const { error: updateError } = await supabase
+          .from('parents')
+          .update({ password_set: true })
+          .eq('email', userEmail);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        toast({
+          title: "Password Set Successfully",
+          description: "Your password has been set. You can now access the application.",
+        });
+
+        // Redirect to main application
+        navigate('/');
       }
-
-      toast({
-        title: "Password Set Successfully",
-        description: "Your password has been set. You can now access the application.",
-      });
-
-      // Redirect to main application
-      navigate('/');
     } catch (error: any) {
       console.error('Error setting password:', error);
       toast({

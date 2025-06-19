@@ -13,7 +13,8 @@ const PasswordSetup = () => {
     isInitialized,
     authCheckComplete,
     loading,
-    user
+    user,
+    hasPreloadedAccount
   } = usePasswordSetupLogic();
 
   // Show loading state while initializing or while auth is loading
@@ -21,9 +22,12 @@ const PasswordSetup = () => {
     return <LoadingState />;
   }
 
-  // Only show authentication required if auth check is complete, no user, AND no parent data
-  // This prevents authenticated users from being blocked
-  if (authCheckComplete && !user && !parentData) {
+  // Only show authentication required if:
+  // - Auth check is complete 
+  // - No authenticated user
+  // - No parent data (preloaded account)
+  // - Not a preloaded account scenario
+  if (authCheckComplete && !user && !parentData && !hasPreloadedAccount) {
     return <AuthRequiredState />;
   }
 
@@ -32,7 +36,7 @@ const PasswordSetup = () => {
     return <OAuthConfirmation parentData={parentData} />;
   }
 
-  // Regular password setup flow for email/password users
+  // Regular password setup flow for email/password users or preloaded accounts
   return <PasswordSetupForm />;
 };
 
