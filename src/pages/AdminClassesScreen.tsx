@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { School, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import Navigation from '@/components/Navigation';
 import ClassListTable from '@/components/admin-classes/ClassListTable';
 import ClassFormDialog from '@/components/admin-classes/ClassFormDialog';
 import DeleteClassDialog from '@/components/admin-classes/DeleteClassDialog';
@@ -76,66 +75,63 @@ const AdminClassesScreen = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
-      <Navigation />
-      <div className="w-full">
-        <div className="container mx-auto py-6">
-          <header className="mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <School className="h-8 w-8 text-school-primary" />
-                <h1 className="text-3xl font-bold">Manage Classes</h1>
-              </div>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-school-primary">
-                <Plus className="mr-2 h-4 w-4" /> Add Class
-              </Button>
+    <div className="w-full">
+      <div className="container mx-auto py-6">
+        <header className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <School className="h-8 w-8 text-school-primary" />
+              <h1 className="text-3xl font-bold">Manage Classes</h1>
             </div>
-          </header>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Class List</CardTitle>
-              <CardDescription>Manage all classes in the school</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <TableSkeleton rows={5} columns={4} />
-              ) : (
-                <ClassListTable
-                  classList={classList}
-                  loading={false}
-                  onEditClass={handleEditClass}
-                  onDeletePrompt={handleDeletePrompt}
-                />
-              )}
-            </CardContent>
-          </Card>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-school-primary">
+              <Plus className="mr-2 h-4 w-4" /> Add Class
+            </Button>
+          </div>
+        </header>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Class List</CardTitle>
+            <CardDescription>Manage all classes in the school</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <TableSkeleton rows={5} columns={4} />
+            ) : (
+              <ClassListTable
+                classList={classList}
+                loading={false}
+                onEditClass={handleEditClass}
+                onDeletePrompt={handleDeletePrompt}
+              />
+            )}
+          </CardContent>
+        </Card>
 
-          <ClassFormDialog
-            isOpen={isAddDialogOpen}
-            isEditMode={false}
-            classData={classFormData}
-            onClose={handleCloseAddDialog}
-            onSave={handleAddDialogSave}
-            onClassDataChange={setClassFormData}
-          />
+        <ClassFormDialog
+          isOpen={isAddDialogOpen}
+          isEditMode={false}
+          classData={classFormData}
+          onClose={handleCloseAddDialog}
+          onSave={handleAddDialogSave}
+          onClassDataChange={setClassFormData}
+        />
 
-          <ClassFormDialog
-            isOpen={isEditDialogOpen}
-            isEditMode={true}
-            classData={classFormData}
-            onClose={handleCloseEditDialog}
-            onSave={handleEditDialogSave}
-            onClassDataChange={setClassFormData}
-          />
+        <ClassFormDialog
+          isOpen={isEditDialogOpen}
+          isEditMode={true}
+          classData={classFormData}
+          onClose={handleCloseEditDialog}
+          onSave={handleEditDialogSave}
+          onClassDataChange={setClassFormData}
+        />
 
-          <DeleteClassDialog
-            isOpen={isDeleteDialogOpen}
-            classToDelete={currentClass}
-            onClose={handleCloseDeleteDialog}
-            onConfirmDelete={handleDeleteConfirm}
-          />
-        </div>
+        <DeleteClassDialog
+          isOpen={isDeleteDialogOpen}
+          classToDelete={currentClass}
+          onClose={handleCloseDeleteDialog}
+          onConfirmDelete={handleDeleteConfirm}
+        />
       </div>
     </div>
   );
