@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -63,6 +62,8 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
 
     const fetchStudentDetails = async () => {
       setIsLoading(true);
+      console.log('Fetching student details for student:', student.id);
+      
       try {
         // Fetch parent relationships with parent details
         const { data: relations, error } = await supabase
@@ -96,73 +97,59 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
           setParentRelations(parentData);
         }
 
-        // Fetch pickup authorizations for this student - FIXED the foreign key reference
+        // Simplified approach: Fetch pickup authorizations first, then get parent details
+        console.log('Fetching pickup authorizations for student ID:', student.id);
+        
         const { data: authorizations, error: authError } = await supabase
           .from('pickup_authorizations')
-          .select(`
-            id,
-            authorized_parent_id,
-            start_date,
-            end_date,
-            is_active,
-            created_at,
-            parents!pickup_authorizations_authorized_parent_id_fkey(
-              name,
-              email
-            )
-          `)
+          .select('*')
           .eq('student_id', student.id)
           .eq('is_active', true)
           .order('created_at', { ascending: false });
 
+        console.log('Raw pickup authorizations data:', authorizations);
+        console.log('Pickup authorizations error:', authError);
+
         if (authError) {
           console.error('Error fetching pickup authorizations:', authError);
-          // Try alternative query without foreign key reference
-          const { data: altAuth, error: altError } = await supabase
-            .from('pickup_authorizations')
-            .select('*')
-            .eq('student_id', student.id)
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
+          setPickupAuthorizations([]);
+        } else if (authorizations && authorizations.length > 0) {
+          // Fetch parent details for each authorization
+          const authData: PickupAuthorization[] = [];
+          
+          for (const auth of authorizations) {
+            console.log('Fetching parent details for parent ID:', auth.authorized_parent_id);
+            
+            const { data: parentData, error: parentError } = await supabase
+              .from('parents')
+              .select('name, email')
+              .eq('id', auth.authorized_parent_id)
+              .single();
 
-          if (altError) {
-            console.error('Alternative query also failed:', altError);
-          } else {
-            // Fetch parent details separately
-            const authData: PickupAuthorization[] = [];
-            for (const auth of altAuth) {
-              const { data: parentData } = await supabase
-                .from('parents')
-                .select('name, email')
-                .eq('id', auth.authorized_parent_id)
-                .single();
+            console.log('Parent data for ID', auth.authorized_parent_id, ':', parentData);
+            console.log('Parent fetch error:', parentError);
 
-              authData.push({
-                id: auth.id,
-                authorizedParentId: auth.authorized_parent_id,
-                authorizedParentName: parentData?.name || 'Unknown Parent',
-                authorizedParentEmail: parentData?.email || '',
-                startDate: auth.start_date,
-                endDate: auth.end_date,
-                isActive: auth.is_active,
-                createdAt: auth.created_at,
-              });
+            if (parentError) {
+              console.error('Error fetching parent details:', parentError);
             }
-            setPickupAuthorizations(authData);
-          }
-        } else {
-          const authData: PickupAuthorization[] = authorizations.map(auth => ({
-            id: auth.id,
-            authorizedParentId: auth.authorized_parent_id,
-            authorizedParentName: auth.parents?.name || 'Unknown Parent',
-            authorizedParentEmail: auth.parents?.email || '',
-            startDate: auth.start_date,
-            endDate: auth.end_date,
-            isActive: auth.is_active,
-            createdAt: auth.created_at,
-          }));
 
+            authData.push({
+              id: auth.id,
+              authorizedParentId: auth.authorized_parent_id,
+              authorizedParentName: parentData?.name || 'Unknown Parent',
+              authorizedParentEmail: parentData?.email || '',
+              startDate: auth.start_date,
+              endDate: auth.end_date,
+              isActive: auth.is_active,
+              createdAt: auth.created_at,
+            });
+          }
+          
+          console.log('Final pickup authorizations data:', authData);
           setPickupAuthorizations(authData);
+        } else {
+          console.log('No pickup authorizations found for student');
+          setPickupAuthorizations([]);
         }
       } catch (error) {
         console.error('Error in fetchStudentDetails:', error);
