@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, Users, Clock } from "lucide-react";
 import { Child, Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
+import { getPickupAuthorizationsForStudent } from '@/services/pickupAuthorizationService';
 
 interface StudentDetailsDialogProps {
   open: boolean;
@@ -97,58 +98,27 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
           setParentRelations(parentData);
         }
 
-        // Simplified approach: Fetch pickup authorizations first, then get parent details
+        // Fetch pickup authorizations using the service helper
         console.log('Fetching pickup authorizations for student ID:', student.id);
-        
-        const { data: authorizations, error: authError } = await supabase
-          .from('pickup_authorizations')
-          .select('*')
-          .eq('student_id', student.id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
 
-        console.log('Raw pickup authorizations data:', authorizations);
-        console.log('Pickup authorizations error:', authError);
+        try {
+          const authorizations = await getPickupAuthorizationsForStudent(student.id);
 
-        if (authError) {
-          console.error('Error fetching pickup authorizations:', authError);
-          setPickupAuthorizations([]);
-        } else if (authorizations && authorizations.length > 0) {
-          // Fetch parent details for each authorization
-          const authData: PickupAuthorization[] = [];
-          
-          for (const auth of authorizations) {
-            console.log('Fetching parent details for parent ID:', auth.authorized_parent_id);
-            
-            const { data: parentData, error: parentError } = await supabase
-              .from('parents')
-              .select('name, email')
-              .eq('id', auth.authorized_parent_id)
-              .single();
+          const authData: PickupAuthorization[] = authorizations.map(auth => ({
+            id: auth.id,
+            authorizedParentId: auth.authorizedParentId,
+            authorizedParentName: auth.authorizedParent?.name || 'Unknown Parent',
+            authorizedParentEmail: auth.authorizedParent?.email || '',
+            startDate: auth.startDate,
+            endDate: auth.endDate,
+            isActive: auth.isActive,
+            createdAt: auth.createdAt,
+          }));
 
-            console.log('Parent data for ID', auth.authorized_parent_id, ':', parentData);
-            console.log('Parent fetch error:', parentError);
-
-            if (parentError) {
-              console.error('Error fetching parent details:', parentError);
-            }
-
-            authData.push({
-              id: auth.id,
-              authorizedParentId: auth.authorized_parent_id,
-              authorizedParentName: parentData?.name || 'Unknown Parent',
-              authorizedParentEmail: parentData?.email || '',
-              startDate: auth.start_date,
-              endDate: auth.end_date,
-              isActive: auth.is_active,
-              createdAt: auth.created_at,
-            });
-          }
-          
           console.log('Final pickup authorizations data:', authData);
           setPickupAuthorizations(authData);
-        } else {
-          console.log('No pickup authorizations found for student');
+        } catch (authError) {
+          console.error('Error fetching pickup authorizations:', authError);
           setPickupAuthorizations([]);
         }
       } catch (error) {

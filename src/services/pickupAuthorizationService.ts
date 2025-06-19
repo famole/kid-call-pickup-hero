@@ -180,6 +180,68 @@ export const getParentsWhoShareStudents = async (): Promise<{
   };
 };
 
+// Get pickup authorizations for a specific student with parent details
+export const getPickupAuthorizationsForStudent = async (
+  studentId: string
+): Promise<PickupAuthorizationWithDetails[]> => {
+  const { data, error } = await supabase
+    .from('pickup_authorizations')
+    .select(`
+      *,
+      authorizing_parent:parents!authorizing_parent_id (id, name, email),
+      authorized_parent:parents!authorized_parent_id (id, name, email)
+    `)
+    .eq('student_id', studentId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching pickup authorizations for student:', error);
+    throw new Error(error.message);
+  }
+
+  return data.map(auth => ({
+    ...mapAuthorizationFromDB(auth),
+    authorizingParent: auth.authorizing_parent,
+    authorizedParent: auth.authorized_parent
+  }));
+};
+
+// Get pickup authorizations where the given parent is authorized
+export const getPickupAuthorizationsForAuthorizedParent = async (
+  parentId?: string
+): Promise<PickupAuthorizationWithDetails[]> => {
+  let targetParentId = parentId;
+
+  if (!targetParentId) {
+    const { data, error } = await supabase.rpc('get_current_parent_id');
+    if (error || !data) {
+      throw new Error('Unable to authenticate parent');
+    }
+    targetParentId = data;
+  }
+
+  const { data, error } = await supabase
+    .from('pickup_authorizations')
+    .select(`
+      *,
+      authorizing_parent:parents!authorizing_parent_id (id, name, email),
+      student:students (id, name)
+    `)
+    .eq('authorized_parent_id', targetParentId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching pickup authorizations for authorized parent:', error);
+    throw new Error(error.message);
+  }
+
+  return data.map(auth => ({
+    ...mapAuthorizationFromDB(auth),
+    authorizingParent: auth.authorizing_parent,
+    student: auth.student
+  }));
+};
+
 // Update a pickup authorization
 export const updatePickupAuthorization = async (
   id: string,
