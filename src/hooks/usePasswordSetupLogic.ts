@@ -39,15 +39,31 @@ export const usePasswordSetupLogic = () => {
             .eq('email', emailFromUrl)
             .single();
 
-          if (!error && parentDataResult && !parentDataResult.password_set) {
-            console.log('Found preloaded account that needs password setup');
-            // This is a preloaded account that needs password setup
-            setParentData(parentDataResult);
-            setHasPreloadedAccount(true);
-            setIsInitialized(true);
-            return;
+          console.log('Preloaded account check result:', {
+            error: error?.message,
+            parentData: parentDataResult,
+            isPreloaded: parentDataResult?.is_preloaded,
+            passwordSet: parentDataResult?.password_set
+          });
+
+          if (!error && parentDataResult) {
+            // Check if this is specifically a preloaded account that needs password setup
+            if (parentDataResult.is_preloaded && !parentDataResult.password_set) {
+              console.log('Found preloaded account that needs password setup');
+              setParentData(parentDataResult);
+              setHasPreloadedAccount(true);
+              setIsInitialized(true);
+              return;
+            } else if (parentDataResult.password_set) {
+              console.log('Preloaded account already has password set');
+              // Redirect to login since password is already set
+              navigate('/login');
+              return;
+            } else {
+              console.log('Account found but not a preloaded account needing setup');
+            }
           } else {
-            console.log('No preloaded account found or password already set');
+            console.log('No preloaded account found or error occurred:', error?.message);
           }
         } catch (error) {
           console.error('Error checking preloaded account:', error);
@@ -70,6 +86,13 @@ export const usePasswordSetupLogic = () => {
             .eq('email', user.email)
             .single();
 
+          console.log('Authenticated user parent data:', {
+            error: error?.message,
+            parentData: parentDataResult,
+            isPreloaded: parentDataResult?.is_preloaded,
+            passwordSet: parentDataResult?.password_set
+          });
+
           if (error) {
             console.error('Error checking parent status:', error);
             setIsInitialized(true);
@@ -78,6 +101,14 @@ export const usePasswordSetupLogic = () => {
 
           setParentData(parentDataResult);
 
+          // For authenticated users, check if they need password setup
+          // This handles cases where users are authenticated but still need to set their password
+          if (parentDataResult && !parentDataResult.password_set && !isOAuth) {
+            console.log('Authenticated user needs password setup');
+            setIsInitialized(true);
+            return;
+          }
+
           // If password already set, redirect to main app
           if (parentDataResult?.password_set) {
             console.log('Password already set, redirecting to main app');
@@ -85,7 +116,7 @@ export const usePasswordSetupLogic = () => {
             return;
           }
 
-          console.log('Authenticated user needs password setup');
+          console.log('Authenticated user setup complete');
           setIsInitialized(true);
         } catch (error) {
           console.error('Error checking password setup status:', error);
@@ -99,14 +130,18 @@ export const usePasswordSetupLogic = () => {
     };
 
     initializePasswordSetup();
-  }, [loading, user, navigate]); // Removed hasPreloadedAccount from dependencies
+  }, [loading, user, navigate]);
 
   console.log('Current state:', {
     isInitialized,
     authCheckComplete,
     hasPreloadedAccount,
     user: user?.email,
-    parentData: parentData?.email
+    parentData: parentData ? {
+      email: parentData.email,
+      isPreloaded: parentData.is_preloaded,
+      passwordSet: parentData.password_set
+    } : null
   });
 
   return {
