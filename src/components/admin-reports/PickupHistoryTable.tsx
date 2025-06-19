@@ -20,22 +20,21 @@ const PickupHistoryTable: React.FC<PickupHistoryTableProps> = ({ data }) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Student ID</TableHead>
-                <TableHead>Parent ID</TableHead>
+                <TableHead>Student Name</TableHead>
+                <TableHead>Parent Name</TableHead>
                 <TableHead>Request Time</TableHead>
                 <TableHead>Called Time</TableHead>
                 <TableHead>Completed Time</TableHead>
-                <TableHead>Duration (min)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((record) => (
                 <TableRow key={record.id}>
-                  <TableCell className="font-mono text-xs">
-                    {record.studentId.slice(0, 8)}...
+                  <TableCell>
+                    {record.studentName || 'Unknown Student'}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {record.parentId.slice(0, 8)}...
+                  <TableCell>
+                    {record.parentName || 'Unknown Parent'}
                   </TableCell>
                   <TableCell>
                     {format(record.requestTime, 'MMM d, yyyy HH:mm')}
@@ -48,11 +47,6 @@ const PickupHistoryTable: React.FC<PickupHistoryTableProps> = ({ data }) => {
                   </TableCell>
                   <TableCell>
                     {format(record.completedTime, 'MMM d, yyyy HH:mm')}
-                  </TableCell>
-                  <TableCell>
-                    {record.pickupDurationMinutes ? 
-                      Math.round(record.pickupDurationMinutes) : '-'
-                    }
                   </TableCell>
                 </TableRow>
               ))}

@@ -89,16 +89,15 @@ const ReportsTab = () => {
       return;
     }
 
-    const headers = ['Student ID', 'Parent ID', 'Request Time', 'Called Time', 'Completed Time', 'Duration (minutes)'];
+    const headers = ['Student Name', 'Parent Name', 'Request Time', 'Called Time', 'Completed Time'];
     const csvContent = [
       headers.join(','),
       ...pickupHistory.map(record => [
-        record.studentId,
-        record.parentId,
+        record.studentName || 'Unknown Student',
+        record.parentName || 'Unknown Parent',
         record.requestTime.toISOString(),
         record.calledTime ? record.calledTime.toISOString() : '',
-        record.completedTime.toISOString(),
-        record.pickupDurationMinutes || ''
+        record.completedTime.toISOString()
       ].join(','))
     ].join('\n');
 
@@ -174,7 +173,7 @@ const ReportsTab = () => {
             <Skeleton className="h-6 w-48" />
           </CardHeader>
           <CardContent>
-            <TableSkeleton rows={6} columns={6} />
+            <TableSkeleton rows={6} columns={5} />
           </CardContent>
         </Card>
       ) : pickupHistory.length > 0 ? (
