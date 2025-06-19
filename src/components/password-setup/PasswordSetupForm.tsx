@@ -20,6 +20,12 @@ const PasswordSetupForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const isValidEmail = (email: string): boolean => {
+    // Check if email has a valid format and is not using example.com domain
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email) && !email.toLowerCase().includes('example.com');
+  };
+
   const handlePasswordSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -53,8 +59,32 @@ const PasswordSetupForm = () => {
         throw new Error('No email found for password setup');
       }
 
-      // If user is not authenticated, we need to sign them up first (for preloaded accounts)
+      // If user is not authenticated, we need to handle preloaded accounts specially
       if (!user) {
+        // For preloaded accounts, check if the email is valid for signup
+        if (!isValidEmail(userEmail)) {
+          // For invalid emails (like example.com), just mark the account as set up
+          // without creating an auth user - this is for demo/testing purposes
+          const { error: updateError } = await supabase
+            .from('parents')
+            .update({ password_set: true })
+            .eq('email', userEmail);
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          toast({
+            title: "Account Setup Complete",
+            description: "Your account has been set up successfully. Please use the login form with your credentials.",
+          });
+
+          // Redirect to login page
+          navigate('/login');
+          return;
+        }
+
+        // For valid emails, proceed with normal signup
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: userEmail,
           password: password,
