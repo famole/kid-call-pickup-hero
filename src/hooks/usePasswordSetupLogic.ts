@@ -15,10 +15,7 @@ export const usePasswordSetupLogic = () => {
 
   useEffect(() => {
     const initializePasswordSetup = async () => {
-      // Reset state when starting initialization
-      setIsInitialized(false);
-      setAuthCheckComplete(false);
-      setHasPreloadedAccount(false);
+      console.log('Initializing password setup, loading:', loading, 'user:', user?.email);
       
       // Wait for auth loading to complete
       if (loading) {
@@ -27,12 +24,14 @@ export const usePasswordSetupLogic = () => {
       
       setAuthCheckComplete(true);
       
-      // Check URL parameters for email (from signup confirmation link)
+      // Check URL parameters for email (from signup confirmation link or direct access)
       const urlParams = new URLSearchParams(window.location.search);
       const emailFromUrl = urlParams.get('email');
+      console.log('Email from URL:', emailFromUrl);
       
       // If we have an email from URL but no authenticated user, check for preloaded account
       if (emailFromUrl && !user) {
+        console.log('Checking for preloaded account with email:', emailFromUrl);
         try {
           const { data: parentDataResult, error } = await supabase
             .from('parents')
@@ -41,25 +40,23 @@ export const usePasswordSetupLogic = () => {
             .single();
 
           if (!error && parentDataResult && !parentDataResult.password_set) {
+            console.log('Found preloaded account that needs password setup');
             // This is a preloaded account that needs password setup
             setParentData(parentDataResult);
             setHasPreloadedAccount(true);
             setIsInitialized(true);
             return;
+          } else {
+            console.log('No preloaded account found or password already set');
           }
         } catch (error) {
           console.error('Error checking preloaded account:', error);
         }
       }
       
-      // If no user after auth loading is complete and no preloaded account, they need to login
-      if (!user?.email && !hasPreloadedAccount) {
-        setIsInitialized(true);
-        return;
-      }
-
       // Handle authenticated users
       if (user?.email) {
+        console.log('User is authenticated, checking their status');
         try {
           // Get current session to check if it's OAuth
           const { data: { session } } = await supabase.auth.getSession();
@@ -83,24 +80,34 @@ export const usePasswordSetupLogic = () => {
 
           // If password already set, redirect to main app
           if (parentDataResult?.password_set) {
+            console.log('Password already set, redirecting to main app');
             navigate('/');
             return;
           }
 
-          // If user needs password setup (either preloaded OR new signup that hasn't set password)
-          // Allow them to proceed with password setup
+          console.log('Authenticated user needs password setup');
           setIsInitialized(true);
         } catch (error) {
           console.error('Error checking password setup status:', error);
           setIsInitialized(true);
         }
       } else {
+        // No authenticated user and no preloaded account found
+        console.log('No authenticated user, no preloaded account');
         setIsInitialized(true);
       }
     };
 
     initializePasswordSetup();
-  }, [loading, user, navigate, hasPreloadedAccount]);
+  }, [loading, user, navigate]); // Removed hasPreloadedAccount from dependencies
+
+  console.log('Current state:', {
+    isInitialized,
+    authCheckComplete,
+    hasPreloadedAccount,
+    user: user?.email,
+    parentData: parentData?.email
+  });
 
   return {
     parentData,
