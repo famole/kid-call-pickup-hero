@@ -96,7 +96,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
           setParentRelations(parentData);
         }
 
-        // Fetch pickup authorizations for this student
+        // Fetch pickup authorizations for this student - FIXED the foreign key reference
         const { data: authorizations, error: authError } = await supabase
           .from('pickup_authorizations')
           .select(`
@@ -117,6 +117,39 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
 
         if (authError) {
           console.error('Error fetching pickup authorizations:', authError);
+          // Try alternative query without foreign key reference
+          const { data: altAuth, error: altError } = await supabase
+            .from('pickup_authorizations')
+            .select('*')
+            .eq('student_id', student.id)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false });
+
+          if (altError) {
+            console.error('Alternative query also failed:', altError);
+          } else {
+            // Fetch parent details separately
+            const authData: PickupAuthorization[] = [];
+            for (const auth of altAuth) {
+              const { data: parentData } = await supabase
+                .from('parents')
+                .select('name, email')
+                .eq('id', auth.authorized_parent_id)
+                .single();
+
+              authData.push({
+                id: auth.id,
+                authorizedParentId: auth.authorized_parent_id,
+                authorizedParentName: parentData?.name || 'Unknown Parent',
+                authorizedParentEmail: parentData?.email || '',
+                startDate: auth.start_date,
+                endDate: auth.end_date,
+                isActive: auth.is_active,
+                createdAt: auth.created_at,
+              });
+            }
+            setPickupAuthorizations(authData);
+          }
         } else {
           const authData: PickupAuthorization[] = authorizations.map(auth => ({
             id: auth.id,
