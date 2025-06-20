@@ -1,0 +1,21 @@
+{
+  "name": "kid-call-pickup-hero-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "main": "App.tsx",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios"
+  },
+  "dependencies": {
+    "expo": "^50.0.16",
+    "react": "18.3.1",
+    "react-native": "0.73.10"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-native": "^0.73.10",
+    "typescript": "^5.5.3"
+  }
+}
