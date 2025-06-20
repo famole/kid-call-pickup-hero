@@ -1,26 +1,40 @@
-import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { supabase } from './src/supabaseClient';
+import LoginScreen from './src/screens/LoginScreen';
+import DashboardScreen from './src/screens/DashboardScreen';
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
-  React.useEffect(() => {
-    // Simple test call to fetch current session
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      console.log('session', data.session);
+      setSession(data.session);
     });
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text>Welcome to Kid Call Pickup Hero Mobile!</Text>
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator>
+        {session ? (
+          <Stack.Screen name="Dashboard" options={{ headerShown: false }}>
+            {() => <DashboardScreen session={session} />}
+          </Stack.Screen>
+        ) : (
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center'
-  }
-});
