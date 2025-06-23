@@ -4,6 +4,8 @@ import { YStack, Text, Paragraph, Theme, Card } from 'tamagui'
 interface Student {
   id: string;
   name: string;
+  className?: string | null;
+  teacher?: string | null;
 }
 
 interface Request {

@@ -23,13 +23,15 @@ type Props = {
 interface Student {
   id: string;
   name: string;
+  className?: string | null;
+  teacher?: string | null;
   isAuthorized: boolean;
 }
 
 export default function DashboardScreen({ session }: Props) {
   const [students, setStudents] = useState<Student[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeRequests, setActiveRequests] = useState<{
@@ -52,7 +54,7 @@ export default function DashboardScreen({ session }: Props) {
       // Direct children
       const { data: directChildren } = await supabase
         .from('students')
-        .select('id, name, student_parents!inner(parent_id)')
+        .select('id, name, classes(name, teacher), student_parents!inner(parent_id)')
         .eq('student_parents.parent_id', parent.id);
 
       const today = new Date().toISOString().split('T')[0];
@@ -60,7 +62,7 @@ export default function DashboardScreen({ session }: Props) {
       // Authorized children
       const { data: authorized } = await supabase
         .from('pickup_authorizations')
-        .select('students(id, name)')
+        .select('students(id, name, classes(name, teacher))')
         .eq('authorized_parent_id', parent.id)
         .eq('is_active', true)
         .lte('start_date', today)
@@ -69,12 +71,16 @@ export default function DashboardScreen({ session }: Props) {
       const formattedDirect = (directChildren || []).map((c: any) => ({
         id: c.id,
         name: c.name,
+        className: c.classes?.name ?? null,
+        teacher: c.classes?.teacher ?? null,
         isAuthorized: false
       }));
 
       const formattedAuthorized = (authorized || []).map((a: any) => ({
         id: a.students.id,
         name: a.students.name,
+        className: a.students.classes?.name ?? null,
+        teacher: a.students.classes?.teacher ?? null,
         isAuthorized: true
       }));
 
@@ -158,11 +164,13 @@ export default function DashboardScreen({ session }: Props) {
   };
 
   const handleSelectStudent = (id: string) => {
-    setSelectedStudentId(id);
+    setSelectedStudentIds(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
   };
 
   const handleRequestPickup = async () => {
-    if (!selectedStudentId) return;
+    if (selectedStudentIds.length === 0) return;
     setLoading(true);
     try {
       const { data: parentId, error: parentError } = await supabase.rpc(
@@ -172,32 +180,34 @@ export default function DashboardScreen({ session }: Props) {
         throw new Error('Unable to determine current parent');
       }
 
-      const { data: isAuthorized, error: authError } = await supabase.rpc(
-        'is_parent_of_student',
-        {
-          student_id: selectedStudentId
+      for (const studentId of selectedStudentIds) {
+        const { data: isAuthorized, error: authError } = await supabase.rpc(
+          'is_parent_of_student',
+          {
+            student_id: studentId
+          }
+        );
+        if (authError) {
+          throw new Error('Authorization check failed');
         }
-      );
-      if (authError) {
-        throw new Error('Authorization check failed');
-      }
-      if (!isAuthorized) {
-        throw new Error('Not authorized for this student');
-      }
+        if (!isAuthorized) {
+          throw new Error('Not authorized for this student');
+        }
 
-      const { error } = await supabase.from('pickup_requests').insert({
-        student_id: selectedStudentId,
-        parent_id: parentId,
-        status: 'pending',
-        request_time: new Date().toISOString()
-      });
+        const { error } = await supabase.from('pickup_requests').insert({
+          student_id: studentId,
+          parent_id: parentId,
+          status: 'pending',
+          request_time: new Date().toISOString()
+        });
 
-      if (error) {
-        throw error;
+        if (error) {
+          throw error;
+        }
       }
 
       Alert.alert('Success', 'Pickup requested');
-      setSelectedStudentId(null);
+      setSelectedStudentIds([]);
       fetchActiveRequests();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Request failed');
@@ -257,14 +267,18 @@ export default function DashboardScreen({ session }: Props) {
             return (
               <ListItem
                 pressTheme
+                animation="quick"
+                pressStyle={{ scale: 0.97 }}
+                borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
+                borderColor="$blue7"
                 backgroundColor={
-                  selectedStudentId === item.id ? '$blue3' : undefined
+                  selectedStudentIds.includes(item.id) ? '$blue3' : undefined
                 }
                 onPress={() => !disabled && handleSelectStudent(item.id)}
                 disabled={disabled}
                 title={item.name}
                 titleProps={{ numberOfLines: 1 }}
-                subTitle={item.isAuthorized ? 'Authorized' : undefined}
+                subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
                 icon={request ? (
                   <Text fontSize="$2">
                     {request.status === 'pending' ? 'In Queue' : 'Called'}
@@ -279,7 +293,7 @@ export default function DashboardScreen({ session }: Props) {
         <Button
           size="$5"
           onPress={handleRequestPickup}
-          disabled={!selectedStudentId || loading}
+          disabled={selectedStudentIds.length === 0 || loading}
           icon={loading ? <Spinner /> : null}
         >
           {loading ? 'Requesting...' : 'Request Pickup'}
