@@ -6,7 +6,9 @@ import {
   Button,
   FlatList,
   RefreshControl,
-  StyleSheet
+  StyleSheet,
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
@@ -24,6 +26,8 @@ interface Student {
 export default function DashboardScreen({ session }: Props) {
   const [students, setStudents] = useState<Student[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchStudents = useCallback(async () => {
     setRefreshing(true);
@@ -88,6 +92,54 @@ export default function DashboardScreen({ session }: Props) {
     await supabase.auth.signOut();
   };
 
+  const handleSelectStudent = (id: string) => {
+    setSelectedStudentId(id);
+  };
+
+  const handleRequestPickup = async () => {
+    if (!selectedStudentId) return;
+    setLoading(true);
+    try {
+      const { data: parentId, error: parentError } = await supabase.rpc(
+        'get_current_parent_id'
+      );
+      if (parentError || !parentId) {
+        throw new Error('Unable to determine current parent');
+      }
+
+      const { data: isAuthorized, error: authError } = await supabase.rpc(
+        'is_parent_of_student',
+        {
+          student_id: selectedStudentId
+        }
+      );
+      if (authError) {
+        throw new Error('Authorization check failed');
+      }
+      if (!isAuthorized) {
+        throw new Error('Not authorized for this student');
+      }
+
+      const { error } = await supabase.from('pickup_requests').insert({
+        student_id: selectedStudentId,
+        parent_id: parentId,
+        status: 'pending',
+        request_time: new Date().toISOString()
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      Alert.alert('Success', 'Pickup requested');
+      setSelectedStudentId(null);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Request failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>Welcome {session.user.email}</Text>
@@ -99,12 +151,18 @@ export default function DashboardScreen({ session }: Props) {
         data={students}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.item}>
+          <TouchableOpacity
+            style={[
+              styles.item,
+              selectedStudentId === item.id && styles.selectedItem
+            ]}
+            onPress={() => handleSelectStudent(item.id)}
+          >
             <Text style={styles.itemName}>{item.name}</Text>
             {item.isAuthorized && (
               <Text style={styles.authorized}>Authorized</Text>
             )}
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No students found.</Text>
@@ -112,6 +170,11 @@ export default function DashboardScreen({ session }: Props) {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />
         }
+      />
+      <Button
+        title={loading ? 'Requesting...' : 'Request Pickup'}
+        onPress={handleRequestPickup}
+        disabled={!selectedStudentId || loading}
       />
     </SafeAreaView>
   );
@@ -142,6 +205,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f2f2f2',
     borderRadius: 8,
     marginBottom: 12
+  },
+  selectedItem: {
+    backgroundColor: '#d0ebff'
   },
   itemName: {
     fontSize: 16
