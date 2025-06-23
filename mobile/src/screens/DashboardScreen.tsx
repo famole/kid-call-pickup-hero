@@ -11,7 +11,7 @@ import {
   Card,
   Sheet
 } from 'tamagui'
-import { FlatList, RefreshControl, Alert, SafeAreaView, Image } from 'react-native'
+import { ScrollView, RefreshControl, Alert, SafeAreaView, Image } from 'react-native'
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import PickupStatus from '../components/PickupStatus';
@@ -258,41 +258,87 @@ export default function DashboardScreen({ session }: Props) {
             </XStack>
           </Card>
         <PickupStatus students={students} requests={activeRequests} />
-        <FlatList
+        <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 16 }}
-          data={students}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const request = activeRequests.find(r => r.studentId === item.id)
-            const disabled = !!request
-            return (
-              <ListItem
-                pressTheme
-                animation="quick"
-                pressStyle={{ scale: 0.97 }}
-                borderRadius="$4"
-                borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
-                borderColor="$blue7"
-                backgroundColor={
-                  selectedStudentIds.includes(item.id) ? '$blue3' : undefined
-                }
-                onPress={() => !disabled && handleSelectStudent(item.id)}
-                disabled={disabled}
-                title={item.name}
-                titleProps={{ numberOfLines: 1 }}
-                subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
-                icon={request ? (
-                  <Text fontSize="$2">
-                    {request.status === 'pending' ? 'In Queue' : 'Called'}
-                  </Text>
-                ) : null}
-              />
-            )
-          }}
-          ListEmptyComponent={<Text textAlign="center" marginTop="$8">No students found.</Text>}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />}
-        />
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />
+          }
+        >
+          {students.filter(s => !s.isAuthorized).length > 0 && (
+            <Card padding="$4" marginBottom="$4" elevate bordered borderRadius="$4" space>
+              <Text fontWeight="bold">Your childrens</Text>
+              {students
+                .filter(s => !s.isAuthorized)
+                .map(item => {
+                  const request = activeRequests.find(r => r.studentId === item.id)
+                  const disabled = !!request
+                  return (
+                    <ListItem
+                      key={item.id}
+                      pressTheme
+                      animation="quick"
+                      pressStyle={{ scale: 0.97 }}
+                      borderRadius="$4"
+                      borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
+                      borderColor="$blue7"
+                      backgroundColor={
+                        selectedStudentIds.includes(item.id) ? '$blue3' : undefined
+                      }
+                      onPress={() => !disabled && handleSelectStudent(item.id)}
+                      disabled={disabled}
+                      title={item.name}
+                      titleProps={{ numberOfLines: 1 }}
+                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
+                      icon={request ? (
+                        <Text fontSize="$2">
+                          {request.status === 'pending' ? 'In Queue' : 'Called'}
+                        </Text>
+                      ) : null}
+                    />
+                  )
+                })}
+            </Card>
+          )}
+          {students.filter(s => s.isAuthorized).length > 0 && (
+            <Card padding="$4" space elevate bordered borderRadius="$4">
+              <Text fontWeight="bold">Authorized to pick up</Text>
+              {students
+                .filter(s => s.isAuthorized)
+                .map(item => {
+                  const request = activeRequests.find(r => r.studentId === item.id)
+                  const disabled = !!request
+                  return (
+                    <ListItem
+                      key={item.id}
+                      pressTheme
+                      animation="quick"
+                      pressStyle={{ scale: 0.97 }}
+                      borderRadius="$4"
+                      borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
+                      borderColor="$blue7"
+                      backgroundColor={
+                        selectedStudentIds.includes(item.id) ? '$blue3' : undefined
+                      }
+                      onPress={() => !disabled && handleSelectStudent(item.id)}
+                      disabled={disabled}
+                      title={item.name}
+                      titleProps={{ numberOfLines: 1 }}
+                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
+                      icon={request ? (
+                        <Text fontSize="$2">
+                          {request.status === 'pending' ? 'In Queue' : 'Called'}
+                        </Text>
+                      ) : null}
+                    />
+                  )
+                })}
+            </Card>
+          )}
+          {students.length === 0 && (
+            <Text textAlign="center" marginTop="$8">No students found.</Text>
+          )}
+        </ScrollView>
         <Button
           size="$5"
           borderRadius="$4"
