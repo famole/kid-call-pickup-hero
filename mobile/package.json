@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
-    "@types/react-native": "^0.73.10",
+    "@types/react-native": "^0.73.9",
     "typescript": "^5.5.3"
   }
 }
