@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Button, FlatList, RefreshControl } from 'react-native';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  Button,
+  FlatList,
+  RefreshControl,
+  StyleSheet
+} from 'react-native';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 
@@ -81,22 +89,70 @@ export default function DashboardScreen({ session }: Props) {
   };
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 20, marginBottom: 12 }}>Welcome {session.user.email}</Text>
-      <Button title="Sign Out" onPress={handleLogout} />
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.header}>Welcome {session.user.email}</Text>
+      <View style={styles.signOutButton}>
+        <Button title="Sign Out" onPress={handleLogout} />
+      </View>
       <FlatList
+        style={styles.list}
         data={students}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Text style={{ paddingVertical: 8 }}>
-            {item.name}
-            {item.isAuthorized ? ' (authorized)' : ''}
-          </Text>
+          <View style={styles.item}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            {item.isAuthorized && (
+              <Text style={styles.authorized}>Authorized</Text>
+            )}
+          </View>
         )}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No students found.</Text>
+        }
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16
+  },
+  header: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12
+  },
+  signOutButton: {
+    marginBottom: 16
+  },
+  list: {
+    flex: 1
+  },
+  item: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f2f2f2',
+    borderRadius: 8,
+    marginBottom: 12
+  },
+  itemName: {
+    fontSize: 16
+  },
+  authorized: {
+    fontSize: 12,
+    color: '#555'
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 32,
+    color: '#666'
+  }
+});
