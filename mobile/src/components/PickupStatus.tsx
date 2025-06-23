@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React from 'react'
+import { YStack, Text, Paragraph, Theme } from 'tamagui'
 
 interface Student {
   id: string;
@@ -17,51 +17,33 @@ interface Props {
 }
 
 export default function PickupStatus({ students, requests }: Props) {
-  if (requests.length === 0) return null;
+  if (requests.length === 0) return null
 
-  const pending = requests.filter(r => r.status === 'pending');
-  const called = requests.filter(r => r.status === 'called');
+  const pending = requests.filter(r => r.status === 'pending')
+  const called = requests.filter(r => r.status === 'called')
 
-  const getName = (id: string) => students.find(s => s.id === id)?.name || 'Unknown';
+  const getName = (id: string) => students.find(s => s.id === id)?.name || 'Unknown'
 
   return (
-    <View style={styles.container}>
-      {pending.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>In Queue</Text>
-          {pending.map(req => (
-            <Text key={req.studentId} style={styles.item}>
-              {getName(req.studentId)}
-            </Text>
-          ))}
-        </View>
-      )}
-      {called.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Called - On the Way</Text>
-          {called.map(req => (
-            <Text key={req.studentId} style={styles.item}>
-              {getName(req.studentId)}
-            </Text>
-          ))}
-        </View>
-      )}
-    </View>
-  );
+    <Theme name="light">
+      <YStack marginBottom="$4" space>
+        {pending.length > 0 && (
+          <YStack space>
+            <Text fontWeight="bold">In Queue</Text>
+            {pending.map(req => (
+              <Paragraph key={req.studentId}>{getName(req.studentId)}</Paragraph>
+            ))}
+          </YStack>
+        )}
+        {called.length > 0 && (
+          <YStack space>
+            <Text fontWeight="bold">Called - On the Way</Text>
+            {called.map(req => (
+              <Paragraph key={req.studentId}>{getName(req.studentId)}</Paragraph>
+            ))}
+          </YStack>
+        )}
+      </YStack>
+    </Theme>
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  section: {
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  item: {
-    paddingVertical: 4,
-  },
-});
