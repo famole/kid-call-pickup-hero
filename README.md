@@ -89,3 +89,15 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 ## Documentation
 
 For a high level overview of this repository's structure and main features see [docs/overview.md](docs/overview.md).
+
+## Mobile app
+
+A basic React Native project using Expo lives in the `mobile/` folder. It shares the same Supabase backend as the web application. To get started:
+
+```sh
+cd mobile
+npm install
+npm run start
+```
+
+Open the app in an emulator with `npm run android` or `npm run ios`. Expand the code under `mobile/` to replicate the web features for iOS and Android.
