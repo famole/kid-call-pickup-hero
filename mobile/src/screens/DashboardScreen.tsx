@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -33,6 +33,7 @@ export default function DashboardScreen({ session }: Props) {
     studentId: string;
     status: 'pending' | 'called';
   }[]>([]);
+  const studentsRef = useRef<Student[]>([]);
 
   const fetchStudents = useCallback(async () => {
     setRefreshing(true);
@@ -89,6 +90,10 @@ export default function DashboardScreen({ session }: Props) {
     setRefreshing(false);
     fetchActiveRequests();
   }, [session.user.email, fetchActiveRequests]);
+
+  useEffect(() => {
+    studentsRef.current = students;
+  }, [students]);
 
   const fetchActiveRequests = useCallback(async () => {
     const { data: parentId, error: parentError } = await supabase.rpc(
@@ -197,6 +202,33 @@ export default function DashboardScreen({ session }: Props) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleChange = (payload: any) => {
+      const id = payload.new?.student_id || payload.old?.student_id;
+      if (id && studentsRef.current.some(s => s.id === id)) {
+        fetchActiveRequests();
+      }
+    };
+
+    const channel = supabase
+      .channel('parent_dashboard_mobile')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pickup_requests', filter: 'status=eq.pending' },
+        handleChange
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pickup_requests', filter: 'status=eq.called' },
+        handleChange
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchActiveRequests]);
 
   return (
     <SafeAreaView style={styles.container}>
