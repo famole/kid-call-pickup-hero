@@ -2,7 +2,7 @@
   "name": "kid-call-pickup-hero-mobile",
   "private": true,
   "version": "0.1.0",
-  "main": "App.tsx",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
