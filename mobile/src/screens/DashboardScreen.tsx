@@ -247,12 +247,14 @@ export default function DashboardScreen({ session }: Props) {
     <SafeAreaView style={{ flex: 1 }}>
       <Theme name="light">
         <YStack flex={1} padding="$4" space>
-          <Card padding="$4" elevate bordered>
+          <Card padding="$4" elevate bordered borderRadius="$4">
             <XStack justifyContent="space-between" alignItems="center" space>
               <Text fontSize="$6" fontWeight="bold" numberOfLines={1} flex={1}>
                 Welcome {session.user.email}
               </Text>
-              <Button size="$3" onPress={() => setMenuOpen(true)}>☰</Button>
+              <Button size="$3" borderRadius="$4" onPress={() => setMenuOpen(true)}>
+                ☰
+              </Button>
             </XStack>
           </Card>
         <PickupStatus students={students} requests={activeRequests} />
@@ -269,6 +271,7 @@ export default function DashboardScreen({ session }: Props) {
                 pressTheme
                 animation="quick"
                 pressStyle={{ scale: 0.97 }}
+                borderRadius="$4"
                 borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
                 borderColor="$blue7"
                 backgroundColor={
@@ -292,6 +295,7 @@ export default function DashboardScreen({ session }: Props) {
         />
         <Button
           size="$5"
+          borderRadius="$4"
           onPress={handleRequestPickup}
           disabled={selectedStudentIds.length === 0 || loading}
           icon={loading ? <Spinner /> : null}
@@ -302,13 +306,15 @@ export default function DashboardScreen({ session }: Props) {
       <Sheet modal open={menuOpen} onOpenChange={setMenuOpen} snapPoints={[40]}>
         <Sheet.Overlay />
         <Sheet.Handle />
-        <Sheet.Frame padding="$4" alignItems="center" space>
+        <Sheet.Frame padding="$4" alignItems="center" space borderRadius="$4">
           <Image
             source={require('../../../public/lovable-uploads/8268b74f-a6aa-4f00-ac2b-ce117a9c3706.png')}
             style={{ width: 80, height: 80 }}
           />
           <Text fontSize="$7" fontWeight="bold">Upsy</Text>
-          <Button size="$4" onPress={handleLogout}>Logout</Button>
+          <Button size="$4" borderRadius="$4" onPress={handleLogout}>
+            Logout
+          </Button>
         </Sheet.Frame>
       </Sheet>
       </Theme>

@@ -21,19 +21,21 @@ export default function LoginScreen() {
   return (
     <Theme name="light">
       <YStack flex={1} justifyContent="center" padding="$4">
-        <Card padding="$6" elevate bordered width="90%" alignSelf="center" space>
+        <Card padding="$6" elevate bordered borderRadius="$4" width="90%" alignSelf="center" space>
           <Input
             placeholder="Email"
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
+            borderRadius="$4"
           />
           <Input
             placeholder="Password"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
+            borderRadius="$4"
           />
           <AnimatePresence>
             {error && (
@@ -51,6 +53,7 @@ export default function LoginScreen() {
             onPress={handleLogin}
             disabled={loading}
             icon={loading ? <Spinner /> : null}
+            borderRadius="$4"
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </Button>
