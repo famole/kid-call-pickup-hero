@@ -7,9 +7,11 @@ import {
   ListItem,
   Theme,
   Spinner,
-  AnimatePresence
+  AnimatePresence,
+  Card,
+  Sheet
 } from 'tamagui'
-import { FlatList, RefreshControl, Alert, TouchableOpacity } from 'react-native'
+import { ScrollView, RefreshControl, Alert, SafeAreaView, Image } from 'react-native'
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import PickupStatus from '../components/PickupStatus';
@@ -21,14 +23,17 @@ type Props = {
 interface Student {
   id: string;
   name: string;
+  className?: string | null;
+  teacher?: string | null;
   isAuthorized: boolean;
 }
 
 export default function DashboardScreen({ session }: Props) {
   const [students, setStudents] = useState<Student[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [activeRequests, setActiveRequests] = useState<{
     studentId: string;
     status: 'pending' | 'called';
@@ -49,7 +54,7 @@ export default function DashboardScreen({ session }: Props) {
       // Direct children
       const { data: directChildren } = await supabase
         .from('students')
-        .select('id, name, student_parents!inner(parent_id)')
+        .select('id, name, classes(name, teacher), student_parents!inner(parent_id)')
         .eq('student_parents.parent_id', parent.id);
 
       const today = new Date().toISOString().split('T')[0];
@@ -57,7 +62,7 @@ export default function DashboardScreen({ session }: Props) {
       // Authorized children
       const { data: authorized } = await supabase
         .from('pickup_authorizations')
-        .select('students(id, name)')
+        .select('students(id, name, classes(name, teacher))')
         .eq('authorized_parent_id', parent.id)
         .eq('is_active', true)
         .lte('start_date', today)
@@ -66,12 +71,16 @@ export default function DashboardScreen({ session }: Props) {
       const formattedDirect = (directChildren || []).map((c: any) => ({
         id: c.id,
         name: c.name,
+        className: c.classes?.name ?? null,
+        teacher: c.classes?.teacher ?? null,
         isAuthorized: false
       }));
 
       const formattedAuthorized = (authorized || []).map((a: any) => ({
         id: a.students.id,
         name: a.students.name,
+        className: a.students.classes?.name ?? null,
+        teacher: a.students.classes?.teacher ?? null,
         isAuthorized: true
       }));
 
@@ -155,11 +164,13 @@ export default function DashboardScreen({ session }: Props) {
   };
 
   const handleSelectStudent = (id: string) => {
-    setSelectedStudentId(id);
+    setSelectedStudentIds(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
   };
 
   const handleRequestPickup = async () => {
-    if (!selectedStudentId) return;
+    if (selectedStudentIds.length === 0) return;
     setLoading(true);
     try {
       const { data: parentId, error: parentError } = await supabase.rpc(
@@ -169,32 +180,34 @@ export default function DashboardScreen({ session }: Props) {
         throw new Error('Unable to determine current parent');
       }
 
-      const { data: isAuthorized, error: authError } = await supabase.rpc(
-        'is_parent_of_student',
-        {
-          student_id: selectedStudentId
+      for (const studentId of selectedStudentIds) {
+        const { data: isAuthorized, error: authError } = await supabase.rpc(
+          'is_parent_of_student',
+          {
+            student_id: studentId
+          }
+        );
+        if (authError) {
+          throw new Error('Authorization check failed');
         }
-      );
-      if (authError) {
-        throw new Error('Authorization check failed');
-      }
-      if (!isAuthorized) {
-        throw new Error('Not authorized for this student');
-      }
+        if (!isAuthorized) {
+          throw new Error('Not authorized for this student');
+        }
 
-      const { error } = await supabase.from('pickup_requests').insert({
-        student_id: selectedStudentId,
-        parent_id: parentId,
-        status: 'pending',
-        request_time: new Date().toISOString()
-      });
+        const { error } = await supabase.from('pickup_requests').insert({
+          student_id: studentId,
+          parent_id: parentId,
+          status: 'pending',
+          request_time: new Date().toISOString()
+        });
 
-      if (error) {
-        throw error;
+        if (error) {
+          throw error;
+        }
       }
 
       Alert.alert('Success', 'Pickup requested');
-      setSelectedStudentId(null);
+      setSelectedStudentIds([]);
       fetchActiveRequests();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Request failed');
@@ -231,49 +244,126 @@ export default function DashboardScreen({ session }: Props) {
   }, [fetchActiveRequests]);
 
   return (
-    <Theme name="light">
-      <YStack flex={1} padding="$4" space>
-        <XStack justifyContent="space-between" alignItems="center" marginBottom="$3">
-          <Text fontSize="$6" fontWeight="bold">
-            Welcome {session.user.email}
-          </Text>
-          <Button size="$3" onPress={handleLogout}>Sign Out</Button>
-        </XStack>
+    <SafeAreaView style={{ flex: 1 }}>
+      <Theme name="light">
+        <YStack flex={1} padding="$4" space>
+          <Card padding="$4" elevate bordered borderRadius="$4">
+            <XStack justifyContent="space-between" alignItems="center" space>
+              <Text fontSize="$6" fontWeight="bold" numberOfLines={1} flex={1}>
+                Welcome {session.user.email}
+              </Text>
+              <Button size="$3" borderRadius="$4" onPress={() => setMenuOpen(true)}>
+                ☰
+              </Button>
+            </XStack>
+          </Card>
         <PickupStatus students={students} requests={activeRequests} />
-        <FlatList
+        <ScrollView
           style={{ flex: 1 }}
-          data={students}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const request = activeRequests.find(r => r.studentId === item.id)
-            const disabled = !!request
-            return (
-              <ListItem
-                pressTheme
-                backgroundColor={selectedStudentId === item.id ? '$blue3' : undefined}
-                onPress={() => !disabled && handleSelectStudent(item.id)}
-                disabled={disabled}
-                title={item.name}
-                subTitle={item.isAuthorized ? 'Authorized' : undefined}
-                icon={request ? (
-                  <Text fontSize="$2">
-                    {request.status === 'pending' ? 'In Queue' : 'Called'}
-                  </Text>
-                ) : null}
-              />
-            )
-          }}
-          ListEmptyComponent={<Text textAlign="center" marginTop="$8">No students found.</Text>}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />}
-        />
+          contentContainerStyle={{ paddingBottom: 16 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />
+          }
+        >
+          {students.filter(s => !s.isAuthorized).length > 0 && (
+            <Card padding="$4" marginBottom="$4" elevate bordered borderRadius="$4" space>
+              <Text fontWeight="bold">Your childrens</Text>
+              {students
+                .filter(s => !s.isAuthorized)
+                .map(item => {
+                  const request = activeRequests.find(r => r.studentId === item.id)
+                  const disabled = !!request
+                  return (
+                    <ListItem
+                      key={item.id}
+                      pressTheme
+                      animation="quick"
+                      pressStyle={{ scale: 0.97 }}
+                      borderRadius="$4"
+                      borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
+                      borderColor="$blue7"
+                      backgroundColor={
+                        selectedStudentIds.includes(item.id) ? '$blue3' : undefined
+                      }
+                      onPress={() => !disabled && handleSelectStudent(item.id)}
+                      disabled={disabled}
+                      title={item.name}
+                      titleProps={{ numberOfLines: 1 }}
+                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
+                      icon={request ? (
+                        <Text fontSize="$2">
+                          {request.status === 'pending' ? 'In Queue' : 'Called'}
+                        </Text>
+                      ) : null}
+                    />
+                  )
+                })}
+            </Card>
+          )}
+          {students.filter(s => s.isAuthorized).length > 0 && (
+            <Card padding="$4" space elevate bordered borderRadius="$4">
+              <Text fontWeight="bold">Authorized to pick up</Text>
+              {students
+                .filter(s => s.isAuthorized)
+                .map(item => {
+                  const request = activeRequests.find(r => r.studentId === item.id)
+                  const disabled = !!request
+                  return (
+                    <ListItem
+                      key={item.id}
+                      pressTheme
+                      animation="quick"
+                      pressStyle={{ scale: 0.97 }}
+                      borderRadius="$4"
+                      borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
+                      borderColor="$blue7"
+                      backgroundColor={
+                        selectedStudentIds.includes(item.id) ? '$blue3' : undefined
+                      }
+                      onPress={() => !disabled && handleSelectStudent(item.id)}
+                      disabled={disabled}
+                      title={item.name}
+                      titleProps={{ numberOfLines: 1 }}
+                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
+                      icon={request ? (
+                        <Text fontSize="$2">
+                          {request.status === 'pending' ? 'In Queue' : 'Called'}
+                        </Text>
+                      ) : null}
+                    />
+                  )
+                })}
+            </Card>
+          )}
+          {students.length === 0 && (
+            <Text textAlign="center" marginTop="$8">No students found.</Text>
+          )}
+        </ScrollView>
         <Button
+          size="$5"
+          borderRadius="$4"
           onPress={handleRequestPickup}
-          disabled={!selectedStudentId || loading}
+          disabled={selectedStudentIds.length === 0 || loading}
           icon={loading ? <Spinner /> : null}
         >
           {loading ? 'Requesting...' : 'Request Pickup'}
         </Button>
       </YStack>
-    </Theme>
+      <Sheet modal open={menuOpen} onOpenChange={setMenuOpen} snapPoints={[40]}>
+        <Sheet.Overlay />
+        <Sheet.Handle />
+        <Sheet.Frame padding="$4" alignItems="center" space borderRadius="$4">
+          <Image
+            source={require('../../../public/lovable-uploads/8268b74f-a6aa-4f00-ac2b-ce117a9c3706.png')}
+            style={{ width: 80, height: 80 }}
+          />
+          <Text fontSize="$7" fontWeight="bold">Upsy</Text>
+          <Button size="$4" borderRadius="$4" onPress={handleLogout}>
+            Logout
+          </Button>
+        </Sheet.Frame>
+      </Sheet>
+      </Theme>
+    </SafeAreaView>
   )
 }

@@ -1,9 +1,11 @@
 import React from 'react'
-import { YStack, Text, Paragraph, Theme } from 'tamagui'
+import { YStack, Text, Paragraph, Theme, Card } from 'tamagui'
 
 interface Student {
   id: string;
   name: string;
+  className?: string | null;
+  teacher?: string | null;
 }
 
 interface Request {
@@ -26,7 +28,8 @@ export default function PickupStatus({ students, requests }: Props) {
 
   return (
     <Theme name="light">
-      <YStack marginBottom="$4" space>
+      <Card marginBottom="$4" padding="$4" borderRadius="$4" bordered>
+        <YStack space>
         {pending.length > 0 && (
           <YStack space>
             <Text fontWeight="bold">In Queue</Text>
@@ -43,7 +46,8 @@ export default function PickupStatus({ students, requests }: Props) {
             ))}
           </YStack>
         )}
-      </YStack>
+        </YStack>
+      </Card>
     </Theme>
   )
 }
