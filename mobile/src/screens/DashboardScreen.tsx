@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  SafeAreaView,
-  View,
-  Text,
+  YStack,
+  XStack,
   Button,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  TouchableOpacity,
-  Alert
-} from 'react-native';
+  Text,
+  ListItem,
+  Theme,
+  Spinner,
+  AnimatePresence
+} from 'tamagui'
+import { FlatList, RefreshControl, Alert, TouchableOpacity } from 'react-native'
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import PickupStatus from '../components/PickupStatus';
@@ -231,107 +231,49 @@ export default function DashboardScreen({ session }: Props) {
   }, [fetchActiveRequests]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Welcome {session.user.email}</Text>
-      <View style={styles.signOutButton}>
-        <Button title="Sign Out" onPress={handleLogout} />
-      </View>
-      <PickupStatus students={students} requests={activeRequests} />
-      <FlatList
-        style={styles.list}
-        data={students}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const request = activeRequests.find(r => r.studentId === item.id);
-          const disabled = !!request;
-          return (
-            <TouchableOpacity
-              style={[
-                styles.item,
-                selectedStudentId === item.id && styles.selectedItem,
-                disabled && styles.disabledItem
-              ]}
-              onPress={() => !disabled && handleSelectStudent(item.id)}
-            >
-              <View style={styles.itemTextContainer}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                {item.isAuthorized && (
-                  <Text style={styles.authorized}>Authorized</Text>
-                )}
-              </View>
-              {request && (
-                <Text style={styles.status}>
-                  {request.status === 'pending' ? 'In Queue' : 'Called'}
-                </Text>
-              )}
-            </TouchableOpacity>
-          );
-        }}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No students found.</Text>
-        }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />
-        }
-      />
-      <Button
-        title={loading ? 'Requesting...' : 'Request Pickup'}
-        onPress={handleRequestPickup}
-        disabled={!selectedStudentId || loading}
-      />
-    </SafeAreaView>
-  );
+    <Theme name="light">
+      <YStack flex={1} padding="$4" space>
+        <XStack justifyContent="space-between" alignItems="center" marginBottom="$3">
+          <Text fontSize="$6" fontWeight="bold">
+            Welcome {session.user.email}
+          </Text>
+          <Button size="$3" onPress={handleLogout}>Sign Out</Button>
+        </XStack>
+        <PickupStatus students={students} requests={activeRequests} />
+        <FlatList
+          style={{ flex: 1 }}
+          data={students}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const request = activeRequests.find(r => r.studentId === item.id)
+            const disabled = !!request
+            return (
+              <ListItem
+                pressTheme
+                backgroundColor={selectedStudentId === item.id ? '$blue3' : undefined}
+                onPress={() => !disabled && handleSelectStudent(item.id)}
+                disabled={disabled}
+                title={item.name}
+                subTitle={item.isAuthorized ? 'Authorized' : undefined}
+                icon={request ? (
+                  <Text fontSize="$2">
+                    {request.status === 'pending' ? 'In Queue' : 'Called'}
+                  </Text>
+                ) : null}
+              />
+            )
+          }}
+          ListEmptyComponent={<Text textAlign="center" marginTop="$8">No students found.</Text>}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />}
+        />
+        <Button
+          onPress={handleRequestPickup}
+          disabled={!selectedStudentId || loading}
+          icon={loading ? <Spinner /> : null}
+        >
+          {loading ? 'Requesting...' : 'Request Pickup'}
+        </Button>
+      </YStack>
+    </Theme>
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16
-  },
-  header: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12
-  },
-  signOutButton: {
-    marginBottom: 16
-  },
-  list: {
-    flex: 1
-  },
-  item: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f2f2f2',
-    borderRadius: 8,
-    marginBottom: 12
-  },
-  disabledItem: {
-    opacity: 0.5
-  },
-  itemTextContainer: {
-    flexDirection: 'column'
-  },
-  selectedItem: {
-    backgroundColor: '#d0ebff'
-  },
-  itemName: {
-    fontSize: 16
-  },
-  authorized: {
-    fontSize: 12,
-    color: '#555'
-  },
-  status: {
-    fontSize: 12,
-    color: '#333'
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 32,
-    color: '#666'
-  }
-});

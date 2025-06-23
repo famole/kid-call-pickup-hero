@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
-import { supabase } from '../supabaseClient';
+import React, { useState } from 'react'
+import { supabase } from '../supabaseClient'
+import { YStack, Input, Button, Paragraph, Theme, Spinner, AnimatePresence } from 'tamagui'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -9,53 +9,42 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
-    setLoading(true);
-    setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(true)
+    setError(null)
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
-      setError(error.message);
+      setError(error.message)
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        placeholder="Email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-      />
-      {error && <Text style={styles.error}>{error}</Text>}
-      <Button title={loading ? 'Signing in...' : 'Sign In'} onPress={handleLogin} disabled={loading} />
-    </View>
-  );
+    <Theme name="light">
+      <YStack flex={1} justifyContent="center" padding="$4" space>
+        <Input
+          placeholder="Email"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <Input
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <AnimatePresence>
+          {error && (
+            <Paragraph color="red" enterStyle={{ opacity: 0 }} exitStyle={{ opacity: 0 }}>
+              {error}
+            </Paragraph>
+          )}
+        </AnimatePresence>
+        <Button onPress={handleLogin} disabled={loading} icon={loading ? <Spinner /> : null}>
+          {loading ? 'Signing in…' : 'Sign In'}
+        </Button>
+      </YStack>
+    </Theme>
+  )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16
-  },
-  input: {
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    borderRadius: 4
-  },
-  error: {
-    color: 'red',
-    marginBottom: 8
-  }
-});
