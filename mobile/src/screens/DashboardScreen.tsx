@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
+import PickupStatus from '../components/PickupStatus';
 
 type Props = {
   session: Session;
@@ -28,6 +29,10 @@ export default function DashboardScreen({ session }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeRequests, setActiveRequests] = useState<{
+    studentId: string;
+    status: 'pending' | 'called';
+  }[]>([]);
 
   const fetchStudents = useCallback(async () => {
     setRefreshing(true);
@@ -82,11 +87,63 @@ export default function DashboardScreen({ session }: Props) {
     }
 
     setRefreshing(false);
-  }, [session.user.email]);
+    fetchActiveRequests();
+  }, [session.user.email, fetchActiveRequests]);
+
+  const fetchActiveRequests = useCallback(async () => {
+    const { data: parentId, error: parentError } = await supabase.rpc(
+      'get_current_parent_id'
+    );
+    if (parentError || !parentId) {
+      setActiveRequests([]);
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const [own, authorized] = await Promise.all([
+      supabase
+        .from('student_parents')
+        .select('student_id')
+        .eq('parent_id', parentId),
+      supabase
+        .from('pickup_authorizations')
+        .select('student_id')
+        .eq('authorized_parent_id', parentId)
+        .eq('is_active', true)
+        .lte('start_date', today)
+        .gte('end_date', today)
+    ]);
+
+    const ids = [
+      ...(own.data?.map((r: any) => r.student_id) || []),
+      ...(authorized.data?.map((r: any) => r.student_id) || [])
+    ];
+
+    const uniqueIds = Array.from(new Set(ids));
+    if (uniqueIds.length === 0) {
+      setActiveRequests([]);
+      return;
+    }
+
+    const { data: requests } = await supabase
+      .from('pickup_requests')
+      .select('student_id,status')
+      .in('student_id', uniqueIds)
+      .in('status', ['pending', 'called']);
+
+    const formatted = (requests || []).map((r: any) => ({
+      studentId: r.student_id,
+      status: r.status as 'pending' | 'called'
+    }));
+
+    setActiveRequests(formatted);
+  }, []);
 
   useEffect(() => {
     fetchStudents();
-  }, [fetchStudents]);
+    fetchActiveRequests();
+  }, [fetchStudents, fetchActiveRequests]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -133,6 +190,7 @@ export default function DashboardScreen({ session }: Props) {
 
       Alert.alert('Success', 'Pickup requested');
       setSelectedStudentId(null);
+      fetchActiveRequests();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Request failed');
     } finally {
@@ -146,24 +204,37 @@ export default function DashboardScreen({ session }: Props) {
       <View style={styles.signOutButton}>
         <Button title="Sign Out" onPress={handleLogout} />
       </View>
+      <PickupStatus students={students} requests={activeRequests} />
       <FlatList
         style={styles.list}
         data={students}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.item,
-              selectedStudentId === item.id && styles.selectedItem
-            ]}
-            onPress={() => handleSelectStudent(item.id)}
-          >
-            <Text style={styles.itemName}>{item.name}</Text>
-            {item.isAuthorized && (
-              <Text style={styles.authorized}>Authorized</Text>
-            )}
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const request = activeRequests.find(r => r.studentId === item.id);
+          const disabled = !!request;
+          return (
+            <TouchableOpacity
+              style={[
+                styles.item,
+                selectedStudentId === item.id && styles.selectedItem,
+                disabled && styles.disabledItem
+              ]}
+              onPress={() => !disabled && handleSelectStudent(item.id)}
+            >
+              <View style={styles.itemTextContainer}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                {item.isAuthorized && (
+                  <Text style={styles.authorized}>Authorized</Text>
+                )}
+              </View>
+              {request && (
+                <Text style={styles.status}>
+                  {request.status === 'pending' ? 'In Queue' : 'Called'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        }}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No students found.</Text>
         }
@@ -206,6 +277,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12
   },
+  disabledItem: {
+    opacity: 0.5
+  },
+  itemTextContainer: {
+    flexDirection: 'column'
+  },
   selectedItem: {
     backgroundColor: '#d0ebff'
   },
@@ -215,6 +292,10 @@ const styles = StyleSheet.create({
   authorized: {
     fontSize: 12,
     color: '#555'
+  },
+  status: {
+    fontSize: 12,
+    color: '#333'
   },
   emptyText: {
     textAlign: 'center',
