@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { YStack, Input, Button, Paragraph, Theme, Spinner, AnimatePresence } from 'tamagui'
+import { YStack, Input, Button, Paragraph, Theme, Spinner, AnimatePresence, Card } from 'tamagui'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -20,30 +20,41 @@ export default function LoginScreen() {
 
   return (
     <Theme name="light">
-      <YStack flex={1} justifyContent="center" padding="$4" space>
-        <Input
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <Input
-          placeholder="Password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        <AnimatePresence>
-          {error && (
-            <Paragraph color="red" enterStyle={{ opacity: 0 }} exitStyle={{ opacity: 0 }}>
-              {error}
-            </Paragraph>
-          )}
-        </AnimatePresence>
-        <Button onPress={handleLogin} disabled={loading} icon={loading ? <Spinner /> : null}>
-          {loading ? 'Signing in…' : 'Sign In'}
-        </Button>
+      <YStack flex={1} justifyContent="center" padding="$4">
+        <Card padding="$6" elevate bordered width="90%" alignSelf="center" space>
+          <Input
+            placeholder="Email"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Input
+            placeholder="Password"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <AnimatePresence>
+            {error && (
+              <Paragraph
+                color="red"
+                textAlign="center"
+                enterStyle={{ opacity: 0 }}
+                exitStyle={{ opacity: 0 }}
+              >
+                {error}
+              </Paragraph>
+            )}
+          </AnimatePresence>
+          <Button
+            onPress={handleLogin}
+            disabled={loading}
+            icon={loading ? <Spinner /> : null}
+          >
+            {loading ? 'Signing in…' : 'Sign In'}
+          </Button>
+        </Card>
       </YStack>
     </Theme>
   )

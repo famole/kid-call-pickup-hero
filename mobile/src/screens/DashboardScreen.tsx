@@ -7,9 +7,11 @@ import {
   ListItem,
   Theme,
   Spinner,
-  AnimatePresence
+  AnimatePresence,
+  Card,
+  Sheet
 } from 'tamagui'
-import { FlatList, RefreshControl, Alert, TouchableOpacity } from 'react-native'
+import { FlatList, RefreshControl, Alert, SafeAreaView, Image } from 'react-native'
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import PickupStatus from '../components/PickupStatus';
@@ -29,6 +31,7 @@ export default function DashboardScreen({ session }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [activeRequests, setActiveRequests] = useState<{
     studentId: string;
     status: 'pending' | 'called';
@@ -231,17 +234,21 @@ export default function DashboardScreen({ session }: Props) {
   }, [fetchActiveRequests]);
 
   return (
-    <Theme name="light">
-      <YStack flex={1} padding="$4" space>
-        <XStack justifyContent="space-between" alignItems="center" marginBottom="$3">
-          <Text fontSize="$6" fontWeight="bold">
-            Welcome {session.user.email}
-          </Text>
-          <Button size="$3" onPress={handleLogout}>Sign Out</Button>
-        </XStack>
+    <SafeAreaView style={{ flex: 1 }}>
+      <Theme name="light">
+        <YStack flex={1} padding="$4" space>
+          <Card padding="$4" elevate bordered>
+            <XStack justifyContent="space-between" alignItems="center" space>
+              <Text fontSize="$6" fontWeight="bold" numberOfLines={1} flex={1}>
+                Welcome {session.user.email}
+              </Text>
+              <Button size="$3" onPress={() => setMenuOpen(true)}>☰</Button>
+            </XStack>
+          </Card>
         <PickupStatus students={students} requests={activeRequests} />
         <FlatList
           style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 16 }}
           data={students}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
@@ -250,10 +257,13 @@ export default function DashboardScreen({ session }: Props) {
             return (
               <ListItem
                 pressTheme
-                backgroundColor={selectedStudentId === item.id ? '$blue3' : undefined}
+                backgroundColor={
+                  selectedStudentId === item.id ? '$blue3' : undefined
+                }
                 onPress={() => !disabled && handleSelectStudent(item.id)}
                 disabled={disabled}
                 title={item.name}
+                titleProps={{ numberOfLines: 1 }}
                 subTitle={item.isAuthorized ? 'Authorized' : undefined}
                 icon={request ? (
                   <Text fontSize="$2">
@@ -267,6 +277,7 @@ export default function DashboardScreen({ session }: Props) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />}
         />
         <Button
+          size="$5"
           onPress={handleRequestPickup}
           disabled={!selectedStudentId || loading}
           icon={loading ? <Spinner /> : null}
@@ -274,6 +285,19 @@ export default function DashboardScreen({ session }: Props) {
           {loading ? 'Requesting...' : 'Request Pickup'}
         </Button>
       </YStack>
-    </Theme>
+      <Sheet modal open={menuOpen} onOpenChange={setMenuOpen} snapPoints={[40]}>
+        <Sheet.Overlay />
+        <Sheet.Handle />
+        <Sheet.Frame padding="$4" alignItems="center" space>
+          <Image
+            source={require('../../../public/lovable-uploads/8268b74f-a6aa-4f00-ac2b-ce117a9c3706.png')}
+            style={{ width: 80, height: 80 }}
+          />
+          <Text fontSize="$7" fontWeight="bold">Upsy</Text>
+          <Button size="$4" onPress={handleLogout}>Logout</Button>
+        </Sheet.Frame>
+      </Sheet>
+      </Theme>
+    </SafeAreaView>
   )
 }
