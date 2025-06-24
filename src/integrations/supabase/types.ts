@@ -267,6 +267,89 @@ export type Database = {
           },
         ]
       }
+      self_checkout_authorizations: {
+        Row: {
+          authorizing_parent_id: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          start_date: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          authorizing_parent_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          start_date: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          authorizing_parent_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          start_date?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_self_checkout_parent"
+            columns: ["authorizing_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_self_checkout_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_departures: {
+        Row: {
+          created_at: string
+          departed_at: string
+          id: string
+          marked_by_user_id: string
+          notes: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          departed_at?: string
+          id?: string
+          marked_by_user_id: string
+          notes?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          departed_at?: string
+          id?: string
+          marked_by_user_id?: string
+          notes?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_departure_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_parents: {
         Row: {
           created_at: string
