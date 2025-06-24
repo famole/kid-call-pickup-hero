@@ -1,45 +1,113 @@
 
-import React from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useState } from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
-import { usePickupActions } from '@/hooks/usePickupActions';
-import ParentDashboardLayout from './parent-dashboard/ParentDashboardLayout';
+import ParentDashboardLayout from '@/components/parent-dashboard/ParentDashboardLayout';
+import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
+import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelectionCard';
+import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCard';
+import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard';
+import AuthorizedPickupNotification from '@/components/parent-dashboard/AuthorizedPickupNotification';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { LogOut, Car } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const ParentDashboard = () => {
-  const { toast } = useToast();
-  const { children, activeRequests, parentInfo, loading, refetch } = useOptimizedParentDashboard();
-  const { 
-    selectedChildren, 
-    isSubmitting, 
-    toggleChildSelection, 
-    handleRequestPickup 
-  } = usePickupActions(refetch);
+const ParentDashboard: React.FC = () => {
+  const {
+    children,
+    pendingRequests,
+    calledRequests,
+    loading,
+    selectedChildren,
+    setSelectedChildren,
+    isSubmitting,
+    toggleChildSelection,
+    handleRequestPickup
+  } = useOptimizedParentDashboard();
 
-  // Check if any children have active requests (either pending or called)
-  const childrenWithActiveRequests = activeRequests.map(req => req.studentId);
-
-  console.log('Parent Dashboard - Active Requests:', activeRequests);
-  console.log('Parent Dashboard - Children with Active Requests:', childrenWithActiveRequests);
+  // Get children with active requests to disable selection
+  const childrenWithActiveRequests = [
+    ...pendingRequests.map(req => req.studentId),
+    ...calledRequests.map(req => req.studentId)
+  ];
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school-primary"></div>
-      </div>
+      <ParentDashboardLayout>
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary"></div>
+        </div>
+      </ParentDashboardLayout>
     );
   }
 
   return (
-    <ParentDashboardLayout
-      children={children}
-      activeRequests={activeRequests}
-      selectedChildren={selectedChildren}
-      isSubmitting={isSubmitting}
-      childrenWithActiveRequests={childrenWithActiveRequests}
-      parentInfo={parentInfo}
-      onToggleChildSelection={toggleChildSelection}
-      onRequestPickup={handleRequestPickup}
-    />
+    <ParentDashboardLayout>
+      <div className="space-y-4 sm:space-y-6">
+        <ParentDashboardHeader />
+        
+        <AuthorizedPickupNotification />
+
+        {/* Quick Actions Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <LogOut className="h-5 w-5 text-blue-600" />
+                Self-Checkout Authorization
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Allow your children to leave school independently
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to="/self-checkout">
+                <Button className="w-full" variant="outline">
+                  Manage Self-Checkout
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Car className="h-5 w-5 text-green-600" />
+                Pickup Authorizations
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Authorize others to pick up your children
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to="/pickup-authorization">
+                <Button className="w-full" variant="outline">
+                  Manage Authorizations
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <ChildrenSelectionCard
+              children={children}
+              selectedChildren={selectedChildren}
+              childrenWithActiveRequests={childrenWithActiveRequests}
+              isSubmitting={isSubmitting}
+              onToggleChildSelection={toggleChildSelection}
+              onRequestPickup={handleRequestPickup}
+            />
+          </div>
+          
+          <div className="space-y-4 sm:space-y-6">
+            <PendingRequestsCard requests={pendingRequests} />
+            <CalledRequestsCard requests={calledRequests} />
+          </div>
+        </div>
+      </div>
+    </ParentDashboardLayout>
   );
 };
 

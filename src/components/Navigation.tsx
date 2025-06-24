@@ -1,121 +1,166 @@
 
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/auth/AuthProvider';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
-import { User, LogOut, Settings, ClipboardList, Shield } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { 
+  Home, 
+  Users, 
+  GraduationCap, 
+  Settings, 
+  LogOut, 
+  Menu, 
+  UserCog, 
+  Car,
+  ClipboardList,
+  School,
+  LogOut as SelfCheckoutIcon
+} from 'lucide-react';
+import Logo from './Logo';
 
-const Navigation = () => {
+const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    await logout();
+    navigate('/login');
   };
 
-  const isAdminOrSuperAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const isTeacherOrAdmin = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
-  const isParent = user?.role === 'parent';
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase();
+  };
 
-  console.log('Current user:', user);
-  console.log('Is admin or superadmin:', isAdminOrSuperAdmin);
+  const isActive = (path: string) => location.pathname === path;
+
+  const navigationItems = [
+    { path: '/', label: 'Dashboard', icon: Home, roles: ['parent', 'admin', 'teacher', 'superadmin'] },
+    { path: '/pickup-authorization', label: 'Pickup Authorizations', icon: Car, roles: ['parent'] },
+    { path: '/self-checkout', label: 'Self-Checkout', icon: SelfCheckoutIcon, roles: ['parent', 'admin', 'teacher', 'superadmin'] },
+    { path: '/pickup-management', label: 'Pickup Management', icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
+    { path: '/admin/parents', label: 'Parents', icon: Users, roles: ['admin', 'superadmin'] },
+    { path: '/admin/students', label: 'Students', icon: GraduationCap, roles: ['admin', 'superadmin'] },
+    { path: '/admin/classes', label: 'Classes', icon: School, roles: ['admin', 'superadmin'] },
+    { path: '/admin', label: 'Admin Panel', icon: Settings, roles: ['admin', 'superadmin'] },
+    { path: '/parent-management', label: 'Parent Management', icon: UserCog, roles: ['admin', 'superadmin'] },
+  ];
+
+  const visibleItems = navigationItems.filter(item => 
+    user?.role && item.roles.includes(user.role)
+  );
+
+  const NavItems = ({ mobile = false }) => (
+    <>
+      {visibleItems.map((item) => {
+        const Icon = item.icon;
+        const active = isActive(item.path);
+        
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`
+              flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+              ${active 
+                ? 'bg-school-primary text-white' 
+                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+              }
+              ${mobile ? 'w-full justify-start' : ''}
+            `}
+            onClick={() => mobile && setIsOpen(false)}
+          >
+            <Icon className="h-4 w-4" />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </>
+  );
 
   return (
-    <nav className="bg-white shadow-sm border-b w-full">
-      <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center">
-            <img
-              src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
-              alt="Upsy"
-              className="h-16 w-auto object-contain"
-            />
-          </Link>
+    <nav className="bg-white shadow-sm border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0">
+              <Logo />
+            </Link>
+          </div>
 
-          <div className="flex items-center gap-4">
-            {user ? (
-              <>
-                {isTeacherOrAdmin && (
-                  <Button 
-                    variant="ghost" 
-                    className="text-gray-600 hover:text-gray-800"
-                    onClick={() => navigate('/pickup-management')}
-                  >
-                    <ClipboardList className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Pickup Management</span>
-                  </Button>
-                )}
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex md:items-center md:space-x-4">
+            <NavItems />
+          </div>
 
-                {isParent && (
-                  <Button 
-                    variant="ghost" 
-                    className="text-gray-600 hover:text-gray-800"
-                    onClick={() => navigate('/pickup-authorizations')}
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Authorizations</span>
+          {/* User Menu */}
+          <div className="flex items-center space-x-4">
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Menu className="h-4 w-4" />
                   </Button>
-                )}
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-gray-600 hover:text-gray-800">
-                      <User className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">{user.name}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white">
-                    <DropdownMenuItem disabled>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{user.name}</span>
-                        <span className="text-sm text-muted-foreground">{user.email}</span>
-                        <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
-                      </div>
-                    </DropdownMenuItem>
-                    
-                    <DropdownMenuSeparator />
-                    
-                    {isAdminOrSuperAdmin && (
-                      <>
-                        <DropdownMenuItem onClick={() => navigate('/admin')}>
-                          <Settings className="h-4 w-4 mr-2" />
-                          Admin Panel
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
-                    
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={() => navigate('/login')}>
-                  Login
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <div className="flex flex-col space-y-4 mt-4">
+                    <div className="pb-4 border-b">
+                      <Logo />
+                    </div>
+                    <NavItems mobile />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {/* User dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.avatar} alt={user?.name || 'User'} />
+                    <AvatarFallback className="bg-school-primary text-white text-xs">
+                      {user?.name ? getInitials(user.name) : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
                 </Button>
-                <Button 
-                  className="bg-school-primary hover:bg-school-primary/90"
-                  onClick={() => navigate('/signup')}
-                >
-                  Sign Up
-                </Button>
-              </div>
-            )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground capitalize">
+                      {user?.role}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
