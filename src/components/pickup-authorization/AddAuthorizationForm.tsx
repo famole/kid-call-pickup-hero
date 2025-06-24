@@ -39,6 +39,8 @@ interface AddAuthorizationFormProps {
   showOnlySharedParents: boolean;
   onToggleParentFilter: () => void;
   parentsWhoShareStudents: ParentWithSharedStudents[];
+  submitLabel?: string;
+  loadingLabel?: string;
 }
 
 const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
@@ -52,6 +54,8 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
   showOnlySharedParents,
   onToggleParentFilter,
   parentsWhoShareStudents,
+  submitLabel = "Create Authorization",
+  loadingLabel = "Creating...",
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -115,7 +119,7 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Create Authorization"}
+          {loading ? loadingLabel : submitLabel}
         </Button>
       </div>
     </form>
