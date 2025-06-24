@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllClasses } from '@/services/classService';
 import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
@@ -14,22 +14,29 @@ import { supabase } from "@/integrations/supabase/client";
 
 const ViewerDisplay: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState<string>('all');
+  const subscriptionRef = useRef<any>(null);
 
   const { data: classes = [], isLoading: classesLoading } = useQuery({
     queryKey: ['classes'],
     queryFn: () => getAllClasses(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: calledStudents = [], isLoading: studentsLoading, refetch } = useQuery({
     queryKey: ['called-students-optimized', selectedClass],
     queryFn: () => getCalledStudentsOptimized(selectedClass),
-    refetchInterval: 2000,
-    staleTime: 500, // Reduced stale time for more frequent updates
+    refetchInterval: 1000, // More frequent polling
+    staleTime: 0, // No stale time for immediate updates
   });
 
   // Set up real-time subscription for immediate updates
   useEffect(() => {
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+
     const channel = supabase
       .channel('viewer_display_realtime')
       .on(
@@ -42,7 +49,7 @@ const ViewerDisplay: React.FC = () => {
         async (payload) => {
           console.log('Viewer display real-time change detected:', payload.eventType, payload);
           
-          // Force refetch immediately
+          // Force immediate refetch
           refetch();
         }
       )
@@ -50,9 +57,14 @@ const ViewerDisplay: React.FC = () => {
         console.log('Viewer display subscription status:', status);
       });
 
+    subscriptionRef.current = channel;
+
     return () => {
       console.log('Cleaning up viewer display subscription');
-      supabase.removeChannel(channel);
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
     };
   }, [refetch]);
 

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getCurrentlyCalled } from '@/services/supabaseService';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const useCalledStudents = (classId?: string) => {
   const [childrenByClass, setChildrenByClass] = useState<{ [key: string]: PickupRequestWithDetails[] }>({});
   const [loading, setLoading] = useState<boolean>(true);
+  const subscriptionRef = useRef<any>(null);
 
   const fetchCalledStudents = useCallback(async () => {
     setLoading(true);
@@ -37,6 +38,12 @@ export const useCalledStudents = (classId?: string) => {
   useEffect(() => {
     fetchCalledStudents();
     
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+    
     // Set up real-time subscription for called students
     const channel = supabase
       .channel('called_students_realtime')
@@ -50,19 +57,22 @@ export const useCalledStudents = (classId?: string) => {
         async (payload) => {
           console.log('Called students real-time change detected:', payload.eventType, payload);
           
-          // Refresh called students immediately
-          setTimeout(() => {
-            fetchCalledStudents();
-          }, 100);
+          // Immediate refresh
+          fetchCalledStudents();
         }
       )
       .subscribe((status) => {
         console.log('Called students subscription status:', status);
       });
 
+    subscriptionRef.current = channel;
+
     return () => {
       console.log('Cleaning up called students subscription');
-      supabase.removeChannel(channel);
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
     };
   }, [fetchCalledStudents]);
 

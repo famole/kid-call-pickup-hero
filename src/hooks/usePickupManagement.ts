@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickup';
 import { getStudentById } from '@/services/studentService';
 import { getClassById } from '@/services/classService';
@@ -9,19 +9,18 @@ import { supabase } from "@/integrations/supabase/client";
 export const usePickupManagement = (classId?: string) => {
   const [pendingRequests, setPendingRequests] = useState<PickupRequestWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const subscriptionRef = useRef<any>(null);
 
   const fetchPendingRequests = useCallback(async () => {
     setLoading(true);
     try {
       console.log('Fetching pending pickup requests...');
       
-      // Get all pending pickup requests
       const activeRequests = await getActivePickupRequests();
       const pendingOnly = activeRequests.filter(req => req.status === 'pending');
       
       console.log(`Found ${pendingOnly.length} pending requests`);
       
-      // Get student and class details for each request with better error handling
       const requestsWithDetails = await Promise.all(pendingOnly.map(async (req) => {
         try {
           console.log(`Fetching details for request ${req.id}`);
@@ -43,7 +42,6 @@ export const usePickupManagement = (classId?: string) => {
           };
         } catch (error) {
           console.error(`Error fetching details for request ${req.id}:`, error);
-          // Return request with null child and class if there's an error
           return {
             request: req,
             child: null,
@@ -52,7 +50,6 @@ export const usePickupManagement = (classId?: string) => {
         }
       }));
 
-      // Filter by class if specified
       let filteredRequests = requestsWithDetails;
       if (classId && classId !== 'all') {
         filteredRequests = requestsWithDetails.filter(item => 
@@ -72,12 +69,19 @@ export const usePickupManagement = (classId?: string) => {
   const markAsCalled = async (requestId: string) => {
     try {
       console.log(`Marking request ${requestId} as called`);
-      await updatePickupRequestStatus(requestId, 'called');
       
       // Optimistically remove from pending requests immediately
       setPendingRequests(prev => prev.filter(req => req.request.id !== requestId));
       
+      await updatePickupRequestStatus(requestId, 'called');
+      
       console.log('Request marked as called. Server will auto-complete after 5 minutes.');
+      
+      // Force refresh to ensure consistency
+      setTimeout(() => {
+        fetchPendingRequests();
+      }, 100);
+      
     } catch (error) {
       console.error("Error marking request as called:", error);
       // Refresh on error to get correct state
@@ -89,7 +93,13 @@ export const usePickupManagement = (classId?: string) => {
   useEffect(() => {
     fetchPendingRequests();
     
-    // Set up realtime subscription for pickup_requests table with better filtering
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+    
+    // Set up realtime subscription for pickup_requests table
     const channel = supabase
       .channel('pickup_requests_pending_realtime')
       .on(
@@ -103,18 +113,21 @@ export const usePickupManagement = (classId?: string) => {
           console.log('Real-time pickup request change detected:', payload.eventType, payload);
           
           // Force refresh after any change to ensure consistency
-          setTimeout(() => {
-            fetchPendingRequests();
-          }, 100);
+          fetchPendingRequests();
         }
       )
       .subscribe((status) => {
         console.log('Pickup management subscription status:', status);
       });
 
+    subscriptionRef.current = channel;
+
     return () => {
       console.log('Cleaning up pickup management subscription');
-      supabase.removeChannel(channel);
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
     };
   }, [fetchPendingRequests]);
 
