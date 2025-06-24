@@ -4,6 +4,9 @@
     "strict": true,
     "noEmit": true,
     "jsx": "react",
-    "types": ["expo"]
+    "types": ["expo"],
+    "paths": {
+      "@/*": ["../src/*"]
+    }
   }
 }
