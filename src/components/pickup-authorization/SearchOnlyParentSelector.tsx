@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -48,7 +47,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
     }
 
     const filtered = parents.filter(parent =>
-      parent.name.toLowerCase().includes(searchTerm.toLowerCase())
+      parent.name.toLowerCase().startsWith(searchTerm.toLowerCase())
     );
 
     setFilteredParents(filtered.slice(0, 10)); // Limit to 10 results
