@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Users, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Users, Plus, Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   getPickupAuthorizationsForParent,
@@ -11,6 +11,7 @@ import {
   PickupAuthorizationWithDetails
 } from '@/services/pickupAuthorizationService';
 import AddAuthorizationDialog from './AddAuthorizationDialog';
+import EditAuthorizationDialog from './EditAuthorizationDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,8 @@ const PickupAuthorizationManagement: React.FC = () => {
   const [authorizations, setAuthorizations] = useState<PickupAuthorizationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingAuthorization, setEditingAuthorization] = useState<PickupAuthorizationWithDetails | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -192,11 +195,22 @@ const PickupAuthorizationManagement: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="flex justify-end sm:flex-shrink-0">
+                    <div className="flex justify-end sm:flex-shrink-0 space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingAuthorization(auth);
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span className="ml-2 sm:hidden">Edit</span>
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             disabled={deletingId === auth.id}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -238,6 +252,15 @@ const PickupAuthorizationManagement: React.FC = () => {
         isOpen={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onAuthorizationAdded={loadAuthorizations}
+      />
+      <EditAuthorizationDialog
+        authorization={editingAuthorization}
+        isOpen={isEditDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditingAuthorization(null);
+          setIsEditDialogOpen(open);
+        }}
+        onAuthorizationUpdated={loadAuthorizations}
       />
     </div>
   );

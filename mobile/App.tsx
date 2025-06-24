@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { supabase } from './src/supabaseClient';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
+import AuthorizationsScreen from './src/screens/AuthorizationsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,9 +35,12 @@ export default function App() {
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             {session ? (
-              <Stack.Screen name="Dashboard">
-                {() => <DashboardScreen session={session} />}
-              </Stack.Screen>
+              <>
+                <Stack.Screen name="Dashboard">
+                  {() => <DashboardScreen session={session} />}
+                </Stack.Screen>
+                <Stack.Screen name="Authorizations" component={AuthorizationsScreen} />
+              </>
             ) : (
               <Stack.Screen name="Login" component={LoginScreen} />
             )}
