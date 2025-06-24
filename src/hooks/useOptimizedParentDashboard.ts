@@ -35,6 +35,7 @@ export const useOptimizedParentDashboard = () => {
   const [parentInfo, setParentInfo] = useState<ParentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const lastFetchRef = useRef<number>(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) return;
@@ -110,7 +111,20 @@ export const useOptimizedParentDashboard = () => {
   useEffect(() => {
     if (user?.email) {
       loadDashboardData(true);
+
+      // Set up periodic polling as a fallback
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      intervalRef.current = setInterval(() => loadDashboardData(true), 5000);
     }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [user?.email, loadDashboardData]);
 
   useEffect(() => {
