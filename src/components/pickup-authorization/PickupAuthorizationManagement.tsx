@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -182,9 +181,6 @@ const PickupAuthorizationManagement: React.FC = () => {
                           <span className="block sm:inline mt-1 sm:mt-0">
                             {auth.authorizedParent?.name || 'Unknown Parent'}
                           </span>
-                        </p>
-                        <p className="text-xs text-gray-500 break-all">
-                          {auth.authorizedParent?.email}
                         </p>
                         <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
                           <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
