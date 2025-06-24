@@ -12,6 +12,7 @@ import {
   Sheet
 } from 'tamagui'
 import { ScrollView, RefreshControl, Alert, SafeAreaView, Image } from 'react-native'
+import { useNavigation } from '@react-navigation/native'
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import PickupStatus from '../components/PickupStatus';
@@ -38,6 +39,7 @@ export default function DashboardScreen({ session }: Props) {
     studentId: string;
     status: 'pending' | 'called';
   }[]>([]);
+  const navigation = useNavigation();
   const studentsRef = useRef<Student[]>([]);
 
   const fetchStudents = useCallback(async () => {
@@ -358,6 +360,9 @@ export default function DashboardScreen({ session }: Props) {
             style={{ width: 80, height: 80 }}
           />  */}
           <Text fontSize="$7" fontWeight="bold">Upsy</Text>
+          <Button size="$4" borderRadius="$4" onPress={() => { setMenuOpen(false); navigation.navigate('Authorizations' as never); }}>
+            Pickup Authorizations
+          </Button>
           <Button size="$4" borderRadius="$4" onPress={handleLogout}>
             Logout
           </Button>
