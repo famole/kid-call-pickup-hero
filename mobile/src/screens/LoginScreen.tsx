@@ -1,11 +1,25 @@
 import React, { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { YStack, Input, Button, Paragraph, Theme, Spinner, AnimatePresence, Card } from 'tamagui'
+import {
+  YStack,
+  Input,
+  Button,
+  Paragraph,
+  Theme,
+  Spinner,
+  AnimatePresence,
+  Card
+} from 'tamagui'
+import * as WebBrowser from 'expo-web-browser'
+import * as AuthSession from 'expo-auth-session'
+
+WebBrowser.maybeCompleteAuthSession()
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
@@ -16,6 +30,32 @@ export default function LoginScreen() {
       setError(error.message)
     }
     setLoading(false)
+  }
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true)
+    setError(null)
+
+    try {
+      const redirectUrl = AuthSession.makeRedirectUri({ useProxy: true })
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: redirectUrl }
+      })
+
+      if (error) throw error
+
+      const result = await AuthSession.startAsync({ authUrl: data.url })
+
+      if (result.type === 'success') {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.params)
+        if (exchangeError) setError(exchangeError.message)
+      }
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setGoogleLoading(false)
+    }
   }
 
   return (
@@ -56,6 +96,14 @@ export default function LoginScreen() {
             borderRadius="$4"
           >
             {loading ? 'Signing in…' : 'Sign In'}
+          </Button>
+          <Button
+            onPress={handleGoogleLogin}
+            disabled={googleLoading}
+            icon={googleLoading ? <Spinner /> : null}
+            borderRadius="$4"
+           >
+            {googleLoading ? 'Redirecting…' : 'Sign in with Google'}
           </Button>
         </Card>
       </YStack>
