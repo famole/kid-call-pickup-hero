@@ -8,13 +8,15 @@ import ClassFilter from '@/components/viewer/ClassFilter';
 import NoStudents from '@/components/viewer/NoStudents';
 import PendingPickupsTable from '@/components/pickup/PendingPickupsTable';
 import CalledStudentsTable from '@/components/pickup/CalledStudentsTable';
+import SelfCheckoutStudentsTable from '@/components/self-checkout/SelfCheckoutStudentsTable';
 import { useCalledStudents } from '@/hooks/useCalledStudents';
 import { useOptimizedPickupManagement } from '@/hooks/useOptimizedPickupManagement';
+import { useSelfCheckoutStudents } from '@/hooks/useSelfCheckoutStudents';
 import { getAllClasses } from '@/services/classService';
 import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickupRequests';
 import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, CheckCheck } from 'lucide-react';
+import { Clock, CheckCheck, LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PickupManagementProps {
@@ -29,6 +31,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   // Use the optimized hooks for better performance and real-time updates
   const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass);
   const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass);
+  const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(selectedClass);
 
   // Check if user has permission to access this page - include superadmin
   const hasPermission = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
@@ -94,7 +97,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
             <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Pickup Management</h2>
-                <p className="text-base sm:text-lg text-muted-foreground">Manage student pickup requests and calls</p>
+                <p className="text-base sm:text-lg text-muted-foreground">Manage student pickup requests, calls, and self-checkout authorizations</p>
               </div>
               {classes.length > 0 ? (
                 <ClassFilter 
@@ -109,7 +112,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           </div>
 
           <Tabs defaultValue="pending" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="pending" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Pending Requests ({pendingRequests.length})
@@ -117,6 +120,10 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
               <TabsTrigger value="called" className="flex items-center gap-2">
                 <CheckCheck className="h-4 w-4" />
                 Currently Called ({calledStudents.length})
+              </TabsTrigger>
+              <TabsTrigger value="self-checkout" className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Self-Checkout ({authorizations.length})
               </TabsTrigger>
             </TabsList>
 
@@ -134,6 +141,13 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
                 loading={calledLoading}
               />
             </TabsContent>
+
+            <TabsContent value="self-checkout" className="space-y-6">
+              <SelfCheckoutStudentsTable 
+                authorizations={authorizations}
+                loading={selfCheckoutLoading}
+              />
+            </TabsContent>
           </Tabs>
           
           <div className="mt-8">
@@ -142,7 +156,8 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
                 <h3 className="text-lg font-semibold mb-2">Pickup Management Information</h3>
                 <p className="text-sm text-muted-foreground">
                   Use the "Pending Requests" tab to call students for pickup. Once called, students will appear in the "Currently Called" tab 
-                  and will be visible to parents for 5 minutes before being automatically marked as completed.
+                  and will be visible to parents for 5 minutes before being automatically marked as completed. The "Self-Checkout" tab shows 
+                  students who are authorized to leave school independently.
                 </p>
               </CardContent>
             </Card>
