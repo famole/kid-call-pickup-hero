@@ -22,7 +22,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Clock className="h-5 w-5 text-orange-600" />
-          ⏳ In Queue
+          ⏳ In Queue ({pendingRequests.length})
         </CardTitle>
         <CardDescription>
           Your pickup requests are being processed
@@ -46,6 +46,9 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
                   </div>
                   <div className="text-xs text-orange-600 font-medium">
                     ⏱️ Waiting in pickup queue...
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Requested: {new Date(request.requestTime).toLocaleTimeString()}
                   </div>
                 </div>
               </div>

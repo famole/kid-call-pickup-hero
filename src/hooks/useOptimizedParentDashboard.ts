@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
@@ -40,13 +39,19 @@ export const useOptimizedParentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const lastFetchRef = useRef<number>(0);
   const channelRef = useRef<any>(null);
+  const childrenIdsRef = useRef<string[]>([]);
+
+  // Keep track of children IDs for real-time filtering
+  useEffect(() => {
+    childrenIdsRef.current = children.map(child => child.id);
+  }, [children]);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) return;
 
     const now = Date.now();
-    // Increase debounce time to prevent excessive requests
-    if (!forceRefresh && now - lastFetchRef.current < 5000) {
+    // Prevent excessive requests
+    if (!forceRefresh && now - lastFetchRef.current < 2000) {
       return;
     }
 
@@ -112,6 +117,7 @@ export const useOptimizedParentDashboard = () => {
       }
       
       lastFetchRef.current = now;
+      console.log('Dashboard data refreshed successfully');
     } catch (error) {
       console.error('Error loading parent dashboard data:', error);
     } finally {
@@ -119,20 +125,44 @@ export const useOptimizedParentDashboard = () => {
     }
   }, [user?.email]);
 
+  // Handle real-time updates efficiently
+  const handleRealtimeChange = useCallback(async (payload: RealtimePayload) => {
+    console.log('Parent dashboard real-time change:', payload);
+    
+    const studentId = payload.new?.student_id || payload.old?.student_id;
+    
+    // Only refresh if this affects our children
+    if (studentId && childrenIdsRef.current.includes(studentId)) {
+      console.log('Change affects our children, updating...', { studentId, eventType: payload.eventType });
+      
+      // For any change that affects our children, refresh the data
+      // Use a small delay to avoid race conditions
+      setTimeout(() => {
+        loadDashboardData(true);
+      }, 100);
+    } else {
+      console.log('Change does not affect our children, ignoring...', { studentId, ourChildren: childrenIdsRef.current });
+    }
+  }, [loadDashboardData]);
+
   // Initial load and setup
   useEffect(() => {
     if (!user?.email) return;
 
+    console.log('Setting up parent dashboard for user:', user.email);
     loadDashboardData(true);
 
     // Clean up existing channel
     if (channelRef.current) {
+      console.log('Cleaning up existing real-time channel');
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
 
     // Set up real-time subscription with unique channel name
     const channelName = `parent_dashboard_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+    console.log('Creating real-time channel:', channelName);
+    
     const channel = supabase
       .channel(channelName)
       .on(
@@ -142,52 +172,27 @@ export const useOptimizedParentDashboard = () => {
           schema: 'public',
           table: 'pickup_requests'
         },
-        async (payload: RealtimePayload) => {
-          console.log('Parent dashboard real-time change:', payload);
-          
-          // Smart handling of real-time updates
-          const studentId = payload.new?.student_id || payload.old?.student_id;
-          const currentChildIds = children.map(child => child.id);
-          
-          // Only refresh if this affects our children
-          if (studentId && currentChildIds.includes(studentId)) {
-            console.log('Change affects our children, updating...');
-            
-            if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-              // For inserts and deletes, do a full refresh
-              setTimeout(() => loadDashboardData(true), 500);
-            } else if (payload.eventType === 'UPDATE') {
-              // For updates, handle more intelligently
-              const newStatus = payload.new?.status;
-              const oldStatus = payload.old?.status;
-              
-              if (newStatus !== oldStatus) {
-                // Status changed, refresh to get accurate data
-                setTimeout(() => loadDashboardData(true), 500);
-              }
-            }
-          }
-        }
+        handleRealtimeChange
       )
       .subscribe((status) => {
         console.log('Parent dashboard subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to pickup_requests changes');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Subscription failed for pickup_requests');
+        }
       });
 
     channelRef.current = channel;
 
     return () => {
+      console.log('Cleaning up parent dashboard subscription');
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [user?.email]); // Remove loadDashboardData and children from dependencies to prevent loops
-
-  // Update children dependency for real-time filtering
-  useEffect(() => {
-    // This effect just updates the filtering logic when children change
-    // No need to set up new subscriptions
-  }, [children]);
+  }, [user?.email, handleRealtimeChange]);
 
   return {
     children,

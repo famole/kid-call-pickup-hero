@@ -21,11 +21,11 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
     <Card className="w-full">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Car className="h-5 w-5 text-green-600 animate-bounce-twice" />
-          🚗 On the Way 🎉
+          <Car className="h-5 w-5 text-green-600 animate-bounce" />
+          🚗 Ready for Pickup! ({calledRequests.length})
         </CardTitle>
         <CardDescription>
-          Ready for pickup - Your ride is here! 🌟
+          Your children are ready - head to the pickup area! 🌟
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -35,9 +35,9 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
             return (
               <div 
                 key={request.id}
-                className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200 animate-pulse-twice hover:shadow-md transition-shadow duration-300"
+                className="p-3 border rounded-md flex items-center gap-3 bg-green-50 border-green-200 animate-pulse hover:shadow-md transition-shadow duration-300"
               >
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-green-300 flex-shrink-0 animate-bounce-twice">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-green-300 flex-shrink-0 animate-bounce">
                   <Car className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -46,6 +46,9 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
                   </div>
                   <div className="text-xs text-green-600 font-semibold">
                     ✨ Ready for pickup! Head to the pickup area! 🚙
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Called: {new Date(request.requestTime).toLocaleTimeString()}
                   </div>
                 </div>
               </div>
