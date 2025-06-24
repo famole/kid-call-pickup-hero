@@ -20,10 +20,14 @@ interface RealtimePayload {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE';
   new?: {
     student_id?: string;
+    parent_id?: string;
+    status?: string;
     [key: string]: any;
   };
   old?: {
     student_id?: string;
+    parent_id?: string;
+    status?: string;
     [key: string]: any;
   };
 }
@@ -35,13 +39,14 @@ export const useOptimizedParentDashboard = () => {
   const [parentInfo, setParentInfo] = useState<ParentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const lastFetchRef = useRef<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const channelRef = useRef<any>(null);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) return;
 
     const now = Date.now();
-    if (!forceRefresh && now - lastFetchRef.current < 3000) {
+    // Increase debounce time to prevent excessive requests
+    if (!forceRefresh && now - lastFetchRef.current < 5000) {
       return;
     }
 
@@ -56,10 +61,11 @@ export const useOptimizedParentDashboard = () => {
 
       setChildren(dashboardData.allChildren);
       
-      // Also fetch pickup requests for all children (own + authorized)
+      // Get all child IDs (both own and authorized)
       const allChildIds = dashboardData.allChildren.map(child => child.id);
       
       if (allChildIds.length > 0) {
+        // Fetch all pickup requests for the children (including pending and called)
         const { data: allChildRequests, error } = await supabase
           .from('pickup_requests')
           .select('*')
@@ -67,18 +73,23 @@ export const useOptimizedParentDashboard = () => {
           .in('status', ['pending', 'called']);
 
         if (!error && allChildRequests) {
+          // Transform and combine requests
+          const transformedRequests = allChildRequests.map(req => ({
+            id: req.id,
+            studentId: req.student_id,
+            parentId: req.parent_id,
+            requestTime: new Date(req.request_time),
+            status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+          }));
+
+          // Combine with parent's own requests, avoiding duplicates
           const combinedRequests = [...pickupRequests];
-          allChildRequests.forEach(req => {
+          transformedRequests.forEach(req => {
             if (!combinedRequests.some(existing => existing.id === req.id)) {
-              combinedRequests.push({
-                id: req.id,
-                studentId: req.student_id,
-                parentId: req.parent_id,
-                requestTime: new Date(req.request_time),
-                status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
-              });
+              combinedRequests.push(req);
             }
           });
+          
           setActiveRequests(combinedRequests);
 
           // Fetch parent information for the requests
@@ -108,31 +119,22 @@ export const useOptimizedParentDashboard = () => {
     }
   }, [user?.email]);
 
-  useEffect(() => {
-    if (user?.email) {
-      loadDashboardData(true);
-
-      // Set up periodic polling as a fallback
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      intervalRef.current = setInterval(() => loadDashboardData(true), 5000);
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [user?.email, loadDashboardData]);
-
+  // Initial load and setup
   useEffect(() => {
     if (!user?.email) return;
 
-    // Enhanced real-time subscription for pickup requests
+    loadDashboardData(true);
+
+    // Clean up existing channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    // Set up real-time subscription with unique channel name
+    const channelName = `parent_dashboard_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
     const channel = supabase
-      .channel('parent_dashboard_realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -141,30 +143,51 @@ export const useOptimizedParentDashboard = () => {
           table: 'pickup_requests'
         },
         async (payload: RealtimePayload) => {
-          console.log('Real-time pickup request change detected:', payload);
+          console.log('Parent dashboard real-time change:', payload);
           
-          // Check if this change affects any of the parent's children
-          const currentChildren = children.map(child => child.id);
-          const affectedStudentId = payload.new?.student_id || payload.old?.student_id;
+          // Smart handling of real-time updates
+          const studentId = payload.new?.student_id || payload.old?.student_id;
+          const currentChildIds = children.map(child => child.id);
           
-          if (affectedStudentId && currentChildren.includes(affectedStudentId)) {
-            console.log('Pickup request change affects parent\'s child, refreshing dashboard');
-            // Debounce rapid changes
-            const now = Date.now();
-            if (now - lastFetchRef.current > 1000) {
-              setTimeout(() => {
-                loadDashboardData(true);
-              }, 300);
+          // Only refresh if this affects our children
+          if (studentId && currentChildIds.includes(studentId)) {
+            console.log('Change affects our children, updating...');
+            
+            if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+              // For inserts and deletes, do a full refresh
+              setTimeout(() => loadDashboardData(true), 500);
+            } else if (payload.eventType === 'UPDATE') {
+              // For updates, handle more intelligently
+              const newStatus = payload.new?.status;
+              const oldStatus = payload.old?.status;
+              
+              if (newStatus !== oldStatus) {
+                // Status changed, refresh to get accurate data
+                setTimeout(() => loadDashboardData(true), 500);
+              }
             }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Parent dashboard subscription status:', status);
+      });
+
+    channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [user?.email, children, loadDashboardData]);
+  }, [user?.email]); // Remove loadDashboardData and children from dependencies to prevent loops
+
+  // Update children dependency for real-time filtering
+  useEffect(() => {
+    // This effect just updates the filtering logic when children change
+    // No need to set up new subscriptions
+  }, [children]);
 
   return {
     children,

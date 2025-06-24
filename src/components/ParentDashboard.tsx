@@ -18,6 +18,9 @@ const ParentDashboard = () => {
   // Check if any children have active requests (either pending or called)
   const childrenWithActiveRequests = activeRequests.map(req => req.studentId);
 
+  console.log('Parent Dashboard - Active Requests:', activeRequests);
+  console.log('Parent Dashboard - Children with Active Requests:', childrenWithActiveRequests);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">

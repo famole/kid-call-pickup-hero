@@ -50,6 +50,11 @@ const ParentDashboardLayout: React.FC<ParentDashboardLayoutProps> = ({
   // Only show status cards if there are no authorized user requests to avoid redundancy
   const shouldShowStatusCards = authorizedUserRequests.length === 0;
 
+  console.log('Layout - Pending Requests:', pendingRequests);
+  console.log('Layout - Called Requests:', calledRequests);
+  console.log('Layout - Authorized User Requests:', authorizedUserRequests);
+  console.log('Layout - Should Show Status Cards:', shouldShowStatusCards);
+
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <div className="w-full max-w-none py-4 px-4 sm:px-6 lg:px-8">
@@ -65,8 +70,8 @@ const ParentDashboardLayout: React.FC<ParentDashboardLayoutProps> = ({
             />
           )}
 
-          {/* Status Cards - Only show when there are no authorized notifications to avoid redundancy */}
-          {shouldShowStatusCards && (pendingRequests.length > 0 || calledRequests.length > 0) && (
+          {/* Status Cards - Show pending and called requests */}
+          {(pendingRequests.length > 0 || calledRequests.length > 0) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               {pendingRequests.length > 0 && (
                 <PendingRequestsCard 
