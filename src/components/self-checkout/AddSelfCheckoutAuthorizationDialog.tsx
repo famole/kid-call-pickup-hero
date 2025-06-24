@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { createSelfCheckoutAuthorization } from '@/services/selfCheckoutService';
-import { getStudentsForParent } from '@/services/parentService';
+import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
 
 interface AddSelfCheckoutAuthorizationDialogProps {
@@ -43,8 +43,60 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
   const loadStudents = async () => {
     try {
       setStudentsLoading(true);
-      const studentData = await getStudentsForParent();
-      setStudents(studentData);
+      
+      // Get current user
+      const { data: currentUser, error: userError } = await supabase.auth.getUser();
+      if (userError || !currentUser.user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get parent ID
+      const { data: parentData, error: parentError } = await supabase
+        .from('parents')
+        .select('id')
+        .eq('email', currentUser.user.email)
+        .single();
+
+      if (parentError || !parentData) {
+        throw new Error('Parent not found');
+      }
+
+      // Get students for this parent
+      const { data: studentParents, error: studentParentsError } = await supabase
+        .from('student_parents')
+        .select('student_id')
+        .eq('parent_id', parentData.id);
+
+      if (studentParentsError) {
+        throw new Error(studentParentsError.message);
+      }
+
+      if (!studentParents || studentParents.length === 0) {
+        setStudents([]);
+        return;
+      }
+
+      const studentIds = studentParents.map(sp => sp.student_id);
+
+      // Get student details
+      const { data: studentsData, error: studentsError } = await supabase
+        .from('students')
+        .select('*')
+        .in('id', studentIds);
+
+      if (studentsError) {
+        throw new Error(studentsError.message);
+      }
+
+      const formattedStudents: Child[] = studentsData.map(student => ({
+        id: student.id,
+        name: student.name,
+        classId: student.class_id || '',
+        parentIds: [],
+        avatar: student.avatar
+      }));
+
+      setStudents(formattedStudents);
     } catch (error) {
       console.error('Error loading students:', error);
       toast({

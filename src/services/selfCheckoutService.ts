@@ -1,9 +1,82 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { SelfCheckoutAuthorization, SelfCheckoutAuthorizationWithDetails, StudentDeparture, StudentDepartureWithDetails } from '@/types/selfCheckout';
 import { getStudentById } from './studentService';
 import { getClassById } from './classService';
 import { getParentById } from './parentService';
+
+// Export the base types
+export interface SelfCheckoutAuthorization {
+  id: string;
+  studentId: string;
+  authorizingParentId: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SelfCheckoutAuthorizationWithDetails {
+  id: string;
+  studentId: string;
+  authorizingParentId: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  student?: {
+    id: string;
+    name: string;
+    classId: string;
+    avatar?: string;
+  };
+  class?: {
+    id: string;
+    name: string;
+    grade: string;
+    teacher: string;
+  };
+  authorizingParent?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface StudentDeparture {
+  id: string;
+  studentId: string;
+  departedAt: Date;
+  markedByUserId: string;
+  notes?: string;
+  createdAt: Date;
+}
+
+export interface StudentDepartureWithDetails {
+  id: string;
+  studentId: string;
+  departedAt: Date;
+  markedByUserId: string;
+  notes?: string;
+  createdAt: Date;
+  student?: {
+    id: string;
+    name: string;
+    classId: string;
+    avatar?: string;
+  };
+  class?: {
+    id: string;
+    name: string;
+    grade: string;
+    teacher: string;
+  };
+  markedByUser?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
 
 // Function to get all self-checkout authorizations for the current parent
 export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfCheckoutAuthorizationWithDetails[]> => {
@@ -70,10 +143,28 @@ export const createSelfCheckoutAuthorization = async (
   endDate: string
 ): Promise<SelfCheckoutAuthorization> => {
   try {
+    // Get the current parent ID
+    const { data: currentUser, error: userError } = await supabase.auth.getUser();
+    if (userError || !currentUser.user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Get parent ID from the parents table
+    const { data: parentData, error: parentError } = await supabase
+      .from('parents')
+      .select('id')
+      .eq('email', currentUser.user.email)
+      .single();
+
+    if (parentError || !parentData) {
+      throw new Error('Parent not found');
+    }
+
     const { data, error } = await supabase
       .from('self_checkout_authorizations')
       .insert({
         student_id: studentId,
+        authorizing_parent_id: parentData.id,
         start_date: startDate,
         end_date: endDate,
         is_active: true
