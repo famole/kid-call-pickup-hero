@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickup';
 import { getStudentById } from '@/services/studentService';
 import { getClassById } from '@/services/classService';
@@ -10,7 +10,7 @@ export const usePickupManagement = (classId?: string) => {
   const [pendingRequests, setPendingRequests] = useState<PickupRequestWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const fetchPendingRequests = async () => {
+  const fetchPendingRequests = useCallback(async () => {
     setLoading(true);
     try {
       console.log('Fetching pending pickup requests...');
@@ -67,20 +67,21 @@ export const usePickupManagement = (classId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
 
   const markAsCalled = async (requestId: string) => {
     try {
       console.log(`Marking request ${requestId} as called`);
       await updatePickupRequestStatus(requestId, 'called');
       
-      // Note: Auto-completion is now handled by the server-side cron job
-      console.log('Request marked as called. Server will auto-complete after 5 minutes.');
+      // Optimistically remove from pending requests immediately
+      setPendingRequests(prev => prev.filter(req => req.request.id !== requestId));
       
-      // Refresh the pending requests immediately
-      await fetchPendingRequests();
+      console.log('Request marked as called. Server will auto-complete after 5 minutes.');
     } catch (error) {
       console.error("Error marking request as called:", error);
+      // Refresh on error to get correct state
+      await fetchPendingRequests();
       throw error;
     }
   };
@@ -88,28 +89,34 @@ export const usePickupManagement = (classId?: string) => {
   useEffect(() => {
     fetchPendingRequests();
     
-    // Set up realtime subscription for pickup_requests table
+    // Set up realtime subscription for pickup_requests table with better filtering
     const channel = supabase
-      .channel('pickup_requests_pending')
+      .channel('pickup_requests_pending_realtime')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'pickup_requests',
-          filter: 'status=eq.pending'
+          table: 'pickup_requests'
         },
         async (payload) => {
-          console.log('Real-time pickup request change detected:', payload);
-          await fetchPendingRequests();
+          console.log('Real-time pickup request change detected:', payload.eventType, payload);
+          
+          // Force refresh after any change to ensure consistency
+          setTimeout(() => {
+            fetchPendingRequests();
+          }, 100);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Pickup management subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up pickup management subscription');
       supabase.removeChannel(channel);
     };
-  }, [classId]);
+  }, [fetchPendingRequests]);
 
   return {
     pendingRequests,

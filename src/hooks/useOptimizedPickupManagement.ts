@@ -9,20 +9,22 @@ export const useOptimizedPickupManagement = (classId?: string) => {
   const [pendingRequests, setPendingRequests] = useState<PickupRequestWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const lastFetchRef = useRef<number>(0);
+  const isSubscribedRef = useRef<boolean>(false);
 
   const fetchPendingRequests = useCallback(async (forceRefresh = false) => {
-    // Implement simple caching - don't fetch if we fetched recently
+    // Reduce caching time to ensure fresher data
     const now = Date.now();
-    if (!forceRefresh && now - lastFetchRef.current < 2000) {
+    if (!forceRefresh && now - lastFetchRef.current < 1000) {
       return;
     }
 
     setLoading(true);
     try {
+      console.log('Fetching optimized pending requests...');
       // Use optimized batch query
       const allRequests = await getPickupRequestsWithDetailsBatch(['pending']);
       
-      // Filter by class if specified (already filtered at DB level in optimized query)
+      // Filter by class if specified
       let filteredRequests = allRequests;
       if (classId && classId !== 'all') {
         filteredRequests = allRequests.filter(item => 
@@ -30,6 +32,7 @@ export const useOptimizedPickupManagement = (classId?: string) => {
         );
       }
 
+      console.log(`Found ${filteredRequests.length} pending requests after filtering`);
       setPendingRequests(filteredRequests);
       lastFetchRef.current = now;
     } catch (error) {
@@ -42,16 +45,22 @@ export const useOptimizedPickupManagement = (classId?: string) => {
 
   const markAsCalled = async (requestId: string) => {
     try {
+      console.log(`Optimized: Marking request ${requestId} as called`);
       await updatePickupRequestStatus(requestId, 'called');
       
-      // Optimistically update the local state
-      setPendingRequests(prev => prev.filter(req => req.request.id !== requestId));
+      // Optimistically update the local state immediately
+      setPendingRequests(prev => {
+        const updated = prev.filter(req => req.request.id !== requestId);
+        console.log(`Optimistically removed request ${requestId}, ${updated.length} requests remaining`);
+        return updated;
+      });
       
-      // Note: Auto-completion is now handled by the server-side cron job
       console.log('Request marked as called. Server will auto-complete after 5 minutes.');
       
     } catch (error) {
       console.error("Error marking request as called:", error);
+      // Refresh on error to get correct state
+      fetchPendingRequests(true);
       throw error;
     }
   };
@@ -59,31 +68,40 @@ export const useOptimizedPickupManagement = (classId?: string) => {
   useEffect(() => {
     fetchPendingRequests(true);
     
-    // Set up real-time subscription with reduced frequency
+    // Prevent duplicate subscriptions
+    if (isSubscribedRef.current) {
+      return;
+    }
+
+    // Set up real-time subscription with improved debouncing
     const channel = supabase
-      .channel('pickup_requests_optimized')
+      .channel('pickup_requests_optimized_realtime')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'pickup_requests',
-          filter: 'status=eq.pending'
+          table: 'pickup_requests'
         },
-        async () => {
-          console.log('Real-time pickup request change detected');
-          // Debounce rapid changes
-          const now = Date.now();
-          if (now - lastFetchRef.current > 1000) {
-            setTimeout(() => {
-              fetchPendingRequests(true);
-            }, 500);
-          }
+        async (payload) => {
+          console.log('Optimized real-time pickup request change detected:', payload.eventType, payload);
+          
+          // Immediate refresh for better responsiveness
+          setTimeout(() => {
+            fetchPendingRequests(true);
+          }, 50);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Optimized pickup management subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
 
     return () => {
+      console.log('Cleaning up optimized pickup management subscription');
+      isSubscribedRef.current = false;
       supabase.removeChannel(channel);
     };
   }, [fetchPendingRequests]);

@@ -1,146 +1,74 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getCurrentlyCalled } from '@/services/supabaseService';
-import { supabase } from "@/integrations/supabase/client";
 import { PickupRequestWithDetails } from '@/types/supabase';
-import { getAllClasses } from '@/services/classService';
-import { Class } from '@/types';
+import { supabase } from "@/integrations/supabase/client";
 
-export const useCalledStudents = (selectedClass?: string) => {
-  const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
+export const useCalledStudents = (classId?: string) => {
+  const [childrenByClass, setChildrenByClass] = useState<{ [key: string]: PickupRequestWithDetails[] }>({});
   const [loading, setLoading] = useState<boolean>(true);
-  
-  // Fetch all classes for the filter
+
+  const fetchCalledStudents = useCallback(async () => {
+    setLoading(true);
+    try {
+      console.log('Fetching called students...');
+      const calledStudents = await getCurrentlyCalled(classId);
+      console.log(`Found ${calledStudents.length} called students`);
+      
+      // Group students by class for display
+      const groupedByClass = calledStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
+        const classIdKey = item.child?.classId || 'unknown';
+        if (!groups[classIdKey]) {
+          groups[classIdKey] = [];
+        }
+        groups[classIdKey].push(item);
+        return groups;
+      }, {});
+
+      setChildrenByClass(groupedByClass);
+    } catch (error) {
+      console.error('Error fetching called students:', error);
+      setChildrenByClass({});
+    } finally {
+      setLoading(false);
+    }
+  }, [classId]);
+
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const classData = await getAllClasses();
-        setClasses(classData);
-      } catch (error) {
-        console.error('Error fetching classes:', error);
-      }
-    };
+    fetchCalledStudents();
     
-    fetchClasses();
-  }, []);
-  
-  // Fetch data whenever the selectedClass changes
-  useEffect(() => {
-    const fetchCalledChildren = async () => {
-      setLoading(true);
-      try {
-        // Pass the selectedClass to the service
-        const data = await getCurrentlyCalled(selectedClass);
-        setCalledChildren(data);
-      } catch (error) {
-        console.error("Error fetching called children:", error);
-        setCalledChildren([]); // Set empty array on error to prevent UI issues
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchCalledChildren();
-    
-    // Set up realtime subscription for pickup_requests table
+    // Set up real-time subscription for called students
     const channel = supabase
-      .channel('public:pickup_requests')
+      .channel('called_students_realtime')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'pickup_requests',
-          filter: 'status=eq.called'
+          table: 'pickup_requests'
         },
         async (payload) => {
-          // Refetch data when there's a change
-          try {
-            const data = await getCurrentlyCalled(selectedClass);
-            setCalledChildren(data);
-          } catch (error) {
-            console.error("Error fetching called children after update:", error);
-          }
+          console.log('Called students real-time change detected:', payload.eventType, payload);
+          
+          // Refresh called students immediately
+          setTimeout(() => {
+            fetchCalledStudents();
+          }, 100);
         }
       )
-      .subscribe();
-    
-    // Set up realtime subscriptions for students and classes tables
-    const studentsChannel = supabase
-      .channel('public:students')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'students'
-        },
-        async () => {
-          try {
-            const data = await getCurrentlyCalled(selectedClass);
-            setCalledChildren(data);
-          } catch (error) {
-            console.error("Error fetching called children after student update:", error);
-          }
-        }
-      )
-      .subscribe();
-    
-    const classesChannel = supabase
-      .channel('public:classes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'classes'
-        },
-        async () => {
-          try {
-            const classData = await getAllClasses();
-            setClasses(classData);
-            
-            const data = await getCurrentlyCalled(selectedClass);
-            setCalledChildren(data);
-          } catch (error) {
-            console.error("Error updating after class changes:", error);
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(studentsChannel);
-      supabase.removeChannel(classesChannel);
-    };
-  }, [selectedClass]);
+      .subscribe((status) => {
+        console.log('Called students subscription status:', status);
+      });
 
-  // Group children by class
-  const childrenByClass = useMemo(() => {
-    const grouped: Record<string, PickupRequestWithDetails[]> = {};
-    
-    calledChildren.forEach(item => {
-      if (!item.child || !item.class) {
-        return;
-      }
-      
-      const classId = String(item.class.id);
-      
-      if (!grouped[classId]) {
-        grouped[classId] = [];
-      }
-      
-      grouped[classId].push(item);
-    });
-    
-    return grouped;
-  }, [calledChildren]);
+    return () => {
+      console.log('Cleaning up called students subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [fetchCalledStudents]);
 
   return {
-    classes,
     childrenByClass,
     loading,
+    refetch: fetchCalledStudents
   };
 };

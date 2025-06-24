@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllClasses } from '@/services/classService';
 import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
@@ -10,6 +10,7 @@ import NoStudents from './NoStudents';
 import ClassGroup from './ClassGroup';
 import { Skeleton } from '@/components/ui/skeleton';
 import CardSkeleton from '@/components/ui/skeletons/CardSkeleton';
+import { supabase } from "@/integrations/supabase/client";
 
 const ViewerDisplay: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState<string>('all');
@@ -20,12 +21,40 @@ const ViewerDisplay: React.FC = () => {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  const { data: calledStudents = [], isLoading: studentsLoading } = useQuery({
+  const { data: calledStudents = [], isLoading: studentsLoading, refetch } = useQuery({
     queryKey: ['called-students-optimized', selectedClass],
     queryFn: () => getCalledStudentsOptimized(selectedClass),
     refetchInterval: 2000,
-    staleTime: 1000,
+    staleTime: 500, // Reduced stale time for more frequent updates
   });
+
+  // Set up real-time subscription for immediate updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('viewer_display_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pickup_requests'
+        },
+        async (payload) => {
+          console.log('Viewer display real-time change detected:', payload.eventType, payload);
+          
+          // Force refetch immediately
+          refetch();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Viewer display subscription status:', status);
+      });
+
+    return () => {
+      console.log('Cleaning up viewer display subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   // Group students by class for display
   const groupedByClass = calledStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
