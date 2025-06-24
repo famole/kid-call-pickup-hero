@@ -10,7 +10,6 @@ export const useCalledStudents = (classId?: string) => {
   const subscriptionRef = useRef<any>(null);
 
   const fetchCalledStudents = useCallback(async () => {
-    setLoading(true);
     try {
       console.log('Fetching called students...');
       const calledStudents = await getCurrentlyCalled(classId);
@@ -44,9 +43,9 @@ export const useCalledStudents = (classId?: string) => {
       subscriptionRef.current = null;
     }
     
-    // Set up real-time subscription for called students
+    // Set up real-time subscription for called students with better error handling
     const channel = supabase
-      .channel('called_students_realtime')
+      .channel(`called_students_${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -57,12 +56,35 @@ export const useCalledStudents = (classId?: string) => {
         async (payload) => {
           console.log('Called students real-time change detected:', payload.eventType, payload);
           
-          // Immediate refresh
-          fetchCalledStudents();
+          // Handle specific changes instead of full refresh
+          if (payload.eventType === 'UPDATE' && payload.new?.status === 'called') {
+            // Student was just called - add to called list
+            fetchCalledStudents();
+          } else if (payload.eventType === 'UPDATE' && payload.old?.status === 'called' && payload.new?.status !== 'called') {
+            // Student was picked up or cancelled - remove from called list
+            const studentId = payload.new?.student_id;
+            if (studentId) {
+              setChildrenByClass(prev => {
+                const updated = { ...prev };
+                Object.keys(updated).forEach(classKey => {
+                  updated[classKey] = updated[classKey].filter(student => student.request.studentId !== studentId);
+                  if (updated[classKey].length === 0) {
+                    delete updated[classKey];
+                  }
+                });
+                return updated;
+              });
+            }
+          }
         }
       )
       .subscribe((status) => {
         console.log('Called students subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to called students changes');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Called students subscription failed');
+        }
       });
 
     subscriptionRef.current = channel;

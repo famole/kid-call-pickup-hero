@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +25,6 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const { user, loading: authLoading } = useAuth();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
-  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Hooks for managing pickup data
   const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass);
@@ -33,29 +32,6 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
 
   // Check if user has permission to access this page - include superadmin
   const hasPermission = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
-
-  // Set up periodic refresh to ensure data consistency
-  useEffect(() => {
-    const startPeriodicRefresh = () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-      }
-      
-      refreshTimerRef.current = setInterval(() => {
-        console.log('Periodic refresh of pickup data');
-        refetchPending();
-        refetchCalled();
-      }, 2000); // Refresh every 2 seconds
-    };
-
-    startPeriodicRefresh();
-
-    return () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-      }
-    };
-  }, [refetchPending, refetchCalled]);
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -99,11 +75,8 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
 
   const handleMarkAsCalledWithRefresh = async (requestId: string) => {
     await markAsCalled(requestId);
-    // Force immediate refresh of both sections
-    setTimeout(() => {
-      refetchPending();
-      refetchCalled();
-    }, 200);
+    // The real-time subscriptions will handle the updates automatically
+    // No need for manual refresh calls
   };
 
   return (

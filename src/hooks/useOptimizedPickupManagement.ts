@@ -13,11 +13,10 @@ export const useOptimizedPickupManagement = (classId?: string) => {
 
   const fetchPendingRequests = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
-    if (!forceRefresh && now - lastFetchRef.current < 500) {
+    if (!forceRefresh && now - lastFetchRef.current < 1000) {
       return;
     }
 
-    setLoading(true);
     try {
       console.log('Fetching optimized pending requests...');
       const allRequests = await getPickupRequestsWithDetailsBatch(['pending']);
@@ -53,13 +52,7 @@ export const useOptimizedPickupManagement = (classId?: string) => {
       
       // Update the server
       await updatePickupRequestStatus(requestId, 'called');
-      
       console.log('Request marked as called successfully');
-      
-      // Force refresh to ensure consistency
-      setTimeout(() => {
-        fetchPendingRequests(true);
-      }, 100);
       
     } catch (error) {
       console.error("Error marking request as called:", error);
@@ -78,9 +71,9 @@ export const useOptimizedPickupManagement = (classId?: string) => {
       subscriptionRef.current = null;
     }
 
-    // Set up real-time subscription
+    // Set up real-time subscription with better error handling
     const channel = supabase
-      .channel('pickup_requests_optimized_realtime')
+      .channel(`pickup_requests_optimized_${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -91,12 +84,26 @@ export const useOptimizedPickupManagement = (classId?: string) => {
         async (payload) => {
           console.log('Optimized real-time pickup request change detected:', payload.eventType, payload);
           
-          // Immediate refresh for better responsiveness
-          fetchPendingRequests(true);
+          // Handle real-time updates without full refresh
+          if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
+            // Add new pending request
+            fetchPendingRequests(true);
+          } else if (payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+            // Remove updated/deleted requests
+            const affectedId = payload.old?.id || payload.new?.id;
+            if (affectedId) {
+              setPendingRequests(prev => prev.filter(req => req.request.id !== affectedId));
+            }
+          }
         }
       )
       .subscribe((status) => {
         console.log('Optimized pickup management subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to pickup requests changes');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Subscription failed, falling back to manual refresh');
+        }
       });
 
     subscriptionRef.current = channel;

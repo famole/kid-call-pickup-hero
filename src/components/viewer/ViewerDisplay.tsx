@@ -25,8 +25,8 @@ const ViewerDisplay: React.FC = () => {
   const { data: calledStudents = [], isLoading: studentsLoading, refetch } = useQuery({
     queryKey: ['called-students-optimized', selectedClass],
     queryFn: () => getCalledStudentsOptimized(selectedClass),
-    refetchInterval: 1000, // More frequent polling
-    staleTime: 0, // No stale time for immediate updates
+    refetchInterval: 5000, // Reduced frequency - real-time will handle immediate updates
+    staleTime: 1000, // Short stale time for better responsiveness
   });
 
   // Set up real-time subscription for immediate updates
@@ -38,7 +38,7 @@ const ViewerDisplay: React.FC = () => {
     }
 
     const channel = supabase
-      .channel('viewer_display_realtime')
+      .channel(`viewer_display_${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -49,12 +49,20 @@ const ViewerDisplay: React.FC = () => {
         async (payload) => {
           console.log('Viewer display real-time change detected:', payload.eventType, payload);
           
-          // Force immediate refetch
-          refetch();
+          // Only refetch when relevant to called students
+          if (payload.eventType === 'UPDATE' && 
+              (payload.new?.status === 'called' || payload.old?.status === 'called')) {
+            refetch();
+          }
         }
       )
       .subscribe((status) => {
         console.log('Viewer display subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Viewer display successfully subscribed to changes');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Viewer display subscription failed');
+        }
       });
 
     subscriptionRef.current = channel;
