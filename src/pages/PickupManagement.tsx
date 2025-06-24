@@ -5,9 +5,9 @@ import { Navigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
 import ClassFilter from '@/components/viewer/ClassFilter';
-import ClassGroup from '@/components/viewer/ClassGroup';
 import NoStudents from '@/components/viewer/NoStudents';
 import PendingPickupsTable from '@/components/pickup/PendingPickupsTable';
+import CalledStudentsTable from '@/components/pickup/CalledStudentsTable';
 import { useCalledStudents } from '@/hooks/useCalledStudents';
 import { useOptimizedPickupManagement } from '@/hooks/useOptimizedPickupManagement';
 import { getAllClasses } from '@/services/classService';
@@ -32,6 +32,9 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
 
   // Check if user has permission to access this page - include superadmin
   const hasPermission = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
+
+  // Flatten the called students from grouped format to a flat array
+  const calledStudents = Object.values(childrenByClass).flat();
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -113,7 +116,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
               </TabsTrigger>
               <TabsTrigger value="called" className="flex items-center gap-2">
                 <CheckCheck className="h-4 w-4" />
-                Currently Called ({Object.values(childrenByClass).flat().length})
+                Currently Called ({calledStudents.length})
               </TabsTrigger>
             </TabsList>
 
@@ -126,20 +129,10 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
             </TabsContent>
 
             <TabsContent value="called" className="space-y-6">
-              {calledLoading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary mx-auto mb-4"></div>
-                  <p className="text-lg text-muted-foreground">Loading called students...</p>
-                </div>
-              ) : Object.keys(childrenByClass).length === 0 ? (
-                <NoStudents />
-              ) : (
-                <div className="space-y-6">
-                  {Object.entries(childrenByClass).map(([classId, students]) => (
-                    <ClassGroup key={classId} classId={classId} students={students} />
-                  ))}
-                </div>
-              )}
+              <CalledStudentsTable 
+                requests={calledStudents}
+                loading={calledLoading}
+              />
             </TabsContent>
           </Tabs>
           
