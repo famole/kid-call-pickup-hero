@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Phone } from 'lucide-react';
+import { Clock, Phone, User } from 'lucide-react';
 import { PickupRequestWithDetails } from '@/types/supabase';
 
 interface PendingPickupsTableProps {
@@ -77,6 +77,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>Student Name</TableHead>
+              <TableHead>Pickup Person</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Teacher</TableHead>
               <TableHead>Requested At</TableHead>
@@ -89,6 +90,14 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
               <TableRow key={item.request.id}>
                 <TableCell className="font-medium">
                   {item.child?.name || 'Unknown Student'}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">
+                      Parent (ID: {item.request.parentId?.slice(0, 8)}...)
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell>
                   {item.class ? `${item.class.name} (${item.class.grade})` : 'Unknown Class'}

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getAllClasses } from '@/services/classService';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
+import { User } from 'lucide-react';
 
 interface OptimizedPendingPickupsTableProps {
   selectedClass?: string;
@@ -88,6 +89,7 @@ const OptimizedPendingPickupsTable: React.FC<OptimizedPendingPickupsTableProps> 
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead>
+                <TableHead>Pickup Person</TableHead>
                 <TableHead>Class</TableHead>
                 <TableHead>Teacher</TableHead>
                 <TableHead>Requested At</TableHead>
@@ -99,6 +101,14 @@ const OptimizedPendingPickupsTable: React.FC<OptimizedPendingPickupsTableProps> 
                 <TableRow key={item.request.id}>
                   <TableCell className="font-medium">
                     {item.child?.name || 'Unknown Student'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">
+                        Parent (ID: {item.request.parentId?.slice(0, 8)}...)
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {item.class?.name || 'Unknown Class'} {item.class?.grade && `(${item.class.grade})`}
