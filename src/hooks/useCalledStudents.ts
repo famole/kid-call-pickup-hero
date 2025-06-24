@@ -8,6 +8,7 @@ export const useCalledStudents = (classId?: string) => {
   const [childrenByClass, setChildrenByClass] = useState<{ [key: string]: PickupRequestWithDetails[] }>({});
   const [loading, setLoading] = useState<boolean>(true);
   const subscriptionRef = useRef<any>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchRef = useRef<number>(0);
 
   const fetchCalledStudents = useCallback(async (forceRefresh = false) => {
@@ -43,7 +44,13 @@ export const useCalledStudents = (classId?: string) => {
 
   useEffect(() => {
     fetchCalledStudents(true);
-    
+
+    // Set up periodic polling as a fallback in case realtime fails
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => fetchCalledStudents(true), 5000);
+
     // Clean up existing subscription
     if (subscriptionRef.current) {
       supabase.removeChannel(subscriptionRef.current);
@@ -124,6 +131,10 @@ export const useCalledStudents = (classId?: string) => {
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, [fetchCalledStudents]);
