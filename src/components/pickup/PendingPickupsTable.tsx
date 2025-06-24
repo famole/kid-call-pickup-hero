@@ -95,7 +95,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-500" />
                     <span className="font-medium">
-                      Parent (ID: {item.request.parentId?.slice(0, 8)}...)
+                      {item.parent?.name || `Parent (ID: ${item.request.parentId?.slice(0, 8)}...)`}
                     </span>
                   </div>
                 </TableCell>

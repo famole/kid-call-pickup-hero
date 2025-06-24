@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickup';
 import { getStudentById } from '@/services/studentService';
 import { getClassById } from '@/services/classService';
+import { getParentById } from '@/services/parentService';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,6 +27,7 @@ export const usePickupManagement = (classId?: string) => {
           console.log(`Fetching details for request ${req.id}`);
           const student = await getStudentById(req.studentId);
           let classInfo = null;
+          let parentInfo = null;
           
           if (student && student.classId) {
             try {
@@ -34,18 +36,29 @@ export const usePickupManagement = (classId?: string) => {
               console.error(`Error fetching class ${student.classId}:`, classError);
             }
           }
+
+          // Fetch parent information
+          if (req.parentId) {
+            try {
+              parentInfo = await getParentById(req.parentId);
+            } catch (parentError) {
+              console.error(`Error fetching parent ${req.parentId}:`, parentError);
+            }
+          }
           
           return {
             request: req,
             child: student,
-            class: classInfo
+            class: classInfo,
+            parent: parentInfo
           };
         } catch (error) {
           console.error(`Error fetching details for request ${req.id}:`, error);
           return {
             request: req,
             child: null,
-            class: null
+            class: null,
+            parent: null
           };
         }
       }));

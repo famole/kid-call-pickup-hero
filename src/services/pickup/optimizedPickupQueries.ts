@@ -6,7 +6,7 @@ import { PickupRequest } from '@/types';
 // Optimized function to get all pickup requests with details in a single query
 export const getPickupRequestsWithDetailsBatch = async (statuses: string[] = ['pending', 'called']): Promise<PickupRequestWithDetails[]> => {
   try {
-    // Single query with joins to get all data at once
+    // Single query with joins to get all data at once, including parent information
     const { data, error } = await supabase
       .from('pickup_requests')
       .select(`
@@ -57,6 +57,11 @@ export const getPickupRequestsWithDetailsBatch = async (statuses: string[] = ['p
         name: req.students.classes.name,
         grade: req.students.classes.grade,
         teacher: req.students.classes.teacher
+      } : null,
+      parent: req.parents ? {
+        id: req.parents.id,
+        name: req.parents.name,
+        email: req.parents.email
       } : null
     }));
   } catch (error) {
@@ -83,6 +88,11 @@ export const getCalledStudentsOptimized = async (classId?: string): Promise<Pick
             grade,
             teacher
           )
+        ),
+        parents!inner (
+          id,
+          name,
+          email
         )
       `)
       .eq('status', 'called');
@@ -119,6 +129,11 @@ export const getCalledStudentsOptimized = async (classId?: string): Promise<Pick
         name: req.students.classes.name,
         grade: req.students.classes.grade,
         teacher: req.students.classes.teacher
+      } : null,
+      parent: req.parents ? {
+        id: req.parents.id,
+        name: req.parents.name,
+        email: req.parents.email
       } : null
     }));
   } catch (error) {
