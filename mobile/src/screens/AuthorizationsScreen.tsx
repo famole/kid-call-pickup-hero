@@ -20,10 +20,9 @@ import {
   updatePickupAuthorization,
   deletePickupAuthorization,
   PickupAuthorizationWithDetails
-} from '../../src/services/pickupAuthorizationService'
-import { getStudentsForParent } from '../../src/services/studentService'
-import { getAllParents } from '../../src/services/parentService'
-
+} from '../../../src/services/pickupAuthorizationService'
+import { getStudentsForParent } from '../../../src/services/studentService'
+import { getAllParents } from '../../../src/services/parentService'
 interface FormData {
   studentId: string
   authorizedParentId: string
