@@ -3,8 +3,19 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://gdxaqfrodyfygurwrqwm.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkeGFxZnJvZHlmeWd1cndycXdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1NzQxODAsImV4cCI6MjA2MjE1MDE4MH0.fp64K4QifCqyvyVqSCOlENDyixa3cBO4rpcfmFXgnYU';
+const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
+const SUPABASE_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  (env ? env.EXPO_PUBLIC_SUPABASE_URL : undefined) ||
+  (env ? env.VITE_SUPABASE_URL : undefined) ||
+  'https://gdxaqfrodyfygurwrqwm.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  (env ? env.EXPO_PUBLIC_SUPABASE_ANON_KEY : undefined) ||
+  (env ? env.VITE_SUPABASE_ANON_KEY : undefined) ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkeGFxZnJvZHlmeWd1cndycXdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1NzQxODAsImV4cCI6MjA2MjE1MDE4MH0.fp64K4QifCqyvyVqSCOlENDyixa3cBO4rpcfmFXgnYU';
 
 // Validate that we have the required values
 if (!SUPABASE_URL) {
