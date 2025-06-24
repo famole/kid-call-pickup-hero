@@ -25,3 +25,4 @@ npm run start
 Use `npm run android` or `npm run ios` to test on emulators or devices.
 
 The app uses the same Supabase credentials as the web version, provided through environment variables `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+Shared modules import these values using `import.meta.env`, so the mobile `babel.config.js` enables the `unstable_transformImportMeta` option to transform this syntax for Hermes.
