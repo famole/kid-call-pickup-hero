@@ -10,6 +10,7 @@ export const useOptimizedPickupManagement = (classId?: string) => {
   const [loading, setLoading] = useState<boolean>(true);
   const lastFetchRef = useRef<number>(0);
   const subscriptionRef = useRef<any>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchPendingRequests = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
@@ -64,7 +65,13 @@ export const useOptimizedPickupManagement = (classId?: string) => {
 
   useEffect(() => {
     fetchPendingRequests(true);
-    
+
+    // Poll periodically in case realtime updates fail
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => fetchPendingRequests(true), 5000);
+
     // Clean up existing subscription
     if (subscriptionRef.current) {
       supabase.removeChannel(subscriptionRef.current);
@@ -130,6 +137,10 @@ export const useOptimizedPickupManagement = (classId?: string) => {
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, [fetchPendingRequests]);
