@@ -6,10 +6,6 @@ import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelecti
 import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCard';
 import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard';
 import AuthorizedPickupNotification from '@/components/parent-dashboard/AuthorizedPickupNotification';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { LogOut, Car } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 const ParentDashboard: React.FC = () => {
   const {
@@ -56,60 +52,9 @@ const ParentDashboard: React.FC = () => {
             parentInfo={parentInfo}
           />
 
-          {/* Quick Actions Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <LogOut className="h-5 w-5 text-blue-600" />
-                  Self-Checkout Authorization
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Allow your children to leave school independently
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link to="/self-checkout">
-                  <Button className="w-full" variant="outline">
-                    Manage Self-Checkout
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Car className="h-5 w-5 text-green-600" />
-                  Pickup Authorizations
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Authorize others to pick up your children
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link to="/pickup-authorization">
-                  <Button className="w-full" variant="outline">
-                    Manage Authorizations
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-              <ChildrenSelectionCard
-                children={children}
-                selectedChildren={selectedChildren}
-                childrenWithActiveRequests={childrenWithActiveRequests}
-                isSubmitting={isSubmitting}
-                onToggleChildSelection={toggleChildSelection}
-                onRequestPickup={handleRequestPickup}
-              />
-            </div>
-            
-            <div className="space-y-4 sm:space-y-6">
+            {/* Status Components First - Left side for larger screens */}
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6 lg:order-2">
               <PendingRequestsCard 
                 pendingRequests={pendingRequests} 
                 children={children}
@@ -117,6 +62,18 @@ const ParentDashboard: React.FC = () => {
               <CalledRequestsCard 
                 calledRequests={calledRequests} 
                 children={children}
+              />
+            </div>
+            
+            {/* Student Selection Component - Right side for larger screens */}
+            <div className="lg:col-span-2 lg:order-1">
+              <ChildrenSelectionCard
+                children={children}
+                selectedChildren={selectedChildren}
+                childrenWithActiveRequests={childrenWithActiveRequests}
+                isSubmitting={isSubmitting}
+                onToggleChildSelection={toggleChildSelection}
+                onRequestPickup={handleRequestPickup}
               />
             </div>
           </div>

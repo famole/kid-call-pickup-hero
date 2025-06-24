@@ -14,6 +14,7 @@ import {
   StudentDepartureWithDetails
 } from '@/services/selfCheckoutService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import MarkDepartureDialog from './MarkDepartureDialog';
 
 const SelfCheckoutManagement: React.FC = () => {
@@ -74,6 +75,7 @@ const SelfCheckoutManagement: React.FC = () => {
 
   const handleDepartureMarked = () => {
     loadDepartures();
+    loadAuthorizations();
     toast({
       title: "Success",
       description: "Student departure marked successfully.",
@@ -86,6 +88,10 @@ const SelfCheckoutManagement: React.FC = () => {
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString();
+  };
+
+  const formatDateTime = (date: Date) => {
+    return `${formatDate(date)} at ${formatTime(date)}`;
   };
 
   return (
@@ -105,7 +111,7 @@ const SelfCheckoutManagement: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="departures" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
-            Recent Departures
+            Recent Departures ({departures.length})
           </TabsTrigger>
         </TabsList>
 
@@ -209,40 +215,70 @@ const SelfCheckoutManagement: React.FC = () => {
                   <p className="text-gray-500">No students have left through self-checkout recently.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {departures.map((departure) => (
-                    <div key={departure.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={departure.student?.avatar} alt={departure.student?.name} />
-                          <AvatarFallback className="bg-school-primary text-white">
-                            {departure.student?.name?.charAt(0) || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {departure.student?.name || 'Unknown Student'}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {departure.class?.name || 'No Class'} - {departure.class?.grade || 'Unknown Grade'}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Clock className="h-3 w-3" />
-                            Left at {formatTime(departure.departedAt)} on {formatDate(departure.departedAt)}
-                          </div>
-                          {departure.markedByUser && (
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <User className="h-3 w-3" />
-                              Marked by {departure.markedByUser.name}
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Class</TableHead>
+                        <TableHead>Checkout Date/Time</TableHead>
+                        <TableHead>Marked By</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {departures.map((departure) => (
+                        <TableRow key={departure.id}>
+                          <TableCell>
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage src={departure.student?.avatar} alt={departure.student?.name} />
+                                <AvatarFallback className="bg-school-primary text-white">
+                                  {departure.student?.name?.charAt(0) || '?'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="font-medium text-gray-900">
+                                {departure.student?.name || 'Unknown Student'}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Departed
-                      </Badge>
-                    </div>
-                  ))}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {departure.class?.name || 'No Class'}
+                              </div>
+                              {departure.class?.grade && (
+                                <div className="text-sm text-gray-500">
+                                  Grade {departure.class.grade}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="h-4 w-4 text-gray-500" />
+                              <div>
+                                <div className="font-medium">{formatDateTime(departure.departedAt)}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {departure.markedByUser && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <User className="h-4 w-4 text-gray-500" />
+                                <span>{departure.markedByUser.name}</span>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              Departed
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </CardContent>

@@ -23,8 +23,7 @@ import {
   UserCog, 
   Car,
   ClipboardList,
-  School,
-  LogOut as SelfCheckoutIcon
+  School
 } from 'lucide-react';
 import Logo from './Logo';
 
@@ -52,7 +51,6 @@ const Navigation: React.FC = () => {
   const navigationItems = [
     { path: '/', label: 'Dashboard', icon: Home, roles: ['parent', 'admin', 'teacher', 'superadmin'] },
     { path: '/pickup-authorization', label: 'Pickup Authorizations', icon: Car, roles: ['parent'] },
-    { path: '/self-checkout', label: 'Self-Checkout', icon: SelfCheckoutIcon, roles: ['parent', 'admin', 'teacher', 'superadmin'] },
     { path: '/pickup-management', label: 'Pickup Management', icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
     { path: '/admin/parents', label: 'Parents', icon: Users, roles: ['admin', 'superadmin'] },
     { path: '/admin/students', label: 'Students', icon: GraduationCap, roles: ['admin', 'superadmin'] },
@@ -125,6 +123,18 @@ const Navigation: React.FC = () => {
                       <Logo />
                     </div>
                     <NavItems mobile />
+                    
+                    {/* Add Self-Checkout link in mobile menu for parents */}
+                    {user?.role === 'parent' && (
+                      <Link
+                        to="/self-checkout"
+                        className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full justify-start"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Self-Checkout</span>
+                      </Link>
+                    )}
                   </div>
                 </SheetContent>
               </Sheet>
@@ -155,6 +165,20 @@ const Navigation: React.FC = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                
+                {/* Add Self-Checkout option in user dropdown for parents */}
+                {user?.role === 'parent' && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/self-checkout" className="w-full">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Self-Checkout</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
