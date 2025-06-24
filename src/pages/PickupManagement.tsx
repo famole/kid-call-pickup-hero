@@ -9,7 +9,7 @@ import ClassGroup from '@/components/viewer/ClassGroup';
 import NoStudents from '@/components/viewer/NoStudents';
 import PendingPickupsTable from '@/components/pickup/PendingPickupsTable';
 import { useCalledStudents } from '@/hooks/useCalledStudents';
-import { usePickupManagement } from '@/hooks/usePickupManagement';
+import { useOptimizedPickupManagement } from '@/hooks/useOptimizedPickupManagement';
 import { getAllClasses } from '@/services/classService';
 import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickupRequests';
 import { Class } from '@/types';
@@ -26,9 +26,9 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
 
-  // Hooks for managing pickup data
+  // Use the optimized hooks for better performance and real-time updates
   const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass);
-  const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = usePickupManagement(selectedClass);
+  const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass);
 
   // Check if user has permission to access this page - include superadmin
   const hasPermission = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
@@ -74,9 +74,12 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   };
 
   const handleMarkAsCalledWithRefresh = async (requestId: string) => {
-    await markAsCalled(requestId);
-    // The real-time subscriptions will handle the updates automatically
-    // No need for manual refresh calls
+    try {
+      await markAsCalled(requestId);
+      console.log('Student marked as called - real-time subscriptions will handle updates');
+    } catch (error) {
+      console.error('Error marking student as called:', error);
+    }
   };
 
   return (

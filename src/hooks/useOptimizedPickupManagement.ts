@@ -84,14 +84,31 @@ export const useOptimizedPickupManagement = (classId?: string) => {
         async (payload) => {
           console.log('Optimized real-time pickup request change detected:', payload.eventType, payload);
           
-          // Handle real-time updates without full refresh
+          // Handle real-time updates more intelligently
           if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
             // Add new pending request
+            console.log('New pending request detected, refreshing...');
             fetchPendingRequests(true);
-          } else if (payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
-            // Remove updated/deleted requests
-            const affectedId = payload.old?.id || payload.new?.id;
+          } else if (payload.eventType === 'UPDATE') {
+            const affectedId = payload.new?.id;
+            const newStatus = payload.new?.status;
+            const oldStatus = payload.old?.status;
+            
             if (affectedId) {
+              if (oldStatus === 'pending' && newStatus !== 'pending') {
+                // Request was moved from pending to another status - remove from pending list
+                console.log(`Request ${affectedId} moved from pending to ${newStatus}, removing from list`);
+                setPendingRequests(prev => prev.filter(req => req.request.id !== affectedId));
+              } else if (newStatus === 'pending' && oldStatus !== 'pending') {
+                // Request was moved to pending - refresh to get details
+                console.log(`Request ${affectedId} moved to pending, refreshing...`);
+                fetchPendingRequests(true);
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const affectedId = payload.old?.id;
+            if (affectedId) {
+              console.log(`Request ${affectedId} deleted, removing from list`);
               setPendingRequests(prev => prev.filter(req => req.request.id !== affectedId));
             }
           }

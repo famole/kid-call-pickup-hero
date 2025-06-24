@@ -8,8 +8,14 @@ export const useCalledStudents = (classId?: string) => {
   const [childrenByClass, setChildrenByClass] = useState<{ [key: string]: PickupRequestWithDetails[] }>({});
   const [loading, setLoading] = useState<boolean>(true);
   const subscriptionRef = useRef<any>(null);
+  const lastFetchRef = useRef<number>(0);
 
-  const fetchCalledStudents = useCallback(async () => {
+  const fetchCalledStudents = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && now - lastFetchRef.current < 1000) {
+      return;
+    }
+
     try {
       console.log('Fetching called students...');
       const calledStudents = await getCurrentlyCalled(classId);
@@ -26,6 +32,7 @@ export const useCalledStudents = (classId?: string) => {
       }, {});
 
       setChildrenByClass(groupedByClass);
+      lastFetchRef.current = now;
     } catch (error) {
       console.error('Error fetching called students:', error);
       setChildrenByClass({});
@@ -35,7 +42,7 @@ export const useCalledStudents = (classId?: string) => {
   }, [classId]);
 
   useEffect(() => {
-    fetchCalledStudents();
+    fetchCalledStudents(true);
     
     // Clean up existing subscription
     if (subscriptionRef.current) {
@@ -43,7 +50,7 @@ export const useCalledStudents = (classId?: string) => {
       subscriptionRef.current = null;
     }
     
-    // Set up real-time subscription for called students with better error handling
+    // Set up real-time subscription for called students
     const channel = supabase
       .channel(`called_students_${Date.now()}`)
       .on(
@@ -56,14 +63,37 @@ export const useCalledStudents = (classId?: string) => {
         async (payload) => {
           console.log('Called students real-time change detected:', payload.eventType, payload);
           
-          // Handle specific changes instead of full refresh
-          if (payload.eventType === 'UPDATE' && payload.new?.status === 'called') {
-            // Student was just called - add to called list
-            fetchCalledStudents();
-          } else if (payload.eventType === 'UPDATE' && payload.old?.status === 'called' && payload.new?.status !== 'called') {
-            // Student was picked up or cancelled - remove from called list
+          // Handle specific changes for better performance
+          if (payload.eventType === 'UPDATE') {
+            const newStatus = payload.new?.status;
+            const oldStatus = payload.old?.status;
             const studentId = payload.new?.student_id;
+            
+            if (newStatus === 'called' && oldStatus !== 'called') {
+              // Student was just called - refresh to get full details
+              console.log(`Student ${studentId} was called, refreshing called students`);
+              fetchCalledStudents(true);
+            } else if (oldStatus === 'called' && newStatus !== 'called') {
+              // Student was picked up or cancelled - remove from called list
+              console.log(`Student ${studentId} no longer called, removing from list`);
+              if (studentId) {
+                setChildrenByClass(prev => {
+                  const updated = { ...prev };
+                  Object.keys(updated).forEach(classKey => {
+                    updated[classKey] = updated[classKey].filter(student => student.request.studentId !== studentId);
+                    if (updated[classKey].length === 0) {
+                      delete updated[classKey];
+                    }
+                  });
+                  return updated;
+                });
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            // Request was deleted - remove if it was called
+            const studentId = payload.old?.student_id;
             if (studentId) {
+              console.log(`Request for student ${studentId} deleted, removing from called list`);
               setChildrenByClass(prev => {
                 const updated = { ...prev };
                 Object.keys(updated).forEach(classKey => {
@@ -101,6 +131,6 @@ export const useCalledStudents = (classId?: string) => {
   return {
     childrenByClass,
     loading,
-    refetch: fetchCalledStudents
+    refetch: () => fetchCalledStudents(true)
   };
 };
