@@ -9,6 +9,10 @@ config.watchFolders = [path.resolve(__dirname, '..')];
 // Map the "@" alias used in shared code to the root src directory
 config.resolver = {
   ...(config.resolver || {}),
+  nodeModulesPaths: [
+    path.resolve(__dirname, 'node_modules'),
+    path.resolve(__dirname, '..', 'node_modules'),
+  ],
   extraNodeModules: {
     '@': path.resolve(__dirname, '..', 'src'),
   },
