@@ -17,6 +17,8 @@ const ParentDashboard: React.FC = () => {
     children,
     pendingRequests,
     calledRequests,
+    authorizedRequests,
+    parentInfo,
     loading,
     selectedChildren,
     setSelectedChildren,
@@ -46,7 +48,11 @@ const ParentDashboard: React.FC = () => {
       <div className="space-y-4 sm:space-y-6">
         <ParentDashboardHeader />
         
-        <AuthorizedPickupNotification />
+        <AuthorizedPickupNotification 
+          requests={authorizedRequests}
+          children={children}
+          parentInfo={parentInfo}
+        />
 
         {/* Quick Actions Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -102,8 +108,14 @@ const ParentDashboard: React.FC = () => {
           </div>
           
           <div className="space-y-4 sm:space-y-6">
-            <PendingRequestsCard requests={pendingRequests} />
-            <CalledRequestsCard requests={calledRequests} />
+            <PendingRequestsCard 
+              pendingRequests={pendingRequests} 
+              children={children}
+            />
+            <CalledRequestsCard 
+              calledRequests={calledRequests} 
+              children={children}
+            />
           </div>
         </div>
       </div>

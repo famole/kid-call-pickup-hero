@@ -1,9 +1,11 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { getActivePickupRequestsForParent } from '@/services/pickup';
+import { getActivePickupRequestsForParent, createPickupRequest } from '@/services/pickup';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -33,10 +35,13 @@ interface RealtimePayload {
 
 export const useOptimizedParentDashboard = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [children, setChildren] = useState<ChildWithType[]>([]);
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
   const [parentInfo, setParentInfo] = useState<ParentInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const lastFetchRef = useRef<number>(0);
   const channelRef = useRef<any>(null);
   const childrenIdsRef = useRef<string[]>([]);
@@ -145,6 +150,46 @@ export const useOptimizedParentDashboard = () => {
     }
   }, [loadDashboardData]);
 
+  // Toggle child selection
+  const toggleChildSelection = useCallback((studentId: string) => {
+    setSelectedChildren(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
+  }, []);
+
+  // Handle pickup request
+  const handleRequestPickup = useCallback(async () => {
+    if (selectedChildren.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      await Promise.all(
+        selectedChildren.map(studentId => createPickupRequest(studentId))
+      );
+
+      toast({
+        title: "Pickup Request Submitted",
+        description: `Successfully requested pickup for ${selectedChildren.length} child${selectedChildren.length > 1 ? 'ren' : ''}`,
+      });
+
+      setSelectedChildren([]);
+      await loadDashboardData(true);
+    } catch (error) {
+      console.error('Error requesting pickup:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit pickup request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [selectedChildren, toast, loadDashboardData]);
+
   // Initial load and setup
   useEffect(() => {
     if (!user?.email) return;
@@ -194,11 +239,29 @@ export const useOptimizedParentDashboard = () => {
     };
   }, [user?.email, handleRealtimeChange]);
 
+  // Separate pending and called requests
+  const pendingRequests = activeRequests.filter(req => req.status === 'pending');
+  const calledRequests = activeRequests.filter(req => req.status === 'called');
+
+  // Get authorized requests (requests made by others for children you can pick up)
+  const authorizedRequests = activeRequests.filter(req => {
+    const child = children.find(c => c.id === req.studentId);
+    return child?.isAuthorized && req.parentId !== user?.id;
+  });
+
   return {
     children,
     activeRequests,
+    pendingRequests,
+    calledRequests,
+    authorizedRequests,
     parentInfo,
     loading,
+    selectedChildren,
+    setSelectedChildren,
+    isSubmitting,
+    toggleChildSelection,
+    handleRequestPickup,
     refetch: () => loadDashboardData(true)
   };
 };
