@@ -410,3 +410,43 @@ export const getRecentDepartures = async (limit: number = 50): Promise<StudentDe
     throw error;
   }
 };
+
+// Function to get today's departure for a specific student
+export const getTodayDepartureForStudent = async (studentId: string): Promise<StudentDeparture | null> => {
+  try {
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+    const { data, error } = await supabase
+      .from('student_departures')
+      .select('*')
+      .eq('student_id', studentId)
+      .gte('departed_at', startOfDay.toISOString())
+      .lte('departed_at', endOfDay.toISOString())
+      .order('departed_at', { ascending: false })
+      .limit(1);
+    
+    if (error) {
+      console.error('Error fetching today departure for student:', error);
+      throw new Error(error.message);
+    }
+    
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    const departure = data[0];
+    return {
+      id: departure.id,
+      studentId: departure.student_id,
+      departedAt: new Date(departure.departed_at),
+      markedByUserId: departure.marked_by_user_id,
+      notes: departure.notes,
+      createdAt: new Date(departure.created_at)
+    };
+  } catch (error) {
+    console.error('Error in getTodayDepartureForStudent:', error);
+    throw error;
+  }
+};
