@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Child } from '@/types';
-import SharedStudentsParentSelector from './SharedStudentsParentSelector';
+import SearchOnlyParentSelector from './SearchOnlyParentSelector';
 
 interface FormData {
   studentId: string;
@@ -78,18 +78,15 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="parent">Authorized Parent</Label>
-        <SharedStudentsParentSelector
-          parents={allParents}
-          value={formData.authorizedParentId}
-          onValueChange={(value) => onUpdateFormData('authorizedParentId', value)}
-          placeholder="Search and select a parent"
-          showOnlySharedParents={showOnlySharedParents}
-          onToggleFilter={onToggleParentFilter}
-          parentsWhoShareStudents={parentsWhoShareStudents}
-        />
-      </div>
+      <SearchOnlyParentSelector
+        parents={allParents}
+        value={formData.authorizedParentId}
+        onValueChange={(value) => onUpdateFormData('authorizedParentId', value)}
+        placeholder="Search for a parent by name"
+        showOnlySharedParents={showOnlySharedParents}
+        onToggleFilter={onToggleParentFilter}
+        parentsWhoShareStudents={parentsWhoShareStudents}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
