@@ -79,17 +79,17 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Pickup Person</TableHead>
-                <TableHead>Request Time</TableHead>
-                <TableHead>Action</TableHead>
+                <TableHead className="text-left">Student</TableHead>
+                <TableHead className="text-left">Class</TableHead>
+                <TableHead className="text-left">Pickup Person</TableHead>
+                <TableHead className="text-left">Request Time</TableHead>
+                <TableHead className="text-left">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {requests.map((item) => (
                 <TableRow key={item.request.id}>
-                  <TableCell>
+                  <TableCell className="text-left">
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={item.child?.avatar} alt={item.child?.name} />
@@ -101,25 +101,22 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                         <div className="font-medium text-gray-900">
                           {item.child?.name || 'Unknown Student'}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          ID: {item.request.studentId.slice(0, 8)}...
-                        </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-left">
                     <div>
                       <div className="font-medium text-gray-900">
                         {item.class?.name || 'No Class'}
                       </div>
-                      {item.class?.grade && (
+                      {item.class?.teacher && (
                         <div className="text-sm text-gray-500">
-                          {item.class.grade}
+                          {item.class.teacher}
                         </div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-left">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-400" />
                       <div>
@@ -134,7 +131,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-left">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Clock className="h-4 w-4" />
                       <div>
@@ -145,7 +142,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-left">
                     <Button
                       onClick={() => onMarkAsCalled(item.request.id)}
                       size="sm"
