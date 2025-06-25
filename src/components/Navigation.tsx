@@ -52,11 +52,7 @@ const Navigation: React.FC = () => {
     { path: '/', label: 'Dashboard', icon: Home, roles: ['parent', 'admin', 'teacher', 'superadmin'] },
     { path: '/pickup-authorization', label: 'Pickup Authorizations', icon: Car, roles: ['parent'] },
     { path: '/pickup-management', label: 'Pickup Management', icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
-    { path: '/admin/parents', label: 'Parents', icon: Users, roles: ['admin', 'superadmin'] },
-    { path: '/admin/students', label: 'Students', icon: GraduationCap, roles: ['admin', 'superadmin'] },
-    { path: '/admin/classes', label: 'Classes', icon: School, roles: ['admin', 'superadmin'] },
     { path: '/admin', label: 'Admin Panel', icon: Settings, roles: ['admin', 'superadmin'] },
-    { path: '/parent-management', label: 'Parent Management', icon: UserCog, roles: ['admin', 'superadmin'] },
   ];
 
   const visibleItems = navigationItems.filter(item => 
@@ -107,8 +103,8 @@ const Navigation: React.FC = () => {
             <NavItems />
           </div>
 
-          {/* User Menu */}
-          <div className="flex items-center space-x-4">
+          {/* User Menu - Fixed alignment */}
+          <div className="flex items-center justify-end space-x-4">
             {/* Mobile menu button */}
             <div className="md:hidden">
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
