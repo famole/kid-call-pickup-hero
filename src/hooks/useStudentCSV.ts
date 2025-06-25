@@ -32,7 +32,7 @@ export const useStudentCSV = ({
   
     setIsLoading(true);
     let successfullyImportedCount = 0;
-    let errorsEncountered: string[] = [];
+    const errorsEncountered: string[] = [];
   
     const currentClasses = await getAllClasses();
     if (currentClasses.length === 0) {
