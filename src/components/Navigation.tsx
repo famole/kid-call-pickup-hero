@@ -25,7 +25,6 @@ import {
   ClipboardList,
   School
 } from 'lucide-react';
-import Logo from './Logo';
 
 const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
@@ -94,8 +93,11 @@ const Navigation: React.FC = () => {
           {/* Logo - Enhanced visibility */}
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <Logo size="lg" className="mr-2" />
-              <span className="text-xl font-semibold text-gray-900 hidden sm:block">Upsy</span>
+              <img
+                src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                alt="Upsy"
+                className="h-16 w-auto object-contain"
+              />
             </Link>
           </div>
 
@@ -117,7 +119,11 @@ const Navigation: React.FC = () => {
                 <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                   <div className="flex flex-col space-y-4 mt-4">
                     <div className="pb-4 border-b flex items-center">
-                      <Logo size="md" className="mr-2" />
+                      <img
+                        src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                        alt="Upsy"
+                        className="h-8 w-auto object-contain mr-2"
+                      />
                       <span className="text-lg font-semibold text-gray-900">Upsy</span>
                     </div>
                     <NavItems mobile />
