@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
+import { useAuth } from '@/context/AuthContext';
 import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
 import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelectionCard';
 import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCard';
@@ -8,6 +9,7 @@ import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard
 import AuthorizedPickupNotification from '@/components/parent-dashboard/AuthorizedPickupNotification';
 
 const ParentDashboard: React.FC = () => {
+  const { user } = useAuth();
   const {
     children,
     pendingRequests,
@@ -31,7 +33,7 @@ const ParentDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-gray-50">
-        <div className="w-full max-w-none py-4 px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary"></div>
           </div>
@@ -42,9 +44,9 @@ const ParentDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
-      <div className="w-full max-w-none py-4 px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
         <div className="space-y-4 sm:space-y-6">
-          <ParentDashboardHeader />
+          <ParentDashboardHeader userName={user?.name} />
           
           <AuthorizedPickupNotification 
             requests={authorizedRequests}
