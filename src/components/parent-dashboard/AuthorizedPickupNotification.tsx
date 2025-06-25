@@ -30,7 +30,7 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
   }
 
   return (
-    <Card className="w-full border-blue-200 bg-blue-50">
+    <Card className="w-full md:w-3/4 mx-auto border-blue-200 bg-blue-50">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2 text-blue-800">
           <Users className="h-5 w-5" />
