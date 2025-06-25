@@ -18,7 +18,7 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full md:w-[90%] mx-auto">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Car className="h-5 w-5 text-green-600 animate-bounce" />
