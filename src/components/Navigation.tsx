@@ -91,10 +91,11 @@ const Navigation: React.FC = () => {
     <nav className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          {/* Logo */}
+          {/* Logo - Enhanced visibility */}
           <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0">
-              <Logo />
+            <Link to="/" className="flex-shrink-0 flex items-center">
+              <Logo size="lg" className="mr-2" />
+              <span className="text-xl font-semibold text-gray-900 hidden sm:block">Upsy</span>
             </Link>
           </div>
 
@@ -115,8 +116,9 @@ const Navigation: React.FC = () => {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                   <div className="flex flex-col space-y-4 mt-4">
-                    <div className="pb-4 border-b">
-                      <Logo />
+                    <div className="pb-4 border-b flex items-center">
+                      <Logo size="md" className="mr-2" />
+                      <span className="text-lg font-semibold text-gray-900">Upsy</span>
                     </div>
                     <NavItems mobile />
                     
