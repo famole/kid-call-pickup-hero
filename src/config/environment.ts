@@ -12,8 +12,8 @@ const environments = {
   },
   development: {
     // Replace with your development Supabase branch credentials
-    url: 'https://your-dev-project-ref.supabase.co',
-    anonKey: 'your-dev-anon-key'
+    url: 'https://wrrpndjtdmnparadykrc.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndycnBuZGp0ZG1ucGFyYWR5a3JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTEwMjEsImV4cCI6MjA2Nzc2NzAyMX0.FSOVIuE0-eiVLBS8oRXx3QKGKtvqR96r0ThgLJQj08Q'
   }
 } as const;
 
