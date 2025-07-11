@@ -1,146 +1,147 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getCurrentlyCalled } from '@/services/supabaseService';
-import { supabase } from "@/integrations/supabase/client";
 import { PickupRequestWithDetails } from '@/types/supabase';
-import { getAllClasses } from '@/services/classService';
-import { Class } from '@/types';
+import { supabase } from "@/integrations/supabase/client";
 
-export const useCalledStudents = (selectedClass?: string) => {
-  const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
+export const useCalledStudents = (classId?: string) => {
+  const [childrenByClass, setChildrenByClass] = useState<{ [key: string]: PickupRequestWithDetails[] }>({});
   const [loading, setLoading] = useState<boolean>(true);
-  
-  // Fetch all classes for the filter
+  const subscriptionRef = useRef<any>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchRef = useRef<number>(0);
+
+  const fetchCalledStudents = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && now - lastFetchRef.current < 1000) {
+      return;
+    }
+
+    try {
+      console.log('Fetching called students...');
+      const calledStudents = await getCurrentlyCalled(classId);
+      console.log(`Found ${calledStudents.length} called students`);
+      
+      // Group students by class for display
+      const groupedByClass = calledStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
+        const classIdKey = item.child?.classId || 'unknown';
+        if (!groups[classIdKey]) {
+          groups[classIdKey] = [];
+        }
+        groups[classIdKey].push(item);
+        return groups;
+      }, {});
+
+      setChildrenByClass(groupedByClass);
+      lastFetchRef.current = now;
+    } catch (error) {
+      console.error('Error fetching called students:', error);
+      setChildrenByClass({});
+    } finally {
+      setLoading(false);
+    }
+  }, [classId]);
+
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const classData = await getAllClasses();
-        setClasses(classData);
-      } catch (error) {
-        console.error('Error fetching classes:', error);
-      }
-    };
+    fetchCalledStudents(true);
+
+    // Set up periodic polling as a fallback in case realtime fails
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => fetchCalledStudents(true), 5000);
+
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
     
-    fetchClasses();
-  }, []);
-  
-  // Fetch data whenever the selectedClass changes
-  useEffect(() => {
-    const fetchCalledChildren = async () => {
-      setLoading(true);
-      try {
-        // Pass the selectedClass to the service
-        const data = await getCurrentlyCalled(selectedClass);
-        setCalledChildren(data);
-      } catch (error) {
-        console.error("Error fetching called children:", error);
-        setCalledChildren([]); // Set empty array on error to prevent UI issues
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchCalledChildren();
-    
-    // Set up realtime subscription for pickup_requests table
+    // Set up real-time subscription for called students
     const channel = supabase
-      .channel('public:pickup_requests')
+      .channel(`called_students_${Date.now()}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'pickup_requests',
-          filter: 'status=eq.called'
+          table: 'pickup_requests'
         },
         async (payload) => {
-          // Refetch data when there's a change
-          try {
-            const data = await getCurrentlyCalled(selectedClass);
-            setCalledChildren(data);
-          } catch (error) {
-            console.error("Error fetching called children after update:", error);
-          }
-        }
-      )
-      .subscribe();
-    
-    // Set up realtime subscriptions for students and classes tables
-    const studentsChannel = supabase
-      .channel('public:students')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'students'
-        },
-        async () => {
-          try {
-            const data = await getCurrentlyCalled(selectedClass);
-            setCalledChildren(data);
-          } catch (error) {
-            console.error("Error fetching called children after student update:", error);
-          }
-        }
-      )
-      .subscribe();
-    
-    const classesChannel = supabase
-      .channel('public:classes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'classes'
-        },
-        async () => {
-          try {
-            const classData = await getAllClasses();
-            setClasses(classData);
+          console.log('Called students real-time change detected:', payload.eventType, payload);
+          
+          // Handle specific changes for better performance
+          if (payload.eventType === 'UPDATE') {
+            const newStatus = payload.new?.status;
+            const oldStatus = payload.old?.status;
+            const studentId = payload.new?.student_id;
             
-            const data = await getCurrentlyCalled(selectedClass);
-            setCalledChildren(data);
-          } catch (error) {
-            console.error("Error updating after class changes:", error);
+            if (newStatus === 'called' && oldStatus !== 'called') {
+              // Student was just called - refresh to get full details
+              console.log(`Student ${studentId} was called, refreshing called students`);
+              fetchCalledStudents(true);
+            } else if (oldStatus === 'called' && newStatus !== 'called') {
+              // Student was picked up or cancelled - remove from called list
+              console.log(`Student ${studentId} no longer called, removing from list`);
+              if (studentId) {
+                setChildrenByClass(prev => {
+                  const updated = { ...prev };
+                  Object.keys(updated).forEach(classKey => {
+                    updated[classKey] = updated[classKey].filter(student => student.request.studentId !== studentId);
+                    if (updated[classKey].length === 0) {
+                      delete updated[classKey];
+                    }
+                  });
+                  return updated;
+                });
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            // Request was deleted - remove if it was called
+            const studentId = payload.old?.student_id;
+            if (studentId) {
+              console.log(`Request for student ${studentId} deleted, removing from called list`);
+              setChildrenByClass(prev => {
+                const updated = { ...prev };
+                Object.keys(updated).forEach(classKey => {
+                  updated[classKey] = updated[classKey].filter(student => student.request.studentId !== studentId);
+                  if (updated[classKey].length === 0) {
+                    delete updated[classKey];
+                  }
+                });
+                return updated;
+              });
+            }
           }
         }
       )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(studentsChannel);
-      supabase.removeChannel(classesChannel);
-    };
-  }, [selectedClass]);
+      .subscribe((status) => {
+        console.log('Called students subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to called students changes');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Called students subscription failed');
+        }
+      });
 
-  // Group children by class
-  const childrenByClass = useMemo(() => {
-    const grouped: Record<string, PickupRequestWithDetails[]> = {};
-    
-    calledChildren.forEach(item => {
-      if (!item.child || !item.class) {
-        return;
+    subscriptionRef.current = channel;
+
+    return () => {
+      console.log('Cleaning up called students subscription');
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
       }
-      
-      const classId = String(item.class.id);
-      
-      if (!grouped[classId]) {
-        grouped[classId] = [];
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-      
-      grouped[classId].push(item);
-    });
-    
-    return grouped;
-  }, [calledChildren]);
+    };
+  }, [fetchCalledStudents]);
 
   return {
-    classes,
     childrenByClass,
     loading,
+    refetch: () => fetchCalledStudents(true)
   };
 };

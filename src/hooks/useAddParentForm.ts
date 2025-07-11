@@ -2,25 +2,30 @@
 import { useState } from 'react';
 import { ParentInput, ParentWithStudents } from '@/types/parent';
 import { createParent } from '@/services/parentService';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface UseAddParentFormProps {
   onParentAdded: (newParent: ParentWithStudents) => void;
-  defaultRole?: 'parent' | 'teacher' | 'admin';
+  defaultRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
 export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseAddParentFormProps) => {
   const { toast } = useToast();
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
-  const [newParent, setNewParent] = useState<ParentInput>({ 
-    name: '', 
-    email: '', 
+  const [newParent, setNewParent] = useState<ParentInput>({
+    name: '',
+    email: '',
     phone: '',
-    role: defaultRole
+    role: defaultRole,
   });
 
   const openAddParentSheet = () => {
-    setNewParent({ name: '', email: '', phone: '', role: defaultRole });
+    setNewParent({
+      name: '',
+      email: '',
+      phone: '',
+      role: defaultRole,
+    });
     setIsAddSheetOpen(true);
   };
 
@@ -33,15 +38,10 @@ export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseA
   };
 
   const handleAddParentSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!newParent.name || !newParent.email) {
-      toast({
-        title: "Error",
-        description: "Name and email are required",
-        variant: "destructive",
-      });
-      return;
+    if (e) {
+      e.preventDefault();
     }
+
     try {
       const createdParent = await createParent(newParent);
       const createdParentWithStudents: ParentWithStudents = {
@@ -49,40 +49,26 @@ export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseA
         students: []
       };
       onParentAdded(createdParentWithStudents);
-      const userTypeLabel = createdParent.role === 'teacher' ? 'Teacher' : 
-                           createdParent.role === 'admin' ? 'Admin' : 'Parent';
       toast({
         title: "Success",
-        description: `${userTypeLabel} ${createdParent.name} has been created`,
+        description: `${newParent.role?.charAt(0).toUpperCase() + newParent.role?.slice(1) || 'User'} has been added`,
       });
       closeAddParentSheet();
-    } catch (error: any) {
-      console.error('Error creating parent:', error);
-      const userTypeLabel = newParent.role === 'teacher' ? 'teacher' : 
-                           newParent.role === 'admin' ? 'admin' : 'parent';
-      
-      // Handle specific database constraint violations
-      if (error.code === '23505' && error.message?.includes('parents_email_key')) {
-        toast({
-          title: "Email Already Exists",
-          description: `A ${userTypeLabel} with this email address already exists. Please use a different email.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Unable to Create Account",
-          description: `We encountered an issue while creating the ${userTypeLabel} account. Please check your information and try again.`,
-          variant: "destructive",
-        });
-      }
+    } catch (error) {
+      console.error('Error adding parent:', error);
+      toast({
+        title: "Error",
+        description: `Failed to add ${newParent.role || 'user'}`,
+        variant: "destructive",
+      });
     }
   };
 
   return {
     isAddSheetOpen,
+    newParent,
     openAddParentSheet,
     closeAddParentSheet,
-    newParent,
     handleNewParentChange,
     handleAddParentSubmit,
   };

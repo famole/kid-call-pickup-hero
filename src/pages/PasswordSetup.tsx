@@ -13,18 +13,23 @@ const PasswordSetup = () => {
     isInitialized,
     authCheckComplete,
     loading,
-    user
+    user,
+    hasPreloadedAccount
   } = usePasswordSetupLogic();
 
+  console.log('PasswordSetup render:', {
+    isInitialized,
+    authCheckComplete,
+    loading,
+    user: user?.email,
+    hasPreloadedAccount,
+    parentData: parentData?.email,
+    isOAuthUser
+  });
 
   // Show loading state while initializing or while auth is loading
   if (!isInitialized || loading) {
     return <LoadingState />;
-  }
-
-  // Only show authentication required if auth check is complete and no user
-  if (authCheckComplete && !user) {
-    return <AuthRequiredState />;
   }
 
   // OAuth user confirmation flow
@@ -32,8 +37,23 @@ const PasswordSetup = () => {
     return <OAuthConfirmation parentData={parentData} />;
   }
 
-  // Regular password setup flow for email/password users
-  return <PasswordSetupForm />;
+  // Regular password setup flow for:
+  // 1. Authenticated email/password users who haven't set password
+  // 2. Preloaded accounts (even without authentication)
+  if (user || hasPreloadedAccount) {
+    return <PasswordSetupForm />;
+  }
+
+  // Only show authentication required if:
+  // - Auth check is complete 
+  // - No authenticated user
+  // - No preloaded account scenario
+  if (authCheckComplete && !user && !hasPreloadedAccount) {
+    return <AuthRequiredState />;
+  }
+
+  // Fallback loading state
+  return <LoadingState />;
 };
 
 export default PasswordSetup;

@@ -4,6 +4,7 @@ import { PickupRequest } from '@/types';
 import { PickupRequestRow, PickupRequestWithDetails } from '@/types/supabase';
 import { getStudentById } from './studentService';
 import { getClassById } from './classService';
+import { getParentById } from './parentService';
 
 // Function to check if a string is a valid UUID
 const isValidUUID = (id: string): boolean => {
@@ -53,7 +54,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
       throw new Error(requestsError.message);
     }
     
-    // Map the data to the expected format with child and class details
+    // Map the data to the expected format with child, class, and parent details
     const result: PickupRequestWithDetails[] = [];
     
     for (const req of requestsData as PickupRequestRow[]) {
@@ -61,6 +62,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
       const studentId = req.student_id;
       const child = await getStudentById(studentId);
       let classInfo = null;
+      let parentInfo = null;
       
       // If we have a child with a valid classId that's a UUID, get class data
       if (child && child.classId && isValidUUID(child.classId)) {
@@ -68,6 +70,15 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
           classInfo = await getClassById(child.classId);
         } catch (error) {
           console.error(`Error fetching class with id ${child.classId}:`, error);
+        }
+      }
+
+      // Get parent details
+      if (req.parent_id && isValidUUID(req.parent_id)) {
+        try {
+          parentInfo = await getParentById(req.parent_id);
+        } catch (error) {
+          console.error(`Error fetching parent with id ${req.parent_id}:`, error);
         }
       }
       
@@ -80,7 +91,8 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
           status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
         },
         child,
-        class: classInfo
+        class: classInfo,
+        parent: parentInfo
       });
     }
     

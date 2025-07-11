@@ -1,30 +1,33 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getActivePickupRequests, updatePickupRequestStatus } from '@/services/pickup';
 import { getStudentById } from '@/services/studentService';
 import { getClassById } from '@/services/classService';
+import { getParentById } from '@/services/parentService';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
 
 export const usePickupManagement = (classId?: string) => {
   const [pendingRequests, setPendingRequests] = useState<PickupRequestWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const subscriptionRef = useRef<any>(null);
 
-  const fetchPendingRequests = async () => {
+  const fetchPendingRequests = useCallback(async () => {
     setLoading(true);
     try {
+      console.log('Fetching pending pickup requests...');
       
-      // Get all pending pickup requests
       const activeRequests = await getActivePickupRequests();
       const pendingOnly = activeRequests.filter(req => req.status === 'pending');
       
+      console.log(`Found ${pendingOnly.length} pending requests`);
       
-      // Get student and class details for each request with better error handling
       const requestsWithDetails = await Promise.all(pendingOnly.map(async (req) => {
         try {
-          
+          console.log(`Fetching details for request ${req.id}`);
           const student = await getStudentById(req.studentId);
           let classInfo = null;
+          let parentInfo = null;
           
           if (student && student.classId) {
             try {
@@ -33,24 +36,33 @@ export const usePickupManagement = (classId?: string) => {
               console.error(`Error fetching class ${student.classId}:`, classError);
             }
           }
+
+          // Fetch parent information
+          if (req.parentId) {
+            try {
+              parentInfo = await getParentById(req.parentId);
+            } catch (parentError) {
+              console.error(`Error fetching parent ${req.parentId}:`, parentError);
+            }
+          }
           
           return {
             request: req,
             child: student,
-            class: classInfo
+            class: classInfo,
+            parent: parentInfo
           };
         } catch (error) {
           console.error(`Error fetching details for request ${req.id}:`, error);
-          // Return request with null child and class if there's an error
           return {
             request: req,
             child: null,
-            class: null
+            class: null,
+            parent: null
           };
         }
       }));
 
-      // Filter by class if specified
       let filteredRequests = requestsWithDetails;
       if (classId && classId !== 'all') {
         filteredRequests = requestsWithDetails.filter(item => 
@@ -65,45 +77,28 @@ export const usePickupManagement = (classId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId]);
 
   const markAsCalled = async (requestId: string) => {
     try {
+      console.log(`Marking request ${requestId} as called`);
+      
+      // Optimistically remove from pending requests immediately
+      setPendingRequests(prev => prev.filter(req => req.request.id !== requestId));
       
       await updatePickupRequestStatus(requestId, 'called');
       
-      // Schedule automatic completion after 5 minutes
-      const timeoutId = setTimeout(async () => {
-        try {
-          
-          // Check if the request is still in 'called' status before completing
-          const currentRequests = await getActivePickupRequests();
-          const currentRequest = currentRequests.find(req => req.id === requestId);
-          
-          if (currentRequest && currentRequest.status === 'called') {
-            await updatePickupRequestStatus(requestId, 'completed');
-            
-            // Refresh the pending requests after auto-completion
-            await fetchPendingRequests();
-          } else {
-          }
-        } catch (error) {
-          console.error(`Error auto-completing request ${requestId}:`, error);
-          // Even if auto-completion fails, we should still refresh to get current state
-          try {
-            await fetchPendingRequests();
-          } catch (refreshError) {
-            console.error(`Error refreshing requests after failed auto-completion:`, refreshError);
-          }
-        }
-      }, 5 * 60 * 1000); // 5 minutes
-
-      // Store the timeout ID for potential cleanup
-
-      // Refresh the pending requests immediately
-      await fetchPendingRequests();
+      console.log('Request marked as called. Server will auto-complete after 5 minutes.');
+      
+      // Force refresh to ensure consistency
+      setTimeout(() => {
+        fetchPendingRequests();
+      }, 100);
+      
     } catch (error) {
       console.error("Error marking request as called:", error);
+      // Refresh on error to get correct state
+      await fetchPendingRequests();
       throw error;
     }
   };
@@ -111,27 +106,43 @@ export const usePickupManagement = (classId?: string) => {
   useEffect(() => {
     fetchPendingRequests();
     
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+    
     // Set up realtime subscription for pickup_requests table
     const channel = supabase
-      .channel('pickup_requests_pending')
+      .channel('pickup_requests_pending_realtime')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'pickup_requests',
-          filter: 'status=eq.pending'
+          table: 'pickup_requests'
         },
         async (payload) => {
-          await fetchPendingRequests();
+          console.log('Real-time pickup request change detected:', payload.eventType, payload);
+          
+          // Force refresh after any change to ensure consistency
+          fetchPendingRequests();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Pickup management subscription status:', status);
+      });
+
+    subscriptionRef.current = channel;
 
     return () => {
-      supabase.removeChannel(channel);
+      console.log('Cleaning up pickup management subscription');
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
     };
-  }, [classId]);
+  }, [fetchPendingRequests]);
 
   return {
     pendingRequests,

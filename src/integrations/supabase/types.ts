@@ -211,7 +211,22 @@ export type Database = {
           request_time?: string
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_pickup_history_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pickup_history_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pickup_requests: {
         Row: {
@@ -245,6 +260,89 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_pickup_requests_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      self_checkout_authorizations: {
+        Row: {
+          authorizing_parent_id: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          start_date: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          authorizing_parent_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          start_date: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          authorizing_parent_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          start_date?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_self_checkout_parent"
+            columns: ["authorizing_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_self_checkout_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_departures: {
+        Row: {
+          created_at: string
+          departed_at: string
+          id: string
+          marked_by_user_id: string
+          notes: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          departed_at?: string
+          id?: string
+          marked_by_user_id: string
+          notes?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          departed_at?: string
+          id?: string
+          marked_by_user_id?: string
+          notes?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_departure_student"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -334,6 +432,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_complete_expired_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      can_manage_user: {
+        Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
+        Returns: boolean
+      }
       get_current_parent_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -350,7 +456,15 @@ export type Database = {
         Args: { user_email: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_role_level: {
+        Args: { user_role: Database["public"]["Enums"]["app_role"] }
+        Returns: number
+      }
       is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_superadmin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
@@ -364,7 +478,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "parent" | "admin" | "teacher"
+      app_role: "parent" | "admin" | "teacher" | "superadmin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -480,7 +594,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["parent", "admin", "teacher"],
+      app_role: ["parent", "admin", "teacher", "superadmin"],
     },
   },
 } as const

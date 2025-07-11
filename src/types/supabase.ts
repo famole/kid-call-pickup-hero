@@ -33,6 +33,11 @@ export type PickupRequestWithDetails = {
     grade: string;
     teacher: string;
   };
+  parent?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 };
 
 // You can also export existing Supabase types to use throughout your app

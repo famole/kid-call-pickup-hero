@@ -4,7 +4,7 @@ import { deleteParent } from '@/services/parentService';
 import { ParentWithStudents } from '@/types/parent';
 
 interface UseAdminParentsActionsProps {
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   setParents: (updateFn: (prev: ParentWithStudents[]) => ParentWithStudents[]) => void;
 }
 
@@ -15,7 +15,9 @@ export const useAdminParentsActions = ({
   const { toast } = useToast();
 
   const handleDeleteParent = async (parentId: string): Promise<void> => {
-    const userTypeLabel = userRole === 'teacher' ? 'teacher' : userRole === 'admin' ? 'admin' : 'parent';
+    const userTypeLabel = userRole === 'superadmin' ? 'superadmin' :
+                         userRole === 'teacher' ? 'teacher' : 
+                         userRole === 'admin' ? 'admin' : 'parent';
     if (!confirm(`Are you sure you want to delete this ${userTypeLabel}? This action cannot be undone.`)) {
       return;
     }
@@ -37,6 +39,8 @@ export const useAdminParentsActions = ({
 
   const getHeaderTitle = () => {
     switch (userRole) {
+      case 'superadmin':
+        return 'Superadmins Management';
       case 'teacher':
         return 'Teachers Management';
       case 'admin':
@@ -48,6 +52,8 @@ export const useAdminParentsActions = ({
 
   const getHeaderDescription = () => {
     switch (userRole) {
+      case 'superadmin':
+        return 'Manage superadmin accounts and permissions';
       case 'teacher':
         return 'Manage teacher accounts and permissions';
       case 'admin':

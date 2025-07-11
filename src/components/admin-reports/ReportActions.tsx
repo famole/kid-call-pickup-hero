@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Calendar } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 
 interface ReportActionsProps {
   onGenerateReport: () => void;
@@ -19,7 +19,7 @@ const ReportActions: React.FC<ReportActionsProps> = ({
   return (
     <div className="flex gap-2">
       <Button onClick={onGenerateReport} disabled={loading}>
-        <Calendar className="h-4 w-4 mr-2" />
+        <FileText className="h-4 w-4 mr-2" />
         {loading ? 'Generating...' : 'Generate Report'}
       </Button>
       <Button 

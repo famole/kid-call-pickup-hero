@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface LogoProps {
@@ -15,10 +14,10 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md' }) => {
 
   return (
     <div className={`relative ${sizeClasses[size]} ${className}`}>
-      <img 
-        src="/lovable-uploads/8268b74f-a6aa-4f00-ac2b-ce117a9c3706.png" 
-        alt="College Crest" 
-        className="w-full h-full object-contain" 
+      <img
+        src="/lovable-uploads/8268b74f-a6aa-4f00-ac2b-ce117a9c3706.png"
+        alt="College Crest"
+        className="w-full h-full object-contain"
       />
     </div>
   );

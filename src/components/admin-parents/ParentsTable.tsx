@@ -19,7 +19,7 @@ interface ParentsTableProps {
   onDeleteParent: (parentId: string) => void;
   onManageStudents: (parent: ParentWithStudents) => void;
   onAddStudentToParent: (parent: ParentWithStudents) => void;
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
 const ParentsTable: React.FC<ParentsTableProps> = ({
@@ -34,6 +34,8 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
 }) => {
   const getUserTypeLabel = () => {
     switch (userRole) {
+      case 'superadmin':
+        return 'superadmins';
       case 'teacher':
         return 'teachers';
       case 'admin':

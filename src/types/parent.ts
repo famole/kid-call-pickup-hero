@@ -4,7 +4,7 @@ export type Parent = {
   name: string;
   email: string;
   phone?: string;
-  role?: 'parent' | 'teacher' | 'admin';
+  role?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   createdAt: Date;
   updatedAt: Date;
 };
@@ -13,7 +13,9 @@ export type ParentInput = {
   name: string;
   email: string;
   phone?: string;
-  role?: 'parent' | 'teacher' | 'admin';
+  role?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  is_preloaded?: boolean;
+  password_set?: boolean;
 };
 
 export type StudentParentRelationship = {
@@ -31,7 +33,10 @@ export type ParentWithStudents = Parent & {
     name: string;
     isPrimary: boolean;
     relationship?: string;
-    parentRelationshipId: string; // The ID of the student_parents table row
+    parentRelationshipId?: string; // The ID of the student_parents table row
     classId?: string; // Add classId for filtering
+    className?: string; // Add className for display
+    grade?: string; // Add grade for display
+    avatar?: string; // Add avatar for display
   }[];
 };

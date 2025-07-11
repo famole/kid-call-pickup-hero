@@ -7,7 +7,7 @@ import { getParentsWithStudents } from '@/services/parentService';
 import { getAllStudents } from '@/services/studentService';
 
 interface UseAdminParentsDataProps {
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
 export const useAdminParentsData = ({ userRole = 'parent' }: UseAdminParentsDataProps) => {

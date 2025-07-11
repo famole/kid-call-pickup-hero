@@ -1,46 +1,83 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllClasses } from '@/services/classService';
-import { getCurrentlyCalled } from '@/services/pickup/getCurrentlyCalled';
+import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
 import { PickupRequestWithDetails } from '@/types/supabase';
-import { Class } from '@/types';
 import ViewerHeader from './ViewerHeader';
 import ClassFilter from './ClassFilter';
 import NoStudents from './NoStudents';
 import ClassGroup from './ClassGroup';
 import { Skeleton } from '@/components/ui/skeleton';
 import CardSkeleton from '@/components/ui/skeletons/CardSkeleton';
+import { supabase } from "@/integrations/supabase/client";
 
 const ViewerDisplay: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState<string>('all');
+  const subscriptionRef = useRef<any>(null);
 
   const { data: classes = [], isLoading: classesLoading } = useQuery({
     queryKey: ['classes'],
     queryFn: () => getAllClasses(),
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: calledStudents = [], isLoading: studentsLoading, refetch } = useQuery({
-    queryKey: ['currently-called'],
-    queryFn: () => getCurrentlyCalled(),
-    refetchInterval: 2000,
-    staleTime: 1000,
+    queryKey: ['called-students-optimized', selectedClass],
+    queryFn: () => getCalledStudentsOptimized(selectedClass),
+    refetchInterval: 5000, // Reduced frequency - real-time will handle immediate updates
+    staleTime: 1000, // Short stale time for better responsiveness
   });
 
-  console.log('Called students data:', calledStudents);
-  console.log('Students loading:', studentsLoading);
+  // Set up real-time subscription for immediate updates
+  useEffect(() => {
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
 
-  // Filter students by selected class
-  const filteredStudents = selectedClass === 'all' 
-    ? calledStudents 
-    : calledStudents.filter((item: PickupRequestWithDetails) => {
-        return String(item.child?.classId) === selectedClass;
+    const channel = supabase
+      .channel(`viewer_display_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pickup_requests'
+        },
+        async (payload) => {
+          console.log('Viewer display real-time change detected:', payload.eventType, payload);
+          
+          // Only refetch when relevant to called students
+          if (payload.eventType === 'UPDATE' && 
+              (payload.new?.status === 'called' || payload.old?.status === 'called')) {
+            refetch();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Viewer display subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Viewer display successfully subscribed to changes');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Viewer display subscription failed');
+        }
       });
 
-  console.log('Filtered students:', filteredStudents);
+    subscriptionRef.current = channel;
+
+    return () => {
+      console.log('Cleaning up viewer display subscription');
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+    };
+  }, [refetch]);
 
   // Group students by class for display
-  const groupedByClass = filteredStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
+  const groupedByClass = calledStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
     const classId = item.child?.classId || 'unknown';
     if (!groups[classId]) {
       groups[classId] = [];
@@ -49,10 +86,7 @@ const ViewerDisplay: React.FC = () => {
     return groups;
   }, {});
 
-  console.log('Grouped by class:', groupedByClass);
-
   const handleClassChange = (value: string) => {
-    console.log('Class filter changed to:', value);
     setSelectedClass(value);
   };
 
@@ -68,7 +102,7 @@ const ViewerDisplay: React.FC = () => {
               {studentsLoading ? (
                 <Skeleton className="h-4 w-48" />
               ) : (
-                `${filteredStudents.length} student${filteredStudents.length !== 1 ? 's' : ''} currently called`
+                `${calledStudents.length} student${calledStudents.length !== 1 ? 's' : ''} currently called`
               )}
             </p>
           </div>

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { School } from 'lucide-react';
+import { School, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
 
@@ -16,6 +16,9 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(false);
+  const [firstTimeEmail, setFirstTimeEmail] = useState('');
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -80,6 +83,120 @@ const Login = () => {
       setIsGoogleLoading(false);
     }
   };
+
+  const handleFirstTimeSetup = () => {
+    setShowFirstTimeSetup(true);
+  };
+
+  const handleBackToLogin = () => {
+    setShowFirstTimeSetup(false);
+    setFirstTimeEmail('');
+  };
+
+  const handleFirstTimeEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCheckingEmail(true);
+
+    try {
+      // Check if this email exists as a preloaded account
+      const { data: parentData, error } = await supabase
+        .from('parents')
+        .select('email, password_set, is_preloaded')
+        .eq('email', firstTimeEmail)
+        .single();
+
+      if (error) {
+        toast({
+          title: 'Email Not Found',
+          description: 'This email is not in our system. Please contact your administrator or check the email address.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check if this is a preloaded account that needs password setup
+      if (parentData.is_preloaded && !parentData.password_set) {
+        // Redirect to password setup with email parameter
+        navigate(`/password-setup?email=${encodeURIComponent(firstTimeEmail)}`);
+      } else if (parentData.password_set) {
+        toast({
+          title: 'Account Already Set Up',
+          description: 'This account already has a password. Please use the regular login form above.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Account Type Not Supported',
+          description: 'This account type cannot use first-time setup. Please contact your administrator.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error checking email:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to check email. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  if (showFirstTimeSetup) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
+        <Card className="w-[350px] shadow-lg">
+          <CardHeader className="space-y-1 flex flex-col items-center">
+            <div className="mb-4">
+              <img
+                src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                alt="Upsy"
+                className="h-16 w-auto object-contain"
+              />
+            </div>
+            <CardTitle className="text-2xl text-center">First Time Setup</CardTitle>
+            <CardDescription className="text-center">
+              Enter your email address to set up your account
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            <form onSubmit={handleFirstTimeEmailSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstTimeEmail">Email Address</Label>
+                <Input
+                  id="firstTimeEmail"
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={firstTimeEmail}
+                  onChange={(e) => setFirstTimeEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-school-primary hover:bg-school-primary/90"
+                disabled={isCheckingEmail}
+              >
+                {isCheckingEmail ? 'Checking...' : 'Continue to Setup'}
+              </Button>
+            </form>
+            
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full"
+              onClick={handleBackToLogin}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-blue-50">
@@ -167,7 +284,40 @@ const Login = () => {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
+          
+          {/* First Time Setup Button */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                First time here?
+              </span>
+            </div>
+          </div>
+          
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleFirstTimeSetup}
+          >
+            Set up your account
+          </Button>
         </CardContent>
+        
+        <CardFooter className="flex flex-col gap-4">
+          <div className="text-sm text-center">
+            New to the system?{" "}
+            <span 
+              className="text-school-primary hover:underline cursor-pointer"
+              onClick={() => navigate('/signup')}
+            >
+              Sign up
+            </span>
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );

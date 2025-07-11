@@ -23,7 +23,11 @@ export const getPickupHistoryByStudent = async (studentId: string): Promise<Pick
   try {
     const { data, error } = await supabase
       .from('pickup_history')
-      .select('*')
+      .select(`
+        *,
+        students!fk_pickup_history_student(name),
+        parents!fk_pickup_history_parent(name)
+      `)
       .eq('student_id', studentId)
       .order('completed_time', { ascending: false });
 
@@ -37,7 +41,9 @@ export const getPickupHistoryByStudent = async (studentId: string): Promise<Pick
       calledTime: item.called_time ? new Date(item.called_time) : undefined,
       completedTime: new Date(item.completed_time),
       pickupDurationMinutes: item.pickup_duration_minutes,
-      createdAt: new Date(item.created_at)
+      createdAt: new Date(item.created_at),
+      studentName: item.students?.name,
+      parentName: item.parents?.name
     }));
   } catch (error) {
     console.error('Error fetching pickup history by student:', error);
@@ -53,7 +59,11 @@ export const getAllPickupHistory = async (
   try {
     let query = supabase
       .from('pickup_history')
-      .select('*')
+      .select(`
+        *,
+        students!fk_pickup_history_student(name),
+        parents!fk_pickup_history_parent(name)
+      `)
       .order('completed_time', { ascending: false });
 
     if (startDate) {
@@ -75,7 +85,9 @@ export const getAllPickupHistory = async (
       calledTime: item.called_time ? new Date(item.called_time) : undefined,
       completedTime: new Date(item.completed_time),
       pickupDurationMinutes: item.pickup_duration_minutes,
-      createdAt: new Date(item.created_at)
+      createdAt: new Date(item.created_at),
+      studentName: item.students?.name,
+      parentName: item.parents?.name
     }));
   } catch (error) {
     console.error('Error fetching all pickup history:', error);

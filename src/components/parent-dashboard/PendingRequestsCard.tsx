@@ -18,14 +18,14 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full md:w-[90%] mx-auto">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Clock className="h-5 w-5 text-orange-600" />
-          In Queue
+          ⏳ In Queue ({pendingRequests.length})
         </CardTitle>
         <CardDescription>
-          Waiting to be called
+          Your pickup requests are being processed
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -35,17 +35,20 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
             return (
               <div 
                 key={request.id}
-                className="p-3 border rounded-md flex items-center gap-3 bg-orange-50 border-orange-200"
+                className="p-3 border rounded-md flex items-center gap-3 bg-orange-50 border-orange-200 hover:shadow-md transition-shadow duration-300"
               >
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-orange-300 flex-shrink-0">
                   <Clock className="h-5 w-5 text-orange-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">
-                    {child?.name || 'Unknown Child'}
+                    📚 {child?.name || 'Unknown Child'}
                   </div>
-                  <div className="text-xs text-orange-600">
-                    In pickup queue
+                  <div className="text-xs text-orange-600 font-medium">
+                    ⏱️ Waiting in pickup queue...
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Requested: {new Date(request.requestTime).toLocaleTimeString()}
                   </div>
                 </div>
               </div>

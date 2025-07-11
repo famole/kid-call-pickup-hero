@@ -36,7 +36,7 @@ interface ParentModalsProps {
   addStudentForm: any; // Using any for now since it's a complex hook type
   classes: Class[];
 
-  userRole?: 'parent' | 'teacher' | 'admin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
 const ParentModals: React.FC<ParentModalsProps> = ({

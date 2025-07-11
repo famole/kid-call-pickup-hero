@@ -3,7 +3,7 @@ export type User = {
   id: string;
   email: string;
   name: string;
-  role: 'parent' | 'admin' | 'teacher';
+  role: 'parent' | 'admin' | 'teacher' | 'superadmin';
   avatar?: string;
 };
 
@@ -13,6 +13,7 @@ export type Child = {
   classId: string;
   parentIds: string[];
   avatar?: string;
+  isAuthorized?: boolean;
 };
 
 export type Class = {

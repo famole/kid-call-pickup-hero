@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Child } from '@/types';
-import SharedStudentsParentSelector from './SharedStudentsParentSelector';
+import SearchOnlyParentSelector from './SearchOnlyParentSelector';
 
 interface FormData {
   studentId: string;
@@ -39,6 +39,8 @@ interface AddAuthorizationFormProps {
   showOnlySharedParents: boolean;
   onToggleParentFilter: () => void;
   parentsWhoShareStudents: ParentWithSharedStudents[];
+  submitLabel?: string;
+  loadingLabel?: string;
 }
 
 const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
@@ -52,6 +54,8 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
   showOnlySharedParents,
   onToggleParentFilter,
   parentsWhoShareStudents,
+  submitLabel = "Create Authorization",
+  loadingLabel = "Creating...",
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -74,18 +78,15 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="parent">Authorized Parent</Label>
-        <SharedStudentsParentSelector
-          parents={allParents}
-          value={formData.authorizedParentId}
-          onValueChange={(value) => onUpdateFormData('authorizedParentId', value)}
-          placeholder="Search and select a parent"
-          showOnlySharedParents={showOnlySharedParents}
-          onToggleFilter={onToggleParentFilter}
-          parentsWhoShareStudents={parentsWhoShareStudents}
-        />
-      </div>
+      <SearchOnlyParentSelector
+        parents={allParents}
+        value={formData.authorizedParentId}
+        onValueChange={(value) => onUpdateFormData('authorizedParentId', value)}
+        placeholder="Search for a parent by name"
+        showOnlySharedParents={showOnlySharedParents}
+        onToggleFilter={onToggleParentFilter}
+        parentsWhoShareStudents={parentsWhoShareStudents}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -115,7 +116,7 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Create Authorization"}
+          {loading ? loadingLabel : submitLabel}
         </Button>
       </div>
     </form>

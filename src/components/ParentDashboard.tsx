@@ -1,43 +1,87 @@
 
-import React from 'react';
-import { useToast } from '@/components/ui/use-toast';
-import { useParentDashboardData } from '@/hooks/useParentDashboardData';
-import { usePickupRequests } from '@/hooks/usePickupRequests';
-import { usePickupActions } from '@/hooks/usePickupActions';
-import ParentDashboardLayout from './parent-dashboard/ParentDashboardLayout';
+import React, { useState } from 'react';
+import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
+import { useAuth } from '@/context/AuthContext';
+import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
+import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelectionCard';
+import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCard';
+import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard';
+import AuthorizedPickupNotification from '@/components/parent-dashboard/AuthorizedPickupNotification';
 
-const ParentDashboard = () => {
-  const { toast } = useToast();
-  const { children, loading } = useParentDashboardData();
-  const { activeRequests, refreshPickupRequests } = usePickupRequests(children);
-  const { 
-    selectedChildren, 
-    isSubmitting, 
-    toggleChildSelection, 
-    handleRequestPickup 
-  } = usePickupActions(refreshPickupRequests);
+const ParentDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const {
+    children,
+    pendingRequests,
+    calledRequests,
+    authorizedRequests,
+    parentInfo,
+    loading,
+    selectedChildren,
+    setSelectedChildren,
+    isSubmitting,
+    toggleChildSelection,
+    handleRequestPickup
+  } = useOptimizedParentDashboard();
 
-  // Check if any children have active requests (either pending or called)
-  const childrenWithActiveRequests = activeRequests.map(req => req.studentId);
+  // Get children with active requests to disable selection
+  const childrenWithActiveRequests = [
+    ...pendingRequests.map(req => req.studentId),
+    ...calledRequests.map(req => req.studentId)
+  ];
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school-primary"></div>
+      <div className="min-h-screen w-full bg-gray-50">
+        <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <ParentDashboardLayout
-      children={children}
-      activeRequests={activeRequests}
-      selectedChildren={selectedChildren}
-      isSubmitting={isSubmitting}
-      childrenWithActiveRequests={childrenWithActiveRequests}
-      onToggleChildSelection={toggleChildSelection}
-      onRequestPickup={handleRequestPickup}
-    />
+    <div className="min-h-screen w-full bg-gray-50">
+      <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
+        <div className="space-y-4 sm:space-y-6">
+          <ParentDashboardHeader userName={user?.name} />
+          
+          <AuthorizedPickupNotification 
+            requests={authorizedRequests}
+            children={children}
+            parentInfo={parentInfo}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* Status Components First - Left side for larger screens */}
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6 lg:order-2">
+              <PendingRequestsCard 
+                pendingRequests={pendingRequests} 
+                children={children}
+              />
+              <CalledRequestsCard 
+                calledRequests={calledRequests} 
+                children={children}
+              />
+            </div>
+            
+            {/* Student Selection Component - Right side for larger screens */}
+            <div className="lg:col-span-2 lg:order-1">
+              <ChildrenSelectionCard
+                children={children}
+                selectedChildren={selectedChildren}
+                childrenWithActiveRequests={childrenWithActiveRequests}
+                isSubmitting={isSubmitting}
+                onToggleChildSelection={toggleChildSelection}
+                onRequestPickup={handleRequestPickup}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
