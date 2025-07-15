@@ -49,7 +49,12 @@ export default function LoginScreen() {
 
       if (result.type === 'success') {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.params)
-        if (exchangeError) setError(exchangeError.message)
+        if (exchangeError) {
+          setError(exchangeError.message)
+        } else {
+          // The auth state change will handle checking if the user exists in the database
+          // If they don't exist, they'll be signed out automatically
+        }
       }
     } catch (err: any) {
       setError(err.message)

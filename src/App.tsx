@@ -21,6 +21,7 @@ import StressTestPage from '@/pages/StressTestPage';
 import AdminInitialSetup from '@/pages/AdminInitialSetup';
 import PickupAuthorizationPage from '@/pages/PickupAuthorizationPage';
 import SelfCheckoutPage from '@/pages/SelfCheckoutPage';
+import UnauthorizedAccess from '@/pages/UnauthorizedAccess';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/password-setup" element={<PasswordSetup />} />
+              <Route path="/unauthorized-access" element={<UnauthorizedAccess />} />
               <Route path="/admin-setup" element={<AdminInitialSetup />} />
               <Route 
                 path="/" 
