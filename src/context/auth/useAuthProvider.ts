@@ -79,14 +79,14 @@ export const useAuthProvider = (): AuthState & {
       
       // If no parent data exists and this is an OAuth user, reject the authentication
       if (!parentData && isOAuthUser) {
-        console.log('OAuth user not found in database, signing them out');
+        console.log('OAuth user not found in database, redirecting to unauthorized page');
         await supabase.auth.signOut();
         setUser(null);
         setLoading(false);
         
-        // Show error message to user
+        // Redirect to unauthorized access page
         if (typeof window !== 'undefined') {
-          alert('Your email is not authorized to access this system. Please contact your administrator.');
+          window.location.href = '/unauthorized-access';
         }
         return;
       }
