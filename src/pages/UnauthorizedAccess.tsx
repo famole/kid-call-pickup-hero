@@ -15,7 +15,7 @@ const UnauthorizedAccess = () => {
             <img
               src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
               alt="Upsy"
-              className="h-16 w-auto object-contain"
+              className="h-24 w-auto object-contain"
             />
           </div>
           <div className="flex items-center gap-2 text-amber-600">

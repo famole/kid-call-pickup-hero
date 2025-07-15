@@ -149,11 +149,11 @@ const Login = () => {
         <Card className="w-[350px] shadow-lg">
           <CardHeader className="space-y-1 flex flex-col items-center">
             <div className="mb-4">
-              <img
-                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
-                alt="Upsy"
-                className="h-16 w-auto object-contain"
-              />
+            <img
+              src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+              alt="Upsy"
+              className="h-24 w-auto object-contain"
+            />
             </div>
             <CardTitle className="text-2xl text-center">First Time Setup</CardTitle>
             <CardDescription className="text-center">
@@ -206,7 +206,7 @@ const Login = () => {
             <img
               src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
               alt="Upsy"
-              className="h-16 w-auto object-contain"
+              className="h-24 w-auto object-contain"
             />
           </div>
           <CardTitle className="text-2xl text-center">School Pickup</CardTitle>
