@@ -50,5 +50,5 @@ bun run coverage
 
 ## Deployment
 
-Build the project with `npm run build` (or `npm run build:dev` for a development build) and publish it through [Lovable](https://lovable.dev). You can connect a custom domain in the project settings.
+Build the project with `npm run build` (or `npm run build:dev` for a development build) and deploy to your preferred hosting platform. You can connect a custom domain through your hosting provider's settings.
 

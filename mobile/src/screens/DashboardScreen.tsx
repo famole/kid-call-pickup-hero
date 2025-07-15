@@ -356,7 +356,7 @@ export default function DashboardScreen({ session }: Props) {
         <Sheet.Handle />
         <Sheet.Frame padding="$4" alignItems="center" space borderRadius="$4">
           {/* <Image
-            source={require('../../../public/lovable-uploads/8268b74f-a6aa-4f00-ac2b-ce117a9c3706.png')}
+            source={require('../../../public/assets/8268b74f-a6aa-4f00-ac2b-ce117a9c3706.png')}
             style={{ width: 80, height: 80 }}
           />  */}
           <Text fontSize="$7" fontWeight="bold">Upsy</Text>
