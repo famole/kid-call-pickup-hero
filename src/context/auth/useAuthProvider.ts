@@ -8,7 +8,6 @@ import {
   getParentData, 
   createUserFromParentData,
   createUserFromAuthData,
-  createParentFromOAuthUser,
 } from './authUtils';
 
 export const useAuthProvider = (): AuthState & {
@@ -78,10 +77,18 @@ export const useAuthProvider = (): AuthState & {
       let parentData = await getParentData(authUser.email);
       console.log('Parent data found:', parentData ? 'Yes' : 'No');
       
-      // If no parent data exists and this is an OAuth user, create one
+      // If no parent data exists and this is an OAuth user, reject the authentication
       if (!parentData && isOAuthUser) {
-        console.log('Creating parent from OAuth user');
-        parentData = await createParentFromOAuthUser(authUser);
+        console.log('OAuth user not found in database, signing them out');
+        await supabase.auth.signOut();
+        setUser(null);
+        setLoading(false);
+        
+        // Show error message to user
+        if (typeof window !== 'undefined') {
+          alert('Your email is not authorized to access this system. Please contact your administrator.');
+        }
+        return;
       }
 
       if (parentData) {
