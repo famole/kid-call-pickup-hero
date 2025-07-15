@@ -14,13 +14,13 @@ The system automatically detects the environment based on:
 ### Production Environment
 Triggers when:
 - Domain contains your production domain
-- Domain matches `main--your-project.lovable.app`
+- Domain matches your production domain
 - `GITHUB_REF` equals `refs/heads/main`
 - `NODE_ENV` equals `production`
 
 ### Development Environment  
 Triggers when:
-- Domain contains `preview--` (Lovable preview deployments)
+- Domain contains `preview--` (preview deployments)
 - Domain contains `localhost` (local development)
 - Domain contains `dev-` or `staging-`
 - Any other case (default fallback)
@@ -46,7 +46,7 @@ Update the domain detection logic in `detectEnvironment()` to match your actual 
 ```typescript
 // Production detection
 if (hostname.includes('your-actual-domain.com') || 
-    hostname.includes('main--your-project.lovable.app')) {
+    hostname.includes('your-production-domain.com')) {
   return 'production';
 }
 ```

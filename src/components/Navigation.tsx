@@ -94,7 +94,7 @@ const Navigation: React.FC = () => {
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
               <img
-                src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
                 alt="Upsy"
                 className="h-16 w-auto object-contain"
               />
@@ -120,7 +120,7 @@ const Navigation: React.FC = () => {
                   <div className="flex flex-col space-y-4 mt-4">
                     <div className="pb-4 border-b flex items-center">
                       <img
-                        src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                        src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
                         alt="Upsy"
                         className="h-8 w-auto object-contain mr-2"
                       />

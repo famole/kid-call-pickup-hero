@@ -150,7 +150,7 @@ const Login = () => {
           <CardHeader className="space-y-1 flex flex-col items-center">
             <div className="mb-4">
               <img
-                src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
                 alt="Upsy"
                 className="h-16 w-auto object-contain"
               />
@@ -204,7 +204,7 @@ const Login = () => {
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="mb-4">
             <img
-              src="/lovable-uploads/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+              src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
               alt="Upsy"
               className="h-16 w-auto object-contain"
             />
