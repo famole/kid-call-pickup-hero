@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
 import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelectionCard';
 import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCard';
@@ -10,6 +11,7 @@ import AuthorizedPickupNotification from '@/components/parent-dashboard/Authoriz
 
 const ParentDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const {
     children,
     pendingRequests,

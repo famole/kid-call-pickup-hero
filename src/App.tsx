@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
@@ -23,6 +22,9 @@ import PickupAuthorizationPage from '@/pages/PickupAuthorizationPage';
 import SelfCheckoutPage from '@/pages/SelfCheckoutPage';
 import UnauthorizedAccess from '@/pages/UnauthorizedAccess';
 import './App.css';
+
+// Import i18n configuration
+import '@/i18n';
 
 const queryClient = new QueryClient();
 

@@ -2,11 +2,13 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import Navigation from '@/components/Navigation';
 import ParentDashboard from '@/components/ParentDashboard';
 
 const Index = () => {
   const { user, loading, isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,7 +23,7 @@ const Index = () => {
     return (
       <div className="flex min-h-screen items-center justify-center w-full">
         <div className="text-center">
-          <p className="text-xl">Loading...</p>
+          <p className="text-xl">{t('common.loading')}</p>
         </div>
       </div>
     );
