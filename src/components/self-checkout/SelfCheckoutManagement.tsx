@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Clock, User, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   getActiveSelfCheckoutAuthorizations,
   markStudentDeparture,
@@ -25,6 +26,7 @@ const SelfCheckoutManagement: React.FC = () => {
   const [isMarkDepartureOpen, setIsMarkDepartureOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<SelfCheckoutAuthorizationWithDetails | null>(null);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadData();
@@ -42,8 +44,8 @@ const SelfCheckoutManagement: React.FC = () => {
     } catch (error) {
       console.error('Error loading authorizations:', error);
       toast({
-        title: "Error",
-        description: "Failed to load self-checkout authorizations.",
+        title: t('common.error'),
+        description: t('selfCheckout.failedToLoad'),
         variant: "destructive",
       });
     } finally {
@@ -59,8 +61,8 @@ const SelfCheckoutManagement: React.FC = () => {
     } catch (error) {
       console.error('Error loading departures:', error);
       toast({
-        title: "Error",
-        description: "Failed to load recent departures.",
+        title: t('common.error'),
+        description: t('selfCheckout.failedToLoad'),
         variant: "destructive",
       });
     } finally {
@@ -77,8 +79,8 @@ const SelfCheckoutManagement: React.FC = () => {
     loadDepartures();
     loadAuthorizations();
     toast({
-      title: "Success",
-      description: "Student departure marked successfully.",
+      title: t('common.success'),
+      description: t('selfCheckout.studentMarkedDeparted'),
     });
   };
 
@@ -98,8 +100,8 @@ const SelfCheckoutManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Self-Checkout Management</h2>
-          <p className="text-base sm:text-lg text-muted-foreground">Manage student self-checkout authorizations and departures</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('selfCheckout.management')}</h2>
+          <p className="text-base sm:text-lg text-muted-foreground">{t('selfCheckout.manageAuthorizations')}</p>
         </div>
       </div>
 
@@ -107,11 +109,11 @@ const SelfCheckoutManagement: React.FC = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="authorized" className="flex items-center gap-2">
             <LogOut className="h-4 w-4" />
-            Authorized Students ({authorizations.length})
+            {t('selfCheckout.authorizedStudents')} ({authorizations.length})
           </TabsTrigger>
           <TabsTrigger value="departures" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
-            Recent Departures ({departures.length})
+            {t('selfCheckout.recentDepartures')} ({departures.length})
           </TabsTrigger>
         </TabsList>
 
@@ -120,10 +122,10 @@ const SelfCheckoutManagement: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <LogOut className="h-5 w-5" />
-                Students Authorized for Self-Checkout
+                {t('selfCheckout.authorizedStudents')}
               </CardTitle>
               <CardDescription>
-                Students who are currently authorized to leave school independently
+                {t('selfCheckout.studentsAuthorizedForSelfCheckout')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -142,8 +144,8 @@ const SelfCheckoutManagement: React.FC = () => {
               ) : authorizations.length === 0 ? (
                 <div className="text-center py-8">
                   <LogOut className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Authorized Students</h3>
-                  <p className="text-gray-500">There are currently no students authorized for self-checkout.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{t('selfCheckout.noAuthorizedStudents')}</h3>
+                  <p className="text-gray-500">{t('selfCheckout.noAuthorizedStudentsDescription')}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -158,13 +160,13 @@ const SelfCheckoutManagement: React.FC = () => {
                         </Avatar>
                         <div>
                           <div className="font-medium text-gray-900">
-                            {authorization.student?.name || 'Unknown Student'}
+                            {authorization.student?.name || t('selfCheckout.unknownStudent')}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {authorization.class?.name || 'No Class'} - {authorization.class?.grade || 'Unknown Grade'}
+                            {authorization.class?.name || t('selfCheckout.unknownClass')} - {authorization.class?.grade || t('selfCheckout.unknownClass')}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Authorized until {new Date(authorization.endDate).toLocaleDateString()}
+                            {t('selfCheckout.authorizationPeriod')}: {new Date(authorization.endDate).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
@@ -174,7 +176,7 @@ const SelfCheckoutManagement: React.FC = () => {
                         size="sm"
                       >
                         <LogOut className="h-4 w-4 mr-2" />
-                        Mark Departure
+                        {t('selfCheckout.markDeparture')}
                       </Button>
                     </div>
                   ))}
@@ -189,10 +191,10 @@ const SelfCheckoutManagement: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5" />
-                Recent Student Departures
+                {t('selfCheckout.recentDepartures')}
               </CardTitle>
               <CardDescription>
-                Students who have recently left the school through self-checkout
+                {t('selfCheckout.studentsWhoHaveRecentlyLeft')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -211,19 +213,19 @@ const SelfCheckoutManagement: React.FC = () => {
               ) : departures.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Recent Departures</h3>
-                  <p className="text-gray-500">No students have left through self-checkout recently.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{t('selfCheckout.noRecentDepartures')}</h3>
+                  <p className="text-gray-500">{t('selfCheckout.noRecentDeparturesDescription')}</p>
                 </div>
               ) : (
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Student</TableHead>
-                        <TableHead>Class</TableHead>
-                        <TableHead>Checkout Date/Time</TableHead>
-                        <TableHead>Marked By</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>{t('selfCheckout.student')}</TableHead>
+                        <TableHead>{t('selfCheckout.class')}</TableHead>
+                        <TableHead>{t('selfCheckout.checkoutDateTime')}</TableHead>
+                        <TableHead>{t('selfCheckout.markedBy')}</TableHead>
+                        <TableHead>{t('selfCheckout.status')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -238,14 +240,14 @@ const SelfCheckoutManagement: React.FC = () => {
                                 </AvatarFallback>
                               </Avatar>
                               <div className="font-medium text-gray-900">
-                                {departure.student?.name || 'Unknown Student'}
+                                {departure.student?.name || t('selfCheckout.unknownStudent')}
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div>
                               <div className="font-medium text-gray-900">
-                                {departure.class?.name || 'No Class'}
+                                {departure.class?.name || t('selfCheckout.unknownClass')}
                               </div>
                               {departure.class?.grade && (
                                 <div className="text-sm text-gray-500">
@@ -272,7 +274,7 @@ const SelfCheckoutManagement: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-green-600 border-green-600">
-                              Departed
+                              {t('selfCheckout.departed')}
                             </Badge>
                           </TableCell>
                         </TableRow>

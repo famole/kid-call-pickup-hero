@@ -57,6 +57,7 @@ const Navigation: React.FC = () => {
   const navigationItems = [
     { path: '/', label: t('navigation.dashboard'), icon: Home, roles: ['parent', 'admin', 'teacher', 'superadmin'] },
     { path: '/pickup-authorization', label: t('navigation.pickupAuthorizations'), icon: Car, roles: ['parent'] },
+    { path: '/self-checkout', label: t('navigation.selfCheckout'), icon: LogOut, roles: ['parent'] },
     { path: '/pickup-management', label: t('navigation.pickupManagement'), icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
     { path: '/admin', label: t('navigation.adminPanel'), icon: Settings, roles: ['admin', 'superadmin'] },
   ];
@@ -134,18 +135,6 @@ const Navigation: React.FC = () => {
                       <span className="text-lg font-semibold text-gray-900">Upsy</span>
                     </div>
                     <NavItems mobile />
-                    
-                    {/* Add Self-Checkout link in mobile menu for parents */}
-                    {user?.role === 'parent' && (
-                      <Link
-                        to="/self-checkout"
-                        className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full justify-start"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>{t('navigation.selfCheckout')}</span>
-                      </Link>
-                    )}
                   </div>
                 </SheetContent>
               </Sheet>
@@ -195,19 +184,6 @@ const Navigation: React.FC = () => {
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                
-                {/* Add Self-Checkout option in user dropdown for parents */}
-                {user?.role === 'parent' && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link to="/self-checkout" className="w-full">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>{t('navigation.selfCheckout')}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
                 
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />

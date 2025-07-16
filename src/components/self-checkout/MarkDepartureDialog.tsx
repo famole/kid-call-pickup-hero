@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { markStudentDeparture, SelfCheckoutAuthorizationWithDetails } from '@/services/selfCheckoutService';
 
 interface MarkDepartureDialogProps {
@@ -23,6 +24,7 @@ const MarkDepartureDialog: React.FC<MarkDepartureDialogProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +38,8 @@ const MarkDepartureDialog: React.FC<MarkDepartureDialogProps> = ({
       await markStudentDeparture(student.studentId, notes || undefined);
       
       toast({
-        title: "Success",
-        description: `${student.student?.name} has been marked as departed.`,
+        title: t('common.success'),
+        description: t('selfCheckout.studentMarkedDeparted', { studentName: student.student?.name }),
       });
       
       onDepartureMarked();
@@ -46,8 +48,8 @@ const MarkDepartureDialog: React.FC<MarkDepartureDialogProps> = ({
     } catch (error) {
       console.error('Error marking departure:', error);
       toast({
-        title: "Error",
-        description: "Failed to mark student departure.",
+        title: t('common.error'),
+        description: t('selfCheckout.failedToMarkDeparture'),
         variant: "destructive",
       });
     } finally {
@@ -63,17 +65,17 @@ const MarkDepartureDialog: React.FC<MarkDepartureDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Mark Student Departure</DialogTitle>
+          <DialogTitle>{t('selfCheckout.studentDeparture')}</DialogTitle>
           <DialogDescription>
-            Confirm that <strong>{student.student?.name}</strong> is leaving the school.
+            {t('selfCheckout.confirmDeparture', { studentName: student.student?.name })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Label htmlFor="notes">{t('selfCheckout.notesOptional')}</Label>
             <Textarea
               id="notes"
-              placeholder="Add any additional notes about the departure..."
+              placeholder={t('selfCheckout.addNotesAboutDeparture')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
@@ -87,14 +89,14 @@ const MarkDepartureDialog: React.FC<MarkDepartureDialogProps> = ({
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={loading}
               className="bg-school-primary hover:bg-school-primary/90"
             >
-              {loading ? "Marking Departure..." : "Mark Departure"}
+              {loading ? t('selfCheckout.markingDeparture') : t('selfCheckout.markDeparture')}
             </Button>
           </DialogFooter>
         </form>

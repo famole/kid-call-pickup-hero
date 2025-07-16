@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { createSelfCheckoutAuthorization } from '@/services/selfCheckoutService';
 import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
@@ -28,6 +29,7 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
   const [loading, setLoading] = useState(false);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isOpen) {
@@ -100,8 +102,8 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
     } catch (error) {
       console.error('Error loading students:', error);
       toast({
-        title: "Error",
-        description: "Failed to load your children.",
+        title: t('common.error'),
+        description: t('selfCheckout.loadDataError'),
         variant: "destructive",
       });
     } finally {
@@ -114,8 +116,8 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
     
     if (!selectedStudentId || !startDate || !endDate) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
+        title: t('common.error'),
+        description: t('selfCheckout.fillAllFields'),
         variant: "destructive",
       });
       return;
@@ -123,8 +125,8 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
 
     if (new Date(startDate) > new Date(endDate)) {
       toast({
-        title: "Error",
-        description: "Start date must be before end date.",
+        title: t('common.error'),
+        description: t('selfCheckout.startDateBeforeEndDate'),
         variant: "destructive",
       });
       return;
@@ -135,8 +137,8 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
       await createSelfCheckoutAuthorization(selectedStudentId, startDate, endDate);
       
       toast({
-        title: "Success",
-        description: "Self-checkout authorization created successfully.",
+        title: t('common.success'),
+        description: t('selfCheckout.authorizationCreated'),
       });
       
       onAuthorizationAdded();
@@ -149,8 +151,8 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
     } catch (error) {
       console.error('Error creating authorization:', error);
       toast({
-        title: "Error",
-        description: "Failed to create authorization.",
+        title: t('common.error'),
+        description: t('selfCheckout.failedToCreate'),
         variant: "destructive",
       });
     } finally {
@@ -162,17 +164,17 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Self-Checkout Authorization</DialogTitle>
+          <DialogTitle>{t('selfCheckout.addAuthorization')}</DialogTitle>
           <DialogDescription>
-            Allow your child to leave school independently during the specified period.
+            {t('selfCheckout.description')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="student">Student *</Label>
+            <Label htmlFor="student">{t('selfCheckout.student')} *</Label>
             <Select value={selectedStudentId} onValueChange={setSelectedStudentId} disabled={studentsLoading}>
               <SelectTrigger>
-                <SelectValue placeholder={studentsLoading ? "Loading students..." : "Select a student"} />
+                <SelectValue placeholder={studentsLoading ? t('common.loading') : t('selfCheckout.selectChild')} />
               </SelectTrigger>
               <SelectContent>
                 {students.map((student) => (
@@ -185,7 +187,7 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="startDate">Start Date *</Label>
+            <Label htmlFor="startDate">{t('selfCheckout.startDate')} *</Label>
             <Input
               id="startDate"
               type="date"
@@ -196,7 +198,7 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="endDate">End Date *</Label>
+            <Label htmlFor="endDate">{t('selfCheckout.endDate')} *</Label>
             <Input
               id="endDate"
               type="date"
@@ -213,14 +215,14 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={loading || !selectedStudentId || !startDate || !endDate}
               className="bg-school-primary hover:bg-school-primary/90"
             >
-              {loading ? "Creating..." : "Create Authorization"}
+              {loading ? t('selfCheckout.creating') : t('selfCheckout.createAuthorization')}
             </Button>
           </DialogFooter>
         </form>

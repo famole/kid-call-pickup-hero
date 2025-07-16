@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, LogOut, Plus, Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   getSelfCheckoutAuthorizationsForParent,
   deleteSelfCheckoutAuthorization,
@@ -32,6 +33,7 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
   const [editingAuthorization, setEditingAuthorization] = useState<SelfCheckoutAuthorizationWithDetails | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadAuthorizations();
@@ -45,8 +47,8 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
     } catch (error) {
       console.error('Error loading authorizations:', error);
       toast({
-        title: "Error",
-        description: "Failed to load self-checkout authorizations.",
+        title: t('common.error'),
+        description: t('selfCheckout.failedToLoad'),
         variant: "destructive",
       });
     } finally {
@@ -60,14 +62,14 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
       await deleteSelfCheckoutAuthorization(id);
       setAuthorizations(prev => prev.filter(auth => auth.id !== id));
       toast({
-        title: "Success",
-        description: "Authorization removed successfully.",
+        title: t('common.success'),
+        description: t('selfCheckout.authorizationRemoved'),
       });
     } catch (error) {
       console.error('Error deleting authorization:', error);
       toast({
-        title: "Error",
-        description: "Failed to remove authorization.",
+        title: t('common.error'),
+        description: t('selfCheckout.failedToRemove'),
         variant: "destructive",
       });
     } finally {
@@ -110,10 +112,10 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
                 <LogOut className="h-5 w-5 sm:h-6 sm:w-6" />
-                Self-Checkout Authorizations
+                {t('selfCheckout.title')}
               </CardTitle>
               <CardDescription className="text-sm">
-                Allow your children to leave school on their own during specific periods
+                {t('selfCheckout.description')}
               </CardDescription>
             </div>
             <Button 
@@ -122,7 +124,7 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Authorization
+              {t('selfCheckout.addAuthorization')}
             </Button>
           </div>
         </CardHeader>
@@ -130,16 +132,16 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
           {authorizations.length === 0 ? (
             <div className="text-center py-8 px-4">
               <LogOut className="h-16 w-16 sm:h-20 sm:w-20 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2">No authorizations yet</h3>
+              <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2">{t('selfCheckout.noAuthorizationsYet')}</h3>
               <p className="text-gray-500 mb-6 text-sm sm:text-base max-w-md mx-auto">
-                You haven't created any self-checkout authorizations. Add one to allow your children to leave school independently.
+                {t('selfCheckout.noAuthorizationsDescription')}
               </p>
               <Button 
                 onClick={() => setIsAddDialogOpen(true)}
                 className="w-full sm:w-auto bg-school-primary hover:bg-school-primary/90"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Create Your First Authorization
+                {t('selfCheckout.createFirstAuthorization')}
               </Button>
             </div>
           ) : (
@@ -150,7 +152,7 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
                     <div className="space-y-2 flex-1 min-w-0">
                       <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
                         <h4 className="font-medium text-base truncate">
-                          {auth.student?.name || 'Unknown Student'}
+                          {auth.student?.name || t('selfCheckout.unknownStudent')}
                         </h4>
                         <Badge 
                           variant={
@@ -164,17 +166,17 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
                             isActive(auth.startDate, auth.endDate) ? "bg-school-primary hover:bg-school-primary/90" : ""
                           }`}
                         >
-                          {!auth.isActive ? "Inactive" : 
-                           isExpired(auth.endDate) ? "Expired" : 
-                           isActive(auth.startDate, auth.endDate) ? "Active" : "Scheduled"}
+                          {!auth.isActive ? t('selfCheckout.inactive') : 
+                           isExpired(auth.endDate) ? t('selfCheckout.expired') : 
+                           isActive(auth.startDate, auth.endDate) ? t('selfCheckout.active') : t('selfCheckout.scheduled')}
                         </Badge>
                       </div>
                       
                       <div className="space-y-2">
                         <p className="text-sm text-gray-600 break-words">
-                          <span className="font-medium">Class:</span>{' '}
+                          <span className="font-medium">{t('selfCheckout.class')}:</span>{' '}
                           <span className="block sm:inline mt-1 sm:mt-0">
-                            {auth.class?.name || 'Unknown Class'} ({auth.class?.grade || 'Unknown Grade'})
+                            {auth.class?.name || t('selfCheckout.unknownClass')} ({auth.class?.grade || t('selfCheckout.unknownClass')})
                           </span>
                         </p>
                         <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
@@ -196,7 +198,7 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
                         }}
                       >
                         <Edit className="h-4 w-4" />
-                        <span className="ml-2 sm:hidden">Edit</span>
+                        <span className="ml-2 sm:hidden">{t('common.edit')}</span>
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -207,24 +209,23 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4" />
-                            <span className="ml-2 sm:hidden">Remove</span>
+                            <span className="ml-2 sm:hidden">{t('common.remove')}</span>
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="mx-4 max-w-md">
                           <AlertDialogHeader>
-                            <AlertDialogTitle className="text-lg">Remove Authorization</AlertDialogTitle>
+                            <AlertDialogTitle className="text-lg">{t('selfCheckout.removeAuthorization')}</AlertDialogTitle>
                             <AlertDialogDescription className="text-sm">
-                              Are you sure you want to remove this self-checkout authorization for{' '}
-                              <strong>{auth.student?.name}</strong>? This will prevent them from leaving school independently.
+                              {t('selfCheckout.removeAuthorizationConfirm', { studentName: auth.student?.name })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                            <AlertDialogCancel className="w-full sm:w-auto">{t('common.cancel')}</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDeleteAuthorization(auth.id)}
                               className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Remove Authorization
+                              {t('selfCheckout.removeAuthorizationButton')}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
