@@ -6,7 +6,6 @@ import { getActivePickupRequestsForParent, createPickupRequest } from '@/service
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { useParentDashboardRealtime } from './useParentDashboardRealtime';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -27,6 +26,7 @@ export const useOptimizedParentDashboard = () => {
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastFetchRef = useRef<number>(0);
+  const subscriptionRef = useRef<any>(null);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) return;
@@ -111,15 +111,70 @@ export const useOptimizedParentDashboard = () => {
     }
   }, [user?.email]);
 
-  // Set up real-time updates with stable callback
-  const handleDataChange = useCallback(() => {
-    loadDashboardData(true);
-  }, [loadDashboardData]);
+  // Set up real-time subscription for pickup requests (same as admin panel)
+  useEffect(() => {
+    if (!user?.email) return;
 
-  const { cleanup } = useParentDashboardRealtime({
-    onDataChange: handleDataChange,
-    enabled: !!user?.email
-  });
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      console.log('Cleaning up existing parent dashboard subscription');
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+
+    const channelName = `parent_dashboard_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+    console.log('Setting up parent dashboard real-time subscription:', channelName);
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pickup_requests'
+        },
+        async (payload) => {
+          console.log('Parent dashboard real-time change detected:', payload.eventType, payload);
+          
+          // Handle real-time updates intelligently like admin panel
+          if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
+            console.log('New pickup request detected, refreshing dashboard...');
+            loadDashboardData(true);
+          } else if (payload.eventType === 'UPDATE') {
+            const newStatus = payload.new?.status;
+            const oldStatus = payload.old?.status;
+            
+            // Any status change should trigger a refresh for parent dashboard
+            if (newStatus !== oldStatus) {
+              console.log(`Pickup request status changed from ${oldStatus} to ${newStatus}, refreshing dashboard...`);
+              setTimeout(() => loadDashboardData(true), 100);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            console.log('Pickup request deleted, refreshing dashboard...');
+            loadDashboardData(true);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Parent dashboard subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to pickup_requests changes for parent dashboard');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Failed to subscribe to pickup_requests changes for parent dashboard');
+        }
+      });
+
+    subscriptionRef.current = channel;
+
+    return () => {
+      console.log('Cleaning up parent dashboard real-time subscription');
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+    };
+  }, [user?.email, loadDashboardData]);
 
   // Toggle child selection
   const toggleChildSelection = useCallback((studentId: string) => {
@@ -169,11 +224,6 @@ export const useOptimizedParentDashboard = () => {
       loadDashboardData(true);
     }
   }, [user?.email, loadDashboardData]);
-
-  // Cleanup real-time subscription on unmount
-  useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
 
   // Separate pending and called requests
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
