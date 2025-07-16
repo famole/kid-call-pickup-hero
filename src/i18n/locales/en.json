@@ -24,7 +24,32 @@
     "studentWithActiveRequest": "Student has an active request",
     "pickupTime": "Pickup time",
     "requestTime": "Request time",
-    "calledTime": "Called time"
+    "calledTime": "Called time",
+    "selectChildrenForPickup": "Select Children for Pickup",
+    "chooseWhichChildren": "Choose which children to pick up today",
+    "noChildrenFound": "No children found in your account",
+    "childrenSelected": "{{count}} child{{plural}} selected for pickup",
+    "yourChildren": "Your Children",
+    "authorizedToPickUp": "Authorized to Pick Up",
+    "selectChildrenFirst": "Select Children First",
+    "requestPickupFor": "Request Pickup for {{count}} Child{{plural}}",
+    "processing": "Processing...",
+    "inQueue": "In Queue ({{count}})",
+    "pickupRequestsBeingProcessed": "Your pickup requests are being processed",
+    "waitingInPickupQueue": "Waiting in pickup queue...",
+    "requested": "Requested: {{time}}",
+    "readyForPickup": "Ready for Pickup! ({{count}})",
+    "childrenReadyHeadToPickup": "Your children are ready - head to the pickup area! 🌟",
+    "readyForPickupHeadToArea": "Ready for pickup! Head to the pickup area!",
+    "called": "Called: {{time}}",
+    "authorizedPickupNotifications": "Authorized Pickup Notifications",
+    "someoneAuthorizedRequested": "Someone authorized has requested pickup for your children",
+    "pickupRequestedBy": "Pickup requested by {{name}}",
+    "requestedAt": "Requested at {{time}}",
+    "pending": "Pending",
+    "calledForPickup": "Called for Pickup",
+    "noteAuthorizedPickup": "These pickup requests were made by someone who is authorized to pick up your children. You don't need to take any action - this is just to keep you informed.",
+    "authorizedPickup": "Authorized pickup"
   },
   "admin": {
     "title": "Admin Panel",
@@ -78,7 +103,13 @@
     "actions": "Actions",
     "noPickups": "No pickups available",
     "calledStudents": "Called Students",
-    "currentlyCalled": "students currently called"
+    "currentlyCalled": "students currently called",
+    "manageStudentPickupRequests": "Manage student pickup requests, calls, and self-checkout authorizations",
+    "pendingRequests": "Pending Requests ({{count}})",
+    "currentlyCalled": "Currently Called ({{count}})",
+    "selfCheckout": "Self-Checkout ({{count}})",
+    "pickupManagementInfo": "Pickup Management Information",
+    "pickupManagementDescription": "Use the \"Pending Requests\" tab to call students for pickup. Once called, students will appear in the \"Currently Called\" tab and will be visible to parents for 5 minutes before being automatically marked as completed. The \"Self-Checkout\" tab shows students who are authorized to leave school independently."
   },
   "forms": {
     "studentName": "Student Name",
@@ -118,7 +149,9 @@
     "next": "Next",
     "previous": "Previous",
     "home": "Home",
-    "settings": "Settings"
+    "settings": "Settings",
+    "unknownChild": "Unknown Child",
+    "unknownClass": "Unknown Class"
   },
   "auth": {
     "login": "Log In",
@@ -143,5 +176,13 @@
   "languages": {
     "english": "English",
     "spanish": "Español"
+  },
+  "viewer": {
+    "currentlyCalledForPickup": "Currently Called for Pickup",
+    "studentsShouldComeToPickupArea": "Students should come to the pickup area",
+    "loadingStudents": "Loading students...",
+    "schoolPickupSystem": "School Pickup System — Please wait until your name appears on screen",
+    "viewInformation": "View Information",
+    "viewInformationDescription": "This screen shows students who have been called for pickup, grouped by class. The display updates automatically in real-time whenever students are called or picked up."
   }
 }

@@ -18,6 +18,7 @@ import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, CheckCheck, LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface PickupManagementProps {
   showNavigation?: boolean;
@@ -25,6 +26,7 @@ interface PickupManagementProps {
 
 const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = true }) => {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
 
@@ -64,7 +66,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school-primary mx-auto mb-4"></div>
-          <p className="text-xl">Loading...</p>
+          <p className="text-xl">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -96,8 +98,8 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           <div className="mb-6">
             <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Pickup Management</h2>
-                <p className="text-base sm:text-lg text-muted-foreground">Manage student pickup requests, calls, and self-checkout authorizations</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('pickup.management')}</h2>
+                <p className="text-base sm:text-lg text-muted-foreground">{t('pickup.manageStudentPickupRequests')}</p>
               </div>
               {classes.length > 0 ? (
                 <ClassFilter 
@@ -115,15 +117,15 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="pending" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Pending Requests ({pendingRequests.length})
+                {t('pickup.pendingRequests', { count: pendingRequests.length })}
               </TabsTrigger>
               <TabsTrigger value="called" className="flex items-center gap-2">
                 <CheckCheck className="h-4 w-4" />
-                Currently Called ({calledStudents.length})
+                {t('pickup.currentlyCalled', { count: calledStudents.length })}
               </TabsTrigger>
               <TabsTrigger value="self-checkout" className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />
-                Self-Checkout ({authorizations.length})
+                {t('pickup.selfCheckout', { count: authorizations.length })}
               </TabsTrigger>
             </TabsList>
 
@@ -153,11 +155,9 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           <div className="mt-8">
             <Card>
               <CardContent className="p-4">
-                <h3 className="text-lg font-semibold mb-2">Pickup Management Information</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('pickup.pickupManagementInfo')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Use the "Pending Requests" tab to call students for pickup. Once called, students will appear in the "Currently Called" tab 
-                  and will be visible to parents for 5 minutes before being automatically marked as completed. The "Self-Checkout" tab shows 
-                  students who are authorized to leave school independently.
+                  {t('pickup.pickupManagementDescription')}
                 </p>
               </CardContent>
             </Card>

@@ -24,7 +24,32 @@
     "studentWithActiveRequest": "El estudiante tiene una solicitud activa",
     "pickupTime": "Hora de recogida",
     "requestTime": "Hora de solicitud",
-    "calledTime": "Hora de llamada"
+    "calledTime": "Hora de llamada",
+    "selectChildrenForPickup": "Seleccionar Estudiantes para Recogida",
+    "chooseWhichChildren": "Elige qué estudiantes recoger hoy",
+    "noChildrenFound": "No se encontraron estudiantes en tu cuenta",
+    "childrenSelected": "{{count}} estudiante{{plural}} seleccionado{{plural}} para recogida",
+    "yourChildren": "Tus Hijos",
+    "authorizedToPickUp": "Autorizado para Recoger",
+    "selectChildrenFirst": "Selecciona Estudiantes Primero",
+    "requestPickupFor": "Solicitar Recogida para {{count}} Estudiante{{plural}}",
+    "processing": "Procesando...",
+    "inQueue": "En Cola ({{count}})",
+    "pickupRequestsBeingProcessed": "Tus solicitudes de recogida están siendo procesadas",
+    "waitingInPickupQueue": "Esperando en la cola de recogida...",
+    "requested": "Solicitado: {{time}}",
+    "readyForPickup": "¡Listo para Recogida! ({{count}})",
+    "childrenReadyHeadToPickup": "¡Tus hijos están listos - dirígete al área de recogida! 🌟",
+    "readyForPickupHeadToArea": "¡Listo para recogida! ¡Dirígete al área de recogida!",
+    "called": "Llamado: {{time}}",
+    "authorizedPickupNotifications": "Notificaciones de Recogida Autorizada",
+    "someoneAuthorizedRequested": "Alguien autorizado ha solicitado la recogida de tus hijos",
+    "pickupRequestedBy": "Recogida solicitada por {{name}}",
+    "requestedAt": "Solicitado a las {{time}}",
+    "pending": "Pendiente",
+    "calledForPickup": "Llamado para Recogida",
+    "noteAuthorizedPickup": "Estas solicitudes de recogida fueron hechas por alguien que está autorizado para recoger a tus hijos. No necesitas tomar ninguna acción - esto es solo para mantenerte informado.",
+    "authorizedPickup": "Recogida autorizada"
   },
   "admin": {
     "title": "Panel de Administración",
@@ -78,7 +103,13 @@
     "actions": "Acciones",
     "noPickups": "No hay recogidas disponibles",
     "calledStudents": "Estudiantes Llamados",
-    "currentlyCalled": "estudiantes actualmente llamados"
+    "currentlyCalled": "estudiantes actualmente llamados",
+    "manageStudentPickupRequests": "Gestionar solicitudes de recogida de estudiantes, llamadas y autorizaciones de auto-salida",
+    "pendingRequests": "Solicitudes Pendientes ({{count}})",
+    "currentlyCalled": "Actualmente Llamados ({{count}})",
+    "selfCheckout": "Auto-Salida ({{count}})",
+    "pickupManagementInfo": "Información de Gestión de Recogidas",
+    "pickupManagementDescription": "Usa la pestaña \"Solicitudes Pendientes\" para llamar estudiantes para recogida. Una vez llamados, los estudiantes aparecerán en la pestaña \"Actualmente Llamados\" y serán visibles para los padres durante 5 minutos antes de ser marcados automáticamente como completados. La pestaña \"Auto-Salida\" muestra estudiantes que están autorizados para salir de la escuela independientemente."
   },
   "forms": {
     "studentName": "Nombre del Estudiante",
@@ -118,7 +149,9 @@
     "next": "Siguiente",
     "previous": "Anterior",
     "home": "Inicio",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "unknownChild": "Niño Desconocido",
+    "unknownClass": "Clase Desconocida"
   },
   "auth": {
     "login": "Iniciar Sesión",
@@ -143,5 +176,13 @@
   "languages": {
     "english": "English",
     "spanish": "Español"
+  },
+  "viewer": {
+    "currentlyCalledForPickup": "Actualmente Llamados para Recogida",
+    "studentsShouldComeToPickupArea": "Los estudiantes deben dirigirse al área de recogida",
+    "loadingStudents": "Cargando estudiantes...",
+    "schoolPickupSystem": "Sistema de Recogida Escolar — Por favor espera hasta que tu nombre aparezca en pantalla",
+    "viewInformation": "Información de Vista",
+    "viewInformationDescription": "Esta pantalla muestra estudiantes que han sido llamados para recogida, agrupados por clase. La pantalla se actualiza automáticamente en tiempo real cuando los estudiantes son llamados o recogidos."
   }
 }
