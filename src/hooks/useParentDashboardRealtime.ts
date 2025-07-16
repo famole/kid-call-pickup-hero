@@ -20,7 +20,7 @@ export const useParentDashboardRealtime = ({
     const now = Date.now();
     
     // Prevent excessive updates (debounce)
-    if (now - lastUpdateRef.current < 100) {
+    if (now - lastUpdateRef.current < 500) {
       return;
     }
     
@@ -33,12 +33,11 @@ export const useParentDashboardRealtime = ({
     
     lastUpdateRef.current = now;
     
-    // Always refresh data on any pickup request change
-    // This ensures we don't miss any updates due to complex filtering
+    // Trigger refresh with a longer delay to prevent loops
     setTimeout(() => {
       console.log('Triggering parent dashboard refresh');
       onDataChange();
-    }, 150);
+    }, 300);
   }, [onDataChange]);
 
   useEffect(() => {

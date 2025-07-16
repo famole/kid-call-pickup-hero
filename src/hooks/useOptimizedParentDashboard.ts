@@ -111,9 +111,13 @@ export const useOptimizedParentDashboard = () => {
     }
   }, [user?.email]);
 
-  // Set up real-time updates
+  // Set up real-time updates with stable callback
+  const handleDataChange = useCallback(() => {
+    loadDashboardData(true);
+  }, [loadDashboardData]);
+
   const { cleanup } = useParentDashboardRealtime({
-    onDataChange: () => loadDashboardData(true),
+    onDataChange: handleDataChange,
     enabled: !!user?.email
   });
 
@@ -164,9 +168,12 @@ export const useOptimizedParentDashboard = () => {
       console.log('Setting up parent dashboard for user:', user.email);
       loadDashboardData(true);
     }
+  }, [user?.email, loadDashboardData]);
 
+  // Cleanup real-time subscription on unmount
+  useEffect(() => {
     return cleanup;
-  }, [user?.email, loadDashboardData, cleanup]);
+  }, [cleanup]);
 
   // Separate pending and called requests
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
