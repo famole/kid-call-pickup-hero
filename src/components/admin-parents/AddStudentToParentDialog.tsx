@@ -112,23 +112,27 @@ const AddStudentToParentDialog: React.FC<AddStudentToParentDialogProps> = ({
           {/* Student Selection */}
           <div className="space-y-2">
             <Label htmlFor={studentId}>Student ({filteredStudents.length} available)</Label>
-            <select
-              id={studentId}
-              className="w-full border rounded p-2 bg-background text-foreground max-h-32 overflow-y-auto"
-              value={selectedStudentId}
-              onChange={(e) => onSelectedStudentIdChange(e.target.value)}
-              required
-            >
-              <option value="">Select a student</option>
-              {filteredStudents.map(student => {
-                const studentClass = classes.find(cls => cls.id === student.classId);
-                return (
-                  <option key={student.id} value={student.id}>
-                    {student.name} {studentClass ? `(${studentClass.name})` : ''}
-                  </option>
-                );
-              })}
-            </select>
+            <Select value={selectedStudentId} onValueChange={onSelectedStudentIdChange}>
+              <SelectTrigger id={studentId}>
+                <SelectValue placeholder="Select a student" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredStudents.length === 0 ? (
+                  <SelectItem value="no-students-available" disabled>
+                    No students match your filters
+                  </SelectItem>
+                ) : (
+                  filteredStudents.map(student => {
+                    const studentClass = classes.find(cls => cls.id === student.classId);
+                    return (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name} {studentClass ? `(${studentClass.name})` : ''}
+                      </SelectItem>
+                    );
+                  })
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -153,7 +157,9 @@ const AddStudentToParentDialog: React.FC<AddStudentToParentDialogProps> = ({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={onSubmit}>Add Student</Button>
+          <Button onClick={onSubmit} disabled={!selectedStudentId || selectedStudentId === "no-students-available"}>
+            Add Student
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
