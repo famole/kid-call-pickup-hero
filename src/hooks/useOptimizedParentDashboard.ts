@@ -29,23 +29,32 @@ export const useOptimizedParentDashboard = () => {
   const subscriptionRef = useRef<any>(null);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      console.log('No user email available, skipping data load');
+      return;
+    }
 
     const now = Date.now();
     // Prevent excessive requests but allow forced refreshes
     if (!forceRefresh && now - lastFetchRef.current < 500) {
+      console.log('Debouncing dashboard data load request');
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Loading parent dashboard data...', { forceRefresh });
+      console.log('Loading parent dashboard data...', { forceRefresh, userEmail: user.email });
       
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
         getParentDashboardDataOptimized(user.email),
         getActivePickupRequestsForParent()
       ]);
+
+      console.log('Dashboard data loaded:', {
+        childrenCount: dashboardData.allChildren.length,
+        pickupRequestsCount: pickupRequests.length
+      });
 
       setChildren(dashboardData.allChildren);
       
@@ -136,6 +145,7 @@ export const useOptimizedParentDashboard = () => {
         },
         async (payload) => {
           console.log('Parent dashboard real-time change detected:', payload.eventType, payload);
+          console.log('Payload details:', JSON.stringify(payload, null, 2));
           
           // Handle real-time updates intelligently like admin panel
           if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
@@ -144,11 +154,18 @@ export const useOptimizedParentDashboard = () => {
           } else if (payload.eventType === 'UPDATE') {
             const newStatus = payload.new?.status;
             const oldStatus = payload.old?.status;
+            const studentId = payload.new?.student_id;
+            
+            console.log(`Status change detected for student ${studentId}: ${oldStatus} -> ${newStatus}`);
             
             // Any status change should trigger a refresh for parent dashboard
             if (newStatus !== oldStatus) {
               console.log(`Pickup request status changed from ${oldStatus} to ${newStatus}, refreshing dashboard...`);
-              setTimeout(() => loadDashboardData(true), 100);
+              // Use a longer timeout to ensure the database update is complete
+              setTimeout(() => {
+                console.log('Executing dashboard refresh now...');
+                loadDashboardData(true);
+              }, 300);
             }
           } else if (payload.eventType === 'DELETE') {
             console.log('Pickup request deleted, refreshing dashboard...');

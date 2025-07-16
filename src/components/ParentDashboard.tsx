@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth/AuthProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
 import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelectionCard';
