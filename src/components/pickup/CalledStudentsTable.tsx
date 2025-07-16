@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Clock, User, CheckCheck } from 'lucide-react';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CalledStudentsTableProps {
   requests: PickupRequestWithDetails[];
@@ -17,13 +18,15 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
   requests,
   loading
 }) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCheck className="h-5 w-5" />
-            Currently Called Students
+            {t('pickup.currentlyCalled', { count: 0 })}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -49,14 +52,14 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCheck className="h-5 w-5" />
-            Currently Called Students
+            {t('pickup.currentlyCalled', { count: 0 })}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <CheckCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Called</h3>
-            <p className="text-gray-500">There are currently no students called for pickup.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('dashboard.noCalled')}</h3>
+            <p className="text-gray-500">{t('dashboard.noCalled')}</p>
           </div>
         </CardContent>
       </Card>
@@ -68,7 +71,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CheckCheck className="h-5 w-5" />
-          Currently Called Students ({requests.length})
+          {t('pickup.currentlyCalled', { count: requests.length })}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -76,11 +79,11 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-left">Student</TableHead>
-                <TableHead className="text-left">Class</TableHead>
-                <TableHead className="text-left">Pickup Person</TableHead>
-                <TableHead className="text-left">Called Time</TableHead>
-                <TableHead className="text-left">Status</TableHead>
+                <TableHead className="text-left">{t('pickup.studentName')}</TableHead>
+                <TableHead className="text-left">{t('admin.class')}</TableHead>
+                <TableHead className="text-left">{t('pickup.parentName')}</TableHead>
+                <TableHead className="text-left">{t('dashboard.calledTime')}</TableHead>
+                <TableHead className="text-left">{t('pickup.status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -96,7 +99,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                       </Avatar>
                       <div>
                         <div className="font-medium text-gray-900">
-                          {item.child?.name || 'Unknown Student'}
+                          {item.child?.name || t('common.unknownChild')}
                         </div>
                       </div>
                     </div>
@@ -104,7 +107,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                   <TableCell className="text-left">
                     <div>
                       <div className="font-medium text-gray-900">
-                        {item.class?.name || 'No Class'}
+                        {item.class?.name || t('common.unknownClass')}
                       </div>
                       {item.class?.teacher && (
                         <div className="text-sm text-gray-500">
@@ -118,7 +121,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                       <User className="h-4 w-4 text-gray-400" />
                       <div>
                         <div className="font-medium text-gray-900">
-                          {item.parent?.name || `Parent (ID: ${item.request.parentId?.slice(0, 8)}...)`}
+                          {item.parent?.name || `${t('forms.parentName')} (ID: ${item.request.parentId?.slice(0, 8)}...)`}
                         </div>
                         {item.parent?.email && (
                           <div className="text-sm text-gray-500">
@@ -141,7 +144,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                   </TableCell>
                   <TableCell className="text-left">
                     <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      Called
+                      {t('dashboard.calledForPickup')}
                     </Badge>
                   </TableCell>
                 </TableRow>
