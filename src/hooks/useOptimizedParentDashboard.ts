@@ -27,7 +27,7 @@ export const useOptimizedParentDashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastFetchRef = useRef<number>(0);
   const subscriptionRef = useRef<any>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) {
