@@ -27,6 +27,7 @@ export const useOptimizedParentDashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastFetchRef = useRef<number>(0);
   const subscriptionRef = useRef<any>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) {
@@ -124,6 +125,12 @@ export const useOptimizedParentDashboard = () => {
   useEffect(() => {
     if (!user?.email) return;
 
+    // Set up periodic polling as a fallback in case realtime fails
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => loadDashboardData(true), 5000);
+
     // Clean up existing subscription
     if (subscriptionRef.current) {
       console.log('Cleaning up existing parent dashboard subscription');
@@ -189,6 +196,10 @@ export const useOptimizedParentDashboard = () => {
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, [user?.email, loadDashboardData]);
