@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
@@ -45,8 +44,9 @@ export const useOptimizedParentDashboard = () => {
   const lastFetchRef = useRef<number>(0);
   const channelRef = useRef<any>(null);
   const childrenIdsRef = useRef<string[]>([]);
+  const currentParentIdRef = useRef<string | null>(null);
 
-  // Keep track of children IDs for real-time filtering
+  // Keep track of children IDs and parent ID for real-time filtering
   useEffect(() => {
     childrenIdsRef.current = children.map(child => child.id);
   }, [children]);
@@ -62,6 +62,12 @@ export const useOptimizedParentDashboard = () => {
 
     try {
       setLoading(true);
+      
+      // Get current parent ID first
+      const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+      if (!parentError && parentId) {
+        currentParentIdRef.current = parentId;
+      }
       
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
@@ -135,18 +141,33 @@ export const useOptimizedParentDashboard = () => {
     console.log('Parent dashboard real-time change:', payload);
     
     const studentId = payload.new?.student_id || payload.old?.student_id;
+    const parentId = payload.new?.parent_id || payload.old?.parent_id;
     
-    // Only refresh if this affects our children
-    if (studentId && childrenIdsRef.current.includes(studentId)) {
-      console.log('Change affects our children, updating...', { studentId, eventType: payload.eventType });
+    // Check if this affects our children or if we're the parent making the request
+    const affectsOurChildren = studentId && childrenIdsRef.current.includes(studentId);
+    const isOurRequest = parentId && parentId === currentParentIdRef.current;
+    
+    if (affectsOurChildren || isOurRequest) {
+      console.log('Change affects our dashboard, updating...', { 
+        studentId, 
+        parentId, 
+        eventType: payload.eventType,
+        status: payload.new?.status || payload.old?.status,
+        affectsOurChildren,
+        isOurRequest
+      });
       
-      // For any change that affects our children, refresh the data
-      // Use a small delay to avoid race conditions
+      // Use a small delay to avoid race conditions with database updates
       setTimeout(() => {
         loadDashboardData(true);
-      }, 100);
+      }, 200);
     } else {
-      console.log('Change does not affect our children, ignoring...', { studentId, ourChildren: childrenIdsRef.current });
+      console.log('Change does not affect our dashboard, ignoring...', { 
+        studentId, 
+        parentId,
+        ourParentId: currentParentIdRef.current,
+        ourChildren: childrenIdsRef.current 
+      });
     }
   }, [loadDashboardData]);
 
@@ -237,7 +258,7 @@ export const useOptimizedParentDashboard = () => {
         channelRef.current = null;
       }
     };
-  }, [user?.email, handleRealtimeChange]);
+  }, [user?.email, handleRealtimeChange, loadDashboardData]);
 
   // Separate pending and called requests
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');

@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getActivePickupRequestsForParent } from '@/services/pickupService';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,11 +18,24 @@ const isValidUUID = (id: string): boolean => {
 export const usePickupRequests = (children: ChildWithType[]) => {
   const { user } = useAuth();
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
+  const childrenIdsRef = useRef<string[]>([]);
+  const currentParentIdRef = useRef<string | null>(null);
 
-  const fetchPickupRequests = async () => {
+  // Keep track of children IDs for real-time filtering
+  useEffect(() => {
+    childrenIdsRef.current = children.map(child => child.id);
+  }, [children]);
+
+  const fetchPickupRequests = useCallback(async () => {
     if (!user) return;
 
     try {
+      // Get current parent ID
+      const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+      if (!parentError && parentId) {
+        currentParentIdRef.current = parentId;
+      }
+
       // Get requests where this parent is the requester
       const parentActiveRequests = await getActivePickupRequestsForParent();
       
@@ -97,18 +109,62 @@ export const usePickupRequests = (children: ChildWithType[]) => {
       });
       
       setActiveRequests(combinedRequests);
+      console.log('Pickup requests updated:', combinedRequests.length);
     } catch (error) {
       console.error('Error fetching pickup requests:', error);
     }
-  };
+  }, [user, children]);
+
+  // Handle real-time updates
+  const handleRealtimeChange = useCallback(async (payload: any) => {
+    console.log('Pickup requests real-time change:', payload);
+    
+    const studentId = payload.new?.student_id || payload.old?.student_id;
+    const parentId = payload.new?.parent_id || payload.old?.parent_id;
+    
+    // Check if this affects our children or if we're the parent making the request
+    const affectsOurChildren = studentId && childrenIdsRef.current.includes(studentId);
+    const isOurRequest = parentId && parentId === currentParentIdRef.current;
+    
+    if (affectsOurChildren || isOurRequest) {
+      console.log('Pickup request change affects us, refreshing...', { 
+        studentId, 
+        parentId, 
+        eventType: payload.eventType,
+        status: payload.new?.status || payload.old?.status 
+      });
+      
+      // Small delay to avoid race conditions
+      setTimeout(() => {
+        fetchPickupRequests();
+      }, 200);
+    }
+  }, [fetchPickupRequests]);
 
   useEffect(() => {
     fetchPickupRequests();
 
-    // Set up a refresh interval
-    const interval = setInterval(fetchPickupRequests, 5000);
-    return () => clearInterval(interval);
-  }, [user, children]);
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('pickup_requests_parent_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pickup_requests'
+        },
+        handleRealtimeChange
+      )
+      .subscribe((status) => {
+        console.log('Pickup requests subscription status:', status);
+      });
+
+    return () => {
+      console.log('Cleaning up pickup requests subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPickupRequests, handleRealtimeChange]);
 
   return { activeRequests, refreshPickupRequests: fetchPickupRequests };
 };
