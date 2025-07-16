@@ -40,6 +40,7 @@ export const useOptimizedParentDashboard = () => {
   const [activeRequests, setActiveRequests] = useState<PickupRequest[]>([]);
   const [parentInfo, setParentInfo] = useState<ParentInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const firstLoadRef = useRef(true);
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastFetchRef = useRef<number>(0);
@@ -61,7 +62,9 @@ export const useOptimizedParentDashboard = () => {
     }
 
     try {
-      setLoading(true);
+      if (firstLoadRef.current) {
+        setLoading(true);
+      }
       
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
@@ -126,7 +129,10 @@ export const useOptimizedParentDashboard = () => {
     } catch (error) {
       console.error('Error loading parent dashboard data:', error);
     } finally {
-      setLoading(false);
+      if (firstLoadRef.current) {
+        firstLoadRef.current = false;
+        setLoading(false);
+      }
     }
   }, [user?.email]);
 
