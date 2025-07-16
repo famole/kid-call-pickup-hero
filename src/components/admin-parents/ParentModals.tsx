@@ -3,7 +3,6 @@ import React from 'react';
 import AddParentSheet from './AddParentSheet';
 import EditParentSheet from './EditParentSheet';
 import StudentManagementModal from './StudentManagementModal';
-import AddStudentToParentDialog from './AddStudentToParentDialog';
 import { ParentWithStudents, ParentInput } from '@/types/parent';
 import { Child, Class } from '@/types';
 
@@ -31,11 +30,7 @@ interface ParentModalsProps {
   onRemoveStudent: (studentId: string) => Promise<void>;
   onTogglePrimary: (studentId: string) => Promise<void>;
 
-  // Add Student to Parent Dialog
-  isAddStudentDialogOpen: boolean;
-  addStudentForm: any; // Using any for now since it's a complex hook type
   classes: Class[];
-
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
 }
 
@@ -63,9 +58,6 @@ const ParentModals: React.FC<ParentModalsProps> = ({
   onRemoveStudent,
   onTogglePrimary,
 
-  // Add Student to Parent Dialog props
-  isAddStudentDialogOpen,
-  addStudentForm,
   classes,
 
   userRole = 'parent',
@@ -95,6 +87,7 @@ const ParentModals: React.FC<ParentModalsProps> = ({
         onOpenChange={onStudentModalOpenChange}
         parent={selectedParent}
         allStudents={allStudents}
+        classes={classes}
         onAddStudent={async (parentId: string, studentId: string, relationship: string, isPrimary: boolean) => {
           await onAddStudent(studentId, relationship);
         }}
@@ -109,25 +102,6 @@ const ParentModals: React.FC<ParentModalsProps> = ({
         }}
       />
 
-      <AddStudentToParentDialog
-        isOpen={isAddStudentDialogOpen}
-        onOpenChange={addStudentForm.closeAddStudentDialog}
-        selectedParentName={addStudentForm.targetParentName}
-        allStudents={allStudents}
-        classes={classes}
-        selectedStudentId={addStudentForm.selectedStudentId}
-        onSelectedStudentIdChange={addStudentForm.setSelectedStudentId}
-        relationship={addStudentForm.relationship}
-        onRelationshipChange={addStudentForm.setRelationship}
-        isPrimary={addStudentForm.isPrimary}
-        onIsPrimaryChange={addStudentForm.setIsPrimary}
-        onSubmit={addStudentForm.handleAddStudentToParentSubmit}
-        searchTerm={addStudentForm.searchTerm}
-        onSearchTermChange={addStudentForm.setSearchTerm}
-        selectedClassFilter={addStudentForm.selectedClassFilter}
-        onClassFilterChange={addStudentForm.setSelectedClassFilter}
-        filteredStudents={addStudentForm.availableStudents}
-      />
     </>
   );
 };

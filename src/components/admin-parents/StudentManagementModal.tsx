@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,15 +11,17 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
-import { Star, StarOff, Trash2, UserPlus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Star, StarOff, Trash2, UserPlus, Search } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
-import { Child } from '@/types';
+import { Child, Class } from '@/types';
 
 interface StudentManagementModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   parent: ParentWithStudents | null;
   allStudents: Child[];
+  classes: Class[];
   onAddStudent: (parentId: string, studentId: string, relationship: string, isPrimary: boolean) => Promise<void>;
   onRemoveStudent: (studentRelationshipId: string, parentId: string, studentId: string) => void;
   onTogglePrimary: (studentRelationshipId: string, parentId: string, currentIsPrimary: boolean, currentRelationship?: string) => void;
@@ -30,22 +32,43 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
   onOpenChange,
   parent,
   allStudents,
+  classes,
   onAddStudent,
   onRemoveStudent,
   onTogglePrimary,
 }) => {
-  const [showAddForm, setShowAddForm] = React.useState(false);
-  const [selectedStudentId, setSelectedStudentId] = React.useState('');
-  const [relationship, setRelationship] = React.useState('');
-  const [isPrimary, setIsPrimary] = React.useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [relationship, setRelationship] = useState('');
+  const [isPrimary, setIsPrimary] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedClassFilter, setSelectedClassFilter] = useState('all');
 
   const studentId = React.useId();
   const relationshipId = React.useId();
   const primaryId = React.useId();
 
-  const availableStudents = parent
-    ? allStudents.filter(s => !parent.students?.find(ps => ps.id === s.id))
-    : allStudents;
+  // Filter available students with search and class filter
+  const availableStudents = useMemo(() => {
+    if (!parent) return allStudents;
+    
+    // Get students not already assigned to this parent
+    let filtered = allStudents.filter(s => !parent.students?.find(ps => ps.id === s.id));
+    
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(student =>
+        student.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply class filter
+    if (selectedClassFilter !== 'all') {
+      filtered = filtered.filter(student => student.classId === selectedClassFilter);
+    }
+    
+    return filtered;
+  }, [parent, allStudents, searchTerm, selectedClassFilter]);
 
   const handleAddStudent = async () => {
     if (!parent || !selectedStudentId) return;
@@ -62,6 +85,8 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
     setSelectedStudentId('');
     setRelationship('');
     setIsPrimary(false);
+    setSearchTerm('');
+    setSelectedClassFilter('all');
     onOpenChange(false);
   };
 
@@ -138,22 +163,59 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
 
             {showAddForm ? (
               <div className="space-y-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                {/* Search and Filter Controls */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Search Students</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Search by student name..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Filter by Class</Label>
+                    <Select value={selectedClassFilter} onValueChange={setSelectedClassFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filter by class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Classes</SelectItem>
+                        {classes.map((cls) => (
+                          <SelectItem key={cls.id} value={cls.id}>
+                            {cls.name} - {cls.grade}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor={studentId}>Student</Label>
-                  <select
-                    id={studentId}
-                    className="w-full border rounded p-2 bg-background text-foreground"
-                    value={selectedStudentId}
-                    onChange={(e) => setSelectedStudentId(e.target.value)}
-                    required
-                  >
-                    <option value="">Select a student</option>
-                    {availableStudents.map(student => (
-                      <option key={student.id} value={student.id}>
-                        {student.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Label htmlFor={studentId}>Student ({availableStudents.length} available)</Label>
+                  <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStudents.length === 0 ? (
+                        <SelectItem value="" disabled>No students match your filters</SelectItem>
+                      ) : (
+                        availableStudents.map(student => {
+                          const studentClass = classes.find(c => c.id === student.classId);
+                          return (
+                            <SelectItem key={student.id} value={student.id}>
+                              {student.name} {studentClass && `(${studentClass.name})`}
+                            </SelectItem>
+                          );
+                        })
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="space-y-2">

@@ -17,6 +17,7 @@ import LoadingIndicator from './LoadingIndicator';
 // Import custom hooks and wrappers
 import { useAdminParentsHooks } from './AdminParentsHooks';
 import { createStudentWrappers } from './AdminParentsWrappers';
+import { getAllClasses } from '@/services/classService';
 
 interface AdminParentsLayoutProps {
   userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
@@ -49,11 +50,25 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   getHeaderDescription,
   loadingProgress,
 }) => {
+  const [classes, setClasses] = React.useState<Class[]>([]);
+
+  // Load classes
+  React.useEffect(() => {
+    const loadClasses = async () => {
+      try {
+        const classesData = await getAllClasses();
+        setClasses(classesData);
+      } catch (error) {
+        console.error('Failed to load classes:', error);
+      }
+    };
+    loadClasses();
+  }, []);
   // Get all hooks
   const hooks = useAdminParentsHooks({
     userRole,
     allStudents,
-    classes: [], // Will be populated by useParentClassFilter
+    classes,
     parents,
     setParents,
     onParentAdded,
@@ -115,7 +130,6 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           onEditParent={hooks.editParentForm.openEditParentSheet}
           onDeleteParent={handleDeleteParent}
           onManageStudents={hooks.studentManagement.openStudentModal}
-          onAddStudentToParent={hooks.addStudentToParentForm.openAddStudentDialog}
         />
       </Card>
 
@@ -137,9 +151,7 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
         onAddStudent={wrappers.handleAddStudentWrapper}
         onRemoveStudent={wrappers.handleRemoveStudentWrapper}
         onTogglePrimary={wrappers.handleTogglePrimaryWrapper}
-        isAddStudentDialogOpen={hooks.addStudentToParentForm.isStudentDialogOpen}
-        addStudentForm={hooks.addStudentToParentForm}
-        classes={[]} // Will be populated by AdminParentsContent
+        classes={classes}
         userRole={userRole}
       />
     </div>
