@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Child } from '@/types';
 import SearchOnlyParentSelector from './SearchOnlyParentSelector';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface FormData {
   studentId: string;
@@ -54,19 +55,24 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
   showOnlySharedParents,
   onToggleParentFilter,
   parentsWhoShareStudents,
-  submitLabel = "Create Authorization",
-  loadingLabel = "Creating...",
+  submitLabel,
+  loadingLabel,
 }) => {
+  const { t } = useTranslation();
+
+  const defaultSubmitLabel = submitLabel || t('pickupAuthorizations.createAuthorization');
+  const defaultLoadingLabel = loadingLabel || t('pickupAuthorizations.creating');
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="student">Child</Label>
+        <Label htmlFor="student">{t('pickupAuthorizations.child')}</Label>
         <Select
           value={formData.studentId}
           onValueChange={(value) => onUpdateFormData('studentId', value)}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select a child" />
+            <SelectValue placeholder={t('pickupAuthorizations.selectChild')} />
           </SelectTrigger>
           <SelectContent>
             {children.map((child) => (
@@ -82,7 +88,7 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
         parents={allParents}
         value={formData.authorizedParentId}
         onValueChange={(value) => onUpdateFormData('authorizedParentId', value)}
-        placeholder="Search for a parent by name"
+        placeholder={t('pickupAuthorizations.searchForParent')}
         showOnlySharedParents={showOnlySharedParents}
         onToggleFilter={onToggleParentFilter}
         parentsWhoShareStudents={parentsWhoShareStudents}
@@ -90,7 +96,7 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="startDate">Start Date</Label>
+          <Label htmlFor="startDate">{t('pickupAuthorizations.startDate')}</Label>
           <Input
             id="startDate"
             type="date"
@@ -100,7 +106,7 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="endDate">End Date</Label>
+          <Label htmlFor="endDate">{t('pickupAuthorizations.endDate')}</Label>
           <Input
             id="endDate"
             type="date"
@@ -113,10 +119,10 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
 
       <div className="flex justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? loadingLabel : submitLabel}
+          {loading ? defaultLoadingLabel : defaultSubmitLabel}
         </Button>
       </div>
     </form>

@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   updatePickupAuthorization,
   getParentsWhoShareStudents,
@@ -32,6 +34,7 @@ export const useEditAuthorizationDialog = (
 ) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [children, setChildren] = useState<Child[]>([]);
   const [allParents, setAllParents] = useState<ParentWithSharedStudents[]>([]);
   const [parentsWhoShareStudents, setParentsWhoShareStudents] = useState<ParentWithSharedStudents[]>([]);
@@ -99,8 +102,8 @@ export const useEditAuthorizationDialog = (
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load data for authorization form.',
+        title: t('common.error'),
+        description: t('pickupAuthorizations.loadDataError'),
         variant: 'destructive'
       });
     }
@@ -124,8 +127,8 @@ export const useEditAuthorizationDialog = (
 
     if (!formData.studentId || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all fields.',
+        title: t('common.error'),
+        description: t('pickupAuthorizations.fillAllFields'),
         variant: 'destructive'
       });
       return;
@@ -133,8 +136,8 @@ export const useEditAuthorizationDialog = (
 
     if (new Date(formData.startDate) > new Date(formData.endDate)) {
       toast({
-        title: 'Error',
-        description: 'Start date must be before or equal to end date.',
+        title: t('common.error'),
+        description: t('pickupAuthorizations.startDateBeforeEndDate'),
         variant: 'destructive'
       });
       return;
@@ -150,8 +153,8 @@ export const useEditAuthorizationDialog = (
       });
 
       toast({
-        title: 'Success',
-        description: 'Pickup authorization updated.'
+        title: t('common.success'),
+        description: t('pickupAuthorizations.authorizationUpdated')
       });
 
       onAuthorizationUpdated();
@@ -159,8 +162,8 @@ export const useEditAuthorizationDialog = (
     } catch (error) {
       console.error('Error updating authorization:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to update pickup authorization.',
+        title: t('common.error'),
+        description: t('pickupAuthorizations.failedToUpdate'),
         variant: 'destructive'
       });
     } finally {
@@ -180,4 +183,3 @@ export const useEditAuthorizationDialog = (
     handleSubmit
   };
 };
-

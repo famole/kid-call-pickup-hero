@@ -4,16 +4,18 @@ import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import PickupAuthorizationManagement from '@/components/pickup-authorization/PickupAuthorizationManagement';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const PickupAuthorizationPage: React.FC = () => {
   const { user, loading } = useAuth();
+  const { t } = useTranslation();
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-school-primary mx-auto mb-4"></div>
-          <p className="text-xl">Loading...</p>
+          <p className="text-xl">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -29,10 +31,10 @@ const PickupAuthorizationPage: React.FC = () => {
       <div className="container mx-auto py-4 px-4 sm:py-6 sm:px-6 max-w-4xl">
         <div className="mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Pickup Authorizations
+            {t('pickupAuthorizations.title')}
           </h1>
           <p className="text-sm sm:text-base text-gray-600">
-            Manage who can pick up your children and when they're authorized to do so.
+            {t('pickupAuthorizations.description')}
           </p>
         </div>
         
