@@ -6,6 +6,7 @@ import { getActivePickupRequestsForParent, createPickupRequest } from '@/service
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useParentDashboardRealtime } from './useParentDashboardRealtime';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -26,20 +27,19 @@ export const useOptimizedParentDashboard = () => {
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastFetchRef = useRef<number>(0);
-  const subscriptionRef = useRef<any>(null);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) return;
 
     const now = Date.now();
-    // Prevent excessive requests
-    if (!forceRefresh && now - lastFetchRef.current < 1000) {
+    // Prevent excessive requests but allow forced refreshes
+    if (!forceRefresh && now - lastFetchRef.current < 500) {
       return;
     }
 
     try {
       setLoading(true);
-      console.log('Loading parent dashboard data...');
+      console.log('Loading parent dashboard data...', { forceRefresh });
       
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
@@ -100,7 +100,10 @@ export const useOptimizedParentDashboard = () => {
       }
       
       lastFetchRef.current = now;
-      console.log('Parent dashboard data refreshed successfully');
+      console.log('Parent dashboard data loaded successfully', {
+        childrenCount: dashboardData.allChildren.length,
+        requestsCount: activeRequests.length
+      });
     } catch (error) {
       console.error('Error loading parent dashboard data:', error);
     } finally {
@@ -108,17 +111,11 @@ export const useOptimizedParentDashboard = () => {
     }
   }, [user?.email]);
 
-  // Handle real-time updates - simplified and more reliable
-  const handleRealtimeChange = useCallback(async (payload: any) => {
-    console.log('Parent dashboard real-time change detected:', payload.eventType, payload);
-    
-    // Always refresh on any pickup_requests change since we need to ensure data consistency
-    // This is simpler and more reliable than trying to filter changes
-    setTimeout(() => {
-      console.log('Refreshing parent dashboard due to pickup request change');
-      loadDashboardData(true);
-    }, 200);
-  }, [loadDashboardData]);
+  // Set up real-time updates
+  const { cleanup } = useParentDashboardRealtime({
+    onDataChange: () => loadDashboardData(true),
+    enabled: !!user?.email
+  });
 
   // Toggle child selection
   const toggleChildSelection = useCallback((studentId: string) => {
@@ -147,6 +144,7 @@ export const useOptimizedParentDashboard = () => {
       });
 
       setSelectedChildren([]);
+      // Force refresh after submitting requests
       await loadDashboardData(true);
     } catch (error) {
       console.error('Error requesting pickup:', error);
@@ -160,54 +158,15 @@ export const useOptimizedParentDashboard = () => {
     }
   }, [selectedChildren, toast, loadDashboardData]);
 
-  // Initial load and setup real-time subscription
+  // Initial load
   useEffect(() => {
-    if (!user?.email) return;
-
-    console.log('Setting up parent dashboard for user:', user.email);
-    loadDashboardData(true);
-
-    // Clean up existing subscription
-    if (subscriptionRef.current) {
-      console.log('Cleaning up existing real-time channel');
-      supabase.removeChannel(subscriptionRef.current);
-      subscriptionRef.current = null;
+    if (user?.email) {
+      console.log('Setting up parent dashboard for user:', user.email);
+      loadDashboardData(true);
     }
 
-    // Set up real-time subscription with unique channel name
-    const channelName = `parent_dashboard_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
-    console.log('Creating real-time channel:', channelName);
-    
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pickup_requests'
-        },
-        handleRealtimeChange
-      )
-      .subscribe((status) => {
-        console.log('Parent dashboard subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to pickup_requests changes');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('Subscription failed for pickup_requests');
-        }
-      });
-
-    subscriptionRef.current = channel;
-
-    return () => {
-      console.log('Cleaning up parent dashboard subscription');
-      if (subscriptionRef.current) {
-        supabase.removeChannel(subscriptionRef.current);
-        subscriptionRef.current = null;
-      }
-    };
-  }, [user?.email, handleRealtimeChange, loadDashboardData]);
+    return cleanup;
+  }, [user?.email, loadDashboardData, cleanup]);
 
   // Separate pending and called requests
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');

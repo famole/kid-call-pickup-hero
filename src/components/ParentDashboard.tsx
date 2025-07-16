@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -20,7 +20,6 @@ const ParentDashboard: React.FC = () => {
     parentInfo,
     loading,
     selectedChildren,
-    setSelectedChildren,
     isSubmitting,
     toggleChildSelection,
     handleRequestPickup
