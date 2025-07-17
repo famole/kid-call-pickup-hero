@@ -8,8 +8,10 @@ import NoStudents from '@/components/viewer/NoStudents';
 import { useCalledStudents } from '@/hooks/useCalledStudents';
 import { getAllClasses } from '@/services/classService';
 import { Class } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const ViewerDisplay: React.FC = () => {
+  const { t } = useTranslation();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
 
@@ -41,8 +43,8 @@ const ViewerDisplay: React.FC = () => {
         <div className="mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Currently Called for Pickup</h2>
-              <p className="text-base sm:text-lg text-muted-foreground">Students should come to the pickup area</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('viewer.currentlyCalledForPickup')}</h2>
+              <p className="text-base sm:text-lg text-muted-foreground">{t('viewer.studentsShouldComeToPickupArea')}</p>
             </div>
             <ClassFilter 
               selectedClass={selectedClass} 
@@ -54,7 +56,7 @@ const ViewerDisplay: React.FC = () => {
         
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-lg text-muted-foreground">Loading students...</p>
+            <p className="text-lg text-muted-foreground">{t('viewer.loadingStudents')}</p>
           </div>
         ) : Object.keys(childrenByClass).length === 0 ? (
           <NoStudents />
@@ -69,10 +71,9 @@ const ViewerDisplay: React.FC = () => {
         <div className="mt-8">
           <Card>
             <CardContent className="p-4">
-              <h3 className="text-lg font-semibold mb-2">View Information</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('viewer.viewInformation')}</h3>
               <p className="text-sm text-muted-foreground">
-                This screen shows students who have been called for pickup, grouped by class. 
-                The display updates automatically in real-time whenever students are called or picked up.
+                {t('viewer.viewInformationDescription')}
               </p>
             </CardContent>
           </Card>
@@ -81,7 +82,7 @@ const ViewerDisplay: React.FC = () => {
       
       <footer className="bg-gray-100 py-4 px-4 text-center">
         <div className="container mx-auto text-sm text-muted-foreground">
-          School Pickup System — Please wait until your name appears on screen
+          {t('viewer.schoolPickupSystem')}
         </div>
       </footer>
     </div>

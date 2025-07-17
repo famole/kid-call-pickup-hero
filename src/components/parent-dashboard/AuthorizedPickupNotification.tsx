@@ -4,6 +4,7 @@ import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Info } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -25,6 +26,8 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
   children,
   parentInfo = []
 }) => {
+  const { t } = useTranslation();
+
   if (requests.length === 0) {
     return null;
   }
@@ -34,10 +37,10 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2 text-blue-800">
           <Users className="h-5 w-5" />
-          🔔 Authorized Pickup Notifications
+          🔔 {t('dashboard.authorizedPickupNotifications')}
         </CardTitle>
         <CardDescription className="text-blue-700">
-          Someone authorized has requested pickup for your children
+          {t('dashboard.someoneAuthorizedRequested')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -46,7 +49,7 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
             const child = children.find(c => c.id === request.studentId);
             const requester = parentInfo.find(p => p.id === request.parentId);
             const statusColor = request.status === 'pending' ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-green-100 text-green-800 border-green-200';
-            const statusText = request.status === 'pending' ? '⏳ Pending' : '🚗 Called for Pickup';
+            const statusText = request.status === 'pending' ? `⏳ ${t('dashboard.pending')}` : `🚗 ${t('dashboard.calledForPickup')}`;
             
             return (
               <div 
@@ -60,10 +63,10 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm">
-                        {child?.name || 'Unknown Child'}
+                        {child?.name || t('common.unknownChild')}
                       </div>
                       <div className="text-xs text-blue-600">
-                        📋 Pickup requested by {requester?.name || 'authorized user'}
+                        📋 {t('dashboard.pickupRequestedBy', { name: requester?.name || 'authorized user' })}
                       </div>
                     </div>
                   </div>
@@ -72,7 +75,7 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
                   </Badge>
                 </div>
                 <div className="text-xs text-gray-600 ml-13">
-                  🕐 Requested at {new Date(request.requestTime).toLocaleTimeString()}
+                  🕐 {t('dashboard.requestedAt', { time: new Date(request.requestTime).toLocaleTimeString() })}
                 </div>
               </div>
             );
@@ -80,8 +83,7 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
         </div>
         <div className="mt-4 p-3 bg-blue-100 rounded-lg">
           <p className="text-xs text-blue-800">
-            💡 <strong>Note:</strong> These pickup requests were made by someone who is authorized to pick up your children. 
-            You don't need to take any action - this is just to keep you informed.
+            💡 <strong>{t('common.info')}:</strong> {t('dashboard.noteAuthorizedPickup')}
           </p>
         </div>
       </CardContent>

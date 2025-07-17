@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from '@/components/Navigation';
 import AdminTabs from '@/components/AdminTabs';
@@ -9,6 +10,7 @@ import ReportsTab from '@/components/admin-reports/ReportsTab';
 
 const AdminPanel = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
@@ -19,8 +21,8 @@ const AdminPanel = () => {
 
           <Tabs defaultValue="manage" className="w-full">
             <TabsList className="grid grid-cols-2 mb-8">
-              <TabsTrigger value="manage">Manage School</TabsTrigger>
-              <TabsTrigger value="reports">Reports</TabsTrigger>
+              <TabsTrigger value="manage">{t('admin.manageSchool')}</TabsTrigger>
+              <TabsTrigger value="reports">{t('admin.reports')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="manage">

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -23,11 +24,14 @@ import {
   UserCog, 
   Car,
   ClipboardList,
-  School
+  School,
+  Languages,
+  History
 } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
+  const { t, changeLanguage, getCurrentLanguage } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -35,6 +39,10 @@ const Navigation: React.FC = () => {
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleLanguageChange = (language: string) => {
+    changeLanguage(language);
   };
 
   const getInitials = (name: string) => {
@@ -48,10 +56,12 @@ const Navigation: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navigationItems = [
-    { path: '/', label: 'Dashboard', icon: Home, roles: ['parent', 'admin', 'teacher', 'superadmin'] },
-    { path: '/pickup-authorization', label: 'Pickup Authorizations', icon: Car, roles: ['parent'] },
-    { path: '/pickup-management', label: 'Pickup Management', icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
-    { path: '/admin', label: 'Admin Panel', icon: Settings, roles: ['admin', 'superadmin'] },
+    { path: '/', label: t('navigation.dashboard'), icon: Home, roles: ['parent', 'admin', 'teacher', 'superadmin'] },
+    { path: '/pickup-authorization', label: t('navigation.pickupAuthorizations'), icon: Car, roles: ['parent'] },
+    { path: '/self-checkout', label: t('navigation.selfCheckout'), icon: LogOut, roles: ['parent'] },
+    { path: '/self-checkout-history', label: t('navigation.selfCheckoutHistory'), icon: History, roles: ['parent'] },
+    { path: '/pickup-management', label: t('navigation.pickupManagement'), icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
+    { path: '/admin', label: t('navigation.adminPanel'), icon: Settings, roles: ['admin', 'superadmin'] },
   ];
 
   const visibleItems = navigationItems.filter(item => 
@@ -96,7 +106,7 @@ const Navigation: React.FC = () => {
               <img
                 src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
                 alt="Upsy"
-                className="h-16 w-auto object-contain"
+                className="h-16 md:h-20 lg:h-24 w-auto object-contain"
               />
             </Link>
           </div>
@@ -127,18 +137,6 @@ const Navigation: React.FC = () => {
                       <span className="text-lg font-semibold text-gray-900">Upsy</span>
                     </div>
                     <NavItems mobile />
-                    
-                    {/* Add Self-Checkout link in mobile menu for parents */}
-                    {user?.role === 'parent' && (
-                      <Link
-                        to="/self-checkout"
-                        className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full justify-start"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>Self-Checkout</span>
-                      </Link>
-                    )}
                   </div>
                 </SheetContent>
               </Sheet>
@@ -170,22 +168,28 @@ const Navigation: React.FC = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                {/* Add Self-Checkout option in user dropdown for parents */}
-                {user?.role === 'parent' && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link to="/self-checkout" className="w-full">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Self-Checkout</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+                {/* Language Selection */}
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex items-center space-x-2">
+                    <Languages className="h-4 w-4" />
+                    <span className="text-sm">{t('navigation.language')}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleLanguageChange('es')}>
+                  <span className={getCurrentLanguage() === 'es' ? 'font-bold' : ''}>
+                    {t('languages.spanish')}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleLanguageChange('en')}>
+                  <span className={getCurrentLanguage() === 'en' ? 'font-bold' : ''}>
+                    {t('languages.english')}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t('navigation.logout')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

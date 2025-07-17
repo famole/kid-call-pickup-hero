@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Clock, User, Phone } from 'lucide-react';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface PendingPickupsTableProps {
   requests: PickupRequestWithDetails[];
@@ -20,13 +21,15 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
   onMarkAsCalled,
   loading
 }) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Pending Pickup Requests
+            {t('pickup.pendingRequests', { count: 0 })}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -52,14 +55,14 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Pending Pickup Requests
+            {t('pickup.pendingRequests', { count: 0 })}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Pending Requests</h3>
-            <p className="text-gray-500">There are currently no students waiting to be called for pickup.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('pickup.noPickups')}</h3>
+            <p className="text-gray-500">{t('dashboard.noRequests')}</p>
           </div>
         </CardContent>
       </Card>
@@ -71,7 +74,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
-          Pending Pickup Requests ({requests.length})
+          {t('pickup.pendingRequests', { count: requests.length })}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -79,11 +82,11 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-left">Student</TableHead>
-                <TableHead className="text-left">Class</TableHead>
-                <TableHead className="text-left">Pickup Person</TableHead>
-                <TableHead className="text-left">Request Time</TableHead>
-                <TableHead className="text-left">Action</TableHead>
+                <TableHead className="text-left">{t('pickup.studentName')}</TableHead>
+                <TableHead className="text-left">{t('admin.class')}</TableHead>
+                <TableHead className="text-left">{t('pickup.parentName')}</TableHead>
+                <TableHead className="text-left">{t('pickup.requestTime')}</TableHead>
+                <TableHead className="text-left">{t('pickup.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -99,7 +102,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                       </Avatar>
                       <div>
                         <div className="font-medium text-gray-900">
-                          {item.child?.name || 'Unknown Student'}
+                          {item.child?.name || t('common.unknownChild')}
                         </div>
                       </div>
                     </div>
@@ -107,7 +110,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                   <TableCell className="text-left">
                     <div>
                       <div className="font-medium text-gray-900">
-                        {item.class?.name || 'No Class'}
+                        {item.class?.name || t('common.unknownClass')}
                       </div>
                       {item.class?.teacher && (
                         <div className="text-sm text-gray-500">
@@ -121,7 +124,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                       <User className="h-4 w-4 text-gray-400" />
                       <div>
                         <div className="font-medium text-gray-900">
-                          {item.parent?.name || `Parent (ID: ${item.request.parentId?.slice(0, 8)}...)`}
+                          {item.parent?.name || `${t('forms.parentName')} (ID: ${item.request.parentId?.slice(0, 8)}...)`}
                         </div>
                         {item.parent?.email && (
                           <div className="text-sm text-gray-500">
@@ -149,7 +152,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                       className="bg-school-primary hover:bg-school-primary/90"
                     >
                       <Phone className="h-4 w-4 mr-2" />
-                      Call Student
+                      {t('pickup.callForPickup')}
                     </Button>
                   </TableCell>
                 </TableRow>

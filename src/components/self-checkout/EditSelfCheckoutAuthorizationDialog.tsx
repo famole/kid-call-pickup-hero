@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { updateSelfCheckoutAuthorization, SelfCheckoutAuthorizationWithDetails } from '@/services/selfCheckoutService';
 
 interface EditSelfCheckoutAuthorizationDialogProps {
@@ -26,6 +27,7 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
   const [isActive, setIsActive] = useState<boolean>(true);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (authorization) {
@@ -40,8 +42,8 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
     
     if (!authorization || !startDate || !endDate) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
+        title: t('common.error'),
+        description: t('selfCheckout.fillAllFields'),
         variant: "destructive",
       });
       return;
@@ -49,8 +51,8 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
 
     if (new Date(startDate) > new Date(endDate)) {
       toast({
-        title: "Error",
-        description: "Start date must be before end date.",
+        title: t('common.error'),
+        description: t('selfCheckout.startDateBeforeEndDate'),
         variant: "destructive",
       });
       return;
@@ -65,8 +67,8 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
       });
       
       toast({
-        title: "Success",
-        description: "Authorization updated successfully.",
+        title: t('common.success'),
+        description: t('selfCheckout.authorizationUpdated'),
       });
       
       onAuthorizationUpdated();
@@ -74,8 +76,8 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
     } catch (error) {
       console.error('Error updating authorization:', error);
       toast({
-        title: "Error",
-        description: "Failed to update authorization.",
+        title: t('common.error'),
+        description: t('selfCheckout.failedToUpdate'),
         variant: "destructive",
       });
     } finally {
@@ -91,14 +93,14 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Self-Checkout Authorization</DialogTitle>
+          <DialogTitle>{t('selfCheckout.editAuthorization')}</DialogTitle>
           <DialogDescription>
-            Update the authorization for {authorization.student?.name}.
+            {t('selfCheckout.updateAuthorization')} {authorization.student?.name}.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="startDate">Start Date *</Label>
+            <Label htmlFor="startDate">{t('selfCheckout.startDate')} *</Label>
             <Input
               id="startDate"
               type="date"
@@ -109,7 +111,7 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="endDate">End Date *</Label>
+            <Label htmlFor="endDate">{t('selfCheckout.endDate')} *</Label>
             <Input
               id="endDate"
               type="date"
@@ -125,7 +127,7 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
               checked={isActive}
               onCheckedChange={setIsActive}
             />
-            <Label htmlFor="isActive">Authorization is active</Label>
+            <Label htmlFor="isActive">{t('selfCheckout.authorizationIsActive')}</Label>
           </div>
 
           <DialogFooter>
@@ -135,14 +137,14 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={loading || !startDate || !endDate}
               className="bg-school-primary hover:bg-school-primary/90"
             >
-              {loading ? "Updating..." : "Update Authorization"}
+              {loading ? t('selfCheckout.updating') : t('selfCheckout.updateAuthorization')}
             </Button>
           </DialogFooter>
         </form>

@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   YStack,
@@ -269,7 +270,7 @@ export default function DashboardScreen({ session }: Props) {
         >
           {students.filter(s => !s.isAuthorized).length > 0 && (
             <Card padding="$4" marginBottom="$4" elevate bordered borderRadius="$4" space>
-              <Text fontWeight="bold">Your childrens</Text>
+              <Text fontWeight="bold">Your children</Text>
               {students
                 .filter(s => !s.isAuthorized)
                 .map(item => {

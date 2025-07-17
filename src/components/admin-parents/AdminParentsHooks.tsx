@@ -3,7 +3,6 @@ import { useAddParentForm } from '@/hooks/useAddParentForm';
 import { useEditParentForm } from '@/hooks/useEditParentForm';
 import { useImportParents } from '@/hooks/useImportParents';
 import { useStudentManagement } from '@/hooks/useStudentManagement';
-import { useAddStudentToParentForm } from '@/hooks/useAddStudentToParentForm';
 import { ParentWithStudents } from '@/types/parent';
 import { Child, Class } from '@/types';
 
@@ -45,17 +44,11 @@ export const useAdminParentsHooks = ({
     setParents
   });
 
-  const addStudentToParentForm = useAddStudentToParentForm({
-    allStudents,
-    classes,
-    onStudentAddedToParent: onParentUpdated,
-  });
 
   return {
     addParentForm,
     editParentForm,
     importParentsHook,
     studentManagement,
-    addStudentToParentForm,
   };
 };

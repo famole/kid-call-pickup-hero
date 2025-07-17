@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from '@/hooks/useTranslation';
 import { getAllClasses } from '@/services/classService';
 import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
 import { PickupRequestWithDetails } from '@/types/supabase';
@@ -13,6 +14,7 @@ import CardSkeleton from '@/components/ui/skeletons/CardSkeleton';
 import { supabase } from "@/integrations/supabase/client";
 
 const ViewerDisplay: React.FC = () => {
+  const { t } = useTranslation();
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const subscriptionRef = useRef<any>(null);
 
@@ -97,12 +99,12 @@ const ViewerDisplay: React.FC = () => {
       <main className="container mx-auto py-6 px-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Called Students</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('pickup.calledStudents')}</h2>
             <p className="text-muted-foreground">
               {studentsLoading ? (
                 <Skeleton className="h-4 w-48" />
               ) : (
-                `${calledStudents.length} student${calledStudents.length !== 1 ? 's' : ''} currently called`
+                `${calledStudents.length} ${t('pickup.currentlyCalled')}`
               )}
             </p>
           </div>

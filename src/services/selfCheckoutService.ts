@@ -81,9 +81,23 @@ export interface StudentDepartureWithDetails {
 // Function to get all self-checkout authorizations for the current parent
 export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfCheckoutAuthorizationWithDetails[]> => {
   try {
+    // Get current parent ID
+    const { data: parentData, error: parentError } = await supabase.rpc('get_current_parent_id');
+    
+    if (parentError) {
+      console.error('Error getting current parent ID:', parentError);
+      throw new Error(parentError.message);
+    }
+
+    if (!parentData) {
+      console.log('No parent ID found for current user');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('self_checkout_authorizations')
       .select('*')
+      .eq('authorizing_parent_id', parentData)
       .order('created_at', { ascending: false });
     
     if (error) {

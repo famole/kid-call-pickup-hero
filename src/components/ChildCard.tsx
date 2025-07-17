@@ -3,6 +3,7 @@ import React from 'react';
 import { Child } from '@/types';
 import { getClassById } from '@/services/classService';
 import { UserRound, Check, Users } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ChildCardProps {
   child: Child;
@@ -19,6 +20,7 @@ const ChildCard: React.FC<ChildCardProps> = ({
   isAuthorized = false,
   onClick 
 }) => {
+  const { t } = useTranslation();
   const [childClass, setChildClass] = React.useState<any>(null);
 
   React.useEffect(() => {
@@ -116,11 +118,11 @@ const ChildCard: React.FC<ChildCardProps> = ({
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {childClass ? childClass.name : 'Unknown Class'}
+            {childClass ? childClass.name : t('common.unknownClass')}
           </p>
           {isAuthorized && (
             <p className="text-xs text-blue-600 font-medium">
-              Authorized pickup
+              {t('dashboard.authorizedPickup')}
             </p>
           )}
         </div>

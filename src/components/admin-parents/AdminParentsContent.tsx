@@ -20,7 +20,6 @@ interface AdminParentsContentProps {
   onEditParent: (parent: ParentWithStudents) => void;
   onDeleteParent: (parentId: string) => Promise<void>;
   onManageStudents: (parent: ParentWithStudents) => void;
-  onAddStudentToParent: (parent: ParentWithStudents) => void;
 }
 
 const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
@@ -30,7 +29,6 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
   onEditParent,
   onDeleteParent,
   onManageStudents,
-  onAddStudentToParent,
 }) => {
   // Use the class filter hook
   const { 
@@ -70,7 +68,6 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
         onEditParent={onEditParent}
         onDeleteParent={onDeleteParent}
         onManageStudents={onManageStudents}
-        onAddStudentToParent={onAddStudentToParent}
         userRole={userRole}
       />
     </CardContent>

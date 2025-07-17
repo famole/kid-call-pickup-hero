@@ -3,6 +3,7 @@ import React from 'react';
 import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Car } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CalledRequestsCardProps {
   calledRequests: PickupRequest[];
@@ -13,19 +14,21 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
   calledRequests,
   children
 }) => {
+  const { t } = useTranslation();
+
   if (calledRequests.length === 0) {
     return null;
   }
 
   return (
-    <Card className="w-full md:w-[90%] mx-auto">
+    <Card className="w-full">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Car className="h-5 w-5 text-green-600 animate-bounce" />
-          🚗 Ready for Pickup! ({calledRequests.length})
+          🚗 {t('dashboard.readyForPickup', { count: calledRequests.length })}
         </CardTitle>
         <CardDescription>
-          Your children are ready - head to the pickup area! 🌟
+          {t('dashboard.childrenReadyHeadToPickup')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -42,13 +45,13 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">
-                    🎒 {child?.name || 'Unknown Child'}
+                    🎒 {child?.name || t('common.unknownChild')}
                   </div>
                   <div className="text-xs text-green-600 font-semibold">
-                    ✨ Ready for pickup! Head to the pickup area! 🚙
+                    ✨ {t('dashboard.readyForPickupHeadToArea')} 🚙
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Called: {new Date(request.requestTime).toLocaleTimeString()}
+                    {t('dashboard.called', { time: new Date(request.requestTime).toLocaleTimeString() })}
                   </div>
                 </div>
               </div>

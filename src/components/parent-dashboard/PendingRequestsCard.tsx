@@ -3,6 +3,7 @@ import React from 'react';
 import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface PendingRequestsCardProps {
   pendingRequests: PickupRequest[];
@@ -13,19 +14,21 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
   pendingRequests,
   children
 }) => {
+  const { t } = useTranslation();
+
   if (pendingRequests.length === 0) {
     return null;
   }
 
   return (
-    <Card className="w-full md:w-[90%] mx-auto">
+    <Card className="w-full">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Clock className="h-5 w-5 text-orange-600" />
-          ⏳ In Queue ({pendingRequests.length})
+          ⏳ {t('dashboard.inQueue', { count: pendingRequests.length })}
         </CardTitle>
         <CardDescription>
-          Your pickup requests are being processed
+          {t('dashboard.pickupRequestsBeingProcessed')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -42,13 +45,13 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">
-                    📚 {child?.name || 'Unknown Child'}
+                    📚 {child?.name || t('common.unknownChild')}
                   </div>
                   <div className="text-xs text-orange-600 font-medium">
-                    ⏱️ Waiting in pickup queue...
+                    ⏱️ {t('dashboard.waitingInPickupQueue')}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Requested: {new Date(request.requestTime).toLocaleTimeString()}
+                    {t('dashboard.requested', { time: new Date(request.requestTime).toLocaleTimeString() })}
                   </div>
                 </div>
               </div>

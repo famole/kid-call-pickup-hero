@@ -10,6 +10,7 @@ import { SelfCheckoutAuthorizationWithDetails } from '@/services/selfCheckoutSer
 import { Skeleton } from '@/components/ui/skeleton';
 import MarkDepartureDialog from './MarkDepartureDialog';
 import { getTodayDepartureForStudent } from '@/services/selfCheckoutService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SelfCheckoutStudentsTableProps {
   authorizations: SelfCheckoutAuthorizationWithDetails[];
@@ -25,6 +26,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
   authorizations,
   loading
 }) => {
+  const { t } = useTranslation();
   const [selectedStudent, setSelectedStudent] = useState<SelfCheckoutAuthorizationWithDetails | null>(null);
   const [isMarkDepartureOpen, setIsMarkDepartureOpen] = useState(false);
   const [todayDepartures, setTodayDepartures] = useState<StudentDeparture[]>([]);
@@ -85,7 +87,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <LogOut className="h-5 w-5" />
-            Self-Checkout Authorized Students
+            {t('selfCheckout.authorizedStudents')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -111,14 +113,14 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <LogOut className="h-5 w-5" />
-            Self-Checkout Authorized Students
+            {t('selfCheckout.authorizedStudents')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <LogOut className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Authorized Students</h3>
-            <p className="text-gray-500">There are currently no students authorized for self-checkout.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('selfCheckout.noAuthorizedStudents')}</h3>
+            <p className="text-gray-500">{t('selfCheckout.noAuthorizedStudentsDescription')}</p>
           </div>
         </CardContent>
       </Card>
@@ -131,7 +133,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <LogOut className="h-5 w-5" />
-            Self-Checkout Authorized Students ({authorizations.length})
+            {t('selfCheckout.authorizedStudents')} ({authorizations.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -139,12 +141,12 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-left">Student</TableHead>
-                  <TableHead className="text-left">Class</TableHead>
-                  <TableHead className="text-left">Authorizing Parent</TableHead>
-                  <TableHead className="text-left">Authorization Period</TableHead>
-                  <TableHead className="text-left">Status</TableHead>
-                  <TableHead className="text-left">Actions</TableHead>
+                  <TableHead className="text-left">{t('selfCheckout.student')}</TableHead>
+                  <TableHead className="text-left">{t('selfCheckout.class')}</TableHead>
+                  <TableHead className="text-left">{t('selfCheckout.authorizingParent')}</TableHead>
+                  <TableHead className="text-left">{t('selfCheckout.authorizationPeriod')}</TableHead>
+                  <TableHead className="text-left">{t('selfCheckout.status')}</TableHead>
+                  <TableHead className="text-left">{t('selfCheckout.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -164,7 +166,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
                           </Avatar>
                           <div>
                             <div className="font-medium text-gray-900">
-                              {authorization.student?.name || 'Unknown Student'}
+                              {authorization.student?.name || t('selfCheckout.unknownStudent')}
                             </div>
                           </div>
                         </div>
@@ -172,11 +174,11 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
                       <TableCell className="text-left">
                         <div>
                           <div className="font-medium text-gray-900">
-                            {authorization.class?.name || 'No Class'}
+                            {authorization.class?.name || t('selfCheckout.unknownClass')}
                           </div>
                           {authorization.class?.grade && (
                             <div className="text-sm text-gray-500">
-                              Grade {authorization.class.grade}
+                              {t('admin.grade')} {authorization.class.grade}
                             </div>
                           )}
                           {authorization.class?.teacher && (
@@ -188,7 +190,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
                       </TableCell>
                       <TableCell className="text-left">
                         <div className="font-medium text-gray-900">
-                          {authorization.authorizingParent?.name || 'Unknown Parent'}
+                          {authorization.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
                         </div>
                         {authorization.authorizingParent?.email && (
                           <div className="text-sm text-gray-500">
@@ -212,7 +214,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
                           variant={authorization.isActive && !hasLeftToday ? "default" : "secondary"}
                           className={authorization.isActive && !hasLeftToday ? "bg-green-600 hover:bg-green-700" : ""}
                         >
-                          {hasLeftToday ? "Departed Today" : authorization.isActive ? "Active" : "Inactive"}
+                          {hasLeftToday ? t('selfCheckout.departedToday') : authorization.isActive ? t('selfCheckout.active') : t('selfCheckout.inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-left">
@@ -222,7 +224,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <Clock className="h-4 w-4" />
                             <div>
-                              <div className="font-medium">Departed at</div>
+                              <div className="font-medium">{t('selfCheckout.departedAt')}</div>
                               <div className="text-xs">
                                 {formatTime(studentDeparture.departedAt)}
                               </div>
@@ -235,7 +237,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
                             className="bg-school-primary hover:bg-school-primary/90"
                           >
                             <LogOut className="h-4 w-4 mr-2" />
-                            Mark Departure
+                            {t('selfCheckout.markDeparture')}
                           </Button>
                         ) : null}
                       </TableCell>
