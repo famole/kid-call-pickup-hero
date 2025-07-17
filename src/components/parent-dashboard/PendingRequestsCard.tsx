@@ -21,7 +21,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
   }
 
   return (
-    <Card className="w-full md:w-[90%] mx-auto">
+    <Card className="w-full">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Clock className="h-5 w-5 text-orange-600" />

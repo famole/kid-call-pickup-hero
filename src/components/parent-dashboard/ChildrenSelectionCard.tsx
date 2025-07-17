@@ -35,7 +35,7 @@ const ChildrenSelectionCard: React.FC<ChildrenSelectionCardProps> = ({
   const authorizedChildren = children.filter(child => child.isAuthorized);
 
   return (
-    <Card className="h-fit w-full md:w-3/4 mx-auto">
+    <Card className="h-fit w-full">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg sm:text-xl">{t('dashboard.selectChildrenForPickup')}</CardTitle>
         <CardDescription className="text-sm sm:text-base">
