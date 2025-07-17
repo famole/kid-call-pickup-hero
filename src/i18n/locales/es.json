@@ -53,6 +53,7 @@
   "selfCheckout": {
     "title": "Autorizaciones de Auto-Salida",
     "description": "Permite que tus hijos salgan de la escuela por sí mismos durante períodos específicos",
+    "statusDescription": "Ver el estado actual de las autorizaciones de auto-salida de sus hijos",
     "addAuthorization": "Agregar Autorización",
     "noAuthorizationsYet": "No hay autorizaciones aún",
     "noAuthorizationsDescription": "No has creado ninguna autorización de auto-salida. Agrega una para permitir que tus hijos salgan de la escuela independientemente.",

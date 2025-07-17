@@ -53,6 +53,7 @@
   "selfCheckout": {
     "title": "Self-Checkout Authorizations",
     "description": "Allow your children to leave school on their own during specific periods",
+    "statusDescription": "View the current status of your children's self-checkout authorizations",
     "addAuthorization": "Add Authorization",
     "noAuthorizationsYet": "No authorizations yet",
     "noAuthorizationsDescription": "You haven't created any self-checkout authorizations. Add one to allow your children to leave school independently.",
