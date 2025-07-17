@@ -26,16 +26,10 @@ const SelfCheckoutHistoryPage: React.FC = () => {
       <div className="min-h-screen w-full bg-gray-50">
         <Navigation />
         <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
-          <div className="mb-6">
-            <Button variant="ghost" asChild className="mb-4">
-              <Link to="/" className="flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                {t('common.back')}
-              </Link>
-            </Button>
-            <h1 className="text-2xl font-bold">{t('selfCheckout.historyTitle')}</h1>
-            <p className="text-gray-600">{t('selfCheckout.historyDescription')}</p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">{t('selfCheckout.historyTitle')}</h1>
+          <p className="text-gray-600">{t('selfCheckout.welcomeMessage')}</p>
+        </div>
           
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary"></div>
@@ -50,14 +44,8 @@ const SelfCheckoutHistoryPage: React.FC = () => {
       <Navigation />
       <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <Button variant="ghost" asChild className="mb-4">
-            <Link to="/" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              {t('common.back')}
-            </Link>
-          </Button>
           <h1 className="text-2xl font-bold">{t('selfCheckout.historyTitle')}</h1>
-          <p className="text-gray-600">{t('selfCheckout.historyDescription')}</p>
+          <p className="text-gray-600">{t('selfCheckout.welcomeMessage')}</p>
         </div>
 
         <div className="space-y-6">

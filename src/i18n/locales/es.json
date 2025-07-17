@@ -120,6 +120,7 @@
     "departed": "Salió",
     "viewAll": "Ver Todo",
     "historyTitle": "Historial de Auto-Salida",
+    "welcomeMessage": "Bienvenido a tu historial de autorizaciones. Aquí puedes ver todas tus autorizaciones de auto-salida y recogida.",
     "historyDescription": "Ver todas las autorizaciones de auto-salida y autorizaciones de recogida para sus hijos",
     "authorizationsTitle": "Autorizaciones de Auto-Salida",
     "authorizationsDescription": "Autorizaciones que ha creado para que sus hijos se retiren solos",

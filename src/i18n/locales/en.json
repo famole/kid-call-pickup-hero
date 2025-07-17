@@ -120,6 +120,7 @@
     "departed": "Departed",
     "viewAll": "View All",
     "historyTitle": "Self-Checkout History",
+    "welcomeMessage": "Welcome to your authorization history. Here you can view all your self-checkout and pickup authorizations.",
     "historyDescription": "View all self-checkout authorizations and pickup authorizations for your children",
     "authorizationsTitle": "Self-Checkout Authorizations",
     "authorizationsDescription": "Authorizations you've created for your children to check themselves out",
