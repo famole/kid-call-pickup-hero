@@ -175,7 +175,11 @@
     "currentlyCalled": "Actualmente Llamados ({{count}})",
     "selfCheckout": "Auto-Salida ({{count}})",
     "pickupManagementInfo": "Información de Gestión de Recogidas",
-    "pickupManagementDescription": "Usa la pestaña \"Solicitudes Pendientes\" para llamar estudiantes para recogida. Una vez llamados, los estudiantes aparecerán en la pestaña \"Actualmente Llamados\" y serán visibles para los padres durante 5 minutos antes de ser marcados automáticamente como completados. La pestaña \"Auto-Salida\" muestra estudiantes que están autorizados para salir de la escuela independientemente."
+    "pickupManagementDescription": "Usa la pestaña \"Solicitudes Pendientes\" para llamar estudiantes para recogida. Una vez llamados, los estudiantes aparecerán en la pestaña \"Actualmente Llamados\" y serán visibles para los padres durante 5 minutos antes de ser marcados automáticamente como completados. La pestaña \"Auto-Salida\" muestra estudiantes que están autorizados para salir de la escuela independientemente.",
+    "statusDescription": "Estudiantes autorizados para salida independiente",
+    "noActiveAuthorizations": "No hay estudiantes actualmente autorizados para auto-salida",
+    "departed": "Salió",
+    "teacherNotes": "Notas del Maestro"
   },
   "pickupAuthorizations": {
     "title": "Autorizaciones de Recogida",

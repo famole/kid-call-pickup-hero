@@ -175,7 +175,11 @@
     "currentlyCalled": "Currently Called ({{count}})",
     "selfCheckout": "Self-Checkout ({{count}})",
     "pickupManagementInfo": "Pickup Management Information",
-    "pickupManagementDescription": "Use the \"Pending Requests\" tab to call students for pickup. Once called, students will appear in the \"Currently Called\" tab and will be visible to parents for 5 minutes before being automatically marked as completed. The \"Self-Checkout\" tab shows students who are authorized to leave school independently."
+    "pickupManagementDescription": "Use the \"Pending Requests\" tab to call students for pickup. Once called, students will appear in the \"Currently Called\" tab and will be visible to parents for 5 minutes before being automatically marked as completed. The \"Self-Checkout\" tab shows students who are authorized to leave school independently.",
+    "statusDescription": "Students authorized for independent departure",
+    "noActiveAuthorizations": "No students currently authorized for self-checkout",
+    "departed": "Departed",
+    "teacherNotes": "Teacher Notes"
   },
   "pickupAuthorizations": {
     "title": "Pickup Authorizations",

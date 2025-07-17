@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
+import { useParentSelfCheckout } from '@/hooks/useParentSelfCheckout';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
@@ -8,6 +9,7 @@ import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelecti
 import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCard';
 import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard';
 import AuthorizedPickupNotification from '@/components/parent-dashboard/AuthorizedPickupNotification';
+import SelfCheckoutStatusCard from '@/components/parent-dashboard/SelfCheckoutStatusCard';
 
 const ParentDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -24,6 +26,11 @@ const ParentDashboard: React.FC = () => {
     toggleChildSelection,
     handleRequestPickup
   } = useOptimizedParentDashboard();
+
+  const {
+    selfCheckoutStudents,
+    loading: selfCheckoutLoading
+  } = useParentSelfCheckout();
 
   // Get children with active requests to disable selection
   const childrenWithActiveRequests = [
@@ -54,6 +61,10 @@ const ParentDashboard: React.FC = () => {
               <CalledRequestsCard 
                 calledRequests={calledRequests} 
                 children={children}
+              />
+              <SelfCheckoutStatusCard
+                selfCheckoutStudents={selfCheckoutStudents}
+                loading={selfCheckoutLoading}
               />
             </div>
             
