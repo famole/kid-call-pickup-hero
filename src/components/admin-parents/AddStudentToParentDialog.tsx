@@ -99,7 +99,7 @@ const AddStudentToParentDialog: React.FC<AddStudentToParentDialogProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Classes</SelectItem>
-                  {classes.map((cls) => (
+                  {classes.filter(cls => cls.id && cls.id.trim() !== '').map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
                       {cls.name} - {cls.grade}
                     </SelectItem>
@@ -122,7 +122,7 @@ const AddStudentToParentDialog: React.FC<AddStudentToParentDialogProps> = ({
                     No students match your filters
                   </SelectItem>
                 ) : (
-                  filteredStudents.map(student => {
+                  filteredStudents.filter(student => student.id && student.id.trim() !== '').map(student => {
                     const studentClass = classes.find(cls => cls.id === student.classId);
                     return (
                       <SelectItem key={student.id} value={student.id}>
