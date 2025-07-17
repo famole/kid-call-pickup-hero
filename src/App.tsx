@@ -20,6 +20,7 @@ import StressTestPage from '@/pages/StressTestPage';
 import AdminInitialSetup from '@/pages/AdminInitialSetup';
 import PickupAuthorizationPage from '@/pages/PickupAuthorizationPage';
 import SelfCheckoutPage from '@/pages/SelfCheckoutPage';
+import SelfCheckoutHistoryPage from '@/pages/SelfCheckoutHistoryPage';
 import UnauthorizedAccess from '@/pages/UnauthorizedAccess';
 import './App.css';
 
@@ -61,6 +62,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <SelfCheckoutPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/self-checkout-history" 
+                element={
+                  <ProtectedRoute>
+                    <SelfCheckoutHistoryPage />
                   </ProtectedRoute>
                 } 
               />

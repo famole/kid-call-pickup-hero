@@ -115,7 +115,16 @@
     "departedAt": "Departed at",
     "checkoutDateTime": "Checkout Date/Time",
     "markedBy": "Marked By",
-    "departed": "Departed"
+    "departed": "Departed",
+    "viewAll": "View All",
+    "historyTitle": "Self-Checkout History",
+    "historyDescription": "View all self-checkout authorizations and pickup authorizations for your children",
+    "authorizationsTitle": "Self-Checkout Authorizations",
+    "authorizationsDescription": "Authorizations you've created for your children to check themselves out",
+    "noAuthorizations": "No self-checkout authorizations found",
+    "departures": "Departures",
+    "active": "Active",
+    "inactive": "Inactive"
   },
   "admin": {
     "title": "Admin Panel",
@@ -179,7 +188,13 @@
     "statusDescription": "Students authorized for independent departure",
     "noActiveAuthorizations": "No students currently authorized for self-checkout",
     "departed": "Departed",
-    "teacherNotes": "Teacher Notes"
+    "teacherNotes": "Teacher Notes",
+    "authorizationsTitle": "Pickup Authorizations",
+    "authorizationsDescription": "Authorizations you've created for others to pick up your children",
+    "noAuthorizations": "No pickup authorizations found",
+    "authorizedParent": "Authorized Parent",
+    "active": "Active",
+    "inactive": "Inactive"
   },
   "pickupAuthorizations": {
     "title": "Pickup Authorizations",
@@ -242,6 +257,7 @@
     "minLength": "Minimum {{count}} characters required"
   },
   "common": {
+    "back": "Back",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",

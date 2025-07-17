@@ -115,7 +115,16 @@
     "departedAt": "Salió a las",
     "checkoutDateTime": "Fecha/Hora de Salida",
     "markedBy": "Marcado por",
-    "departed": "Salió"
+    "departed": "Salió",
+    "viewAll": "Ver Todo",
+    "historyTitle": "Historial de Auto-Salida",
+    "historyDescription": "Ver todas las autorizaciones de auto-salida y autorizaciones de recogida para sus hijos",
+    "authorizationsTitle": "Autorizaciones de Auto-Salida",
+    "authorizationsDescription": "Autorizaciones que ha creado para que sus hijos se retiren solos",
+    "noAuthorizations": "No se encontraron autorizaciones de auto-salida",
+    "departures": "Salidas",
+    "active": "Activo",
+    "inactive": "Inactivo"
   },
   "admin": {
     "title": "Panel de Administración",
@@ -179,7 +188,13 @@
     "statusDescription": "Estudiantes autorizados para salida independiente",
     "noActiveAuthorizations": "No hay estudiantes actualmente autorizados para auto-salida",
     "departed": "Salió",
-    "teacherNotes": "Notas del Maestro"
+    "teacherNotes": "Notas del Maestro",
+    "authorizationsTitle": "Autorizaciones de Recogida",
+    "authorizationsDescription": "Autorizaciones que has creado para que otros recojan a tus hijos",
+    "noAuthorizations": "No se encontraron autorizaciones de recogida",
+    "authorizedParent": "Padre Autorizado",
+    "active": "Activo",
+    "inactive": "Inactivo"
   },
   "pickupAuthorizations": {
     "title": "Autorizaciones de Recogida",

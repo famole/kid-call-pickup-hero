@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Clock, MessageSquare, Calendar } from 'lucide-react';
+import { LogOut, Clock, MessageSquare, Calendar, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface SelfCheckoutStudent {
@@ -98,6 +99,15 @@ const SelfCheckoutStatusCard: React.FC<SelfCheckoutStatusCardProps> = ({
         <CardDescription className="text-sm">
           {t('selfCheckout.statusDescription')}
         </CardDescription>
+        <div className="flex justify-end">
+          <Link
+            to="/self-checkout-history"
+            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            {t('selfCheckout.viewAll')}
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
