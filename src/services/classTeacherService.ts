@@ -57,7 +57,7 @@ export const getClassesWithTeachers = async (): Promise<ClassWithTeachers[]> => 
         *,
         class_teachers(
           teacher_id,
-          parents(id, name, email)
+          parents!class_teachers_teacher_id_fkey(id, name, email)
         )
       `)
       .order('name');
@@ -140,7 +140,7 @@ export const getTeachersForClass = async (classId: string): Promise<Array<{id: s
     const { data, error } = await supabase
       .from('class_teachers')
       .select(`
-        parents(id, name, email)
+        parents!class_teachers_teacher_id_fkey(id, name, email)
       `)
       .eq('class_id', classId);
     
