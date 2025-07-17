@@ -31,17 +31,6 @@ const ParentDashboard: React.FC = () => {
     ...calledRequests.map(req => req.studentId)
   ];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen w-full bg-gray-50">
-        <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center items-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-school-primary"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
