@@ -5,6 +5,7 @@
     "pickupManagement": "Pickup Management",
     "adminPanel": "Admin Panel",
     "selfCheckout": "Self-Checkout",
+    "selfCheckoutHistory": "Self-Checkout History",
     "logout": "Log out",
     "language": "Language"
   },

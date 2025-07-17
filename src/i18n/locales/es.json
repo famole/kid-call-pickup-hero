@@ -5,6 +5,7 @@
     "pickupManagement": "Gestión de Recogidas",
     "adminPanel": "Panel de Administración",
     "selfCheckout": "Auto-Salida",
+    "selfCheckoutHistory": "Historial de Auto-Salida",
     "logout": "Cerrar sesión",
     "language": "Idioma"
   },

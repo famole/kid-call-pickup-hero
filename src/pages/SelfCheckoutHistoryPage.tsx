@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Calendar, Clock, MessageSquare, LogOut, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import Navigation from '@/components/Navigation';
 
 const SelfCheckoutHistoryPage: React.FC = () => {
   const { t } = useTranslation();
@@ -23,6 +24,7 @@ const SelfCheckoutHistoryPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-gray-50">
+        <Navigation />
         <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <Button variant="ghost" asChild className="mb-4">
@@ -45,6 +47,7 @@ const SelfCheckoutHistoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
+      <Navigation />
       <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Button variant="ghost" asChild className="mb-4">
