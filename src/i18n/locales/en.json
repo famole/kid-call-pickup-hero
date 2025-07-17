@@ -125,7 +125,8 @@
     "noAuthorizations": "No self-checkout authorizations found",
     "departures": "Departures",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "noActiveAuthorizations": "No students currently authorized for self-checkout"
   },
   "admin": {
     "title": "Admin Panel",

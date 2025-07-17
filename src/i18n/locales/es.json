@@ -125,7 +125,8 @@
     "noAuthorizations": "No se encontraron autorizaciones de auto-salida",
     "departures": "Salidas",
     "active": "Activo",
-    "inactive": "Inactivo"
+    "inactive": "Inactivo",
+    "noActiveAuthorizations": "No hay estudiantes actualmente autorizados para auto-salida"
   },
   "admin": {
     "title": "Panel de Administración",
