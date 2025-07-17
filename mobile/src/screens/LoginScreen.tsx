@@ -107,7 +107,7 @@ export default function LoginScreen() {
             disabled={googleLoading}
             icon={googleLoading ? <Spinner /> : null}
             borderRadius="$4"
-           >
+          >
             {googleLoading ? 'Redirecting…' : 'Sign in with Google'}
           </Button>
         </Card>
