@@ -1,93 +1,45 @@
-# Upsy - School Pickup Management System
+# 👋 Welcome to A Product
 
-## Project info
+{% hint style="info" %}
+**GitBook tip:** your product docs aren't just a reference of all your features! use them to encourage folks to perform certain actions and discover the value in your product.
+{% endhint %}
 
-A secure and efficient school pickup management system designed for educational institutions.
+## Overview
 
-## How can I edit this code?
+Here are a couple of example overviews from products with really great docs:
 
-There are several ways of editing your application.
+> Loom is a video messaging tool that helps you get your message across through instantly shareable videos.
+>
+> With Loom, you can record your camera, microphone, and desktop simultaneously. Your video is then instantly available to share through Loom's patented technology.
+>
+> — From the [Loom Docs](https://support.loom.com/hc/en-us/articles/360002158057-What-is-Loom-)
 
-**Use your preferred IDE**
+> The Mailchimp Marketing API provides programmatic access to Mailchimp data and functionality, allowing developers to build custom features to do things like sync email activity and campaign analytics with their database, manage audiences and campaigns, and more.
+>
+> — From the [Mailchimp Marketing API docs](https://mailchimp.com/developer/marketing/docs/fundamentals/)
 
-Clone this repo and push changes to deploy updates.
+## Quick links
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+{% content-ref url="overview/what-we-do.md" %}
+[what-we-do.md](overview/what-we-do.md)
+{% endcontent-ref %}
 
-Follow these steps:
+{% content-ref url="overview/our-features.md" %}
+[our-features.md](overview/our-features.md)
+{% endcontent-ref %}
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Get Started
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+We've put together some helpful guides for you to get setup with our product quickly and easily.
 
-# Step 3: Install the necessary dependencies.
-npm i
+{% content-ref url="fundamentals/getting-set-up/" %}
+[getting-set-up](fundamentals/getting-set-up/)
+{% endcontent-ref %}
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+{% content-ref url="fundamentals/getting-set-up/setting-permissions.md" %}
+[setting-permissions.md](fundamentals/getting-set-up/setting-permissions.md)
+{% endcontent-ref %}
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## Running tests
-
-This project uses Bun's built-in test runner. Execute all tests with:
-
-```sh
-bun run test
-```
-
-To generate a coverage report, run:
-
-```sh
-bun run coverage
-```
-
-## How can I deploy this project?
-
-Build the project with `npm run build` and deploy to your preferred hosting platform.
-
-## Custom Domain
-
-You can configure a custom domain through your hosting provider's settings.
-
-## Documentation
-
-For a high level overview of this repository's structure and main features see [docs/overview.md](docs/overview.md).
-
-## Mobile app
-
-A basic React Native project using Expo lives in the `mobile/` folder. It shares the same Supabase backend as the web application. To get started:
-
-```sh
-cd mobile
-npm install
-npm run start
-```
-
-Open the app in an emulator with `npm run android` or `npm run ios`. Expand the code under `mobile/` to replicate the web features for iOS and Android.
+{% content-ref url="fundamentals/getting-set-up/inviting-members.md" %}
+[inviting-members.md](fundamentals/getting-set-up/inviting-members.md)
+{% endcontent-ref %}
