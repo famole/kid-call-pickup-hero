@@ -32,6 +32,6 @@ You'll find dedicated sections for each type of user:
 * ✅ **Use cases and troubleshooting**: practical examples and common issues explained.
 
 {% hint style="info" %}
-:pushpin: Looking to integrate Upsy or handle data in more advanced ways?\
+Looking to integrate Upsy or handle data in more advanced ways?\
 Check our technical guides and API documentation (coming soon).
 {% endhint %}
