@@ -31,7 +31,7 @@ You'll find dedicated sections for each type of user:
 * ✅ **Administrators**: create and manage users, configure classes and roles, track activity history, and customize the system.
 * ✅ **Use cases and troubleshooting**: practical examples and common issues explained.
 
-\{% hint style="info" %\}\
-Looking to integrate Upsy or handle data in more advanced ways?\
-Check our technical guides and API documentation (coming soon).\
-\{% endhint %\}
+{% hint style="info" %}
+:pushpin: Looking to integrate Upsy or handle data in more advanced ways?\
+Check our technical guides and API documentation (coming soon).
+{% endhint %}

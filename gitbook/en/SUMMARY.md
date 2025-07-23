@@ -1,25 +1,35 @@
 # Table of contents
 
-* [👋 Welcome to Upsy](<README (1).md>)
-
-## Overview
-
-* [💡 What we do](overview/what-we-do.md)
-* [✨ Our Features](overview/our-features.md)
-
-## Product Guides
-
-* [📱 For Parents](product-guides/for-parents.md)
-* [🧑‍🏫 For Teachers](product-guides/for-teachers.md)
-* [🛡️ For Administrators](product-guides/for-administrators.md)
-
-## Fundamentals
-
-* [🛠️ Getting set up](fundamentals/getting-set-up/)
-  * [🔐 Setting permissions](fundamentals/getting-set-up/setting-permissions.md)
-  * [👥 Inviting users](fundamentals/getting-set-up/inviting-members.md)
-
-## Use Cases
-
-* [🏫 At school pick-up time](use-cases/pick-up-process.md)
-* [📊 Monitoring and logs](use-cases/logs-and-history.md)
+* [👋 Welcome to Upsy Documentation Hub](README.md)
+* [Upsy – Documentation](<README (1).md>)
+  * [Table of contents](SUMMARY.md)
+  * [overview](en/overview/README.md)
+    * [✨ Our Features](overview/our-features.md)
+    * [💡 What we do](overview/what-we-do.md)
+  * [product-guides](en/product-guides/README.md)
+    * [🛡️ Guide for Administrators](product-guides/for-administrators.md)
+    * [📱 Guide for Parents](product-guides/for-parents.md)
+    * [🧑‍🏫 Guide for Teachers](product-guides/for-teachers.md)
+  * [use-cases](en/use-cases/README.md)
+    * [📊 Monitoring and Logs](use-cases/logs-and-history.md)
+    * [🏫 School Pick-up Use Case](use-cases/pick-up-process.md)
+  * [fundamentals](en/fundamentals/README.md)
+    * [🛠️ Getting Started](fundamentals/getting-set-up/README.md)
+      * [👥 Inviting Users](fundamentals/getting-set-up/inviting-members.md)
+      * [🔐 Setting Permissions](fundamentals/getting-set-up/setting-permissions.md)
+* [Upsy – Documentación](../es/README.md)
+  * [Tabla de contenidos](../es/SUMMARY.md)
+  * [overview](es/overview/README.md)
+    * [✨ Funcionalidades](../es/overview/our-features.md)
+    * [💡 Qué hacemos](../es/overview/what-we-do.md)
+  * [product-guides](es/product-guides/README.md)
+    * [🛡️ Guía para Administradores](../es/product-guides/for-administrators.md)
+    * [📱 Guía para Padres](../es/product-guides/for-parents.md)
+    * [🧑‍🏫 Guía para Docentes](../es/product-guides/for-teachers.md)
+  * [use-cases](es/use-cases/README.md)
+    * [📊 Monitoreo e Historial](../es/use-cases/logs-and-history.md)
+    * [🏫 Caso de uso: Retiro Escolar](../es/use-cases/pick-up-process.md)
+  * [fundamentals](es/fundamentals/README.md)
+    * [🛠️ Primeros Pasos](../es/fundamentals/getting-set-up/README.md)
+      * [👥 Invitación de Usuarios](../es/fundamentals/getting-set-up/inviting-members.md)
+      * [🔐 Configuración de Permisos](../es/fundamentals/getting-set-up/setting-permissions.md)
