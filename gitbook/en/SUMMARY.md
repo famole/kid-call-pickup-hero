@@ -1,25 +1,20 @@
 # Table of contents
 
-* [👋 Welcome to Upsy](<README (1).md>)
-
-## Overview
-
-* [💡 What we do](overview/what-we-do.md)
-* [✨ Our Features](overview/our-features.md)
-
-## Product Guides
-
-* [📱 For Parents](product-guides/for-parents.md)
-* [🧑‍🏫 For Teachers](product-guides/for-teachers.md)
-* [🛡️ For Administrators](product-guides/for-administrators.md)
-
-## Fundamentals
-
-* [🛠️ Getting set up](fundamentals/getting-set-up/)
-  * [🔐 Setting permissions](fundamentals/getting-set-up/setting-permissions.md)
-  * [👥 Inviting users](fundamentals/getting-set-up/inviting-members.md)
-
-## Use Cases
-
-* [🏫 At school pick-up time](use-cases/pick-up-process.md)
-* [📊 Monitoring and logs](use-cases/logs-and-history.md)
+* [👋 Welcome to Upsy Documentation Hub](README.md)
+  * [🙋 Who is this documentation for?](readme/who-is-this-documentation-for.md)
+* [Upsy – Documentation](<README (1).md>)
+  * [Table of contents](SUMMARY.md)
+  * [overview](en/overview/README.md)
+    * [✨ Our Features](overview/our-features.md)
+    * [💡 What we do](overview/what-we-do.md)
+  * [product-guides](en/product-guides/README.md)
+    * [🛡️ Guide for Administrators](product-guides/for-administrators.md)
+    * [📱 Guide for Parents](product-guides/for-parents.md)
+    * [🧑‍🏫 Guide for Teachers](product-guides/for-teachers.md)
+  * [use-cases](en/use-cases/README.md)
+    * [📊 Monitoring and Logs](use-cases/logs-and-history.md)
+    * [🏫 School Pick-up Use Case](use-cases/pick-up-process.md)
+  * [fundamentals](en/fundamentals/README.md)
+    * [🛠️ Getting Started](fundamentals/getting-set-up/README.md)
+      * [👥 Inviting Users](fundamentals/getting-set-up/inviting-members.md)
+      * [🔐 Setting Permissions](fundamentals/getting-set-up/setting-permissions.md)
