@@ -17,8 +17,6 @@ description: >-
 
 👉 Go to the Parents Guide
 
-***
-
 ## 🧑‍🏫 For Teachers
 
 
@@ -31,8 +29,6 @@ description: >-
 
 👉 Go to the Teachers Guide
 
-***
-
 ## 🛡️ For Administrators
 
 
@@ -44,8 +40,6 @@ description: >-
 
 
 👉 Go to the Admin Guide
-
-***
 
 ## 🎯 Not sure where to start?
 
