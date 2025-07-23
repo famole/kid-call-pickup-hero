@@ -1,6 +1,6 @@
 # Tabla de contenidos
 
-* [👋 Bienvenido a Upsy](<README (1).md>)
+* [👋 Bienvenido a Upsy](./)
 
 ## Introducción
 
