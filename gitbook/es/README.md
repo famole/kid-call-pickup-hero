@@ -1,6 +1,6 @@
 # 👋 Bienvenido a la Documentación de Upsy
 
-## Qué es Upsy?
+## Que es Upsy?
 
 **Upsy** es una plataforma web y móvil que transforma la experiencia de retiro de estudiantes en colegios. Pensada para agilizar, organizar y hacer más seguro el proceso de salida diaria, Upsy conecta a padres, docentes y administradores en un sistema ágil, moderno y fácil de usar.
 

@@ -1,18 +1,25 @@
-# Table of contents
+# Tabla de contenidos
 
-* [👋 Bienvenido a la Documentación de Upsy](README.md)
-  * [Tabla de contenidos](SUMMARY.md)
-  * [overview](es/overview/README.md)
-    * [✨ Funcionalidades](overview/our-features.md)
-    * [💡 Qué hacemos](overview/what-we-do.md)
-  * [product-guides](es/product-guides/README.md)
-    * [🛡️ Guía para Administradores](product-guides/for-administrators.md)
-    * [📱 Guía para Padres](product-guides/for-parents.md)
-    * [🧑‍🏫 Guía para Docentes](product-guides/for-teachers.md)
-  * [use-cases](es/use-cases/README.md)
-    * [📊 Monitoreo e Historial](use-cases/logs-and-history.md)
-    * [🏫 Caso de uso: Retiro Escolar](use-cases/pick-up-process.md)
-  * [fundamentals](es/fundamentals/README.md)
-    * [🛠️ Primeros Pasos](fundamentals/getting-set-up/README.md)
-      * [👥 Invitación de Usuarios](fundamentals/getting-set-up/inviting-members.md)
-      * [🔐 Configuración de Permisos](fundamentals/getting-set-up/setting-permissions.md)
+* [👋 Bienvenido a Upsy](./)
+
+## Introducción
+
+* [💡 Qué hacemos](overview/what-we-do.md)
+* [✨ Funcionalidades](overview/our-features.md)
+
+## Guías de uso
+
+* [📱 Para Padres](product-guides/for-parents.md)
+* [🧑‍🏫 Para Docentes](product-guides/for-teachers.md)
+* [🛡️ Para Administradores](product-guides/for-administrators.md)
+
+## Fundamentos
+
+* [🛠️ Primeros Pasos](fundamentals/getting-set-up/)
+  * [🔐 Configuración de permisos](fundamentals/getting-set-up/setting-permissions.md)
+  * [👥 Invitación de usuarios](fundamentals/getting-set-up/inviting-members.md)
+
+## Casos de uso
+
+* [🏫 Proceso de retiro](use-cases/pick-up-process.md)
+* [📊 Monitoreo e historial](use-cases/logs-and-history.md)
