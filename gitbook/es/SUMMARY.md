@@ -10,6 +10,8 @@ description: >-
 
 * 🔑 Iniciar sesión en Upsy
 * 🚗 Solicitar el retiro de tu hijo/a
+* :shield: Autorizar a otros padres a retirar a tus hijos/as
+* :man\_running: Autorizar a tu/s hijos/as a retirarse solos
 * 👀 Ver el estado del retiro en tiempo real
 * 🔔 Recibir notificaciones
 
