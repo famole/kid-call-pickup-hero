@@ -7,11 +7,13 @@ import CalledRequestsCard from './CalledRequestsCard';
 interface PickupStatusSidebarProps {
   activeRequests: PickupRequest[];
   children: Child[];
+  currentParentId?: string;
 }
 
 const PickupStatusSidebar: React.FC<PickupStatusSidebarProps> = ({
   activeRequests,
-  children
+  children,
+  currentParentId
 }) => {
   // Split requests by status
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
@@ -27,10 +29,12 @@ const PickupStatusSidebar: React.FC<PickupStatusSidebarProps> = ({
       <PendingRequestsCard 
         pendingRequests={pendingRequests}
         children={children}
+        currentParentId={currentParentId}
       />
       <CalledRequestsCard 
         calledRequests={calledRequests}
         children={children}
+        currentParentId={currentParentId}
       />
     </div>
   );

@@ -17,9 +17,10 @@ interface Request {
 interface Props {
   students: Student[];
   requests: Request[];
+  currentParentId?: string;
 }
 
-export default function PickupStatus({ students, requests }: Props) {
+export default function PickupStatus({ students, requests, currentParentId }: Props) {
   if (requests.length === 0) return null
 
   const pending = requests.filter(r => r.status === 'pending')

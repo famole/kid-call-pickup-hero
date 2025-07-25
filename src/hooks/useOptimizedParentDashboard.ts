@@ -26,6 +26,7 @@ export const useOptimizedParentDashboard = () => {
   const firstLoadRef = useRef(true);
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentParentId, setCurrentParentId] = useState<string | undefined>(undefined);
   const lastFetchRef = useRef<number>(0);
   const subscriptionRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,6 +47,10 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
+      // Get current parent ID first
+      const { data: parentId } = await supabase.rpc('get_current_parent_id');
+      setCurrentParentId(parentId);
+
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
         getParentDashboardDataOptimized(user.email),
@@ -54,7 +59,8 @@ export const useOptimizedParentDashboard = () => {
 
       console.log('Dashboard data loaded:', {
         childrenCount: dashboardData.allChildren.length,
-        pickupRequestsCount: pickupRequests.length
+        pickupRequestsCount: pickupRequests.length,
+        currentParentId: parentId
       });
 
       setChildren(dashboardData.allChildren);
@@ -277,6 +283,7 @@ export const useOptimizedParentDashboard = () => {
     selectedChildren,
     setSelectedChildren,
     isSubmitting,
+    currentParentId,
     toggleChildSelection,
     handleRequestPickup,
     refetch: () => loadDashboardData(true)
