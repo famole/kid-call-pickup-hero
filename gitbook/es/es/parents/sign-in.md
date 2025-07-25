@@ -1,30 +1,39 @@
+---
+description: >-
+  Una vez que hayas creado tu cuenta, podés ingresar a Upsy fácilmente usando
+  una de estas dos opciones:
+---
+
 # 🔑 Iniciar Sesión
 
-### :point\_up: Iniciar sesión por primera vez
+### 🔵 Opción 1: Iniciar sesión con Google
 
-#### 🔵 Opción 1: Ingresar con Google
+1. En la pantalla de inicio, hacé clic en **“Sign in with Google”**.
+2. Seleccioná tu cuenta de Google (debe coincidir con la registrada por el colegio).
+3. El sistema te redirigirá automáticamente a tu panel de usuario.
 
-1. Tocá el botón **"Sign in with Google"**.
-2. Seleccioná tu cuenta de Google.
-3. ¡Listo! No necesitás crear ni recordar una contraseña.
-
-> Esta opción es la más simple y rápida si tu email es de Gmail o está vinculado a Google.
+{% hint style="info" %}
+Con esta opción no necesitás recordar ni configurar una contraseña. ¡Es la forma más rápida y segura si usás Gmail!
+{% endhint %}
 
 ***
 
-#### 🟡 Opción 2: Usar un correo diferente (no Google)
+### 🟡 Opción 2: Iniciar sesión con email y contraseña
 
-1. En la pantalla de inicio, hacé clic en **“Set up your account”**.
-2. Ingresá tu dirección de correo electrónico.
-3. Si ese correo ya fue cargado por el colegio, el sistema te permitirá definir una contraseña.
-4. Una vez creada la contraseña, ya podrás usarla para iniciar sesión normalmente.
+1. En la pantalla de inicio, ingresá tu dirección de correo electrónico.
+2. Escribí tu contraseña (la que configuraste al crear tu cuenta).
+3. Tocá **“Sign in”** para acceder a tu cuenta.
 
-> Este proceso solo se realiza una vez. Luego podrás iniciar sesión con tu email y la contraseña elegida.
+{% hint style="info" %}
+Si olvidaste tu contraseña, hacé clic en **"Forgot password"** para restablecerla.
+{% endhint %}
 
-<figure><img src="../../.gitbook/assets/Screenshot 2025-07-24 at 7.24.03 PM.png" alt=""><figcaption></figcaption></figure>
+***
 
-<figure><img src="../../.gitbook/assets/Screenshot 2025-07-24 at 7.26.20 PM.png" alt=""><figcaption><p>Email a ser configurado.</p></figcaption></figure>
+### ❗ Problemas comunes
 
-<figure><img src="../../.gitbook/assets/Screenshot 2025-07-25 at 12.48.02 PM.png" alt=""><figcaption><p>Aqui se ingresa la contraseña para el usuario.</p></figcaption></figure>
-
-<figure><img src="../../.gitbook/assets/Screenshot 2025-07-25 at 12.48.35 PM.png" alt=""><figcaption><p>Confirmacion de cuenta configurada.</p></figcaption></figure>
+| Problema                            | Solución recomendada                              |
+| ----------------------------------- | ------------------------------------------------- |
+| El correo no existe en el sistema   | Contactá al administrador del colegio.            |
+| La contraseña es incorrecta         | Usá la opción “Forgot password” para recuperarla. |
+| No recibo el correo de recuperación | Revisá la carpeta de spam o promociones.          |
