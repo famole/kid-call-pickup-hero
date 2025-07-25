@@ -36,6 +36,7 @@
     "processing": "Procesando...",
     "inQueue": "Pendiente ({{count}})",
     "pickupRequestsBeingProcessed": "Tus solicitudes de recogida están siendo procesadas",
+    "authorizedPickupRequestsBeingProcessed": "Hay solicitudes de recogida autorizadas siendo procesadas",
     "waitingInPickupQueue": "Esperando a ser llamado...",
     "requested": "Solicitado: {{time}}",
     "readyForPickup": "¡Listo para Recogida! ({{count}})",

@@ -77,13 +77,34 @@ export const useOptimizedParentDashboard = () => {
           .in('status', ['pending', 'called']);
 
         if (!error && allChildRequests) {
-          // Transform and combine requests
+          // Fetch parent information first
+          const parentIds = [...new Set(allChildRequests.map(req => req.parent_id))];
+          let parentsMap = new Map();
+          
+          if (parentIds.length > 0) {
+            const { data: parents, error: parentsError } = await supabase
+              .from('parents')
+              .select('id, name, email')
+              .in('id', parentIds);
+
+            if (!parentsError && parents) {
+              setParentInfo(parents);
+              parentsMap = new Map(parents.map(p => [p.id, p]));
+            }
+          }
+
+          // Transform requests with parent information
           const transformedRequests = allChildRequests.map(req => ({
             id: req.id,
             studentId: req.student_id,
             parentId: req.parent_id,
             requestTime: new Date(req.request_time),
-            status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+            status: req.status as 'pending' | 'called' | 'completed' | 'cancelled',
+            requestingParent: parentsMap.get(req.parent_id) ? {
+              id: parentsMap.get(req.parent_id).id,
+              name: parentsMap.get(req.parent_id).name,
+              email: parentsMap.get(req.parent_id).email
+            } : undefined
           }));
 
           // Combine with parent's own requests, avoiding duplicates
@@ -95,19 +116,6 @@ export const useOptimizedParentDashboard = () => {
           });
           
           setActiveRequests(combinedRequests);
-
-          // Fetch parent information for the requests
-          const parentIds = [...new Set(combinedRequests.map(req => req.parentId))];
-          if (parentIds.length > 0) {
-            const { data: parents, error: parentsError } = await supabase
-              .from('parents')
-              .select('id, name')
-              .in('id', parentIds);
-
-            if (!parentsError && parents) {
-              setParentInfo(parents);
-            }
-          }
         } else {
           setActiveRequests(pickupRequests);
         }

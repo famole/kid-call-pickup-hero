@@ -33,7 +33,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
         <CardDescription>
           {pendingRequests.some(req => currentParentId && req.parentId !== currentParentId) ? (
             <>
-              {t('dashboard.pickupRequestsBeingProcessed')}
+              {t('dashboard.authorizedPickupRequestsBeingProcessed')}
               <br />
               <span className="text-xs text-blue-600 mt-1 block">
                 ℹ️ {t('dashboard.noteAuthorizedPickup')}

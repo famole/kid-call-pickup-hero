@@ -36,6 +36,7 @@
     "processing": "Processing...",
     "inQueue": "In Queue ({{count}})",
     "pickupRequestsBeingProcessed": "Your pickup requests are being processed",
+    "authorizedPickupRequestsBeingProcessed": "There are authorized pickup requests being processed",
     "waitingInPickupQueue": "Waiting in pickup queue...",
     "requested": "Requested: {{time}}",
     "readyForPickup": "Ready for Pickup! ({{count}})",
