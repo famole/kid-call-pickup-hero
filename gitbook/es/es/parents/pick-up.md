@@ -18,6 +18,8 @@ En la pantalla principal vas a ver la lista de tus hijos registrados.
       1. Esperando para ser llamado.
       2. En camino a la puerta "puedes dirigirte al lugar de retiro".
 
+<div><figure><img src="../../.gitbook/assets/Screenshot 2025-07-25 at 1.08.23 PM.png" alt=""><figcaption></figcaption></figure> <figure><img src="../../.gitbook/assets/Screenshot 2025-07-25 at 1.08.36 PM.png" alt=""><figcaption></figcaption></figure> <figure><img src="../../.gitbook/assets/Screenshot 2025-07-25 at 1.12.47 PM.png" alt=""><figcaption></figcaption></figure> <figure><img src="../../.gitbook/assets/Screenshot 2025-07-25 at 1.11.42 PM.png" alt=""><figcaption></figcaption></figure></div>
+
 ***
 
 #### 🕒 ¿Cuándo solicitar el retiro?
