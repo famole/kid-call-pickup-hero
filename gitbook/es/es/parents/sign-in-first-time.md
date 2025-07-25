@@ -1,4 +1,4 @@
-# 🔑 Iniciar Sesion (Primera Vez)
+# 🔑 Iniciar Sesión (Primera Vez)
 
 ### :point\_up: Iniciar sesión por primera vez
 
@@ -20,6 +20,8 @@
 4. Una vez creada la contraseña, ya podrás usarla para iniciar sesión normalmente.
 
 > Este proceso solo se realiza una vez. Luego podrás iniciar sesión con tu email y la contraseña elegida.
+
+***
 
 <figure><img src="../../.gitbook/assets/Screenshot 2025-07-24 at 7.24.03 PM.png" alt=""><figcaption></figcaption></figure>
 
