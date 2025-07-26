@@ -1,40 +1,20 @@
----
-description: >-
-  Esta guía está diseñada para ayudar a cada tipo de usuario de Upsy. Seleccioná
-  tu perfil para ir directamente al contenido que necesitás.
----
+# Table of contents
 
-# 🙋 ¿Para quién es esta documentación?
-
-## 👨‍👩‍👧 Para Padres
-
-* 🔑 Iniciar sesión en Upsy
-* 🚗 Solicitar el retiro de tu hijo/a
-* :shield: Autorizar a otros padres a retirar a tus hijos/as
-* :man\_running: Autorizar a tu/s hijos/as a retirarse solos
-* 👀 Ver el estado del retiro en tiempo real
-* 🔔 Recibir notificaciones
-
-👉 Ir a la Guía para Padres
-
-## 🧑‍🏫 Para Docentes
-
-* 📋 Ver solicitudes de retiro en tiempo real
-* ✅ Confirmar la salida de alumnos
-* 🧑‍💻 Gestionar el panel de tu clase
-* 🔒 Cerrar la jornada de salida
-
-👉 Ir a la Guía para Docentes
-
-## 🛡️ Para Administradores
-
-* ➕ Crear y administrar usuarios
-* 🏫 Organizar alumnos y clases
-* 🎨 Personalizar la plataforma de tu colegio
-* 📊 Revisar historial y registros de retiro
-
-👉 Ir a la Guía para Administradores
-
-## 🎯 ¿No sabés por dónde empezar?
-
-Visitá la sección de [Primeros Pasos](fundamentals/getting-set-up/) para una vista general.
+* [👋 Bienvenido a la Documentación de Upsy](README.md)
+  * [🙋 ¿Para quién es esta documentación?](SUMMARY.md)
+  * [👪 Padres](es/parents/README.md)
+    * [🔑 Iniciar Sesión (Primera Vez)](es/parents/sign-in-first-time.md)
+    * [🔑 Iniciar Sesión](es/parents/sign-in.md)
+    * [🚌 Solicitar Retiro](es/parents/pick-up.md)
+    * [🛡️ Autorizaciones](es/parents/pick-up-1.md)
+  * [product-guides](es/product-guides/README.md)
+    * [🛡️ Guía para Administradores](product-guides/for-administrators.md)
+    * [📱 Guía para Padres](product-guides/for-parents.md)
+    * [🧑‍🏫 Guía para Docentes](product-guides/for-teachers.md)
+  * [use-cases](es/use-cases/README.md)
+    * [📊 Monitoreo e Historial](use-cases/logs-and-history.md)
+    * [🏫 Caso de uso: Retiro Escolar](use-cases/pick-up-process.md)
+  * [fundamentals](es/fundamentals/README.md)
+    * [🛠️ Primeros Pasos](fundamentals/getting-set-up/README.md)
+      * [👥 Invitación de Usuarios](fundamentals/getting-set-up/inviting-members.md)
+      * [🔐 Configuración de Permisos](fundamentals/getting-set-up/setting-permissions.md)
