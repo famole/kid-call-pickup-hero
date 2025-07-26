@@ -19,7 +19,7 @@ Esta funcionalidad es ideal para estudiantes de niveles superiores con permiso d
 
 ***
 
-### ✅ Cómo agregar o autorizar a otro padre responsable
+### ✅ Cómo agregar una autorizacion de Auto-Salida
 
 1. En la barra superior o menu (dependiendo si estas ingresando desde un dispositivo móvil o pc) seleccionar _**Auto-Salida.**_
 2. Una vez en el dashboard de autorizaciones, presionar el botón  + _**Agregar Autorización.**_
