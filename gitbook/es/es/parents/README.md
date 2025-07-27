@@ -12,7 +12,7 @@ description: >-
 
 Para quienes ingresan por primera vez y necesitan configurar su cuenta.
 
-👉 [Ir a la guía de primer ingreso](./#iniciar-sesion-por-primera-vez)
+👉 [Ir a la guía de primer ingreso](sign-in-first-time.md)
 
 ***
 
@@ -20,7 +20,7 @@ Para quienes ingresan por primera vez y necesitan configurar su cuenta.
 
 Para ingresar normalmente con Google o con email y contraseña.
 
-👉 [Ir a la guía para iniciar sesión](./#iniciar-sesion)
+👉 [Ir a la guía para iniciar sesión](sign-in.md)
 
 ***
 
@@ -28,5 +28,20 @@ Para ingresar normalmente con Google o con email y contraseña.
 
 Paso a paso para pedir el retiro de tus hijos desde la app.
 
-👉 [Ir a la guía para solicitar retiro](./#solicitar-retiro)
+👉 [Ir a la guía para solicitar retiro](pick-up.md)
 
+***
+
+#### :shield: Autorizaciones
+
+Como autorizar a otros padres a retirar a nuestros hijos.
+
+:point\_right: [Ir a la guia de autorizaciones de retiro](auth.md)
+
+***
+
+#### :woman\_running: Autorizaciones de Auto-Salida
+
+Como autorizar a nuestros hijos a que se retiren del colegio por si mismos.
+
+:point\_right: [Ir a la guia de autorizaciones de retiro](self-auth.md)
