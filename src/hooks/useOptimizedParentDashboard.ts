@@ -26,6 +26,7 @@ export const useOptimizedParentDashboard = () => {
   const firstLoadRef = useRef(true);
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentParentId, setCurrentParentId] = useState<string | undefined>(undefined);
   const lastFetchRef = useRef<number>(0);
   const subscriptionRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,6 +47,10 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
+      // Get current parent ID first
+      const { data: parentId } = await supabase.rpc('get_current_parent_id');
+      setCurrentParentId(parentId);
+
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
         getParentDashboardDataOptimized(user.email),
@@ -54,7 +59,8 @@ export const useOptimizedParentDashboard = () => {
 
       console.log('Dashboard data loaded:', {
         childrenCount: dashboardData.allChildren.length,
-        pickupRequestsCount: pickupRequests.length
+        pickupRequestsCount: pickupRequests.length,
+        currentParentId: parentId
       });
 
       setChildren(dashboardData.allChildren);
@@ -71,13 +77,34 @@ export const useOptimizedParentDashboard = () => {
           .in('status', ['pending', 'called']);
 
         if (!error && allChildRequests) {
-          // Transform and combine requests
+          // Fetch parent information first
+          const parentIds = [...new Set(allChildRequests.map(req => req.parent_id))];
+          let parentsMap = new Map();
+          
+          if (parentIds.length > 0) {
+            const { data: parents, error: parentsError } = await supabase
+              .from('parents')
+              .select('id, name, email')
+              .in('id', parentIds);
+
+            if (!parentsError && parents) {
+              setParentInfo(parents);
+              parentsMap = new Map(parents.map(p => [p.id, p]));
+            }
+          }
+
+          // Transform requests with parent information
           const transformedRequests = allChildRequests.map(req => ({
             id: req.id,
             studentId: req.student_id,
             parentId: req.parent_id,
             requestTime: new Date(req.request_time),
-            status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
+            status: req.status as 'pending' | 'called' | 'completed' | 'cancelled',
+            requestingParent: parentsMap.get(req.parent_id) ? {
+              id: parentsMap.get(req.parent_id).id,
+              name: parentsMap.get(req.parent_id).name,
+              email: parentsMap.get(req.parent_id).email
+            } : undefined
           }));
 
           // Combine with parent's own requests, avoiding duplicates
@@ -89,19 +116,6 @@ export const useOptimizedParentDashboard = () => {
           });
           
           setActiveRequests(combinedRequests);
-
-          // Fetch parent information for the requests
-          const parentIds = [...new Set(combinedRequests.map(req => req.parentId))];
-          if (parentIds.length > 0) {
-            const { data: parents, error: parentsError } = await supabase
-              .from('parents')
-              .select('id, name')
-              .in('id', parentIds);
-
-            if (!parentsError && parents) {
-              setParentInfo(parents);
-            }
-          }
         } else {
           setActiveRequests(pickupRequests);
         }
@@ -277,6 +291,7 @@ export const useOptimizedParentDashboard = () => {
     selectedChildren,
     setSelectedChildren,
     isSubmitting,
+    currentParentId,
     toggleChildSelection,
     handleRequestPickup,
     refetch: () => loadDashboardData(true)

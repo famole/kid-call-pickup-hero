@@ -49,7 +49,7 @@ export const getParentAffectedPickupRequests = async (): Promise<PickupRequest[]
       return [];
     }
 
-    // Get all active pickup requests for these children
+    // Get all active pickup requests for these children  
     const { data: requests, error: requestsError } = await supabase
       .from('pickup_requests')
       .select('*')
@@ -61,13 +61,31 @@ export const getParentAffectedPickupRequests = async (): Promise<PickupRequest[]
       return [];
     }
 
-    return (requests || []).map(req => ({
-      id: req.id,
-      studentId: req.student_id,
-      parentId: req.parent_id,
-      requestTime: new Date(req.request_time),
-      status: req.status as 'pending' | 'called' | 'completed' | 'cancelled'
-    }));
+    // Get parent information for each request
+    const requestsWithParents = await Promise.all(
+      (requests || []).map(async (req) => {
+        const { data: parentData } = await supabase
+          .from('parents')
+          .select('id, name, email')
+          .eq('id', req.parent_id)
+          .single();
+
+        return {
+          id: req.id,
+          studentId: req.student_id,
+          parentId: req.parent_id,
+          requestTime: new Date(req.request_time),
+          status: req.status as 'pending' | 'called' | 'completed' | 'cancelled',
+          requestingParent: parentData ? {
+            id: parentData.id,
+            name: parentData.name,
+            email: parentData.email
+          } : undefined
+        };
+      })
+    );
+
+    return requestsWithParents;
   } catch (error) {
     console.error('Error in getParentAffectedPickupRequests:', error);
     return [];

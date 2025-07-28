@@ -23,6 +23,7 @@ const ParentDashboard: React.FC = () => {
     loading,
     selectedChildren,
     isSubmitting,
+    currentParentId,
     toggleChildSelection,
     handleRequestPickup
   } = useOptimizedParentDashboard();
@@ -57,10 +58,12 @@ const ParentDashboard: React.FC = () => {
               <PendingRequestsCard 
                 pendingRequests={pendingRequests} 
                 children={children}
+                currentParentId={currentParentId}
               />
               <CalledRequestsCard 
                 calledRequests={calledRequests} 
                 children={children}
+                currentParentId={currentParentId}
               />
               <SelfCheckoutStatusCard
                 selfCheckoutStudents={selfCheckoutStudents}

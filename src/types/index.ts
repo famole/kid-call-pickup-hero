@@ -29,6 +29,11 @@ export type PickupRequest = {
   parentId: string;
   requestTime: Date;
   status: 'pending' | 'called' | 'completed' | 'cancelled';
+  requestingParent?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 };
 
 export type AuthContextType = {
