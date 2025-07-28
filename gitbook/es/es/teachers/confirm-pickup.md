@@ -6,7 +6,7 @@ description: >-
 
 # ✅ Confirmar Retiro
 
-## :notebook\_with\_decorative\_cover: ¿Cuándo confirmar un retiro?
+### :notebook\_with\_decorative\_cover: ¿Cuándo confirmar un retiro?
 
 Confirmá el retiro **solo cuando el estudiante haya salido efectivamente del aula o punto de encuentro**.
 
@@ -14,7 +14,7 @@ Esto ayuda a mantener el orden y la seguridad en la salida.
 
 ***
 
-## 🪜 Pasos para confirmar un retiro
+### 🪜 Pasos para confirmar un retiro
 
 1. Ingresá al **Panel de Salida**.
 2. En la pestaña **Autorizaciones pendientes**, buscá al estudiante solicitado.
