@@ -40,7 +40,14 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/password-setup" element={<PasswordSetup />} />
               <Route path="/unauthorized-access" element={<UnauthorizedAccess />} />
-              <Route path="/admin-setup" element={<AdminInitialSetup />} />
+              <Route 
+                path="/admin-setup" 
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminInitialSetup />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/" 
                 element={
@@ -84,7 +91,7 @@ function App() {
               <Route 
                 path="/admin" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminPanel />
                   </ProtectedRoute>
                 } 
@@ -92,7 +99,7 @@ function App() {
               <Route 
                 path="/admin/students" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminStudentsScreen />
                   </ProtectedRoute>
                 } 
@@ -100,7 +107,7 @@ function App() {
               <Route 
                 path="/admin/parents" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminParentsScreen />
                   </ProtectedRoute>
                 } 
@@ -108,7 +115,7 @@ function App() {
               <Route 
                 path="/admin/classes" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminClassesScreen />
                   </ProtectedRoute>
                 } 
