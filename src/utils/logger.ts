@@ -1,7 +1,7 @@
 // Logging utility that respects environment configuration
-// Set VITE_NODE_ENV=production in your production environment to disable console logs
+// Logs are disabled in production environment
 
-const isProduction = import.meta.env.VITE_NODE_ENV === 'production';
+const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
 
 export const logger = {
   log: (...args: any[]) => {
