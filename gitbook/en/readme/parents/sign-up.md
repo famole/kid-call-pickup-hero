@@ -22,3 +22,11 @@
 📝 This process only needs to be done once. After that, you’ll log in normally with your credentials.
 
 ***
+
+<figure><img src="../../.gitbook/assets/Screenshot 2025-07-24 at 7.24.03 PM.png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../.gitbook/assets/Screenshot 2025-07-24 at 7.26.20 PM.png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../.gitbook/assets/Screenshot 2025-07-25 at 12.48.02 PM.png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../.gitbook/assets/Screenshot 2025-07-25 at 12.48.35 PM.png" alt=""><figcaption></figcaption></figure>
