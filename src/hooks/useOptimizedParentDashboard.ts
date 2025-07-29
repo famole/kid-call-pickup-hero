@@ -6,6 +6,7 @@ import { getActivePickupRequestsForParent, createPickupRequest } from '@/service
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -33,14 +34,14 @@ export const useOptimizedParentDashboard = () => {
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.email) {
-      console.log('No user email available, skipping data load');
+      logger.log('No user email available, skipping data load');
       return;
     }
 
     const now = Date.now();
     // Prevent excessive requests but allow forced refreshes
     if (!forceRefresh && now - lastFetchRef.current < 500) {
-      console.log('Debouncing dashboard data load request');
+      logger.log('Debouncing dashboard data load request');
       return;
     }
 
@@ -57,7 +58,7 @@ export const useOptimizedParentDashboard = () => {
         getActivePickupRequestsForParent()
       ]);
 
-      console.log('Dashboard data loaded:', {
+      logger.log('Dashboard data loaded:', {
         childrenCount: dashboardData.allChildren.length,
         pickupRequestsCount: pickupRequests.length,
         currentParentId: parentId
@@ -124,12 +125,12 @@ export const useOptimizedParentDashboard = () => {
       }
       
       lastFetchRef.current = now;
-      console.log('Parent dashboard data loaded successfully', {
+      logger.log('Parent dashboard data loaded successfully', {
         childrenCount: dashboardData.allChildren.length,
         requestsCount: activeRequests.length
       });
     } catch (error) {
-      console.error('Error loading parent dashboard data:', error);
+      logger.error('Error loading parent dashboard data:', error);
     } finally {
       if (firstLoadRef.current) {
         firstLoadRef.current = false;
@@ -150,13 +151,13 @@ export const useOptimizedParentDashboard = () => {
 
     // Clean up existing subscription
     if (subscriptionRef.current) {
-      console.log('Cleaning up existing parent dashboard subscription');
+      logger.log('Cleaning up existing parent dashboard subscription');
       supabase.removeChannel(subscriptionRef.current);
       subscriptionRef.current = null;
     }
 
     const channelName = `parent_dashboard_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
-    console.log('Setting up parent dashboard real-time subscription:', channelName);
+    logger.log('Setting up parent dashboard real-time subscription:', channelName);
 
     const channel = supabase
       .channel(channelName)
@@ -168,48 +169,48 @@ export const useOptimizedParentDashboard = () => {
           table: 'pickup_requests'
         },
         async (payload) => {
-          console.log('Parent dashboard real-time change detected:', payload.eventType, payload);
-          console.log('Payload details:', JSON.stringify(payload, null, 2));
+          logger.log('Parent dashboard real-time change detected:', payload.eventType, payload);
+          logger.log('Payload details:', JSON.stringify(payload, null, 2));
           
           // Handle real-time updates intelligently like admin panel
           if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
-            console.log('New pickup request detected, refreshing dashboard...');
+            logger.log('New pickup request detected, refreshing dashboard...');
             loadDashboardData(true);
           } else if (payload.eventType === 'UPDATE') {
             const newStatus = payload.new?.status;
             const oldStatus = payload.old?.status;
             const studentId = payload.new?.student_id;
             
-            console.log(`Status change detected for student ${studentId}: ${oldStatus} -> ${newStatus}`);
+            logger.log(`Status change detected for student ${studentId}: ${oldStatus} -> ${newStatus}`);
             
             // Any status change should trigger a refresh for parent dashboard
             if (newStatus !== oldStatus) {
-              console.log(`Pickup request status changed from ${oldStatus} to ${newStatus}, refreshing dashboard...`);
+              logger.log(`Pickup request status changed from ${oldStatus} to ${newStatus}, refreshing dashboard...`);
               // Use a longer timeout to ensure the database update is complete
               setTimeout(() => {
-                console.log('Executing dashboard refresh now...');
+                logger.log('Executing dashboard refresh now...');
                 loadDashboardData(true);
               }, 300);
             }
           } else if (payload.eventType === 'DELETE') {
-            console.log('Pickup request deleted, refreshing dashboard...');
+            logger.log('Pickup request deleted, refreshing dashboard...');
             loadDashboardData(true);
           }
         }
       )
       .subscribe((status) => {
-        console.log('Parent dashboard subscription status:', status);
+        logger.log('Parent dashboard subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to pickup_requests changes for parent dashboard');
+          logger.log('Successfully subscribed to pickup_requests changes for parent dashboard');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Failed to subscribe to pickup_requests changes for parent dashboard');
+          logger.error('Failed to subscribe to pickup_requests changes for parent dashboard');
         }
       });
 
     subscriptionRef.current = channel;
 
     return () => {
-      console.log('Cleaning up parent dashboard real-time subscription');
+      logger.log('Cleaning up parent dashboard real-time subscription');
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
@@ -251,7 +252,7 @@ export const useOptimizedParentDashboard = () => {
       // Force refresh after submitting requests
       await loadDashboardData(true);
     } catch (error) {
-      console.error('Error requesting pickup:', error);
+      logger.error('Error requesting pickup:', error);
       toast({
         title: "Error",
         description: "Failed to submit pickup request. Please try again.",
@@ -265,7 +266,7 @@ export const useOptimizedParentDashboard = () => {
   // Initial load
   useEffect(() => {
     if (user?.email) {
-      console.log('Setting up parent dashboard for user:', user.email);
+      logger.log('Setting up parent dashboard for user:', user.email);
       loadDashboardData(true);
     }
   }, [user?.email, loadDashboardData]);
