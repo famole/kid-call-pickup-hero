@@ -28,8 +28,10 @@ On the main screen, you'll see the list of your registered children.
 
 ## 🕒 When should I request pick-up?
 
+{% hint style="info" %}
 It's important to note that once a pick-up is requested, the teacher will begin preparing the student to leave.\
 For this reason, **you should avoid sending a pick-up request before you’ve arrived at school**.
+{% endhint %}
 
 ✅ You can request pick-up:
 
