@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
 import { AuthState } from '@/types/auth';
+import { logger } from '@/utils/logger';
 import { 
   cleanupAuthState, 
   getParentData, 
@@ -21,7 +22,7 @@ export const useAuthProvider = (): AuthState & {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
+        logger.log('Auth state change:', event, session?.user?.email);
         
         if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -32,7 +33,7 @@ export const useAuthProvider = (): AuthState & {
               await handleUserSession(session.user);
             }, 0);
           } catch (error) {
-            console.error("Error in auth state change:", error);
+            logger.error("Error in auth state change:", error);
           }
         }
       }
@@ -43,13 +44,13 @@ export const useAuthProvider = (): AuthState & {
       try {
         // Try to get session from Supabase
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('Initial session check:', session?.user?.email);
+        logger.log('Initial session check:', session?.user?.email);
         
         if (session?.user) {
           await handleUserSession(session.user);
         }
       } catch (error) {
-        console.error("Error loading user:", error);
+        logger.error("Error loading user:", error);
       } finally {
         setLoading(false);
       }
@@ -64,22 +65,22 @@ export const useAuthProvider = (): AuthState & {
 
   const handleUserSession = async (authUser: any) => {
     try {
-      console.log('Handling user session for:', authUser.email);
+      logger.log('Handling user session for:', authUser.email);
       
       // Check if this is an OAuth user
       const isOAuthUser =
         !!(authUser.app_metadata?.provider &&
           authUser.app_metadata.provider !== 'email');
       
-      console.log('Is OAuth user:', isOAuthUser);
+      logger.log('Is OAuth user:', isOAuthUser);
       
       // Get user data from our database based on the auth user
       let parentData = await getParentData(authUser.email);
-      console.log('Parent data found:', parentData ? 'Yes' : 'No');
+      logger.log('Parent data found:', parentData ? 'Yes' : 'No');
       
       // If no parent data exists and this is an OAuth user, reject the authentication
       if (!parentData && isOAuthUser) {
-        console.log('OAuth user not found in database, redirecting to unauthorized page');
+        logger.log('OAuth user not found in database, redirecting to unauthorized page');
         await supabase.auth.signOut();
         setUser(null);
         setLoading(false);
@@ -92,11 +93,11 @@ export const useAuthProvider = (): AuthState & {
       }
 
       if (parentData) {
-        console.log('Using parent data, role:', parentData.role);
+        logger.log('Using parent data, role:', parentData.role);
         
         // For preloaded users who haven't set up their account yet
         if (parentData.is_preloaded && !parentData.password_set) {
-          console.log('User needs password setup');
+          logger.log('User needs password setup');
           // Set the user so password setup page can access their info
           setUser(createUserFromParentData(parentData));
 
@@ -109,15 +110,15 @@ export const useAuthProvider = (): AuthState & {
 
         // If we found or created parent data, use it to create our app user
         const user = createUserFromParentData(parentData);
-        console.log('Created user with role:', user.role);
+        logger.log('Created user with role:', user.role);
         setUser(user);
       } else {
-        console.log('Using fallback auth user data');
+        logger.log('Using fallback auth user data');
         // Fall back to auth user data if no parent record exists yet
         setUser(createUserFromAuthData(authUser));
       }
     } catch (error) {
-      console.error("Error handling user session:", error);
+      logger.error("Error handling user session:", error);
       // Fall back to auth user data on error
       setUser(createUserFromAuthData(authUser));
     }
@@ -135,7 +136,7 @@ export const useAuthProvider = (): AuthState & {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (signOutError) {
         // Continue even if this fails
-        console.error("Sign out before login failed:", signOutError);
+        logger.error("Sign out before login failed:", signOutError);
       }
       
       // Try to authenticate with Supabase
@@ -155,7 +156,7 @@ export const useAuthProvider = (): AuthState & {
       
       return Promise.resolve();
     } catch (error) {
-      console.error("Login error:", error);
+      logger.error("Login error:", error);
       return Promise.reject(error);
     } finally {
       setLoading(false);
@@ -170,7 +171,7 @@ export const useAuthProvider = (): AuthState & {
     try {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (error) {
-      console.error("Error during sign out:", error);
+      logger.error("Error during sign out:", error);
     }
     
     setUser(null);

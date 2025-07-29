@@ -23,8 +23,12 @@ export function getSupabaseConfig(): SupabaseConfig {
   };
   
   const source = envUrl && envAnonKey ? 'environment variables' : 'development fallback';
-  console.log(`[Environment] Using Supabase config from: ${source}`);
-  console.log(`[Environment] Using Supabase URL: ${config.url}`);
+  
+  // Only log in non-production environments
+  if (import.meta.env.VITE_NODE_ENV !== 'production') {
+    console.log(`[Environment] Using Supabase config from: ${source}`);
+    console.log(`[Environment] Using Supabase URL: ${config.url}`);
+  }
   
   return config;
 }
