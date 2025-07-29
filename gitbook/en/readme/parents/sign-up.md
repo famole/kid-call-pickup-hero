@@ -1,4 +1,4 @@
-# 🔑 Sign Up
+# 🔐 Sign Up
 
 ## 🔐 First-time Login
 
