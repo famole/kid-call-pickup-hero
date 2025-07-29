@@ -13,6 +13,7 @@ import { useCalledStudents } from '@/hooks/useCalledStudents';
 import { useOptimizedPickupManagement } from '@/hooks/useOptimizedPickupManagement';
 import { useSelfCheckoutStudents } from '@/hooks/useSelfCheckoutStudents';
 import { getAllClasses } from '@/services/classService';
+import { getClassesForTeacher } from '@/services/classTeacherService';
 import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickupRequests';
 import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,6 +30,11 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const { t } = useTranslation();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [teacherClasses, setTeacherClasses] = useState<Class[]>([]);
+  
+  // Determine if user is admin (can see all classes) or teacher (limited to assigned classes)
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isTeacher = user?.role === 'teacher';
 
   // Use the optimized hooks for better performance and real-time updates
   const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass);
@@ -44,21 +50,42 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const classData = await getAllClasses();
-        setClasses(classData);
+        if (isAdmin) {
+          // Admins can see all classes
+          const classData = await getAllClasses();
+          setClasses(classData);
+        } else if (isTeacher && user?.id) {
+          // Teachers can only see their assigned classes
+          const teacherClassesData = await getClassesForTeacher(user.id);
+          const formattedClasses = teacherClassesData.map(cls => ({
+            ...cls,
+            teacher: '', // This field is not used in the context of teacher-specific classes
+            createdAt: '',
+            updatedAt: ''
+          }));
+          setTeacherClasses(formattedClasses);
+          setClasses(formattedClasses);
+          
+          // Auto-select the first class if teacher has only one class, otherwise keep 'all'
+          if (formattedClasses.length === 1) {
+            setSelectedClass(formattedClasses[0].id);
+          }
+        }
       } catch (error) {
         console.error('Error fetching classes:', error);
       }
     };
     
-    fetchClasses();
+    if (user?.id) {
+      fetchClasses();
+    }
     
     // Start the auto-completion process
     const stopAutoCompletion = startAutoCompletionProcess();
     
     // Cleanup on unmount
     return stopAutoCompletion;
-  }, []);
+  }, [user?.id, isAdmin, isTeacher]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -101,15 +128,15 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('pickup.management')}</h2>
                 <p className="text-base sm:text-lg text-muted-foreground">{t('pickup.manageStudentPickupRequests')}</p>
               </div>
-              {classes.length > 0 ? (
+              {isAdmin && classes.length > 0 ? (
                 <ClassFilter 
                   selectedClass={selectedClass} 
                   classes={classes} 
                   onChange={handleClassChange} 
                 />
-              ) : (
+              ) : isAdmin ? (
                 <Skeleton className="h-10 w-48" />
-              )}
+              ) : null}
             </div>
           </div>
 
