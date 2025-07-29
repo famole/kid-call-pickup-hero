@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,75 +33,76 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [teacherClasses, setTeacherClasses] = useState<Class[]>([]);
   
-  // Determine if user is admin (can see all classes) or teacher (limited to assigned classes)
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const isTeacher = user?.role === 'teacher';
+  // Memoize role checks to prevent unnecessary re-renders
+  const isAdmin = useMemo(() => user?.role === 'admin' || user?.role === 'superadmin', [user?.role]);
+  const isTeacher = useMemo(() => user?.role === 'teacher', [user?.role]);
+
+  // Memoize fetchClasses function to prevent infinite loops
+  const fetchClasses = useCallback(async () => {
+    if (!user?.email) return;
+    
+    try {
+      if (isAdmin) {
+        // Admins can see all classes
+        const classData = await getAllClasses();
+        setClasses(classData);
+      } else if (isTeacher) {
+        // Teachers can only see their assigned classes
+        // First, get the parent ID from the database using the user's email
+        const { data: parentData, error: parentError } = await supabase
+          .from('parents')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+        
+        if (parentError || !parentData) {
+          console.error('Error fetching parent data for teacher:', parentError);
+          return;
+        }
+        
+        const teacherClassesData = await getClassesForTeacher(parentData.id);
+        const formattedClasses = teacherClassesData.map(cls => ({
+          ...cls,
+          teacher: '', // This field is not used in the context of teacher-specific classes
+          createdAt: '',
+          updatedAt: ''
+        }));
+        setTeacherClasses(formattedClasses);
+        setClasses(formattedClasses);
+        
+        console.log(`Teacher ${user.email} is assigned to classes:`, formattedClasses.map(c => c.name));
+        
+        // Auto-select the first class if teacher has only one class, otherwise keep 'all'
+        if (formattedClasses.length === 1) {
+          setSelectedClass(formattedClasses[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  }, [user?.email, isAdmin, isTeacher]);
 
   // Use the optimized hooks for better performance and real-time updates
-  const teacherClassIds = isTeacher ? teacherClasses.map(cls => cls.id) : undefined;
+  const teacherClassIds = useMemo(() => isTeacher ? teacherClasses.map(cls => cls.id) : undefined, [isTeacher, teacherClasses]);
   const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass, teacherClassIds);
   const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass, teacherClassIds);
   const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(selectedClass);
 
   // Check if user has permission to access this page - include superadmin
-  const hasPermission = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
+  const hasPermission = useMemo(() => user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin', [user?.role]);
 
   // Flatten the called students from grouped format to a flat array
-  const calledStudents = Object.values(childrenByClass).flat();
+  const calledStudents = useMemo(() => Object.values(childrenByClass).flat(), [childrenByClass]);
 
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        if (isAdmin) {
-          // Admins can see all classes
-          const classData = await getAllClasses();
-          setClasses(classData);
-        } else if (isTeacher && user?.email) {
-          // Teachers can only see their assigned classes
-          // First, get the parent ID from the database using the user's email
-          const { data: parentData, error: parentError } = await supabase
-            .from('parents')
-            .select('id')
-            .eq('email', user.email)
-            .single();
-          
-          if (parentError || !parentData) {
-            console.error('Error fetching parent data for teacher:', parentError);
-            return;
-          }
-          
-          const teacherClassesData = await getClassesForTeacher(parentData.id);
-          const formattedClasses = teacherClassesData.map(cls => ({
-            ...cls,
-            teacher: '', // This field is not used in the context of teacher-specific classes
-            createdAt: '',
-            updatedAt: ''
-          }));
-          setTeacherClasses(formattedClasses);
-          setClasses(formattedClasses);
-          
-          console.log(`Teacher ${user.email} is assigned to classes:`, formattedClasses.map(c => c.name));
-          
-          // Auto-select the first class if teacher has only one class, otherwise keep 'all'
-          if (formattedClasses.length === 1) {
-            setSelectedClass(formattedClasses[0].id);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching classes:', error);
-      }
-    };
-    
-    if (user?.email) {
-      fetchClasses();
-    }
+    fetchClasses();
     
     // Start the auto-completion process
     const stopAutoCompletion = startAutoCompletionProcess();
     
     // Cleanup on unmount
     return stopAutoCompletion;
-  }, [user?.email, isAdmin, isTeacher]);
+  }, [fetchClasses]);
 
   // Show loading while checking auth
   if (authLoading) {
