@@ -71,6 +71,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
         setClasses(formattedClasses);
         
         console.log(`Teacher ${user.email} is assigned to classes:`, formattedClasses.map(c => c.name));
+        console.log(`Teacher class IDs:`, formattedClasses.map(c => c.id));
         
         // Auto-select the first class if teacher has only one class, otherwise keep 'all'
         if (formattedClasses.length === 1) {
@@ -82,8 +83,11 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
     }
   }, [user?.email, isAdmin, isTeacher]);
 
-  // Use the optimized hooks for better performance and real-time updates
-  const teacherClassIds = useMemo(() => isTeacher ? teacherClasses.map(cls => cls.id) : undefined, [isTeacher, teacherClasses]);
+  const teacherClassIds = useMemo(() => {
+    const ids = isTeacher ? teacherClasses.map(cls => cls.id) : undefined;
+    console.log('teacherClassIds in PickupManagement:', ids);
+    return ids;
+  }, [isTeacher, teacherClasses]);
   const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass, teacherClassIds);
   const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass, teacherClassIds);
   const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(selectedClass);

@@ -19,7 +19,7 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
     }
 
     try {
-      console.log('Fetching optimized pending requests...');
+      console.log('Fetching optimized pending requests with teacherClassIds:', teacherClassIds);
       const allRequests = await getPickupRequestsWithDetailsBatch(['pending'], teacherClassIds);
       
       let filteredRequests = allRequests;

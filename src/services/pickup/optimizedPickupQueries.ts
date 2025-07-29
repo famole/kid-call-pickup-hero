@@ -36,7 +36,10 @@ export const getPickupRequestsWithDetailsBatch = async (
 
     // If teacher class IDs are provided, filter by those classes
     if (teacherClassIds && teacherClassIds.length > 0) {
+      console.log('Filtering pickup requests by teacherClassIds:', teacherClassIds);
       query = query.in('students.class_id', teacherClassIds);
+    } else {
+      console.log('No teacherClassIds filter applied, teacherClassIds:', teacherClassIds);
     }
 
     const { data, error } = await query;
