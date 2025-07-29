@@ -2,10 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
+import { logger } from '@/utils/logger';
 
 export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStudents[]> => {
   try {
-    console.log('Fetching optimized parents with students data...');
+    logger.log('Fetching optimized parents with students data...');
     
     const { data: parentsData, error: parentsError } = await supabase
       .from('parents')
@@ -21,11 +22,11 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       .order('name');
 
     if (parentsError) {
-      console.error('Error fetching parents:', parentsError);
+      logger.error('Error fetching parents:', parentsError);
       throw new Error(parentsError.message);
     }
 
-    console.log(`Fetched ${parentsData?.length || 0} parents from database`);
+    logger.log(`Fetched ${parentsData?.length || 0} parents from database`);
     
     // Log role distribution for debugging
     const roleDistribution = parentsData?.reduce((acc, parent) => {
@@ -33,7 +34,7 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       acc[role] = (acc[role] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    console.log('Role distribution:', roleDistribution);
+    logger.log('Role distribution:', roleDistribution);
 
     const { data: studentParentData, error: studentParentError } = await supabase
       .from('student_parents')
@@ -55,11 +56,11 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       `);
 
     if (studentParentError) {
-      console.error('Error fetching student-parent relationships:', studentParentError);
+      logger.error('Error fetching student-parent relationships:', studentParentError);
       throw new Error(studentParentError.message);
     }
 
-    console.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
+    logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
 
     // Group students by parent ID
     const studentsByParent = studentParentData?.reduce((acc, relation) => {
@@ -90,22 +91,22 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       updatedAt: new Date(parent.updated_at),
     })) || [];
 
-    console.log(`Returning ${parentsWithStudents.length} parents with students data`);
+    logger.log(`Returning ${parentsWithStudents.length} parents with students data`);
     
     // Log teachers specifically for debugging
     const teachers = parentsWithStudents.filter(p => p.role === 'teacher');
-    console.log(`Found ${teachers.length} teachers:`, teachers.map(t => ({ name: t.name, role: t.role })));
+    logger.log(`Found ${teachers.length} teachers:`, teachers.map(t => ({ name: t.name, role: t.role })));
 
     return parentsWithStudents;
   } catch (error) {
-    console.error('Error in getParentsWithStudentsOptimized:', error);
+    logger.error('Error in getParentsWithStudentsOptimized:', error);
     throw error;
   }
 };
 
 export const getParentDashboardDataOptimized = async (parentEmail: string) => {
   try {
-    console.log('Fetching parent dashboard data for:', parentEmail);
+    logger.log('Fetching parent dashboard data for:', parentEmail);
 
     // Get parent ID first
     const { data: parentData, error: parentError } = await supabase
@@ -115,12 +116,12 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       .single();
 
     if (parentError) {
-      console.error('Error fetching parent:', parentError);
+      logger.error('Error fetching parent:', parentError);
       throw new Error(parentError.message);
     }
 
     if (!parentData) {
-      console.error('No parent found for email:', parentEmail);
+      logger.error('No parent found for email:', parentEmail);
       return { allChildren: [] };
     }
 
@@ -140,7 +141,7 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       .eq('student_parents.parent_id', parentData.id);
 
     if (childrenError) {
-      console.error('Error fetching children:', childrenError);
+      logger.error('Error fetching children:', childrenError);
       throw new Error(childrenError.message);
     }
 
@@ -162,7 +163,7 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       .gte('end_date', new Date().toISOString().split('T')[0]);
 
     if (authorizedError) {
-      console.error('Error fetching authorized children:', authorizedError);
+      logger.error('Error fetching authorized children:', authorizedError);
       // Don't throw here, just log and continue
     }
 
@@ -198,11 +199,11 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
 
     const allChildren = Array.from(allChildrenMap.values());
 
-    console.log(`Found ${allChildren.length} children for parent ${parentEmail}`);
+    logger.log(`Found ${allChildren.length} children for parent ${parentEmail}`);
 
     return { allChildren };
   } catch (error) {
-    console.error('Error in getParentDashboardDataOptimized:', error);
+    logger.error('Error in getParentDashboardDataOptimized:', error);
     throw error;
   }
 };
@@ -210,7 +211,7 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
 // Enhanced function that gets all pickup requests affecting a parent's children
 export const getParentDashboardWithRealTimeData = async (parentEmail: string) => {
   try {
-    console.log('Fetching complete parent dashboard data for:', parentEmail);
+    logger.log('Fetching complete parent dashboard data for:', parentEmail);
     
     // Get basic dashboard data
     const dashboardData = await getParentDashboardDataOptimized(parentEmail);
@@ -223,7 +224,7 @@ export const getParentDashboardWithRealTimeData = async (parentEmail: string) =>
       affectedPickupRequests
     };
   } catch (error) {
-    console.error('Error in getParentDashboardWithRealTimeData:', error);
+    logger.error('Error in getParentDashboardWithRealTimeData:', error);
     throw error;
   }
 };
