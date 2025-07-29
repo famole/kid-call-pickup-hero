@@ -5,3 +5,4 @@
   * [👪 Parents](readme/parents/README.md)
     * [🔐 Sign Up](readme/parents/sign-up.md)
     * [🔑 Sign In](readme/parents/sign-in.md)
+    * [🚌 Request Pick-up](readme/parents/request-pick-up.md)
