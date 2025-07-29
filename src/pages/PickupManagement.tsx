@@ -14,6 +14,7 @@ import { useOptimizedPickupManagement } from '@/hooks/useOptimizedPickupManageme
 import { useSelfCheckoutStudents } from '@/hooks/useSelfCheckoutStudents';
 import { getAllClasses } from '@/services/classService';
 import { getClassesForTeacher } from '@/services/classTeacherService';
+import { supabase } from '@/integrations/supabase/client';
 import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickupRequests';
 import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -55,9 +56,21 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           // Admins can see all classes
           const classData = await getAllClasses();
           setClasses(classData);
-        } else if (isTeacher && user?.id) {
+        } else if (isTeacher && user?.email) {
           // Teachers can only see their assigned classes
-          const teacherClassesData = await getClassesForTeacher(user.id);
+          // First, get the parent ID from the database using the user's email
+          const { data: parentData, error: parentError } = await supabase
+            .from('parents')
+            .select('id')
+            .eq('email', user.email)
+            .single();
+          
+          if (parentError || !parentData) {
+            console.error('Error fetching parent data for teacher:', parentError);
+            return;
+          }
+          
+          const teacherClassesData = await getClassesForTeacher(parentData.id);
           const formattedClasses = teacherClassesData.map(cls => ({
             ...cls,
             teacher: '', // This field is not used in the context of teacher-specific classes
@@ -66,6 +79,8 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           }));
           setTeacherClasses(formattedClasses);
           setClasses(formattedClasses);
+          
+          console.log(`Teacher ${user.email} is assigned to classes:`, formattedClasses.map(c => c.name));
           
           // Auto-select the first class if teacher has only one class, otherwise keep 'all'
           if (formattedClasses.length === 1) {
@@ -77,7 +92,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
       }
     };
     
-    if (user?.id) {
+    if (user?.email) {
       fetchClasses();
     }
     
@@ -86,7 +101,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
     
     // Cleanup on unmount
     return stopAutoCompletion;
-  }, [user?.id, isAdmin, isTeacher]);
+  }, [user?.email, isAdmin, isTeacher]);
 
   // Show loading while checking auth
   if (authLoading) {
