@@ -65,10 +65,12 @@ const ParentDashboard: React.FC = () => {
                 children={children}
                 currentParentId={currentParentId}
               />
-              <SelfCheckoutStatusCard
-                selfCheckoutStudents={selfCheckoutStudents}
-                loading={selfCheckoutLoading}
-              />
+              {(selfCheckoutStudents.length > 0 || selfCheckoutLoading) && (
+                <SelfCheckoutStatusCard
+                  selfCheckoutStudents={selfCheckoutStudents}
+                  loading={selfCheckoutLoading}
+                />
+              )}
             </div>
             
             {/* Student Selection Component - Right side for larger screens */}
