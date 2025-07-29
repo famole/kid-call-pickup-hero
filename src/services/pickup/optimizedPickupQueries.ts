@@ -4,10 +4,13 @@ import { PickupRequestWithDetails } from '@/types/supabase';
 import { PickupRequest } from '@/types';
 
 // Optimized function to get all pickup requests with details in a single query
-export const getPickupRequestsWithDetailsBatch = async (statuses: string[] = ['pending', 'called']): Promise<PickupRequestWithDetails[]> => {
+export const getPickupRequestsWithDetailsBatch = async (
+  statuses: string[] = ['pending', 'called'], 
+  teacherClassIds?: string[]
+): Promise<PickupRequestWithDetails[]> => {
   try {
     // Single query with joins to get all data at once, including parent information
-    const { data, error } = await supabase
+    let query = supabase
       .from('pickup_requests')
       .select(`
         *,
@@ -30,6 +33,13 @@ export const getPickupRequestsWithDetailsBatch = async (statuses: string[] = ['p
         )
       `)
       .in('status', statuses);
+
+    // If teacher class IDs are provided, filter by those classes
+    if (teacherClassIds && teacherClassIds.length > 0) {
+      query = query.in('students.class_id', teacherClassIds);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching pickup requests with details:', error);
@@ -71,7 +81,10 @@ export const getPickupRequestsWithDetailsBatch = async (statuses: string[] = ['p
 };
 
 // Optimized function for getting called students with class filtering
-export const getCalledStudentsOptimized = async (classId?: string): Promise<PickupRequestWithDetails[]> => {
+export const getCalledStudentsOptimized = async (
+  classId?: string, 
+  teacherClassIds?: string[]
+): Promise<PickupRequestWithDetails[]> => {
   try {
     let query = supabase
       .from('pickup_requests')
@@ -97,8 +110,12 @@ export const getCalledStudentsOptimized = async (classId?: string): Promise<Pick
       `)
       .eq('status', 'called');
 
-    // Apply class filter at database level if specified
-    if (classId && classId !== 'all') {
+    // Apply teacher class filter first if provided
+    if (teacherClassIds && teacherClassIds.length > 0) {
+      query = query.in('students.class_id', teacherClassIds);
+    }
+    // Apply single class filter if specified and no teacher filter
+    else if (classId && classId !== 'all') {
       query = query.eq('students.class_id', classId);
     }
 

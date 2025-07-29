@@ -37,8 +37,9 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const isTeacher = user?.role === 'teacher';
 
   // Use the optimized hooks for better performance and real-time updates
-  const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass);
-  const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass);
+  const teacherClassIds = isTeacher ? teacherClasses.map(cls => cls.id) : undefined;
+  const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass, teacherClassIds);
+  const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass, teacherClassIds);
   const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(selectedClass);
 
   // Check if user has permission to access this page - include superadmin

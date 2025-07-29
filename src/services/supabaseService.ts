@@ -40,7 +40,7 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
 };
 
 // Function to get currently called children with details
-export const getCurrentlyCalled = async (classId?: string): Promise<PickupRequestWithDetails[]> => {
+export const getCurrentlyCalled = async (classId?: string, teacherClassIds?: string[]): Promise<PickupRequestWithDetails[]> => {
   try {
     
     // Start with the base query
@@ -93,6 +93,18 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
         child,
         class: classInfo,
         parent: parentInfo
+      });
+    }
+    
+    // Filter by teacher classes first if provided
+    if (teacherClassIds && teacherClassIds.length > 0) {
+      return result.filter(item => {
+        if (!item.child || !item.class) {
+          return false;
+        }
+        
+        const childClassId = String(item.child.classId);
+        return teacherClassIds.includes(childClassId);
       });
     }
     
