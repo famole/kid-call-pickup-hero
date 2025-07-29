@@ -162,7 +162,8 @@ export const getClassesForTeacher = async (teacherId: string): Promise<Array<{id
     const { data, error } = await supabase
       .from('class_teachers')
       .select(`
-        classes(id, name, grade)
+        class_id,
+        classes!class_teachers_class_id_fkey(id, name, grade)
       `)
       .eq('teacher_id', teacherId);
     
@@ -171,7 +172,7 @@ export const getClassesForTeacher = async (teacherId: string): Promise<Array<{id
       throw new Error(error.message);
     }
     
-    return data.map((item: any) => item.classes);
+    return data.map((item: any) => item.classes).filter(Boolean);
   } catch (error) {
     console.error('Error in getClassesForTeacher:', error);
     throw error;

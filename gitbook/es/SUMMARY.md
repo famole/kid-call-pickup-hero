@@ -10,7 +10,7 @@
     * [🏃 Autorizaciones de Auto-Salida](es/parents/self-auth.md)
   * [👩‍🏫 Docentes](es/teachers/README.md)
     * [👀 Ver Solicitudes de Retiro](es/teachers/teacher-dashboard.md)
-    * [📱 Confirmar Retiro](es/teachers/confirm-pickup.md)
+    * [✅ Confirmar Retiro](es/teachers/confirm-pickup.md)
     * [🏃 Auto-Salidas](es/teachers/self-checkout.md)
   * [use-cases](es/use-cases/README.md)
     * [📊 Monitoreo e Historial](use-cases/logs-and-history.md)

@@ -4,7 +4,7 @@ import { getCurrentlyCalled } from '@/services/supabaseService';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
 
-export const useCalledStudents = (classId?: string) => {
+export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) => {
   const [childrenByClass, setChildrenByClass] = useState<{ [key: string]: PickupRequestWithDetails[] }>({});
   const [loading, setLoading] = useState<boolean>(true);
   const subscriptionRef = useRef<any>(null);
@@ -19,7 +19,7 @@ export const useCalledStudents = (classId?: string) => {
 
     try {
       console.log('Fetching called students...');
-      const calledStudents = await getCurrentlyCalled(classId);
+      const calledStudents = await getCurrentlyCalled(classId, teacherClassIds);
       console.log(`Found ${calledStudents.length} called students`);
       
       // Group students by class for display
@@ -40,7 +40,7 @@ export const useCalledStudents = (classId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [classId]);
+  }, [classId, teacherClassIds]);
 
   useEffect(() => {
     fetchCalledStudents(true);

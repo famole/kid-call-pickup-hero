@@ -5,7 +5,7 @@ import { updatePickupRequestStatus } from '@/services/pickup';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
 
-export const useOptimizedPickupManagement = (classId?: string) => {
+export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?: string[]) => {
   const [pendingRequests, setPendingRequests] = useState<PickupRequestWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const lastFetchRef = useRef<number>(0);
@@ -19,11 +19,12 @@ export const useOptimizedPickupManagement = (classId?: string) => {
     }
 
     try {
-      console.log('Fetching optimized pending requests...');
-      const allRequests = await getPickupRequestsWithDetailsBatch(['pending']);
+      console.log('Fetching optimized pending requests with teacherClassIds:', teacherClassIds);
+      const allRequests = await getPickupRequestsWithDetailsBatch(['pending'], teacherClassIds);
       
       let filteredRequests = allRequests;
-      if (classId && classId !== 'all') {
+      // Only apply individual class filter if not already filtered by teacher classes
+      if (classId && classId !== 'all' && !teacherClassIds) {
         filteredRequests = allRequests.filter(item => 
           item.child && item.class && String(item.child.classId) === String(classId)
         );
@@ -38,7 +39,7 @@ export const useOptimizedPickupManagement = (classId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [classId]);
+  }, [classId, teacherClassIds]);
 
   const markAsCalled = async (requestId: string) => {
     try {

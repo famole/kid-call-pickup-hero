@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
+import { logger } from '@/utils/logger';
 
 // Clean up auth state in localStorage
 export const cleanupAuthState = () => {
@@ -25,7 +26,7 @@ export const getParentData = async (email: string | null) => {
   if (!email) return null;
   
   try {
-    console.log('Fetching parent data for email:', email);
+    logger.log('Fetching parent data for email:', email);
     
     // Use the server-side helper to get user role first
     const { data: role, error: roleError } = await supabase.rpc('get_user_role', {
@@ -33,7 +34,7 @@ export const getParentData = async (email: string | null) => {
     });
     
     if (roleError) {
-      console.error('Error fetching user role:', roleError);
+      logger.error('Error fetching user role:', roleError);
       // Fallback to direct query if RPC fails
       const { data: parentData, error } = await supabase
         .from('parents')
@@ -42,11 +43,11 @@ export const getParentData = async (email: string | null) => {
         .single();
         
       if (error) {
-        console.error('Error fetching parent data:', error);
+        logger.error('Error fetching parent data:', error);
         return null;
       }
       
-      console.log('Parent data retrieved via fallback:', parentData ? 'Success' : 'No data');
+      logger.log('Parent data retrieved via fallback:', parentData ? 'Success' : 'No data');
       return parentData;
     }
     
@@ -58,14 +59,14 @@ export const getParentData = async (email: string | null) => {
       .single();
       
     if (error) {
-      console.error('Error fetching parent data:', error);
+      logger.error('Error fetching parent data:', error);
       return null;
     }
     
-    console.log('Parent data retrieved:', parentData ? 'Success' : 'No data');
+    logger.log('Parent data retrieved:', parentData ? 'Success' : 'No data');
     return parentData;
   } catch (error) {
-    console.error("Error fetching parent data:", error);
+    logger.error("Error fetching parent data:", error);
     return null;
   }
 };
@@ -82,7 +83,7 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
       .single();
       
     if (error) {
-      console.error('Error checking preloaded status:', error);
+      logger.error('Error checking preloaded status:', error);
       return { isPreloaded: false, needsPasswordSetup: false };
     }
     
@@ -105,7 +106,7 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
       needsPasswordSetup: parentData?.is_preloaded && !parentData?.password_set && !isOAuthUser
     };
   } catch (error) {
-    console.error("Error checking preloaded parent status:", error);
+    logger.error("Error checking preloaded parent status:", error);
     return { isPreloaded: false, needsPasswordSetup: false };
   }
 };
@@ -133,7 +134,7 @@ export const createUserFromAuthData = (authUser: any): User => {
 // Create parent record from Google OAuth user
 export const createParentFromOAuthUser = async (authUser: any): Promise<any> => {
   try {
-    console.log('Creating parent record for OAuth user:', authUser.email);
+    logger.log('Creating parent record for OAuth user:', authUser.email);
     
     const parentData = {
       name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
@@ -151,14 +152,14 @@ export const createParentFromOAuthUser = async (authUser: any): Promise<any> => 
       .single();
 
     if (error && error.code !== '23505') { // 23505 is unique violation error
-      console.error('Error creating parent from OAuth:', error);
+      logger.error('Error creating parent from OAuth:', error);
       throw error;
     }
 
-    console.log('Parent record created successfully');
+    logger.log('Parent record created successfully');
     return data || parentData;
   } catch (error) {
-    console.error("Error creating parent from OAuth user:", error);
+    logger.error("Error creating parent from OAuth user:", error);
     return null;
   }
 };

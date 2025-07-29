@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequest } from '@/types';
+import { logger } from "@/utils/logger";
 
 // Update the status of a pickup request
 export const updatePickupRequestStatus = async (
@@ -24,12 +25,12 @@ export const updatePickupRequestStatus = async (
       .single();
     
     if (error) {
-      console.error('Supabase error updating pickup request status:', error);
+      logger.error('Supabase error updating pickup request status:', error);
       throw new Error(`Database error: ${error.message}`);
     }
     
     if (!data) {
-      console.warn(`No pickup request found with id: ${id}`);
+      logger.warn(`No pickup request found with id: ${id}`);
       return null;
     }
     
@@ -42,7 +43,7 @@ export const updatePickupRequestStatus = async (
       status: data.status as 'pending' | 'called' | 'completed' | 'cancelled'
     };
   } catch (error) {
-    console.error('Error in updatePickupRequestStatus:', error);
+    logger.error('Error in updatePickupRequestStatus:', error);
     throw error;
   }
 };

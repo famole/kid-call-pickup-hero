@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +13,8 @@ import { useCalledStudents } from '@/hooks/useCalledStudents';
 import { useOptimizedPickupManagement } from '@/hooks/useOptimizedPickupManagement';
 import { useSelfCheckoutStudents } from '@/hooks/useSelfCheckoutStudents';
 import { getAllClasses } from '@/services/classService';
+import { getClassesForTeacher } from '@/services/classTeacherService';
+import { supabase } from '@/integrations/supabase/client';
 import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickupRequests';
 import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,28 +31,74 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const { t } = useTranslation();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [teacherClasses, setTeacherClasses] = useState<Class[]>([]);
+  
+  // Memoize role checks to prevent unnecessary re-renders
+  const isAdmin = useMemo(() => user?.role === 'admin' || user?.role === 'superadmin', [user?.role]);
+  const isTeacher = useMemo(() => user?.role === 'teacher', [user?.role]);
 
-  // Use the optimized hooks for better performance and real-time updates
-  const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass);
-  const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass);
+  // Memoize fetchClasses function to prevent infinite loops
+  const fetchClasses = useCallback(async () => {
+    if (!user?.email) return;
+    
+    try {
+      if (isAdmin) {
+        // Admins can see all classes
+        const classData = await getAllClasses();
+        setClasses(classData);
+      } else if (isTeacher) {
+        // Teachers can only see their assigned classes
+        // First, get the parent ID from the database using the user's email
+        const { data: parentData, error: parentError } = await supabase
+          .from('parents')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+        
+        if (parentError || !parentData) {
+          console.error('Error fetching parent data for teacher:', parentError);
+          return;
+        }
+        
+        const teacherClassesData = await getClassesForTeacher(parentData.id);
+        const formattedClasses = teacherClassesData.map(cls => ({
+          ...cls,
+          teacher: '', // This field is not used in the context of teacher-specific classes
+          createdAt: '',
+          updatedAt: ''
+        }));
+        setTeacherClasses(formattedClasses);
+        setClasses(formattedClasses);
+        
+        console.log(`Teacher ${user.email} is assigned to classes:`, formattedClasses.map(c => c.name));
+        console.log(`Teacher class IDs:`, formattedClasses.map(c => c.id));
+        
+        // Auto-select the first class if teacher has only one class, otherwise keep 'all'
+        if (formattedClasses.length === 1) {
+          setSelectedClass(formattedClasses[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  }, [user?.email, isAdmin, isTeacher]);
+
+  const teacherClassIds = useMemo(() => {
+    const ids = isTeacher ? teacherClasses.map(cls => cls.id) : undefined;
+    console.log('teacherClassIds in PickupManagement:', ids);
+    return ids;
+  }, [isTeacher, teacherClasses]);
+  const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass, teacherClassIds);
+  const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass, teacherClassIds);
   const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(selectedClass);
 
   // Check if user has permission to access this page - include superadmin
-  const hasPermission = user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin';
+  const hasPermission = useMemo(() => user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin', [user?.role]);
 
   // Flatten the called students from grouped format to a flat array
-  const calledStudents = Object.values(childrenByClass).flat();
+  const calledStudents = useMemo(() => Object.values(childrenByClass).flat(), [childrenByClass]);
 
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const classData = await getAllClasses();
-        setClasses(classData);
-      } catch (error) {
-        console.error('Error fetching classes:', error);
-      }
-    };
-    
     fetchClasses();
     
     // Start the auto-completion process
@@ -58,7 +106,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
     
     // Cleanup on unmount
     return stopAutoCompletion;
-  }, []);
+  }, [fetchClasses]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -101,15 +149,15 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('pickup.management')}</h2>
                 <p className="text-base sm:text-lg text-muted-foreground">{t('pickup.manageStudentPickupRequests')}</p>
               </div>
-              {classes.length > 0 ? (
+              {isAdmin && classes.length > 0 ? (
                 <ClassFilter 
                   selectedClass={selectedClass} 
                   classes={classes} 
                   onChange={handleClassChange} 
                 />
-              ) : (
+              ) : isAdmin ? (
                 <Skeleton className="h-10 w-48" />
-              )}
+              ) : null}
             </div>
           </div>
 
