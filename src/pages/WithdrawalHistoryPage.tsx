@@ -4,7 +4,7 @@ import { useWithdrawalHistory } from '@/hooks/useWithdrawalHistory';
 import Navigation from '@/components/Navigation';
 import WithdrawalHistoryTable from '@/components/withdrawal-history/WithdrawalHistoryTable';
 
-const SelfCheckoutHistoryPage: React.FC = () => {
+const WithdrawalHistoryPage: React.FC = () => {
   const { t } = useTranslation();
   const { withdrawalData, loading } = useWithdrawalHistory();
 
@@ -23,4 +23,4 @@ const SelfCheckoutHistoryPage: React.FC = () => {
   );
 };
 
-export default SelfCheckoutHistoryPage;
+export default WithdrawalHistoryPage;

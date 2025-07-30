@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
 import { getAllStudents } from '@/services/student';
-import { getPickupHistoryByStudent, getPickupStatsByStudent, getAllPickupHistory } from '@/services/pickupHistoryService';
+import { getPickupHistoryByStudent, getPickupStatsByStudent, getAllPickupHistory, getRecentPickupHistory, getPickupHistoryCount } from '@/services/pickupHistoryService';
 import PickupHistoryTable from './PickupHistoryTable';
 import ReportFilters from './ReportFilters';
 import ReportActions from './ReportActions';
@@ -22,6 +22,9 @@ const ReportsTab = () => {
   const [loading, setLoading] = useState(false);
   const [studentsLoading, setStudentsLoading] = useState(true);
   const [stats, setStats] = useState<{ totalPickups: number; averageDuration: number } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 500;
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,27 +48,41 @@ const ReportsTab = () => {
     fetchStudents();
   }, [toast]);
 
-  const handleGenerateReport = async () => {
+  const handleGenerateReport = async (page: number = 1) => {
     setLoading(true);
     try {
       let historyData;
+      let count = 0;
+      const offset = (page - 1) * pageSize;
       
       if (selectedStudent === 'all') {
         const start = startDate ? new Date(startDate) : undefined;
         const end = endDate ? new Date(endDate) : undefined;
-        historyData = await getAllPickupHistory(start, end);
+        
+        // Get count first for pagination
+        count = await getPickupHistoryCount(undefined, start, end);
+        
+        // If no date range specified and it's the first page, use recent history for faster loading
+        if (!start && !end && page === 1) {
+          historyData = await getRecentPickupHistory(pageSize);
+        } else {
+          historyData = await getAllPickupHistory(start, end, pageSize, offset);
+        }
         setStats(null); // Clear individual student stats
       } else {
-        historyData = await getPickupHistoryByStudent(selectedStudent);
+        count = await getPickupHistoryCount(selectedStudent);
+        historyData = await getPickupHistoryByStudent(selectedStudent, pageSize, offset);
         const studentStats = await getPickupStatsByStudent(selectedStudent);
         setStats(studentStats);
       }
 
       setPickupHistory(historyData);
+      setTotalCount(count);
+      setCurrentPage(page);
       
       toast({
         title: "Success",
-        description: `Generated report with ${historyData.length} pickup records`,
+        description: `Generated report with ${historyData.length} pickup records (${count} total)`,
       });
     } catch (error) {
       console.error('Error generating report:', error);
@@ -77,6 +94,10 @@ const ReportsTab = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    handleGenerateReport(page);
   };
 
   const handleExportCSV = () => {
@@ -155,7 +176,7 @@ const ReportsTab = () => {
               />
 
               <ReportActions
-                onGenerateReport={handleGenerateReport}
+                onGenerateReport={() => handleGenerateReport(1)}
                 onExportCSV={handleExportCSV}
                 loading={loading}
                 hasData={pickupHistory.length > 0}
@@ -177,7 +198,13 @@ const ReportsTab = () => {
           </CardContent>
         </Card>
       ) : pickupHistory.length > 0 ? (
-        <PickupHistoryTable data={pickupHistory} />
+        <PickupHistoryTable 
+          data={pickupHistory} 
+          totalCount={totalCount}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+        />
       ) : null}
     </div>
   );

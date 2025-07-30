@@ -5,7 +5,7 @@
     "pickupManagement": "Gestión de Salidas",
     "adminPanel": "Panel de Administración",
     "selfCheckout": "Auto-Salida",
-    "selfCheckoutHistory": "Historial de Salidas",
+    "selfCheckoutHistory": "Historial de Retiros",
     "logout": "Cerrar sesión",
     "language": "Idioma"
   },
@@ -319,5 +319,27 @@
     "schoolPickupSystem": "Sistema de Recogida Escolar — Por favor espera hasta que tu nombre aparezca en pantalla",
     "viewInformation": "Información de Vista",
     "viewInformationDescription": "Esta pantalla muestra estudiantes que han sido llamados para recogida, agrupados por clase. La pantalla se actualiza automáticamente en tiempo real cuando los estudiantes son llamados o recogidos."
+  },
+  "withdrawal": {
+    "historyTitle": "Historial de Retiros",
+    "historyDescription": "Registro completo de todos los retiros y auto-salidas",
+    "student": "Estudiante",
+    "class": "Clase",
+    "type": "Tipo",
+    "responsiblePerson": "Persona Responsable",
+    "date": "Fecha y Hora",
+    "notes": "Notas",
+    "records": "registros",
+    "noRecords": "No hay registros de retiros",
+    "selfPickup": "Retiro Propio",
+    "authorizedPickup": "Retiro Autorizado",
+    "selfCheckout": "Auto-Salida",
+    "unknown": "Desconocido",
+    "parent": "Padre/Madre",
+    "authorizedParent": "Padre Autorizado",
+    "filterByStudent": "Filtrar por estudiante",
+    "allStudents": "Todos los estudiantes",
+    "withdrawalDetails": "Detalles del Retiro",
+    "detailsDescription": "Información completa del retiro seleccionado"
   }
 }

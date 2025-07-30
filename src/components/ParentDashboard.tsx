@@ -33,6 +33,7 @@ const ParentDashboard: React.FC = () => {
     loading: selfCheckoutLoading
   } = useParentSelfCheckout();
 
+
   // Get children with active requests to disable selection
   const childrenWithActiveRequests = [
     ...pendingRequests.map(req => req.studentId),
@@ -65,10 +66,12 @@ const ParentDashboard: React.FC = () => {
                 children={children}
                 currentParentId={currentParentId}
               />
-              <SelfCheckoutStatusCard
-                selfCheckoutStudents={selfCheckoutStudents}
-                loading={selfCheckoutLoading}
-              />
+              {(selfCheckoutStudents.length > 0 || selfCheckoutLoading) && (
+                <SelfCheckoutStatusCard
+                  selfCheckoutStudents={selfCheckoutStudents}
+                  loading={selfCheckoutLoading}
+                />
+              )}
             </div>
             
             {/* Student Selection Component - Right side for larger screens */}
@@ -83,6 +86,7 @@ const ParentDashboard: React.FC = () => {
               />
             </div>
           </div>
+
         </div>
       </div>
     </div>
