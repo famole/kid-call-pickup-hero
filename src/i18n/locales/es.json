@@ -336,6 +336,10 @@
     "selfCheckout": "Auto-Salida",
     "unknown": "Desconocido",
     "parent": "Padre/Madre",
-    "authorizedParent": "Padre Autorizado"
+    "authorizedParent": "Padre Autorizado",
+    "filterByStudent": "Filtrar por estudiante",
+    "allStudents": "Todos los estudiantes",
+    "withdrawalDetails": "Detalles del Retiro",
+    "detailsDescription": "Información completa del retiro seleccionado"
   }
 }

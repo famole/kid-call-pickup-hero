@@ -337,6 +337,10 @@
     "selfCheckout": "Self Checkout",
     "unknown": "Unknown",
     "parent": "Parent",
-    "authorizedParent": "Authorized Parent"
+    "authorizedParent": "Authorized Parent",
+    "filterByStudent": "Filter by student",
+    "allStudents": "All students",
+    "withdrawalDetails": "Withdrawal Details",
+    "detailsDescription": "Complete information about the selected withdrawal"
   }
 }
