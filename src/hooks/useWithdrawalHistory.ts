@@ -29,19 +29,26 @@ export const useWithdrawalHistory = () => {
     try {
       setLoading(true);
 
-      // Get current parent ID
-      const { data: parentData, error: parentError } = await supabase.rpc('get_current_parent_id');
+      // Get current parent data
+      const { data: parentData, error: parentError } = await supabase
+        .from('parents')
+        .select('id')
+        .eq('email', user.email)
+        .single();
       
       if (parentError) {
         console.error('Error getting current parent ID:', parentError);
-        throw new Error(parentError.message);
+        setWithdrawalData([]);
+        return;
       }
 
-      if (!parentData) {
+      if (!parentData?.id) {
         console.log('No parent ID found for current user');
         setWithdrawalData([]);
         return;
       }
+
+      const parentId = parentData.id;
 
       const allRecords: WithdrawalRecord[] = [];
 
@@ -67,7 +74,7 @@ export const useWithdrawalHistory = () => {
       } else if (pickupHistoryData) {
         for (const record of pickupHistoryData) {
           // Check if this pickup was done by the current parent (self pickup)
-          if (record.parent_id === parentData) {
+          if (record.parent_id === parentId) {
             // Get parent name for self pickup
             const { data: parentInfo, error: parentInfoError } = await supabase
               .from('parents')
@@ -91,7 +98,7 @@ export const useWithdrawalHistory = () => {
               .from('pickup_authorizations')
               .select('id, authorized_parent_id, parents!pickup_authorizations_authorized_parent_id_fkey(name)')
               .eq('student_id', record.student_id)
-              .eq('authorizing_parent_id', parentData)
+              .eq('authorizing_parent_id', parentId)
               .eq('authorized_parent_id', record.parent_id)
               .single();
 
@@ -137,7 +144,7 @@ export const useWithdrawalHistory = () => {
             .from('self_checkout_authorizations')
             .select('id')
             .eq('student_id', departure.student_id)
-            .eq('authorizing_parent_id', parentData)
+            .eq('authorizing_parent_id', parentId)
             .lte('start_date', new Date(departure.departed_at).toISOString().split('T')[0])
             .gte('end_date', new Date(departure.departed_at).toISOString().split('T')[0])
             .single();
