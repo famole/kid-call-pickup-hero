@@ -320,5 +320,23 @@
     "schoolPickupSystem": "School Pickup System — Please wait until your name appears on screen",
     "viewInformation": "View Information",
     "viewInformationDescription": "This screen shows students who have been called for pickup, grouped by class. The display updates automatically in real-time whenever students are called or picked up."
+  },
+  "withdrawal": {
+    "historyTitle": "Withdrawal History",
+    "historyDescription": "Complete record of all withdrawals and self-checkouts",
+    "student": "Student",
+    "class": "Class", 
+    "type": "Type",
+    "responsiblePerson": "Responsible Person",
+    "date": "Date & Time",
+    "notes": "Notes",
+    "records": "records",
+    "noRecords": "No withdrawal records found",
+    "selfPickup": "Self Pickup",
+    "authorizedPickup": "Authorized Pickup",
+    "selfCheckout": "Self Checkout",
+    "unknown": "Unknown",
+    "parent": "Parent",
+    "authorizedParent": "Authorized Parent"
   }
 }

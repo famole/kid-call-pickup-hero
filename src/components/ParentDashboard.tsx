@@ -2,6 +2,7 @@
 import React from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
 import { useParentSelfCheckout } from '@/hooks/useParentSelfCheckout';
+import { useWithdrawalHistory } from '@/hooks/useWithdrawalHistory';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
@@ -10,6 +11,7 @@ import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCa
 import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard';
 import AuthorizedPickupNotification from '@/components/parent-dashboard/AuthorizedPickupNotification';
 import SelfCheckoutStatusCard from '@/components/parent-dashboard/SelfCheckoutStatusCard';
+import WithdrawalHistoryTable from '@/components/withdrawal-history/WithdrawalHistoryTable';
 
 const ParentDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -32,6 +34,11 @@ const ParentDashboard: React.FC = () => {
     selfCheckoutStudents,
     loading: selfCheckoutLoading
   } = useParentSelfCheckout();
+
+  const {
+    withdrawalData,
+    loading: withdrawalLoading
+  } = useWithdrawalHistory();
 
   // Get children with active requests to disable selection
   const childrenWithActiveRequests = [
@@ -84,6 +91,11 @@ const ParentDashboard: React.FC = () => {
                 onRequestPickup={handleRequestPickup}
               />
             </div>
+          </div>
+
+          {/* Withdrawal History Section */}
+          <div className="mt-6">
+            <WithdrawalHistoryTable data={withdrawalData} loading={withdrawalLoading} />
           </div>
         </div>
       </div>
