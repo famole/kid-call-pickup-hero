@@ -18,8 +18,12 @@ export interface PickupHistoryWithDetails extends PickupHistoryRecord {
   className?: string;
 }
 
-// Get pickup history for a specific student
-export const getPickupHistoryByStudent = async (studentId: string): Promise<PickupHistoryWithDetails[]> => {
+// Get pickup history for a specific student with pagination
+export const getPickupHistoryByStudent = async (
+  studentId: string,
+  limit: number = 500,
+  offset: number = 0
+): Promise<PickupHistoryWithDetails[]> => {
   try {
     const { data, error } = await supabase
       .from('pickup_history')
@@ -29,7 +33,8 @@ export const getPickupHistoryByStudent = async (studentId: string): Promise<Pick
         parents!fk_pickup_history_parent(name)
       `)
       .eq('student_id', studentId)
-      .order('completed_time', { ascending: false });
+      .order('completed_time', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
@@ -51,10 +56,12 @@ export const getPickupHistoryByStudent = async (studentId: string): Promise<Pick
   }
 };
 
-// Get pickup history for all students with optional date range
+// Get pickup history for all students with optional date range and pagination
 export const getAllPickupHistory = async (
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
+  limit: number = 1000,
+  offset: number = 0
 ): Promise<PickupHistoryWithDetails[]> => {
   try {
     let query = supabase
@@ -64,7 +71,8 @@ export const getAllPickupHistory = async (
         students!fk_pickup_history_student(name),
         parents!fk_pickup_history_parent(name)
       `)
-      .order('completed_time', { ascending: false });
+      .order('completed_time', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (startDate) {
       query = query.gte('completed_time', startDate.toISOString());
@@ -116,6 +124,70 @@ export const getPickupStatsByStudent = async (studentId: string) => {
     };
   } catch (error) {
     console.error('Error fetching pickup stats:', error);
+    throw error;
+  }
+};
+
+// Get recent pickup history with default limit for faster loading
+export const getRecentPickupHistory = async (limit: number = 100): Promise<PickupHistoryWithDetails[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('pickup_history')
+      .select(`
+        *,
+        students!fk_pickup_history_student(name),
+        parents!fk_pickup_history_parent(name)
+      `)
+      .order('completed_time', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    return data.map(item => ({
+      id: item.id,
+      studentId: item.student_id,
+      parentId: item.parent_id,
+      requestTime: new Date(item.request_time),
+      calledTime: item.called_time ? new Date(item.called_time) : undefined,
+      completedTime: new Date(item.completed_time),
+      pickupDurationMinutes: item.pickup_duration_minutes,
+      createdAt: new Date(item.created_at),
+      studentName: item.students?.name,
+      parentName: item.parents?.name
+    }));
+  } catch (error) {
+    console.error('Error fetching recent pickup history:', error);
+    throw error;
+  }
+};
+
+// Get total count for pagination
+export const getPickupHistoryCount = async (
+  studentId?: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<number> => {
+  try {
+    let query = supabase
+      .from('pickup_history')
+      .select('*', { count: 'exact', head: true });
+
+    if (studentId) {
+      query = query.eq('student_id', studentId);
+    }
+    if (startDate) {
+      query = query.gte('completed_time', startDate.toISOString());
+    }
+    if (endDate) {
+      query = query.lte('completed_time', endDate.toISOString());
+    }
+
+    const { count, error } = await query;
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error('Error fetching pickup history count:', error);
     throw error;
   }
 };
