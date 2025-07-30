@@ -227,31 +227,34 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
                 </div>
               </div>
 
-              {/* Withdrawal Type */}
-              <div>
-                <h4 className="font-medium mb-2">{t('withdrawal.type')}</h4>
-                {getTypeBadge(selectedRecord.type)}
-              </div>
-
-              {/* Responsible Person */}
-              <div>
-                <h4 className="font-medium mb-2">{t('withdrawal.responsiblePerson')}</h4>
-                <p className="text-sm">{getResponsiblePerson(selectedRecord)}</p>
-              </div>
-
-              {/* Date */}
-              <div>
-                <h4 className="font-medium mb-2">{t('withdrawal.date')}</h4>
-                <p className="text-sm">{format(selectedRecord.date, 'MMM d, yyyy HH:mm')}</p>
-              </div>
-
-              {/* Notes */}
-              {selectedRecord.notes && (
-                <div>
-                  <h4 className="font-medium mb-2">{t('withdrawal.notes')}</h4>
-                  <p className="text-sm bg-muted/50 p-3 rounded-lg">{selectedRecord.notes}</p>
+              {/* Details Grid */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* Withdrawal Type */}
+                <div className="col-span-3">
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('withdrawal.type')}</h4>
+                  <div>{getTypeBadge(selectedRecord.type)}</div>
                 </div>
-              )}
+
+                {/* Responsible Person */}
+                <div className="col-span-3">
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('withdrawal.responsiblePerson')}</h4>
+                  <p className="text-sm font-medium">{getResponsiblePerson(selectedRecord)}</p>
+                </div>
+
+                {/* Date */}
+                <div className="col-span-3">
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('withdrawal.date')}</h4>
+                  <p className="text-sm font-medium">{format(selectedRecord.date, 'MMM d, yyyy HH:mm')}</p>
+                </div>
+
+                {/* Notes */}
+                {selectedRecord.notes && (
+                  <div className="col-span-3">
+                    <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('withdrawal.notes')}</h4>
+                    <p className="text-sm bg-muted/50 p-3 rounded-lg font-medium">{selectedRecord.notes}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
