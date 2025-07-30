@@ -154,10 +154,10 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('withdrawal.student')}</TableHead>
-                    <TableHead>{t('withdrawal.type')}</TableHead>
-                    <TableHead>{t('withdrawal.responsiblePerson')}</TableHead>
-                    <TableHead>{t('withdrawal.date')}</TableHead>
+                    <TableHead className="w-[250px]">{t('withdrawal.student')}</TableHead>
+                    <TableHead className="w-[150px]">{t('withdrawal.type')}</TableHead>
+                    <TableHead className="w-[180px]">{t('withdrawal.responsiblePerson')}</TableHead>
+                    <TableHead className="w-[160px]">{t('withdrawal.date')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -167,25 +167,27 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedRecord(record)}
                     >
-                      <TableCell>
+                      <TableCell className="w-[250px]">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
+                          <Avatar className="h-8 w-8 flex-shrink-0">
                             <AvatarImage src={record.studentAvatar} alt={record.studentName} />
                             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                               {record.studentName?.charAt(0) || '?'}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium">{record.studentName}</span>
+                          <span className="font-medium truncate">{record.studentName}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {getTypeBadge(record.type)}
+                      <TableCell className="w-[150px]">
+                        <div className="flex justify-start">
+                          {getTypeBadge(record.type)}
+                        </div>
                       </TableCell>
-                      <TableCell>
-                        {getResponsiblePerson(record)}
+                      <TableCell className="w-[180px]">
+                        <span className="truncate block">{getResponsiblePerson(record)}</span>
                       </TableCell>
-                      <TableCell>
-                        {format(record.date, 'MMM d, yyyy HH:mm')}
+                      <TableCell className="w-[160px]">
+                        <span className="text-sm">{format(record.date, 'MMM d, yyyy HH:mm')}</span>
                       </TableCell>
                     </TableRow>
                   ))}
