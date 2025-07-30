@@ -88,6 +88,9 @@ const PasswordSetupForm = () => {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: userEmail,
           password: password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/login`
+          }
         });
 
         if (authError) {
