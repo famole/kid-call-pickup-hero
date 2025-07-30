@@ -56,8 +56,8 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
         email: parentData.email,
         phone: parentData.phone || null,
         role: parentData.role || 'parent',
-        is_preloaded: false, // Regular parents are not preloaded
-        password_set: true // Regular parents will set passwords during signup
+        is_preloaded: true, // Admin-created parents need password setup
+        password_set: false // Admin-created parents must set their own passwords
       }
     ])
     .select()
