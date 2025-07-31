@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Star, StarOff, Trash2, UserPlus, Search } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { Child, Class } from '@/types';
+import { logger } from '@/utils/logger';
 
 interface StudentManagementModalProps {
   isOpen: boolean;
@@ -51,8 +52,8 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
   // Debug effect to log student data structure
   useEffect(() => {
     if (parent?.students && parent.students.length > 0) {
-      console.log('Student data structure:', parent.students[0]);
-      console.log('parentRelationshipId:', parent.students[0].parentRelationshipId);
+      logger.log('Student data structure:', parent.students[0]);
+      logger.log('parentRelationshipId:', parent.students[0].parentRelationshipId);
     }
   }, [parent]);
 
