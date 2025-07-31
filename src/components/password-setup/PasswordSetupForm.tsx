@@ -89,7 +89,7 @@ const PasswordSetupForm = () => {
           email: userEmail,
           password: password,
           options: {
-            emailRedirectTo: `${window.location.origin}/login`
+            emailRedirectTo: `${window.location.origin}/`
           }
         });
 
@@ -109,11 +109,11 @@ const PasswordSetupForm = () => {
 
         toast({
           title: "Account Setup Complete",
-          description: "Your password has been set successfully. You can now log in.",
+          description: "Your password has been set successfully. You will be automatically logged in.",
         });
 
-        // Redirect to login page 
-        navigate('/login');
+        // Don't manually redirect - let the auth state change handle it
+        // The auth provider will detect the sign up and redirect appropriately
       } else {
         // User is already authenticated, just update password
         const { error: authError } = await supabase.auth.updateUser({
