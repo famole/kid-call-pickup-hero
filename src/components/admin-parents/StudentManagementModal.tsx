@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +47,14 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
   const studentId = React.useId();
   const relationshipId = React.useId();
   const primaryId = React.useId();
+
+  // Debug effect to log student data structure
+  useEffect(() => {
+    if (parent?.students && parent.students.length > 0) {
+      console.log('Student data structure:', parent.students[0]);
+      console.log('parentRelationshipId:', parent.students[0].parentRelationshipId);
+    }
+  }, [parent]);
 
   // Filter available students with search and class filter
   const availableStudents = useMemo(() => {
