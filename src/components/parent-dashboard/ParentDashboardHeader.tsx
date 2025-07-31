@@ -13,7 +13,7 @@ const ParentDashboardHeader: React.FC<ParentDashboardHeaderProps> = ({ userName 
   return (
     <header className="mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center sm:justify-start gap-3">
           <Logo size="sm" className="text-school-primary" />
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">School Pickup</h1>
         </div>
