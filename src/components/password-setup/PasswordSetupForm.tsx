@@ -109,10 +109,10 @@ const PasswordSetupForm = () => {
 
         toast({
           title: "Account Setup Complete",
-          description: "Your password has been set. Please check your email to verify your account.",
+          description: "Your password has been set successfully. You can now log in.",
         });
 
-        // Redirect to login page for email verification
+        // Redirect to login page 
         navigate('/login');
       } else {
         // User is already authenticated, just update password
