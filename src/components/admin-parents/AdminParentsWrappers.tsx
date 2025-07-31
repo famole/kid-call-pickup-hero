@@ -19,7 +19,7 @@ export const createStudentWrappers = ({ studentManagement }: AdminParentsWrapper
   const handleRemoveStudentWrapper = async (studentId: string) => {
     if (!studentManagement.selectedParent) return;
     const student = studentManagement.selectedParent.students?.find(s => s.id === studentId);
-    if (!student) return;
+    if (!student || !student.parentRelationshipId) return;
     await studentManagement.handleRemoveStudent(
       student.parentRelationshipId,
       studentManagement.selectedParent.id,
@@ -30,7 +30,7 @@ export const createStudentWrappers = ({ studentManagement }: AdminParentsWrapper
   const handleTogglePrimaryWrapper = async (studentId: string) => {
     if (!studentManagement.selectedParent) return;
     const student = studentManagement.selectedParent.students?.find(s => s.id === studentId);
-    if (!student) return;
+    if (!student || !student.parentRelationshipId) return;
     await studentManagement.handleTogglePrimary(
       student.parentRelationshipId,
       studentManagement.selectedParent.id,
