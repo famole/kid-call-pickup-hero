@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getCurrentlyCalled } from '@/services/supabaseService';
+import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,8 +18,8 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
     }
 
     try {
-      console.log('Fetching called students...');
-      const calledStudents = await getCurrentlyCalled(classId, teacherClassIds);
+      console.log('Fetching called students with teacherClassIds:', teacherClassIds);
+      const calledStudents = await getCalledStudentsOptimized(classId, teacherClassIds);
       console.log(`Found ${calledStudents.length} called students`);
       
       // Group students by class for display
