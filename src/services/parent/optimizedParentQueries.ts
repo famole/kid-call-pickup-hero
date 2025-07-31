@@ -39,9 +39,11 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
     const { data: studentParentData, error: studentParentError } = await supabase
       .from('student_parents')
       .select(`
+        id,
         parent_id,
         student_id,
         is_primary,
+        relationship,
         students (
           id,
           name,
@@ -75,6 +77,8 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
         grade: relation.students.classes?.grade || 'No Grade',
         isPrimary: relation.is_primary,
         avatar: relation.students.avatar,
+        parentRelationshipId: relation.id,
+        relationship: relation.relationship,
       });
       return acc;
     }, {} as Record<string, any[]>) || {};
