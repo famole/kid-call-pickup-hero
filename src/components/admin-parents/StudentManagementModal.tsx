@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Star, StarOff, Trash2, UserPlus, Search } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { Child, Class } from '@/types';
+import { logger } from '@/utils/logger';
 
 interface StudentManagementModalProps {
   isOpen: boolean;
@@ -47,6 +48,14 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
   const studentId = React.useId();
   const relationshipId = React.useId();
   const primaryId = React.useId();
+
+  // Debug effect to log student data structure
+  useEffect(() => {
+    if (parent?.students && parent.students.length > 0) {
+      logger.log('Student data structure:', parent.students[0]);
+      logger.log('parentRelationshipId:', parent.students[0].parentRelationshipId);
+    }
+  }, [parent]);
 
   // Filter available students with search and class filter
   const availableStudents = useMemo(() => {
@@ -109,7 +118,7 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
             {parent.students && parent.students.length > 0 ? (
               <div className="space-y-2">
                 {parent.students.map(student => (
-                  <div key={student.parentRelationshipId} className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                  <div key={student.parentRelationshipId || student.id} className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-3 rounded">
                     <div className="flex items-center">
                       {student.isPrimary ? <Star className="h-4 w-4 text-yellow-500 mr-2" /> : null}
                       <div>
@@ -124,7 +133,12 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                         variant="ghost"
                         size="sm"
                         title={student.isPrimary ? "Unset as primary" : "Set as primary"}
-                        onClick={() => onTogglePrimary(student.parentRelationshipId, parent.id, student.isPrimary, student.relationship)}
+                        disabled={!student.parentRelationshipId}
+                        onClick={() => {
+                          if (student.parentRelationshipId) {
+                            onTogglePrimary(student.parentRelationshipId, parent.id, student.isPrimary, student.relationship);
+                          }
+                        }}
                       >
                         {student.isPrimary ? <StarOff className="h-4 w-4" /> : <Star className="h-4 w-4" />}
                       </Button>
@@ -132,7 +146,12 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                         variant="ghost"
                         size="sm"
                         title="Remove student"
-                        onClick={() => onRemoveStudent(student.parentRelationshipId, parent.id, student.id)}
+                        disabled={!student.parentRelationshipId}
+                        onClick={() => {
+                          if (student.parentRelationshipId) {
+                            onRemoveStudent(student.parentRelationshipId, parent.id, student.id);
+                          }
+                        }}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>

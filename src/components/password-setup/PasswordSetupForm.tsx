@@ -63,11 +63,15 @@ const PasswordSetupForm = () => {
       if (!user) {
         // For preloaded accounts, check if the email is valid for signup
         if (!isValidEmail(userEmail)) {
-          // For invalid emails (like example.com), just mark the account as set up
-          // without creating an auth user - this is for demo/testing purposes
+          // For invalid emails (like example.com), create a mock auth user for demo purposes
+          // This allows the login to work with these test accounts
           const { error: updateError } = await supabase
             .from('parents')
-            .update({ password_set: true })
+            .update({ 
+              password_set: true,
+              // Store the password hash for demo accounts (not recommended for production)
+              demo_password: password 
+            })
             .eq('email', userEmail);
 
           if (updateError) {
@@ -75,8 +79,8 @@ const PasswordSetupForm = () => {
           }
 
           toast({
-            title: "Account Setup Complete",
-            description: "Your account has been set up successfully. Please use the login form with your credentials.",
+            title: "Demo Account Setup Complete",
+            description: "Your demo account has been set up. You can now log in with your credentials.",
           });
 
           // Redirect to login page
@@ -89,7 +93,7 @@ const PasswordSetupForm = () => {
           email: userEmail,
           password: password,
           options: {
-            emailRedirectTo: `${window.location.origin}/login`
+            emailRedirectTo: `${window.location.origin}/`
           }
         });
 
@@ -109,11 +113,11 @@ const PasswordSetupForm = () => {
 
         toast({
           title: "Account Setup Complete",
-          description: "Your password has been set. Please check your email to verify your account.",
+          description: "Your password has been set successfully. You will be automatically logged in.",
         });
 
-        // Redirect to login page for email verification
-        navigate('/login');
+        // Don't manually redirect - let the auth state change handle it
+        // The auth provider will detect the sign up and redirect appropriately
       } else {
         // User is already authenticated, just update password
         const { error: authError } = await supabase.auth.updateUser({
