@@ -62,9 +62,13 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
     ])
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error creating parent:', error);
+    // Handle duplicate email error specifically
+    if (error.code === '23505' && error.message.includes('parents_email_unique')) {
+      throw new Error('A parent with this email address already exists');
+    }
     throw new Error(error.message);
   }
   
