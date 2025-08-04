@@ -12,6 +12,7 @@ import { UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { createParent } from '@/services/parentService';
 import { Separator } from '@/components/ui/separator';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -24,6 +25,7 @@ const Signup = () => {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +34,8 @@ const Signup = () => {
     // Basic validation
     if (email !== confirmEmail) {
       toast({
-        title: "Error",
-        description: "Email addresses do not match.",
+        title: t('common.error'),
+        description: t('errors.emailsDoNotMatch'),
         variant: "destructive",
       });
       setIsLoading(false);
@@ -71,8 +73,8 @@ const Signup = () => {
         setShowEmailConfirmation(true);
         
         toast({
-          title: "Check your email!",
-          description: `We've sent a confirmation link to ${email}. Click the link to complete your signup and set your password.`,
+          title: t('errors.checkEmail'),
+          description: `${t('errors.confirmationLinkSent')} ${email}. ${t('errors.clickToComplete')}`,
         });
       }
     } catch (error: any) {
@@ -169,10 +171,10 @@ const Signup = () => {
           <div className="bg-school-primary w-12 h-12 rounded-full flex items-center justify-center mb-2">
             <UserPlus className="h-6 w-6 text-white" />
           </div>
-          <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
-          <CardDescription className="text-center">
-            Sign up to access the School Pickup system
-          </CardDescription>
+            <CardTitle className="text-2xl text-center">{t('auth.createAccount')}</CardTitle>
+            <CardDescription className="text-center">
+              {t('auth.signupToAccess')}
+            </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-4">

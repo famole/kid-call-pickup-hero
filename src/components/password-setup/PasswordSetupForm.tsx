@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Lock, Eye, EyeOff } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const PasswordSetupForm = () => {
   const [password, setPassword] = useState('');
@@ -19,6 +20,7 @@ const PasswordSetupForm = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const isValidEmail = (email: string): boolean => {
     // Check if email has a valid format and is not using example.com domain
