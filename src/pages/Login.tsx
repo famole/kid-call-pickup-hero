@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { School, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,6 +23,7 @@ const Login = () => {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -37,15 +39,15 @@ const Login = () => {
     try {
       await login(email, password);
       toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
+        title: t('auth.welcomeBack'),
+        description: t('auth.welcomeBack'),
       });
       navigate('/');
     } catch (error: any) {
       console.error('Authentication error:', error);
       toast({
-        title: 'Authentication Error',
-        description: error.message || 'Invalid email or password. Please try again.',
+        title: t('errors.authenticationError'),
+        description: error.message || t('errors.invalidEmailPassword'),
         variant: 'destructive',
       });
     } finally {
@@ -70,14 +72,14 @@ const Login = () => {
       
       // The redirect will happen automatically
       toast({
-        title: 'Redirecting to Google...',
-        description: 'You will be redirected to complete the login process.',
+        title: t('errors.redirectingToGoogle'),
+        description: t('errors.redirectToCompleteLogin'),
       });
     } catch (error: any) {
       console.error('Google authentication error:', error);
       toast({
-        title: 'Google Login Error',
-        description: error.message || 'Failed to login with Google. Please try again.',
+        title: t('errors.googleLoginError'),
+        description: error.message || t('errors.failedGoogleLogin'),
         variant: 'destructive',
       });
       setIsGoogleLoading(false);
@@ -107,8 +109,8 @@ const Login = () => {
 
       if (error) {
         toast({
-          title: 'Email Not Found',
-          description: 'This email is not in our system. Please contact your administrator or check the email address.',
+          title: t('errors.emailNotFound'),
+          description: t('errors.emailNotInSystem'),
           variant: 'destructive',
         });
         return;
@@ -120,22 +122,22 @@ const Login = () => {
         navigate(`/password-setup?email=${encodeURIComponent(firstTimeEmail)}`);
       } else if (parentData.password_set) {
         toast({
-          title: 'Account Already Set Up',
-          description: 'This account already has a password. Please use the regular login form above.',
+          title: t('errors.accountAlreadySetup'),
+          description: t('errors.accountHasPassword'),
           variant: 'destructive',
         });
       } else {
         toast({
-          title: 'Account Type Not Supported',
-          description: 'This account type cannot use first-time setup. Please contact your administrator.',
+          title: t('errors.accountTypeNotSupported'),
+          description: t('errors.contactAdministrator'),
           variant: 'destructive',
         });
       }
     } catch (error: any) {
       console.error('Error checking email:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to check email. Please try again.',
+        title: t('common.error'),
+        description: t('errors.errorCheckingEmail'),
         variant: 'destructive',
       });
     } finally {
@@ -155,20 +157,20 @@ const Login = () => {
               className="h-24 w-auto object-contain"
             />
             </div>
-            <CardTitle className="text-2xl text-center">First Time Setup</CardTitle>
+            <CardTitle className="text-2xl text-center">{t('auth.firstTimeSetup')}</CardTitle>
             <CardDescription className="text-center">
-              Enter your email address to set up your account
+              {t('auth.enterEmailToSetup')}
             </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-4">
             <form onSubmit={handleFirstTimeEmailSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="firstTimeEmail">Email Address</Label>
+                <Label htmlFor="firstTimeEmail">{t('auth.emailAddress')}</Label>
                 <Input
                   id="firstTimeEmail"
                   type="email"
-                  placeholder="Enter your email address"
+                  placeholder={t('auth.enterEmailPlaceholder')}
                   value={firstTimeEmail}
                   onChange={(e) => setFirstTimeEmail(e.target.value)}
                   required
@@ -179,7 +181,7 @@ const Login = () => {
                 className="w-full bg-school-primary hover:bg-school-primary/90"
                 disabled={isCheckingEmail}
               >
-                {isCheckingEmail ? 'Checking...' : 'Continue to Setup'}
+                {isCheckingEmail ? t('auth.checking') : t('auth.continueToSetup')}
               </Button>
             </form>
             
@@ -190,7 +192,7 @@ const Login = () => {
               onClick={handleBackToLogin}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Login
+              {t('auth.backToLogin')}
             </Button>
           </CardContent>
         </Card>
@@ -209,9 +211,9 @@ const Login = () => {
               className="h-24 w-auto object-contain"
             />
           </div>
-          <CardTitle className="text-2xl text-center">School Pickup</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('auth.schoolPickup')}</CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access your account
+            {t('auth.enterCredentials')}
           </CardDescription>
         </CardHeader>
         
@@ -238,7 +240,7 @@ const Login = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {isGoogleLoading ? 'Signing in with Google...' : 'Continue with Google'}
+            {isGoogleLoading ? t('auth.signingInWithGoogle') : t('auth.continueWithGoogle')}
           </Button>
           
           <div className="relative">
@@ -247,7 +249,7 @@ const Login = () => {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
+                {t('auth.orContinueWith')}
               </span>
             </div>
           </div>
@@ -255,7 +257,7 @@ const Login = () => {
           {/* Email/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -266,7 +268,7 @@ const Login = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -281,7 +283,7 @@ const Login = () => {
               className="w-full bg-school-primary hover:bg-school-primary/90"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? t('auth.signingIn') : t('auth.signIn')}
             </Button>
           </form>
           
@@ -292,7 +294,7 @@ const Login = () => {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                First time here?
+                {t('auth.firstTimeHere')}
               </span>
             </div>
           </div>
@@ -303,18 +305,18 @@ const Login = () => {
             className="w-full"
             onClick={handleFirstTimeSetup}
           >
-            Set up your account
+            {t('auth.setupAccount')}
           </Button>
         </CardContent>
         
         <CardFooter className="flex flex-col gap-4">
           <div className="text-sm text-center">
-            New to the system?{" "}
+            {t('auth.newToSystem')}{" "}
             <span 
               className="text-school-primary hover:underline cursor-pointer"
               onClick={() => navigate('/signup')}
             >
-              Sign up
+              {t('auth.signUp')}
             </span>
           </div>
         </CardFooter>
