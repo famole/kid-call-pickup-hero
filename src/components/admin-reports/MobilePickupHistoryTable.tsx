@@ -129,175 +129,79 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
     );
   }
 
-  // Mobile-optimized card layout
+  // Mobile-optimized table layout - no container card, compact design
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            Pickup History ({data.length})
-            {totalCount > data.length && (
-              <span className="text-sm font-normal text-muted-foreground block">
-                of {totalCount} total
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-      </Card>
+      {/* Header */}
+      <div className="px-2">
+        <h3 className="text-lg font-semibold">
+          Pickup History ({data.length})
+          {totalCount > data.length && (
+            <span className="text-sm font-normal text-muted-foreground block">
+              of {totalCount} total
+            </span>
+          )}
+        </h3>
+      </div>
 
-      <div className="space-y-3">
-        {data.map((record) => {
-          const isExpanded = expandedItems.has(record.id);
-          return (
-            <Card key={record.id} className="overflow-hidden">
-              <Collapsible>
-                <CollapsibleTrigger 
-                  className="w-full"
-                  onClick={() => toggleExpanded(record.id)}
-                >
-                  <div className="p-4 space-y-3">
-                    {/* Header with student info and expand button */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {(record.studentName || 'U').charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="text-left">
-                          <div className="font-medium">
-                            {record.studentName || 'Unknown Student'}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {record.parentName || 'Unknown Parent'}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {formatTime(record.completedTime)}
-                        </Badge>
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Quick timeline indicators */}
-                    <div className="flex items-center space-x-4 text-xs">
-                      <div className="flex items-center space-x-1 text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>Requested</span>
-                      </div>
-                      {record.calledTime && (
-                        <>
-                          <div className="w-4 h-px bg-border"></div>
-                          <div className="flex items-center space-x-1 text-muted-foreground">
-                            <PhoneCall className="h-3 w-3" />
-                            <span>Called</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="w-4 h-px bg-border"></div>
-                      <div className="flex items-center space-x-1 text-green-600">
-                        <CheckCircle className="h-3 w-3" />
-                        <span>Completed</span>
-                      </div>
-                    </div>
-                  </div>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent>
-                  <div className="px-4 pb-4 space-y-3 border-t bg-muted/20">
-                    <div className="grid grid-cols-1 gap-3 pt-3">
-                      {/* Request Time */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Request Time</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {formatFullDate(record.requestTime)}
-                        </span>
-                      </div>
-
-                      {/* Called Time */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <PhoneCall className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Called Time</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {record.calledTime ? formatFullDate(record.calledTime) : 'Not called'}
-                        </span>
-                      </div>
-
-                      {/* Completed Time */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium">Completed Time</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {formatFullDate(record.completedTime)}
-                        </span>
-                      </div>
-
-                      {/* Parent Info */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Parent</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {record.parentName || 'Unknown Parent'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          );
-        })}
+      {/* Compact table for mobile */}
+      <div className="overflow-x-auto -mx-2">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left p-2 font-medium text-xs">Student</th>
+              <th className="text-left p-2 font-medium text-xs">Parent</th>
+              <th className="text-left p-2 font-medium text-xs">Requested</th>
+              <th className="text-left p-2 font-medium text-xs">Called</th>
+              <th className="text-left p-2 font-medium text-xs">Completed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((record) => (
+              <tr key={record.id} className="border-b hover:bg-muted/30">
+                <td className="p-2 font-medium">{record.studentName || 'Unknown'}</td>
+                <td className="p-2 text-muted-foreground">{record.parentName || 'Unknown'}</td>
+                <td className="p-2 text-xs">{formatTime(record.requestTime)}</td>
+                <td className="p-2 text-xs">
+                  {record.calledTime ? formatTime(record.calledTime) : '-'}
+                </td>
+                <td className="p-2 text-xs">{formatTime(record.completedTime)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {showPagination && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col space-y-4">
-              <div className="text-center text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-                <br />
-                {totalCount} total records
-              </div>
-              <div className="flex justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onPageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className="flex-1 max-w-32"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onPageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                  className="flex-1 max-w-32"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
+        <div className="px-2">
+          <div className="flex flex-col space-y-3">
+            <div className="text-center text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages} • {totalCount} total records
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="flex-1 max-w-32"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className="flex-1 max-w-32"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
