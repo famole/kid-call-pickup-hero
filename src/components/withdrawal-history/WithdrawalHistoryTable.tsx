@@ -98,6 +98,19 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
     }
   };
 
+  const getTypeText = (type: string) => {
+    switch (type) {
+      case 'self_pickup':
+        return t('withdrawal.selfPickup');
+      case 'authorized_pickup':
+        return t('withdrawal.authorizedPickup');
+      case 'self_checkout':
+        return t('withdrawal.selfCheckout');
+      default:
+        return t('withdrawal.unknown');
+    }
+  };
+
   const getResponsiblePerson = (record: WithdrawalRecord) => {
     switch (record.type) {
       case 'self_pickup':
@@ -186,7 +199,7 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
                       <td className="p-2 text-xs">
                         {/* Simple text instead of badges to save space */}
                         <span className="text-xs px-1 py-0.5 bg-muted rounded text-muted-foreground">
-                          {record.type.replace('_', ' ')}
+                          {getTypeText(record.type)}
                         </span>
                       </td>
                       <td className="p-2 text-xs truncate max-w-20">{getResponsiblePerson(record)}</td>
