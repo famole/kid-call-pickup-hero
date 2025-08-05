@@ -164,22 +164,28 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           </div>
 
           <Tabs defaultValue="pending" className="space-y-6">
-            <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1 gap-1' : 'grid-cols-3'}`}>
-              <TabsTrigger value="pending" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
-                <Clock className="h-4 w-4" />
-                {isMobile ? t('pickup.pending') : t('pickup.pendingRequests', { count: pendingRequests.length })}
+            <TabsList className={`grid w-full ${isMobile ? 'grid-cols-3 h-auto p-1' : 'grid-cols-3'}`}>
+              <TabsTrigger value="pending" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
+                <Clock className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                <span className={isMobile ? 'text-center leading-tight' : ''}>
+                  {isMobile ? t('pickup.pending') : t('pickup.pendingRequests', { count: pendingRequests.length })}
+                </span>
               </TabsTrigger>
-              <TabsTrigger value="called" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
-                <CheckCheck className="h-4 w-4" />
-                {isMobile ? t('pickup.called') : t('pickup.currentlyCalled', { count: calledStudents.length })}
+              <TabsTrigger value="called" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
+                <CheckCheck className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                <span className={isMobile ? 'text-center leading-tight' : ''}>
+                  {isMobile ? t('pickup.called') : t('pickup.currentlyCalled', { count: calledStudents.length })}
+                </span>
               </TabsTrigger>
-              <TabsTrigger value="self-checkout" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
-                <LogOut className="h-4 w-4" />
-                {isMobile ? t('pickup.selfCheckout') : t('pickup.selfCheckout', { count: authorizations.length })}
+              <TabsTrigger value="self-checkout" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
+                <LogOut className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                <span className={isMobile ? 'text-center leading-tight' : ''}>
+                  {isMobile ? t('pickup.selfCheckout') : t('pickup.selfCheckout', { count: authorizations.length })}
+                </span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pending" className="space-y-6">
+            <TabsContent value="pending" className="space-y-6 mt-4">
               <PendingPickupsTable 
                 requests={pendingRequests}
                 onMarkAsCalled={handleMarkAsCalledWithRefresh}
@@ -187,14 +193,14 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
               />
             </TabsContent>
 
-            <TabsContent value="called" className="space-y-6">
+            <TabsContent value="called" className="space-y-6 mt-4">
               <CalledStudentsTable 
                 requests={calledStudents}
                 loading={calledLoading}
               />
             </TabsContent>
 
-            <TabsContent value="self-checkout" className="space-y-6">
+            <TabsContent value="self-checkout" className="space-y-6 mt-4">
               <SelfCheckoutStudentsTable 
                 authorizations={authorizations}
                 loading={selfCheckoutLoading}
