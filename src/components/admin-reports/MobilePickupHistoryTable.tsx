@@ -23,7 +23,10 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
   pageSize = 500, 
   onPageChange 
 }) => {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    // Initialize with correct value to avoid flash
+    return typeof window !== 'undefined' && window.innerWidth < 768;
+  });
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   
   useEffect(() => {
@@ -57,7 +60,14 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
     return format(new Date(date), 'MMM d, yyyy HH:mm');
   };
 
-  if (!isMobile) {
+  
+  // Temporary debug - force mobile mode for testing
+  console.log('Mobile detection:', { isMobile, width: window.innerWidth });
+  
+  // Force mobile for testing
+  const forceMobile = true;
+
+  if (!forceMobile && !isMobile) {
     // Return original table for desktop
     return (
       <Card>
