@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, CheckCheck, LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PickupManagementProps {
   showNavigation?: boolean;
@@ -29,6 +30,7 @@ interface PickupManagementProps {
 const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = true }) => {
   const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [teacherClasses, setTeacherClasses] = useState<Class[]>([]);
@@ -162,18 +164,18 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           </div>
 
           <Tabs defaultValue="pending" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="pending" className="flex items-center gap-2">
+            <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1 gap-1' : 'grid-cols-3'}`}>
+              <TabsTrigger value="pending" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
                 <Clock className="h-4 w-4" />
-                {t('pickup.pendingRequests', { count: pendingRequests.length })}
+                {isMobile ? t('pickup.pending') : t('pickup.pendingRequests', { count: pendingRequests.length })}
               </TabsTrigger>
-              <TabsTrigger value="called" className="flex items-center gap-2">
+              <TabsTrigger value="called" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
                 <CheckCheck className="h-4 w-4" />
-                {t('pickup.currentlyCalled', { count: calledStudents.length })}
+                {isMobile ? t('pickup.called') : t('pickup.currentlyCalled', { count: calledStudents.length })}
               </TabsTrigger>
-              <TabsTrigger value="self-checkout" className="flex items-center gap-2">
+              <TabsTrigger value="self-checkout" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
                 <LogOut className="h-4 w-4" />
-                {t('pickup.selfCheckout', { count: authorizations.length })}
+                {isMobile ? t('pickup.selfCheckout') : t('pickup.selfCheckout', { count: authorizations.length })}
               </TabsTrigger>
             </TabsList>
 
