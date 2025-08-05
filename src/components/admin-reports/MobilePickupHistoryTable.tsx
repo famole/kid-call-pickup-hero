@@ -23,21 +23,9 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
   pageSize = 500, 
   onPageChange 
 }) => {
-  const [isMobile, setIsMobile] = useState(() => {
-    // Initialize with correct value to avoid flash
-    return typeof window !== 'undefined' && window.innerWidth < 768;
-  });
+  // Always use mobile-optimized layout for now
+  const isMobile = true;
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const totalPages = Math.ceil(totalCount / pageSize);
   const showPagination = totalCount > pageSize && onPageChange;
@@ -60,85 +48,6 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
     return format(new Date(date), 'MMM d, yyyy HH:mm');
   };
 
-  
-  // Temporary debug - force mobile mode for testing
-  console.log('Mobile detection:', { isMobile, width: window.innerWidth });
-  
-  // Force mobile for testing
-  const forceMobile = true;
-
-  if (!forceMobile && !isMobile) {
-    // Return original table for desktop
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Pickup History ({data.length} records)
-            {totalCount > data.length && ` of ${totalCount} total`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-medium">Student Name</th>
-                    <th className="text-left p-3 font-medium">Parent Name</th>
-                    <th className="text-left p-3 font-medium">Request Time</th>
-                    <th className="text-left p-3 font-medium">Called Time</th>
-                    <th className="text-left p-3 font-medium">Completed Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((record) => (
-                    <tr key={record.id} className="border-b">
-                      <td className="p-3">{record.studentName || 'Unknown Student'}</td>
-                      <td className="p-3">{record.parentName || 'Unknown Parent'}</td>
-                      <td className="p-3">{formatFullDate(record.requestTime)}</td>
-                      <td className="p-3">
-                        {record.calledTime ? formatFullDate(record.calledTime) : '-'}
-                      </td>
-                      <td className="p-3">{formatFullDate(record.completedTime)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {showPagination && (
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages} ({totalCount} total records)
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPageChange(currentPage - 1)}
-                    disabled={currentPage <= 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPageChange(currentPage + 1)}
-                    disabled={currentPage >= totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Mobile-optimized table layout - no container card, compact design
   return (
     <div className="space-y-4">
@@ -154,7 +63,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
         </h3>
       </div>
 
-      {/* Compact table for mobile */}
+      {/* Compact table for mobile - no badges, minimal styling */}
       <div className="overflow-x-auto -mx-2">
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -169,8 +78,8 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
           <tbody>
             {data.map((record) => (
               <tr key={record.id} className="border-b hover:bg-muted/30">
-                <td className="p-2 font-medium">{record.studentName || 'Unknown'}</td>
-                <td className="p-2 text-muted-foreground">{record.parentName || 'Unknown'}</td>
+                <td className="p-2 text-xs">{record.studentName || 'Unknown'}</td>
+                <td className="p-2 text-xs text-muted-foreground">{record.parentName || 'Unknown'}</td>
                 <td className="p-2 text-xs">{formatTime(record.requestTime)}</td>
                 <td className="p-2 text-xs">
                   {record.calledTime ? formatTime(record.calledTime) : '-'}
