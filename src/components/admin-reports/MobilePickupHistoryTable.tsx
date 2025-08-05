@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ChevronLeft, ChevronRight, Clock, User, Calendar, PhoneCall, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { PickupHistoryWithDetails } from '@/services/pickupHistoryService';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface MobilePickupHistoryTableProps {
@@ -24,8 +23,19 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
   pageSize = 500, 
   onPageChange 
 }) => {
-  const isMobile = useIsMobile();
+  const [isMobile, setIsMobile] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const totalPages = Math.ceil(totalCount / pageSize);
   const showPagination = totalCount > pageSize && onPageChange;
 
