@@ -33,8 +33,8 @@ const PasswordSetupForm = () => {
     
     if (password !== confirmPassword) {
       toast({
-        title: "Error",
-        description: "Passwords do not match.",
+        title: t('common.error'),
+        description: t('errors.passwordsDoNotMatch'),
         variant: "destructive",
       });
       return;
@@ -42,8 +42,8 @@ const PasswordSetupForm = () => {
 
     if (password.length < 6) {
       toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long.",
+        title: t('common.error'),
+        description: t('errors.passwordTooShort'),
         variant: "destructive",
       });
       return;
@@ -58,7 +58,7 @@ const PasswordSetupForm = () => {
       const userEmail = user?.email || emailFromUrl;
 
       if (!userEmail) {
-        throw new Error('No email found for password setup');
+        throw new Error(t('errors.noEmailForSetup'));
       }
 
       // If user is not authenticated, we need to handle preloaded accounts specially
@@ -81,8 +81,8 @@ const PasswordSetupForm = () => {
           }
 
           toast({
-            title: "Demo Account Setup Complete",
-            description: "Your demo account has been set up. You can now log in with your credentials.",
+            title: t('errors.demoAccountSetup'),
+            description: t('errors.demoAccountReady'),
           });
 
           // Redirect to login page
@@ -114,8 +114,8 @@ const PasswordSetupForm = () => {
         }
 
         toast({
-          title: "Account Setup Complete",
-          description: "Your password has been set successfully. You will be automatically logged in.",
+          title: t('errors.accountSetupComplete'),
+          description: t('errors.passwordSetSuccessfully'),
         });
 
         // Don't manually redirect - let the auth state change handle it
@@ -141,8 +141,8 @@ const PasswordSetupForm = () => {
         }
 
         toast({
-          title: "Password Set Successfully",
-          description: "Your password has been set. You can now access the application.",
+          title: t('errors.passwordSetSuccess'),
+          description: t('errors.passwordSetAccessApp'),
         });
 
         // Redirect to main application
@@ -151,8 +151,8 @@ const PasswordSetupForm = () => {
     } catch (error: any) {
       console.error('Error setting password:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to set password. Please try again.",
+        title: t('common.error'),
+        description: error.message || t('errors.failedSetPassword'),
         variant: "destructive",
       });
     } finally {
@@ -167,21 +167,21 @@ const PasswordSetupForm = () => {
           <div className="bg-school-primary w-12 h-12 rounded-full flex items-center justify-center mb-2">
             <Lock className="h-6 w-6 text-white" />
           </div>
-          <CardTitle className="text-2xl text-center">Set Your Password</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('auth.setYourPassword')}</CardTitle>
           <CardDescription className="text-center">
-            Welcome! Please set a secure password for your account to continue.
+            {t('auth.welcomeSetPassword')}
           </CardDescription>
         </CardHeader>
         
         <CardContent>
           <form onSubmit={handlePasswordSetup} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
+              <Label htmlFor="password">{t('auth.newPassword')}</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your new password"
+                  placeholder={t('auth.enterNewPassword')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -204,12 +204,12 @@ const PasswordSetupForm = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your new password"
+                  placeholder={t('auth.confirmNewPassword')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -232,7 +232,7 @@ const PasswordSetupForm = () => {
             </div>
             
             <div className="text-sm text-gray-500">
-              Password must be at least 6 characters long.
+              {t('auth.passwordMinLength')}
             </div>
             
             <Button
@@ -240,7 +240,7 @@ const PasswordSetupForm = () => {
               className="w-full bg-school-primary hover:bg-school-primary/90"
               disabled={isLoading}
             >
-              {isLoading ? 'Setting Password...' : 'Set Password & Continue'}
+              {isLoading ? t('auth.settingPassword') : t('auth.setPasswordContinue')}
             </Button>
           </form>
         </CardContent>
