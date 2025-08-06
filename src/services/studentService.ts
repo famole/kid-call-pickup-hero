@@ -3,7 +3,7 @@ import { Child } from '@/types';
 
 // Import functions from the refactored modules
 export { getAllStudents, getStudentById, getStudentsForParent } from './student/getStudents';
-export { createStudent, updateStudent, deleteStudent } from './student/modifyStudents';
+export { createStudent, updateStudent, deleteStudent, reactivateStudent } from './student/modifyStudents';
 
 // Get a single student by ID with improved error handling
 export const getStudentByIdLegacy = async (id: string): Promise<Child | null> => {

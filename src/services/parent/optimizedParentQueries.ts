@@ -4,11 +4,11 @@ import { Child } from '@/types';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { logger } from '@/utils/logger';
 
-export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStudents[]> => {
+export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false): Promise<ParentWithStudents[]> => {
   try {
     logger.log('Fetching optimized parents with students data...');
     
-    const { data: parentsData, error: parentsError } = await supabase
+    let query = supabase
       .from('parents')
       .select(`
         id,
@@ -17,10 +17,15 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
         phone,
         role,
         created_at,
-        updated_at
-      `)
-      .is('deleted_at', null)
-      .order('name');
+        updated_at,
+        deleted_at
+      `);
+    
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null);
+    }
+    
+    const { data: parentsData, error: parentsError } = await query.order('name');
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);
@@ -95,6 +100,7 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       students: studentsByParent[parent.id] || [],
       createdAt: new Date(parent.created_at),
       updatedAt: new Date(parent.updated_at),
+      deletedAt: parent.deleted_at ? new Date(parent.deleted_at) : undefined,
     })) || [];
 
     logger.log(`Returning ${parentsWithStudents.length} parents with students data`);

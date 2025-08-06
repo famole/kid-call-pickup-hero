@@ -30,9 +30,12 @@ interface AdminParentsLayoutProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
   handleDeleteParent: (parentId: string) => Promise<void>;
+  handleReactivateParent?: (parentId: string, parentName: string) => void;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;
   loadingProgress?: string;
+  statusFilter?: 'active' | 'deleted' | 'all';
+  onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
 }
 
 const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({

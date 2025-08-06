@@ -3,13 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Child } from '@/types';
 
 // Get all students
-export const getAllStudents = async (): Promise<Child[]> => {
+export const getAllStudents = async (includeDeleted: boolean = false): Promise<Child[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('students')
-      .select('*')
-      .is('deleted_at', null)
-      .order('name');
+      .select('*');
+      
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null);
+    }
+    
+    const { data, error } = await query.order('name');
     
     if (error) {
       console.error('Error fetching students:', error);

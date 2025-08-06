@@ -8,6 +8,7 @@ import { Child, Class } from '@/types';
 import ParentSearch from './ParentSearch';
 import ParentClassFilter from './ParentClassFilter';
 import ParentsTable from './ParentsTable';
+import DeletedItemsFilter from './DeletedItemsFilter';
 
 // Import hooks
 import { useParentSearch } from '@/hooks/useParentSearch';
@@ -20,6 +21,9 @@ interface AdminParentsContentProps {
   onEditParent: (parent: ParentWithStudents) => void;
   onDeleteParent: (parentId: string) => Promise<void>;
   onManageStudents: (parent: ParentWithStudents) => void;
+  onReactivateParent?: (parentId: string, parentName: string) => void;
+  statusFilter?: 'active' | 'deleted' | 'all';
+  onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
 }
 
 const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
@@ -29,6 +33,9 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
   onEditParent,
   onDeleteParent,
   onManageStudents,
+  onReactivateParent,
+  statusFilter = 'active',
+  onStatusFilterChange,
 }) => {
   // Use the class filter hook
   const { 
@@ -41,6 +48,15 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
 
   // Use the search hook with class-filtered parents
   const { searchTerm, setSearchTerm, filteredParents } = useParentSearch(filteredParentsByClass);
+
+  const getItemType = (): 'parents' | 'teachers' | 'students' | 'admins' | 'superadmins' => {
+    switch (userRole) {
+      case 'teacher': return 'teachers';
+      case 'admin': return 'admins';
+      case 'superadmin': return 'superadmins';
+      default: return 'parents';
+    }
+  };
 
   return (
     <CardContent>
@@ -59,6 +75,13 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
             isLoading={isLoadingClasses}
           />
         )}
+        {onStatusFilterChange && (
+          <DeletedItemsFilter
+            value={statusFilter}
+            onValueChange={onStatusFilterChange}
+            itemType={getItemType()}
+          />
+        )}
       </div>
       
       <ParentsTable
@@ -68,6 +91,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
         onEditParent={onEditParent}
         onDeleteParent={onDeleteParent}
         onManageStudents={onManageStudents}
+        onReactivateParent={onReactivateParent}
         userRole={userRole}
       />
     </CardContent>

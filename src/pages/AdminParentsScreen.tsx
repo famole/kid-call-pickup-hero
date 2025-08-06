@@ -1,8 +1,9 @@
 
 import React from 'react';
 import AdminParentsContainer from '@/components/admin-parents/AdminParentsContainer';
-import { useOptimizedParentsData } from '@/hooks/useOptimizedParentsData';
+import { useAdminFilteredData } from '@/hooks/useAdminFilteredData';
 import { useAdminParentsActions } from '@/hooks/useAdminParentsActions';
+import { useReactivationActions } from '@/hooks/useReactivationActions';
 
 interface AdminParentsScreenProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
@@ -19,13 +20,20 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
     onParentAdded,
     onParentUpdated,
     onImportCompleted,
-  } = useOptimizedParentsData({ userRole });
+    statusFilter,
+    handleStatusFilterChange,
+    refreshData,
+  } = useAdminFilteredData({ userRole });
 
   const {
     handleDeleteParent,
     getHeaderTitle,
     getHeaderDescription,
   } = useAdminParentsActions({ userRole, setParents });
+
+  const {
+    handleReactivateParent,
+  } = useReactivationActions({ onParentUpdated, refreshData });
 
   return (
     <AdminParentsContainer
@@ -39,9 +47,12 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
       onParentUpdated={onParentUpdated}
       onImportCompleted={onImportCompleted}
       handleDeleteParent={handleDeleteParent}
+      handleReactivateParent={handleReactivateParent}
       getHeaderTitle={getHeaderTitle}
       getHeaderDescription={getHeaderDescription}
       loadingProgress={loadingProgress}
+      statusFilter={statusFilter}
+      onStatusFilterChange={handleStatusFilterChange}
     />
   );
 };
