@@ -168,19 +168,19 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
               <TabsTrigger value="pending" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
                 <Clock className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                 <span className={isMobile ? 'text-center leading-tight' : ''}>
-                  {isMobile ? t('pickup.pending') : t('pickup.pendingRequests', { count: pendingRequests.length })}
+                  {isMobile ? 'Pendientes' : t('pickup.pendingRequests', { count: pendingRequests.length })}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="called" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
                 <CheckCheck className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                 <span className={isMobile ? 'text-center leading-tight' : ''}>
-                  {isMobile ? t('pickup.called') : t('pickup.currentlyCalled', { count: calledStudents.length })}
+                  {isMobile ? 'Llamados' : t('pickup.currentlyCalled', { count: calledStudents.length })}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="self-checkout" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
                 <LogOut className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                 <span className={isMobile ? 'text-center leading-tight' : ''}>
-                  {isMobile ? 'Auto Salida' : t('pickup.selfCheckout', { count: authorizations.length })}
+                  {isMobile ? 'Auto-Salida' : t('pickup.selfCheckout', { count: authorizations.length })}
                 </span>
               </TabsTrigger>
             </TabsList>
