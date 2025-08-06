@@ -221,9 +221,6 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                   </span>
                 </div>
               </div>
-              <Badge variant="secondary" className="bg-green-100 text-green-800 flex-shrink-0">
-                {t('dashboard.calledForPickup')}
-              </Badge>
             </div>
             
             <div className="flex items-center gap-2 text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100">

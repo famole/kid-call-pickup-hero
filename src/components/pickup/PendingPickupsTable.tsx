@@ -236,8 +236,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                 size="sm"
                 className="bg-school-primary hover:bg-school-primary/90 flex-shrink-0"
               >
-                <Phone className="h-4 w-4 mr-1" />
-                {t('pickup.callForPickup')}
+                <Phone className="h-4 w-4" />
               </Button>
             </div>
             
