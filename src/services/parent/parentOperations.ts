@@ -6,6 +6,7 @@ export const getAllParents = async (): Promise<Parent[]> => {
   const { data, error } = await supabase
     .from('parents')
     .select('*')
+    .is('deleted_at', null)
     .order('name');
   
   if (error) {
@@ -29,6 +30,7 @@ export const getParentById = async (id: string): Promise<Parent | null> => {
     .from('parents')
     .select('*')
     .eq('id', id)
+    .is('deleted_at', null)
     .single();
   
   if (error) {
@@ -116,7 +118,7 @@ export const updateParent = async (id: string, parentData: ParentInput): Promise
 export const deleteParent = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('parents')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
   
   if (error) {

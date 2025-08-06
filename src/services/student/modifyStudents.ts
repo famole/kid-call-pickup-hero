@@ -141,23 +141,13 @@ export const updateStudent = async (id: string, student: Partial<Child>): Promis
   }
 };
 
-// Delete a student
+// Logically delete a student
 export const deleteStudent = async (id: string): Promise<void> => {
   try {
-    // First delete parent relationships
-    const { error: relError } = await supabase
-      .from('student_parents')
-      .delete()
-      .eq('student_id', id);
-    
-    if (relError) {
-      console.error('Error deleting student-parent relationships:', relError);
-    }
-    
-    // Then delete the student
+    // Logically delete the student instead of hard delete
     const { error } = await supabase
       .from('students')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);
     
     if (error) {

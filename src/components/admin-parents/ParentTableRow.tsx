@@ -11,7 +11,7 @@ import { ParentWithStudents } from '@/types/parent';
 interface ParentTableRowProps {
   parent: ParentWithStudents;
   onEdit: () => void;
-  onDelete: (parentId: string) => void;
+  onDelete: () => void;
   onManageStudents: () => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   showStudentsColumn: boolean;
@@ -41,7 +41,7 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => onDelete(parent.id)}
+            onClick={onDelete}
           >
             <Trash2 className="h-4 w-4" />
           </Button>

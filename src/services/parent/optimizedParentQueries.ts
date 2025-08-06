@@ -19,6 +19,7 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
         created_at,
         updated_at
       `)
+      .is('deleted_at', null)
       .order('name');
 
     if (parentsError) {
@@ -44,7 +45,7 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
         student_id,
         is_primary,
         relationship,
-        students (
+        students!inner (
           id,
           name,
           class_id,
@@ -55,7 +56,8 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
             grade
           )
         )
-      `);
+      `)
+      .is('students.deleted_at', null);
 
     if (studentParentError) {
       logger.error('Error fetching student-parent relationships:', studentParentError);
@@ -112,11 +114,12 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
   try {
     logger.log('Fetching parent dashboard data for:', parentEmail);
 
-    // Get parent ID first
+    // Get parent ID first (excluding deleted)
     const { data: parentData, error: parentError } = await supabase
       .from('parents')
       .select('id')
       .eq('email', parentEmail)
+      .is('deleted_at', null)
       .single();
 
     if (parentError) {
@@ -142,19 +145,20 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
           is_primary
         )
       `)
-      .eq('student_parents.parent_id', parentData.id);
+      .eq('student_parents.parent_id', parentData.id)
+      .is('deleted_at', null);
 
     if (childrenError) {
       logger.error('Error fetching children:', childrenError);
       throw new Error(childrenError.message);
     }
 
-    // Get authorized children
+    // Get authorized children (excluding deleted students)
     const { data: authorizedChildren, error: authorizedError } = await supabase
       .from('pickup_authorizations')
       .select(`
         student_id,
-        students (
+        students!inner (
           id,
           name,
           class_id,
@@ -163,6 +167,7 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       `)
       .eq('authorized_parent_id', parentData.id)
       .eq('is_active', true)
+      .is('students.deleted_at', null)
       .lte('start_date', new Date().toISOString().split('T')[0])
       .gte('end_date', new Date().toISOString().split('T')[0]);
 

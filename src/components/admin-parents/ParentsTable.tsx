@@ -75,7 +75,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
               key={parent.id}
               parent={parent}
               onEdit={() => onEditParent(parent)}
-              onDelete={onDeleteParent}
+              onDelete={() => onDeleteParent(parent.id)}
               onManageStudents={() => onManageStudents(parent)}
               userRole={userRole}
               showStudentsColumn={shouldShowStudentsColumn}

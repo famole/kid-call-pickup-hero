@@ -41,7 +41,7 @@ const StudentTable = ({
         // Get all student IDs
         const studentIds = studentList.map(student => student.id);
         
-        // Fetch student-parent relationships with parent names
+        // Fetch student-parent relationships with parent names (excluding deleted parents)
         const { data: relationships, error } = await supabase
           .from('student_parents')
           .select(`
@@ -49,9 +49,10 @@ const StudentTable = ({
             parent_id,
             relationship,
             is_primary,
-            parents!inner(name)
+            parents!inner(name, deleted_at)
           `)
-          .in('student_id', studentIds);
+          .in('student_id', studentIds)
+          .is('parents.deleted_at', null);
         
         if (error) {
           console.error('Error fetching student-parent relationships:', error);
