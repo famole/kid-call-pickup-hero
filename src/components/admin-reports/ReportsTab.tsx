@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BarChart3 } from 'lucide-react';
 import { getAllStudents } from '@/services/student';
 import { getPickupHistoryByStudent, getPickupStatsByStudent, getAllPickupHistory, getRecentPickupHistory, getPickupHistoryCount } from '@/services/pickupHistoryService';
-import PickupHistoryTable from './PickupHistoryTable';
+import MobilePickupHistoryTable from './MobilePickupHistoryTable';
 import ReportFilters from './ReportFilters';
 import ReportActions from './ReportActions';
 import StudentStats from './StudentStats';
@@ -198,7 +198,7 @@ const ReportsTab = () => {
           </CardContent>
         </Card>
       ) : pickupHistory.length > 0 ? (
-        <PickupHistoryTable 
+        <MobilePickupHistoryTable 
           data={pickupHistory} 
           totalCount={totalCount}
           currentPage={currentPage}

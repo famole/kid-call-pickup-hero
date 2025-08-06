@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,17 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
   const { t } = useTranslation();
   const [selectedRecord, setSelectedRecord] = useState<WithdrawalRecord | null>(null);
   const [studentFilter, setStudentFilter] = useState<string>('all');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Get unique students for filter
   const uniqueStudents = Array.from(
@@ -87,6 +98,19 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
     }
   };
 
+  const getTypeText = (type: string) => {
+    switch (type) {
+      case 'self_pickup':
+        return t('withdrawal.selfPickup');
+      case 'authorized_pickup':
+        return t('withdrawal.authorizedPickup');
+      case 'self_checkout':
+        return t('withdrawal.selfCheckout');
+      default:
+        return t('withdrawal.unknown');
+    }
+  };
+
   const getResponsiblePerson = (record: WithdrawalRecord) => {
     switch (record.type) {
       case 'self_pickup':
@@ -115,6 +139,147 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
     );
   }
 
+  if (isMobile) {
+    // Mobile-optimized layout without container box
+    return (
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="px-2">
+          <h3 className="text-lg font-semibold">
+            {t('withdrawal.historyTitle')} ({data.length})
+          </h3>
+        </div>
+
+        {data.length === 0 ? (
+          <div className="text-center py-8 px-2">
+            <LogOut className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">{t('withdrawal.noRecords')}</p>
+          </div>
+        ) : (
+          <>
+            {/* Student Filter */}
+            <div className="px-2">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={studentFilter} onValueChange={setStudentFilter}>
+                  <SelectTrigger className="w-full max-w-64">
+                    <SelectValue placeholder={t('withdrawal.filterByStudent')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('withdrawal.allStudents')}</SelectItem>
+                    {uniqueStudents.map((studentName) => (
+                      <SelectItem key={studentName} value={studentName}>
+                        {studentName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Compact table for mobile - no container, remove avatars for space */}
+            <div className="overflow-x-auto -mx-2">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left p-2 font-medium text-xs">{t('withdrawal.student')}</th>
+                    <th className="text-left p-2 font-medium text-xs">{t('withdrawal.type')}</th>
+                    <th className="text-left p-2 font-medium text-xs">{t('withdrawal.responsiblePerson')}</th>
+                    <th className="text-left p-2 font-medium text-xs">{t('withdrawal.date')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((record) => (
+                    <tr 
+                      key={`${record.type}-${record.id}`}
+                      className="border-b hover:bg-muted/30 cursor-pointer"
+                      onClick={() => setSelectedRecord(record)}
+                    >
+                      <td className="p-2 text-xs font-medium truncate max-w-24">{record.studentName}</td>
+                      <td className="p-2 text-xs">
+                        {/* Simple text instead of badges to save space */}
+                        <span className="text-xs px-1 py-0.5 bg-muted rounded text-muted-foreground">
+                          {getTypeText(record.type)}
+                        </span>
+                      </td>
+                      <td className="p-2 text-xs truncate max-w-20">{getResponsiblePerson(record)}</td>
+                      <td className="p-2 text-xs">{format(record.date, 'MM/dd HH:mm')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* Withdrawal Details Modal */}
+        <Dialog open={!!selectedRecord} onOpenChange={() => setSelectedRecord(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {selectedRecord && getTypeIcon(selectedRecord.type)}
+                {t('withdrawal.withdrawalDetails')}
+              </DialogTitle>
+              <DialogDescription>
+                {t('withdrawal.detailsDescription')}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedRecord && (
+              <div className="space-y-4">
+                {/* Student Information */}
+                <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={selectedRecord.studentAvatar} alt={selectedRecord.studentName} />
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {selectedRecord.studentName?.charAt(0) || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold">{selectedRecord.studentName}</h3>
+                    {selectedRecord.className && (
+                      <p className="text-sm text-muted-foreground">{selectedRecord.className}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Withdrawal Type */}
+                  <div>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('withdrawal.type')}</h4>
+                    <div>{getTypeBadge(selectedRecord.type)}</div>
+                  </div>
+
+                  {/* Responsible Person */}
+                  <div>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('withdrawal.responsiblePerson')}</h4>
+                    <p className="text-sm font-medium">{getResponsiblePerson(selectedRecord)}</p>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('withdrawal.date')}</h4>
+                    <p className="text-sm font-medium">{format(selectedRecord.date, 'MMM d, yyyy HH:mm')}</p>
+                  </div>
+
+                  {/* Notes */}
+                  {selectedRecord.notes && (
+                    <div>
+                      <h4 className="font-medium text-sm text-muted-foreground mb-1">{t('withdrawal.notes')}</h4>
+                      <p className="text-sm bg-muted/50 p-3 rounded-lg font-medium">{selectedRecord.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // Desktop layout with card container
   return (
     <Card>
       <CardHeader>

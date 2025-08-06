@@ -7,10 +7,12 @@ import Navigation from '@/components/Navigation';
 import AdminTabs from '@/components/AdminTabs';
 import AdminPanelHeader from '@/components/admin-panel/AdminPanelHeader';
 import ReportsTab from '@/components/admin-reports/ReportsTab';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const AdminPanel = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
@@ -21,8 +23,8 @@ const AdminPanel = () => {
 
           <Tabs defaultValue="manage" className="w-full">
             <TabsList className="grid grid-cols-2 mb-8">
-              <TabsTrigger value="manage">{t('admin.manageSchool')}</TabsTrigger>
-              <TabsTrigger value="reports">{t('admin.reports')}</TabsTrigger>
+              <TabsTrigger value="manage" className={isMobile ? 'text-sm px-2' : ''}>{t('admin.manageSchool')}</TabsTrigger>
+              <TabsTrigger value="reports" className={isMobile ? 'text-sm px-2' : ''}>{t('admin.reports')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="manage">
