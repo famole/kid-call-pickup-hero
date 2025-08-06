@@ -214,7 +214,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                   {item.class?.name || t('common.unknownClass')}
                   {item.class?.grade && ` (${item.class.grade})`}
                 </div>
-                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                <div className="flex items-center justify-center gap-1 text-sm text-gray-500 mt-1">
                   <User className="h-3 w-3" />
                   <span className="truncate">
                     {item.parent?.name || `${t('forms.parentName')} (ID: ${item.request.parentId?.slice(0, 8)}...)`}
