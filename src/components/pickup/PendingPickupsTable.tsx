@@ -225,7 +225,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                   </div>
                   <div className="flex items-center justify-center gap-1 text-sm text-gray-500 mt-1">
                     <User className="h-3 w-3" />
-                    <span className="truncate text-center">
+                    <span className="truncate">
                       {item.parent?.name || `${t('forms.parentName')} (ID: ${item.request.parentId?.slice(0, 8)}...)`}
                     </span>
                   </div>
