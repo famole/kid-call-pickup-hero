@@ -37,6 +37,7 @@ export default function DashboardScreen({ session }: Props) {
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeRequests, setActiveRequests] = useState<{
+    id: string;
     studentId: string;
     status: 'pending' | 'called';
   }[]>([]);
@@ -145,11 +146,12 @@ export default function DashboardScreen({ session }: Props) {
 
     const { data: requests } = await supabase
       .from('pickup_requests')
-      .select('student_id,status')
+      .select('id,student_id,status')
       .in('student_id', uniqueIds)
       .in('status', ['pending', 'called']);
 
     const formatted = (requests || []).map((r: any) => ({
+      id: r.id,
       studentId: r.student_id,
       status: r.status as 'pending' | 'called'
     }));
@@ -214,6 +216,23 @@ export default function DashboardScreen({ session }: Props) {
       fetchActiveRequests();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Request failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleCancel = async (requestId: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('pickup_requests')
+        .update({ status: 'cancelled' })
+        .eq('id', requestId);
+      if (error) throw error;
+      Alert.alert('Cancelled', 'Pickup request cancelled');
+      fetchActiveRequests();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Cancel failed');
     } finally {
       setLoading(false);
     }
@@ -289,15 +308,16 @@ export default function DashboardScreen({ session }: Props) {
                         selectedStudentIds.includes(item.id) ? '$blue3' : undefined
                       }
                       onPress={() => !disabled && handleSelectStudent(item.id)}
-                      disabled={disabled}
                       title={item.name}
                       titleProps={{ numberOfLines: 1 }}
                       subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
-                      icon={request ? (
-                        <Text fontSize="$2">
-                          {request.status === 'pending' ? 'In Queue' : 'Called'}
-                        </Text>
-                      ) : null}
+                      icon={
+                        request
+                          ? request.status === 'pending'
+                            ? <Button size="$2" borderRadius="$3" onPress={() => handleCancel(request.id)}>Cancel</Button>
+                            : <Text fontSize="$2">Called</Text>
+                          : null
+                      }
                     />
                   )
                 })}
@@ -324,15 +344,16 @@ export default function DashboardScreen({ session }: Props) {
                         selectedStudentIds.includes(item.id) ? '$blue3' : undefined
                       }
                       onPress={() => !disabled && handleSelectStudent(item.id)}
-                      disabled={disabled}
                       title={item.name}
                       titleProps={{ numberOfLines: 1 }}
                       subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
-                      icon={request ? (
-                        <Text fontSize="$2">
-                          {request.status === 'pending' ? 'In Queue' : 'Called'}
-                        </Text>
-                      ) : null}
+                      icon={
+                        request
+                          ? request.status === 'pending'
+                            ? <Button size="$2" borderRadius="$3" onPress={() => handleCancel(request.id)}>Cancel</Button>
+                            : <Text fontSize="$2">Called</Text>
+                          : null
+                      }
                     />
                   )
                 })}
