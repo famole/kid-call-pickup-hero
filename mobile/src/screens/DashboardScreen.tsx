@@ -41,6 +41,7 @@ export default function DashboardScreen({ session }: Props) {
     studentId: string;
     status: 'pending' | 'called';
   }[]>([]);
+  const [queuePositions, setQueuePositions] = useState<Record<string, number>>({});
   const navigation = useNavigation();
   const studentsRef = useRef<Student[]>([]);
 
@@ -155,6 +156,23 @@ export default function DashboardScreen({ session }: Props) {
       studentId: r.student_id,
       status: r.status as 'pending' | 'called'
     }));
+
+    // Compute queue positions among ALL pending requests by request_time
+    const { data: pendingAll } = await supabase
+      .from('pickup_requests')
+      .select('student_id, request_time')
+      .eq('status', 'pending')
+      .order('request_time', { ascending: true });
+
+    const order = (pendingAll || []).map((r: any) => r.student_id as string);
+    const positions: Record<string, number> = {};
+    formatted.forEach((r) => {
+      if (r.status === 'pending') {
+        const idx = order.indexOf(r.studentId);
+        if (idx >= 0) positions[r.studentId] = idx + 1;
+      }
+    });
+    setQueuePositions(positions);
 
     setActiveRequests(formatted);
   }, []);
@@ -310,7 +328,7 @@ export default function DashboardScreen({ session }: Props) {
                       onPress={() => !disabled && handleSelectStudent(item.id)}
                       title={item.name}
                       titleProps={{ numberOfLines: 1 }}
-                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
+                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}${request && request.status === 'pending' && queuePositions[item.id] ? ' • #' + queuePositions[item.id] + ' in queue' : ''}`}
                       icon={
                         request
                           ? request.status === 'pending'
@@ -346,7 +364,7 @@ export default function DashboardScreen({ session }: Props) {
                       onPress={() => !disabled && handleSelectStudent(item.id)}
                       title={item.name}
                       titleProps={{ numberOfLines: 1 }}
-                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}`}
+                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}${request && request.status === 'pending' && queuePositions[item.id] ? ' • #' + queuePositions[item.id] + ' in queue' : ''}`}
                       icon={
                         request
                           ? request.status === 'pending'
