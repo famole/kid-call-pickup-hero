@@ -1,9 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../src/integrations/supabase/types';
+import { getSupabaseConfig } from './config/environment';
 
-// Use Expo public vars first; guard process/env for Hermes
-const ENV = (typeof process !== 'undefined' && (process as any).env) ? (process as any).env as Record<string, string | undefined> : {};
-const SUPABASE_URL = ENV.EXPO_PUBLIC_SUPABASE_URL || ENV.VITE_SUPABASE_URL || "https://bslcyuufvifphfzdgfcl.supabase.co";
-const SUPABASE_ANON_KEY = ENV.EXPO_PUBLIC_SUPABASE_ANON_KEY || ENV.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzbGN5dXVmdmlmcGhmemRnZmNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNjkzNjYsImV4cCI6MjA2Nzk0NTM2Nn0.HzpSCytm8iu3HZa37vcqozNUNGGfDmCGiv_CMcXJ3uE";
+const { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } = getSupabaseConfig();
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
