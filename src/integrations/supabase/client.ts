@@ -28,6 +28,7 @@ const SUPABASE_PUBLISHABLE_KEY =
 
 const authStorage = typeof globalThis !== "undefined" && "localStorage" in globalThis ? globalThis.localStorage : undefined;
 
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
