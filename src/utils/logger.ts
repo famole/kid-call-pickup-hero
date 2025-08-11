@@ -1,7 +1,19 @@
 // Logging utility that respects environment configuration
 // Logs are disabled in production environment
 
-const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
+const metaEnv =
+  typeof import.meta !== 'undefined' && typeof import.meta.env !== 'undefined'
+    ? (import.meta.env as Record<string, any>)
+    : {};
+const processEnv =
+  typeof process !== 'undefined' && typeof process.env !== 'undefined'
+    ? process.env
+    : {};
+
+const isProduction =
+  metaEnv.PROD ||
+  metaEnv.MODE === 'production' ||
+  processEnv.NODE_ENV === 'production';
 
 export const logger = {
   log: (...args: any[]) => {
