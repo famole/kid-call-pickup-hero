@@ -37,10 +37,10 @@ const ClassListTable: React.FC<ClassListTableProps> = ({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Grade</TableHead>
-          <TableHead>Teacher</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="text-center">Name</TableHead>
+          <TableHead className="text-center">Grade</TableHead>
+          <TableHead className="text-center">Teacher</TableHead>
+          <TableHead className="text-center">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
