@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Upload } from "lucide-react";
 import { getAllClasses } from "@/services/classService";
 import { parseFullImportFile } from "@/utils/fullImportParser";
@@ -155,20 +155,63 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                   <tbody>
                     {preview.rows.map(r => (
                       <tr key={r.rowIndex} className="border-t">
+                        <td className="p-2">
+                          <Checkbox
+                            checked={rowEnabled[r.rowIndex] !== false}
+                            onCheckedChange={(checked) =>
+                              setRowEnabled(prev => ({ ...prev, [r.rowIndex]: Boolean(checked) }))
+                            }
+                            aria-label={`Include row ${r.rowIndex}`}
+                          />
+                        </td>
                         <td className="p-2">{r.rowIndex}</td>
                         <td className="p-2">{r.studentName}</td>
                         <td className="p-2">{r.classNameResolved || '—'}</td>
                         <td className="p-2">
-                          {r.mother.type === 'skip' && <span className="text-muted-foreground">Skip</span>}
-                          {r.mother.type === 'link-existing' && <span>Link</span>}
-                          {r.mother.type === 'create-new' && <span>Create</span>}
-                          {r.mother.type === 'update-existing' && <span>Update</span>}
+                          {r.mother.type === 'skip' && (
+                            <span className="text-muted-foreground">Skip ({r.mother.reason})</span>
+                          )}
+                          {r.mother.type === 'link-existing' && (
+                            <div>
+                              <div>Link</div>
+                              <div className="text-xs text-muted-foreground">{r.mother.email}</div>
+                            </div>
+                          )}
+                          {r.mother.type === 'create-new' && (
+                            <div>
+                              <div>Create</div>
+                              <div className="text-xs text-muted-foreground">{r.mother.payload.name} • {r.mother.payload.email}</div>
+                            </div>
+                          )}
+                          {r.mother.type === 'update-existing' && (
+                            <div>
+                              <div>Update</div>
+                              <div className="text-xs text-muted-foreground">Name → {r.mother.updates?.name} • {r.mother.email}</div>
+                            </div>
+                          )}
                         </td>
                         <td className="p-2">
-                          {r.father.type === 'skip' && <span className="text-muted-foreground">Skip</span>}
-                          {r.father.type === 'link-existing' && <span>Link</span>}
-                          {r.father.type === 'create-new' && <span>Create</span>}
-                          {r.father.type === 'update-existing' && <span>Update</span>}
+                          {r.father.type === 'skip' && (
+                            <span className="text-muted-foreground">Skip ({r.father.reason})</span>
+                          )}
+                          {r.father.type === 'link-existing' && (
+                            <div>
+                              <div>Link</div>
+                              <div className="text-xs text-muted-foreground">{r.father.email}</div>
+                            </div>
+                          )}
+                          {r.father.type === 'create-new' && (
+                            <div>
+                              <div>Create</div>
+                              <div className="text-xs text-muted-foreground">{r.father.payload.name} • {r.father.payload.email}</div>
+                            </div>
+                          )}
+                          {r.father.type === 'update-existing' && (
+                            <div>
+                              <div>Update</div>
+                              <div className="text-xs text-muted-foreground">Name → {r.father.updates?.name} • {r.father.email}</div>
+                            </div>
+                          )}
                         </td>
                         <td className="p-2">{r.primaryParent || '—'}</td>
                         <td className="p-2">{r.errors.length ? r.errors.join('; ') : '—'}</td>
