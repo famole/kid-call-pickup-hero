@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Users, RotateCcw } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
+import { ParentAuthStatus } from '@/services/authStatusService';
+import AuthStatusBadge from './AuthStatusBadge';
 
 interface ParentTableRowProps {
   parent: ParentWithStudents;
@@ -17,6 +19,7 @@ interface ParentTableRowProps {
   onReactivate?: () => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   showStudentsColumn: boolean;
+  authStatus?: ParentAuthStatus;
 }
 
 const ParentTableRow: React.FC<ParentTableRowProps> = ({
@@ -27,6 +30,7 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
   onReactivate,
   userRole = 'parent',
   showStudentsColumn,
+  authStatus,
 }) => {
   const isDeleted = !!parent.deletedAt;
   return (
@@ -41,7 +45,12 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
           )}
         </div>
       </TableCell>
-      <TableCell>{parent.email}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          {parent.email}
+          <AuthStatusBadge authStatus={authStatus} />
+        </div>
+      </TableCell>
       <TableCell>{parent.phone || 'N/A'}</TableCell>
       {showStudentsColumn && (
         <TableCell>{parent.students?.length || 0} students</TableCell>

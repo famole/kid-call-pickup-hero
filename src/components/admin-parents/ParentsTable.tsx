@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ParentWithStudents } from '@/types/parent';
+import { ParentAuthStatus } from '@/services/authStatusService';
 import ParentTableRow from './ParentTableRow';
 
 interface ParentsTableProps {
@@ -20,6 +21,7 @@ interface ParentsTableProps {
   onManageStudents: (parent: ParentWithStudents) => void;
   onReactivateParent?: (parentId: string, parentName: string) => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  authStatuses?: Map<string, ParentAuthStatus>;
 }
 
 const ParentsTable: React.FC<ParentsTableProps> = ({
@@ -31,6 +33,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
   onManageStudents,
   onReactivateParent,
   userRole = 'parent',
+  authStatuses,
 }) => {
   const getUserTypeLabel = () => {
     switch (userRole) {
@@ -82,6 +85,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
               onReactivate={onReactivateParent ? () => onReactivateParent(parent.id, parent.name) : undefined}
               userRole={userRole}
               showStudentsColumn={shouldShowStudentsColumn}
+              authStatus={authStatuses?.get(parent.email.toLowerCase())}
             />
           ))
         )}
