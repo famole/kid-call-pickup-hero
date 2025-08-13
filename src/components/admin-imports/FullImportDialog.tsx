@@ -100,6 +100,9 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
   };
 
   const handleApply = async () => {
+    if (!preview) return;
+    try {
+      setApplying(true);
       const selectedRows = preview.rows.filter(r => rowEnabled[r.rowIndex] !== false);
       if (selectedRows.length === 0) {
         toast({ title: 'No rows selected', description: 'Please enable at least one row to import', variant: 'destructive' });
@@ -268,8 +271,20 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                               </div>
                             )}
                           </div>
+                        </td>
                         <td className="p-2">{r.primaryParent || '—'}</td>
-                        <td className="p-2">{r.errors.length ? r.errors.join('; ') : '—'}</td>
+                        <td className="p-2">
+                          {r.errors.length ? (
+                            <div className="space-y-2">
+                              <div>{r.errors.join('; ')}</div>
+                              {r.errors.some(e => e.toLowerCase().includes('email')) && (
+                                <Button size="sm" variant="secondary" onClick={revalidate} disabled={loading}>
+                                  Mark fixed
+                                </Button>
+                              )}
+                            </div>
+                          ) : '—'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
