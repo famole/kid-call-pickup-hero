@@ -11,6 +11,7 @@ import { Upload } from "lucide-react";
 import { getAllClasses } from "@/services/classService";
 import { parseFullImportFile } from "@/utils/fullImportParser";
 import { buildFullImportPreview, applyFullImport, FullImportPreview } from "@/services/import/fullImport";
+import type { FullImportInputRow } from "@/services/import/fullImport";
 
 const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted }) => {
   const { toast } = useToast();
@@ -22,6 +23,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
   const [loading, setLoading] = React.useState(false);
   const [applying, setApplying] = React.useState(false);
   const [rowEnabled, setRowEnabled] = React.useState<Record<number, boolean>>({});
+  const [editableRows, setEditableRows] = React.useState<FullImportInputRow[] | null>(null);
 
   React.useEffect(() => {
     if (!open) return;
@@ -37,6 +39,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
     setLoading(false);
     setApplying(false);
     setRowEnabled({});
+    setEditableRows(null);
   };
   const handleOpenChange = (o: boolean) => {
     setOpen(o);
@@ -60,9 +63,13 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
         setLoading(false);
         return;
       }
+      setEditableRows(rows as FullImportInputRow[]);
       const p = await buildFullImportPreview(rows, selectedClassId || null);
       setPreview(p);
-      setRowEnabled(Object.fromEntries(p.rows.map(r => [r.rowIndex, true])));
+      const initialEnabled = Object.fromEntries(
+        p.rows.map(r => [r.rowIndex, !r.errors.some(e => e.toLowerCase().includes('email'))])
+      );
+      setRowEnabled(initialEnabled);
       toast({ title: 'Preview ready', description: `Found ${p.rows.length} rows` });
     } catch (e: any) {
       toast({ title: 'Failed to parse', description: e.message || 'Invalid file', variant: 'destructive' });
@@ -71,10 +78,28 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
     }
   };
 
-  const handleApply = async () => {
-    if (!preview) return;
+  const revalidate = async () => {
+    if (!editableRows) return;
     try {
-      setApplying(true);
+      setLoading(true);
+      const p = await buildFullImportPreview(editableRows, selectedClassId || null);
+      setPreview(p);
+      setRowEnabled(prev => {
+        const map: Record<number, boolean> = {};
+        p.rows.forEach(r => {
+          const hasEmail = r.errors.some(e => e.toLowerCase().includes('email'));
+          map[r.rowIndex] = hasEmail ? false : (prev[r.rowIndex] !== false);
+        });
+        return map;
+      });
+    } catch (e) {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApply = async () => {
       const selectedRows = preview.rows.filter(r => rowEnabled[r.rowIndex] !== false);
       if (selectedRows.length === 0) {
         toast({ title: 'No rows selected', description: 'Please enable at least one row to import', variant: 'destructive' });
@@ -138,7 +163,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
               <div className="text-sm text-muted-foreground">
                 Summary: {preview.stats.students} rows • {preview.stats.createParents} new parents • {preview.stats.updateParents} updates • {preview.stats.linkParents} links • {preview.stats.skippedParents} skipped • {preview.stats.errors} issues
               </div>
-              <div className="max-h-80 overflow-auto border rounded-md">
+              <div className="max-h-[70vh] overflow-auto border rounded-md">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted">
@@ -157,7 +182,8 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                       <tr key={r.rowIndex} className={`border-t ${r.errors.length ? 'bg-destructive/5' : ''}`}>
                         <td className="p-2">
                           <Checkbox
-                            checked={rowEnabled[r.rowIndex] !== false}
+                            checked={!r.errors.some(e => e.toLowerCase().includes('email')) && rowEnabled[r.rowIndex] !== false}
+                            disabled={r.errors.some(e => e.toLowerCase().includes('email'))}
                             onCheckedChange={(checked) =>
                               setRowEnabled(prev => ({ ...prev, [r.rowIndex]: Boolean(checked) }))
                             }
@@ -168,51 +194,80 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                         <td className="p-2">{r.studentName}</td>
                         <td className="p-2">{r.classNameResolved || '—'}</td>
                         <td className="p-2">
-                          {r.mother.type === 'skip' && (
-                            <span className="text-muted-foreground">Skip ({r.mother.reason})</span>
-                          )}
-                          {r.mother.type === 'link-existing' && (
-                            <div>
-                              <div>Link</div>
-                              <div className="text-xs text-muted-foreground">{r.mother.email}</div>
-                            </div>
-                          )}
-                          {r.mother.type === 'create-new' && (
-                            <div>
-                              <div>Create</div>
-                              <div className="text-xs text-muted-foreground">{r.mother.payload.name} • {r.mother.payload.email}</div>
-                            </div>
-                          )}
-                          {r.mother.type === 'update-existing' && (
-                            <div>
-                              <div>Update</div>
-                              <div className="text-xs text-muted-foreground">Name → {r.mother.updates?.name} • {r.mother.email}</div>
-                            </div>
-                          )}
+                          <div className="space-y-1">
+                            <Input
+                              value={(editableRows?.[r.rowIndex - 1]?.motherEmail as string) || ''}
+                              onChange={(e) =>
+                                setEditableRows(prev => {
+                                  if (!prev) return prev;
+                                  const copy = [...prev];
+                                  copy[r.rowIndex - 1] = { ...copy[r.rowIndex - 1], motherEmail: e.target.value };
+                                  return copy;
+                                })
+                              }
+                              placeholder="Mother email"
+                              className="h-8"
+                            />
+                            {r.mother.type === 'skip' && (
+                              <span className="text-muted-foreground">Skip ({r.mother.reason})</span>
+                            )}
+                            {r.mother.type === 'link-existing' && (
+                              <div>
+                                <div>Link</div>
+                                <div className="text-xs text-muted-foreground">{r.mother.email}</div>
+                              </div>
+                            )}
+                            {r.mother.type === 'create-new' && (
+                              <div>
+                                <div>Create</div>
+                                <div className="text-xs text-muted-foreground">{r.mother.payload.name} • {r.mother.payload.email}</div>
+                              </div>
+                            )}
+                            {r.mother.type === 'update-existing' && (
+                              <div>
+                                <div>Update</div>
+                                <div className="text-xs text-muted-foreground">Name → {r.mother.updates?.name} • {r.mother.email}</div>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="p-2">
-                          {r.father.type === 'skip' && (
-                            <span className="text-muted-foreground">Skip ({r.father.reason})</span>
-                          )}
-                          {r.father.type === 'link-existing' && (
-                            <div>
-                              <div>Link</div>
-                              <div className="text-xs text-muted-foreground">{r.father.email}</div>
-                            </div>
-                          )}
-                          {r.father.type === 'create-new' && (
-                            <div>
-                              <div>Create</div>
-                              <div className="text-xs text-muted-foreground">{r.father.payload.name} • {r.father.payload.email}</div>
-                            </div>
-                          )}
-                          {r.father.type === 'update-existing' && (
-                            <div>
-                              <div>Update</div>
-                              <div className="text-xs text-muted-foreground">Name → {r.father.updates?.name} • {r.father.email}</div>
-                            </div>
-                          )}
-                        </td>
+                          <div className="space-y-1">
+                            <Input
+                              value={(editableRows?.[r.rowIndex - 1]?.fatherEmail as string) || ''}
+                              onChange={(e) =>
+                                setEditableRows(prev => {
+                                  if (!prev) return prev;
+                                  const copy = [...prev];
+                                  copy[r.rowIndex - 1] = { ...copy[r.rowIndex - 1], fatherEmail: e.target.value };
+                                  return copy;
+                                })
+                              }
+                              placeholder="Father email"
+                              className="h-8"
+                            />
+                            {r.father.type === 'skip' && (
+                              <span className="text-muted-foreground">Skip ({r.father.reason})</span>
+                            )}
+                            {r.father.type === 'link-existing' && (
+                              <div>
+                                <div>Link</div>
+                                <div className="text-xs text-muted-foreground">{r.father.email}</div>
+                              </div>
+                            )}
+                            {r.father.type === 'create-new' && (
+                              <div>
+                                <div>Create</div>
+                                <div className="text-xs text-muted-foreground">{r.father.payload.name} • {r.father.payload.email}</div>
+                              </div>
+                            )}
+                            {r.father.type === 'update-existing' && (
+                              <div>
+                                <div>Update</div>
+                                <div className="text-xs text-muted-foreground">Name → {r.father.updates?.name} • {r.father.email}</div>
+                              </div>
+                            )}
+                          </div>
                         <td className="p-2">{r.primaryParent || '—'}</td>
                         <td className="p-2">{r.errors.length ? r.errors.join('; ') : '—'}</td>
                       </tr>
