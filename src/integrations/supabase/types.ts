@@ -451,6 +451,16 @@ export type Database = {
         Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      get_auth_status_for_parents: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email: string
+          has_user: boolean
+          providers: string[]
+          email_confirmed: boolean
+          last_sign_in_at: string
+        }[]
+      }
       get_current_parent_id: {
         Args: Record<PropertyKey, never>
         Returns: string
