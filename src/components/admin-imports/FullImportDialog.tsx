@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
@@ -20,6 +21,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
   const [preview, setPreview] = React.useState<FullImportPreview | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [applying, setApplying] = React.useState(false);
+  const [rowEnabled, setRowEnabled] = React.useState<Record<number, boolean>>({});
 
   React.useEffect(() => {
     if (!open) return;
@@ -34,8 +36,8 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
     setPreview(null);
     setLoading(false);
     setApplying(false);
+    setRowEnabled({});
   };
-
   const handleOpenChange = (o: boolean) => {
     setOpen(o);
     if (!o) resetState();
@@ -60,6 +62,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
       }
       const p = await buildFullImportPreview(rows, selectedClassId || null);
       setPreview(p);
+      setRowEnabled(Object.fromEntries(p.rows.map(r => [r.rowIndex, true])));
       toast({ title: 'Preview ready', description: `Found ${p.rows.length} rows` });
     } catch (e: any) {
       toast({ title: 'Failed to parse', description: e.message || 'Invalid file', variant: 'destructive' });
@@ -72,7 +75,13 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
     if (!preview) return;
     try {
       setApplying(true);
-      const res = await applyFullImport(preview);
+      const selectedRows = preview.rows.filter(r => rowEnabled[r.rowIndex] !== false);
+      if (selectedRows.length === 0) {
+        toast({ title: 'No rows selected', description: 'Please enable at least one row to import', variant: 'destructive' });
+        setApplying(false);
+        return;
+      }
+      const res = await applyFullImport({ ...preview, rows: selectedRows });
       if (res.errors.length) {
         toast({ title: 'Import completed with errors', description: `${res.successes} succeeded, ${res.errors.length} failed`, variant: 'destructive' });
       } else {
@@ -120,6 +129,9 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
               {loading ? 'Building preview...' : 'Preview'}
             </Button>
           </div>
+          <div className="text-xs text-muted-foreground">
+            Import for class: {selectedClassId ? (classes.find(c => c.id === selectedClassId)?.name || 'Selected class') : 'Using Class column in file (column 1)'}
+          </div>
 
           {preview && (
             <Card className="p-4 space-y-4">
@@ -130,6 +142,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted">
+                      <th className="p-2 text-left">Include</th>
                       <th className="p-2 text-left">#</th>
                       <th className="p-2 text-left">Student</th>
                       <th className="p-2 text-left">Class</th>

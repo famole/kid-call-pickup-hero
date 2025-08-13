@@ -30,10 +30,11 @@ export const parseFullImportFile = async (file: File): Promise<FullImportRow[]> 
   const sheet = workbook.Sheets[firstSheetName];
   const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-  // Expect columns by position (no header row). Filter out empty rows
+  // Expect first row as header. Filter out empty rows and drop header row
   const dataRows = rows.filter(r => (r?.length || 0) > 0 && r.some(cell => String(cell).trim() !== '')) as any[][];
+  const dataRowsWithoutHeader = dataRows.slice(1);
 
-  const parsed: FullImportRow[] = dataRows.map((r) => {
+  const parsed: FullImportRow[] = dataRowsWithoutHeader.map((r) => {
     const [colClass, colStudent, colFatherName, colFatherEmail, colMotherName, colMotherEmail] = r;
     return {
       className: (colClass ?? '').toString().trim() || null,
