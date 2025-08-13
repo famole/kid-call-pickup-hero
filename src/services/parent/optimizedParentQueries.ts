@@ -4,11 +4,11 @@ import { Child } from '@/types';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { logger } from '@/utils/logger';
 
-export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStudents[]> => {
+export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false): Promise<ParentWithStudents[]> => {
   try {
     logger.log('Fetching optimized parents with students data...');
     
-    const { data: parentsData, error: parentsError } = await supabase
+    let query = supabase
       .from('parents')
       .select(`
         id,
@@ -17,9 +17,15 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
         phone,
         role,
         created_at,
-        updated_at
-      `)
-      .order('name');
+        updated_at,
+        deleted_at
+      `);
+    
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null);
+    }
+    
+    const { data: parentsData, error: parentsError } = await query.order('name');
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);
@@ -44,7 +50,7 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
         student_id,
         is_primary,
         relationship,
-        students (
+        students!inner (
           id,
           name,
           class_id,
@@ -55,7 +61,8 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
             grade
           )
         )
-      `);
+      `)
+      .is('students.deleted_at', null);
 
     if (studentParentError) {
       logger.error('Error fetching student-parent relationships:', studentParentError);
@@ -93,6 +100,7 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       students: studentsByParent[parent.id] || [],
       createdAt: new Date(parent.created_at),
       updatedAt: new Date(parent.updated_at),
+      deletedAt: parent.deleted_at ? new Date(parent.deleted_at) : undefined,
     })) || [];
 
     logger.log(`Returning ${parentsWithStudents.length} parents with students data`);
@@ -112,11 +120,12 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
   try {
     logger.log('Fetching parent dashboard data for:', parentEmail);
 
-    // Get parent ID first
+    // Get parent ID first (excluding deleted)
     const { data: parentData, error: parentError } = await supabase
       .from('parents')
       .select('id')
       .eq('email', parentEmail)
+      .is('deleted_at', null)
       .single();
 
     if (parentError) {
@@ -142,19 +151,20 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
           is_primary
         )
       `)
-      .eq('student_parents.parent_id', parentData.id);
+      .eq('student_parents.parent_id', parentData.id)
+      .is('deleted_at', null);
 
     if (childrenError) {
       logger.error('Error fetching children:', childrenError);
       throw new Error(childrenError.message);
     }
 
-    // Get authorized children
+    // Get authorized children (excluding deleted students)
     const { data: authorizedChildren, error: authorizedError } = await supabase
       .from('pickup_authorizations')
       .select(`
         student_id,
-        students (
+        students!inner (
           id,
           name,
           class_id,
@@ -163,6 +173,7 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       `)
       .eq('authorized_parent_id', parentData.id)
       .eq('is_active', true)
+      .is('students.deleted_at', null)
       .lte('start_date', new Date().toISOString().split('T')[0])
       .gte('end_date', new Date().toISOString().split('T')[0]);
 

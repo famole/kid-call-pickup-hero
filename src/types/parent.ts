@@ -7,6 +7,7 @@ export type Parent = {
   role?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 };
 
 export type ParentInput = {

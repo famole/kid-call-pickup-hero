@@ -94,6 +94,7 @@ export type Database = {
       parents: {
         Row: {
           created_at: string
+          deleted_at: string | null
           email: string
           id: string
           is_preloaded: boolean | null
@@ -105,6 +106,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           email: string
           id?: string
           is_preloaded?: boolean | null
@@ -116,6 +118,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           email?: string
           id?: string
           is_preloaded?: boolean | null
@@ -402,6 +405,7 @@ export type Database = {
           avatar: string | null
           class_id: string | null
           created_at: string
+          deleted_at: string | null
           id: string
           name: string
           updated_at: string
@@ -410,6 +414,7 @@ export type Database = {
           avatar?: string | null
           class_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           name: string
           updated_at?: string
@@ -418,6 +423,7 @@ export type Database = {
           avatar?: string | null
           class_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           name?: string
           updated_at?: string

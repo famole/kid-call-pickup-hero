@@ -26,6 +26,11 @@ export const useAuthProvider = (): AuthState & {
         
         if (event === 'SIGNED_OUT') {
           setUser(null);
+        } else if (event === 'TOKEN_REFRESHED' && !session) {
+          // Session expired during token refresh - auto sign out
+          logger.log('Session expired during token refresh, signing out');
+          await logout();
+          return;
         } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           try {
             // Defer data fetching to prevent deadlocks
@@ -43,14 +48,23 @@ export const useAuthProvider = (): AuthState & {
     const loadUser = async () => {
       try {
         // Try to get session from Supabase
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         logger.log('Initial session check:', session?.user?.email);
+        
+        // Check if session is expired
+        if (error || (session && session.expires_at && new Date(session.expires_at * 1000) < new Date())) {
+          logger.log('Session expired or error, signing out');
+          await logout();
+          return;
+        }
         
         if (session?.user) {
           await handleUserSession(session.user);
         }
       } catch (error) {
         logger.error("Error loading user:", error);
+        // If there's an error loading the session, it might be expired - sign out
+        await logout();
       } finally {
         setLoading(false);
       }

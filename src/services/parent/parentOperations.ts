@@ -2,11 +2,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Parent, ParentInput } from "@/types/parent";
 
 // Core CRUD operations for parents
-export const getAllParents = async (): Promise<Parent[]> => {
-  const { data, error } = await supabase
+export const getAllParents = async (includeDeleted: boolean = false): Promise<Parent[]> => {
+  let query = supabase
     .from('parents')
-    .select('*')
-    .order('name');
+    .select('*');
+  
+  if (!includeDeleted) {
+    query = query.is('deleted_at', null);
+  }
+  
+  const { data, error } = await query.order('name');
   
   if (error) {
     console.error('Error fetching parents:', error);
@@ -29,6 +34,7 @@ export const getParentById = async (id: string): Promise<Parent | null> => {
     .from('parents')
     .select('*')
     .eq('id', id)
+    .is('deleted_at', null)
     .single();
   
   if (error) {
@@ -116,11 +122,38 @@ export const updateParent = async (id: string, parentData: ParentInput): Promise
 export const deleteParent = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('parents')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
   
   if (error) {
     console.error('Error deleting parent:', error);
     throw new Error(error.message);
   }
+};
+
+export const reactivateParent = async (id: string): Promise<Parent> => {
+  const { data, error } = await supabase
+    .from('parents')
+    .update({ 
+      deleted_at: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error reactivating parent:', error);
+    throw new Error(error.message);
+  }
+  
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    role: data.role || 'parent',
+    createdAt: new Date(data.created_at),
+    updatedAt: new Date(data.updated_at),
+  };
 };

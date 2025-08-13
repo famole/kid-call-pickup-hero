@@ -77,39 +77,36 @@ const AdminStudentsScreen = () => {
   });
 
   // Load students and classes
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const { getAllStudents: fetchAllStudents } = await import('@/services/studentService');
-        const studentsPromise = fetchAllStudents();
-        const classesPromise = getAllClasses(); 
-
-        const [students, fetchedClasses] = await Promise.all([studentsPromise, classesPromise]);
-        
-        setStudentList(students);
-        setClassList(fetchedClasses);
-        if (fetchedClasses.length === 0) {
-          toast({
-            title: "No Classes Found",
-            description: "No classes were loaded. Please ensure classes exist.",
-            variant: "default"
-          });
-        }
-
-      } catch (error) {
-        console.error('Failed to load data:', error);
+  const reloadData = async () => {
+    try {
+      setIsLoading(true);
+      const { getAllStudents: fetchAllStudents } = await import('@/services/studentService');
+      const studentsPromise = fetchAllStudents();
+      const classesPromise = getAllClasses();
+      const [students, fetchedClasses] = await Promise.all([studentsPromise, classesPromise]);
+      setStudentList(students);
+      setClassList(fetchedClasses);
+      if (fetchedClasses.length === 0) {
         toast({
-          title: "Error",
-          description: "Failed to load student or class data",
-          variant: "destructive"
+          title: "No Classes Found",
+          description: "No classes were loaded. Please ensure classes exist.",
+          variant: "default"
         });
-      } finally {
-        setIsLoading(false);
       }
-    };
-    
-    loadData();
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load student or class data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    reloadData();
   }, [toast]);
 
   const handleEditStudent = (student: Child) => {
@@ -160,6 +157,7 @@ const AdminStudentsScreen = () => {
           resetNewStudent();
           setIsAddDialogOpen(true);
         }}
+        onFullImportCompleted={reloadData}
       />
       
       <Card>

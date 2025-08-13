@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import ImportParentsDialog from './ImportParentsDialog';
+import FullImportDialog from '@/components/admin-imports/FullImportDialog';
 
 interface ParentsHeaderProps {
   onAddParent: () => void;
@@ -62,12 +63,15 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
       </div>
       <div className="flex space-x-2">
         {userRole === 'parent' && (
-          <ImportParentsDialog
-            isOpen={isImportDialogOpen}
-            onOpenChange={openState => openState ? onOpenImportDialog() : onCloseImportDialog()}
-            onFileChange={onImportFileChange}
-            onSubmit={onImportSubmit}
-          />
+          <>
+            <ImportParentsDialog
+              isOpen={isImportDialogOpen}
+              onOpenChange={openState => openState ? onOpenImportDialog() : onCloseImportDialog()}
+              onFileChange={onImportFileChange}
+              onSubmit={onImportSubmit}
+            />
+            <FullImportDialog />
+          </>
         )}
         <Button onClick={onAddParent} className="bg-school-primary">
           <PlusCircle className="mr-2 h-4 w-4" /> {getButtonLabel()}

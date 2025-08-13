@@ -15,9 +15,12 @@ interface AdminParentsContainerProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
   handleDeleteParent: (parentId: string) => Promise<void>;
+  handleReactivateParent?: (parentId: string, parentName: string) => void;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;
   loadingProgress?: string;
+  statusFilter?: 'active' | 'deleted' | 'all';
+  onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
 }
 
 const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
@@ -31,9 +34,12 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
   onParentUpdated,
   onImportCompleted,
   handleDeleteParent,
+  handleReactivateParent,
   getHeaderTitle,
   getHeaderDescription,
   loadingProgress,
+  statusFilter,
+  onStatusFilterChange,
 }) => {
   return (
     <AdminParentsLayout
@@ -47,9 +53,12 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
       onParentUpdated={onParentUpdated}
       onImportCompleted={onImportCompleted}
       handleDeleteParent={handleDeleteParent}
+      handleReactivateParent={handleReactivateParent}
       getHeaderTitle={getHeaderTitle}
       getHeaderDescription={getHeaderDescription}
       loadingProgress={loadingProgress}
+      statusFilter={statusFilter}
+      onStatusFilterChange={onStatusFilterChange}
     />
   );
 };

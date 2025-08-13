@@ -3,12 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Child } from '@/types';
 
 // Get all students
-export const getAllStudents = async (): Promise<Child[]> => {
+export const getAllStudents = async (includeDeleted: boolean = false): Promise<Child[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('students')
-      .select('*')
-      .order('name');
+      .select('*');
+      
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null);
+    }
+    
+    const { data, error } = await query.order('name');
     
     if (error) {
       console.error('Error fetching students:', error);
@@ -36,6 +41,7 @@ export const getStudentById = async (id: string): Promise<Child | null> => {
       .from('students')
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .single();
     
     if (error) {
@@ -86,12 +92,13 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
       return [];
     }
     
-    // Then get the actual student records
+    // Then get the actual student records (excluding deleted)
     const studentIds = relations.map(rel => rel.student_id);
     const { data: students, error: studentsError } = await supabase
       .from('students')
       .select('*')
-      .in('id', studentIds);
+      .in('id', studentIds)
+      .is('deleted_at', null);
     
     if (studentsError) {
       console.error('Error fetching students:', studentsError);

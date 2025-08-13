@@ -2,17 +2,20 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { UserRound, Upload, Download, Plus } from "lucide-react";
+import FullImportDialog from "@/components/admin-imports/FullImportDialog";
 
 interface StudentsHeaderProps {
   onExportCSV: () => void;
   onImportCSV: () => void;
   onAddStudent: () => void;
+  onFullImportCompleted?: () => void;
 }
 
 const StudentsHeader = ({
   onExportCSV,
   onImportCSV,
-  onAddStudent
+  onAddStudent,
+  onFullImportCompleted,
 }: StudentsHeaderProps) => {
   return (
     <header className="mb-8">
@@ -32,6 +35,7 @@ const StudentsHeader = ({
           >
             <Upload className="mr-2 h-4 w-4" /> Import CSV
           </Button>
+          <FullImportDialog onCompleted={onFullImportCompleted} />
           <Button 
             onClick={onAddStudent} 
             className="bg-school-primary flex-1 sm:flex-none"

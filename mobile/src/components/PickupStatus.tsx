@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default function PickupStatus({ students, requests, currentParentId }: Props) {
-  if (requests.length === 0) return null
+  if (!requests || requests.length === 0) return null
 
   const pending = requests.filter(r => r.status === 'pending')
   const called = requests.filter(r => r.status === 'called')

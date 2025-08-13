@@ -141,23 +141,13 @@ export const updateStudent = async (id: string, student: Partial<Child>): Promis
   }
 };
 
-// Delete a student
+// Logically delete a student
 export const deleteStudent = async (id: string): Promise<void> => {
   try {
-    // First delete parent relationships
-    const { error: relError } = await supabase
-      .from('student_parents')
-      .delete()
-      .eq('student_id', id);
-    
-    if (relError) {
-      console.error('Error deleting student-parent relationships:', relError);
-    }
-    
-    // Then delete the student
+    // Logically delete the student instead of hard delete
     const { error } = await supabase
       .from('students')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);
     
     if (error) {
@@ -166,6 +156,45 @@ export const deleteStudent = async (id: string): Promise<void> => {
     }
   } catch (error) {
     console.error('Error in deleteStudent:', error);
+    throw error;
+  }
+};
+
+// Re-activate a logically deleted student
+export const reactivateStudent = async (id: string): Promise<Child> => {
+  try {
+    const { data, error } = await supabase
+      .from('students')
+      .update({ 
+        deleted_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error reactivating student:', error);
+      throw new Error(error.message);
+    }
+    
+    // Get current parent IDs
+    const { data: parentRelations, error: parentsError } = await supabase
+      .from('student_parents')
+      .select('parent_id')
+      .eq('student_id', id);
+    
+    const parentIds = parentsError ? [] : parentRelations.map(rel => rel.parent_id);
+    
+    return {
+      id: data.id,
+      name: data.name,
+      classId: data.class_id || '',
+      parentIds: parentIds,
+      avatar: data.avatar || undefined
+    };
+  } catch (error) {
+    console.error('Error in reactivateStudent:', error);
     throw error;
   }
 };

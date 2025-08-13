@@ -5,6 +5,7 @@ export {
   createParent,
   updateParent,
   deleteParent,
+  reactivateParent,
 } from './parent/parentOperations';
 
 export {

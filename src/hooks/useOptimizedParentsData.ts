@@ -8,9 +8,10 @@ import { getAllStudents } from '@/services/studentService';
 
 interface UseOptimizedParentsDataProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  includeDeleted?: boolean;
 }
 
-export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedParentsDataProps) => {
+export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = false }: UseOptimizedParentsDataProps) => {
   const { toast } = useToast();
   const [parents, setParents] = useState<ParentWithStudents[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +55,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
       console.log(`Loading parents data for userRole: ${userRole}`);
       
       // Use optimized query
-      const data = await getParentsWithStudentsOptimized();
+      const data = await getParentsWithStudentsOptimized(includeDeleted);
       
       const loadTime = performance.now() - startTime;
       
@@ -81,12 +82,12 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
     } finally {
       setIsLoading(false);
     }
-  }, [toast, userRole]);
+  }, [toast, userRole, includeDeleted]);
 
   const loadStudents = useCallback(async () => {
     try {
       setLoadingProgress('Loading students data...');
-      const studentsData = await getAllStudents();
+      const studentsData = await getAllStudents(includeDeleted);
       setAllStudents(studentsData);
       setLoadingProgress(`Loaded ${studentsData.length} students`);
     } catch (error) {
@@ -98,7 +99,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent' }: UseOptimizedPar
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, includeDeleted]);
 
   // Only run the effect once on mount
   useEffect(() => {

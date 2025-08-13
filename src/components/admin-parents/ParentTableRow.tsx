@@ -5,14 +5,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Users, RotateCcw } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 
 interface ParentTableRowProps {
   parent: ParentWithStudents;
   onEdit: () => void;
-  onDelete: (parentId: string) => void;
+  onDelete: () => void;
   onManageStudents: () => void;
+  onReactivate?: () => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   showStudentsColumn: boolean;
 }
@@ -22,12 +24,23 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
   onEdit,
   onDelete,
   onManageStudents,
+  onReactivate,
   userRole = 'parent',
   showStudentsColumn,
 }) => {
+  const isDeleted = !!parent.deletedAt;
   return (
-    <TableRow>
-      <TableCell className="font-medium">{parent.name}</TableCell>
+    <TableRow className={isDeleted ? "opacity-60 bg-muted/20" : ""}>
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {parent.name}
+          {isDeleted && (
+            <Badge variant="secondary" className="text-xs">
+              Deleted
+            </Badge>
+          )}
+        </div>
+      </TableCell>
       <TableCell>{parent.email}</TableCell>
       <TableCell>{parent.phone || 'N/A'}</TableCell>
       {showStudentsColumn && (
@@ -35,20 +48,33 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
       )}
       <TableCell>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => onDelete(parent.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          {showStudentsColumn && (
-            <Button variant="outline" size="sm" onClick={onManageStudents}>
-              <Users className="h-4 w-4" />
+          {isDeleted ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onReactivate}
+              className="text-green-600 hover:text-green-700"
+            >
+              <RotateCcw className="h-4 w-4" />
             </Button>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={onEdit}>
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+              {showStudentsColumn && (
+                <Button variant="outline" size="sm" onClick={onManageStudents}>
+                  <Users className="h-4 w-4" />
+                </Button>
+              )}
+            </>
           )}
         </div>
       </TableCell>

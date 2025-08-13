@@ -14,6 +14,7 @@ export type Child = {
   parentIds: string[];
   avatar?: string;
   isAuthorized?: boolean;
+  deletedAt?: Date;
 };
 
 export type Class = {
