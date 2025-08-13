@@ -154,7 +154,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                   </thead>
                   <tbody>
                     {preview.rows.map(r => (
-                      <tr key={r.rowIndex} className="border-t">
+                      <tr key={r.rowIndex} className={`border-t ${r.errors.length ? 'bg-destructive/5' : ''}`}>
                         <td className="p-2">
                           <Checkbox
                             checked={rowEnabled[r.rowIndex] !== false}

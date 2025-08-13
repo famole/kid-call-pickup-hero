@@ -65,6 +65,15 @@ export const buildFullImportPreview = async (
     return acc;
   }, {} as Record<string, Class>);
 
+  // compute duplicate emails within the file (case-insensitive)
+  const emailCounts: Record<string, number> = {};
+  inputRows.forEach(r => {
+    const f = (r.fatherEmail || '').trim().toLowerCase();
+    const m = (r.motherEmail || '').trim().toLowerCase();
+    if (f) emailCounts[f] = (emailCounts[f] || 0) + 1;
+    if (m) emailCounts[m] = (emailCounts[m] || 0) + 1;
+  });
+
   // collect emails
   const allEmails = inputRows.flatMap(r => [r.fatherEmail, r.motherEmail].filter(Boolean) as string[]);
   const existingParents = await fetchExistingParentsByEmails(allEmails);
@@ -98,6 +107,17 @@ export const buildFullImportPreview = async (
     // Parents
     const fatherEmail = (row.fatherEmail || '').trim();
     const motherEmail = (row.motherEmail || '').trim();
+    const fatherLower = fatherEmail.toLowerCase();
+    const motherLower = motherEmail.toLowerCase();
+    if (fatherLower && motherLower && fatherLower === motherLower) {
+      rowErrors.push('Mother and father emails cannot be the same');
+    }
+    if (fatherLower && (emailCounts[fatherLower] || 0) > 1) {
+      rowErrors.push('Father email appears in multiple rows');
+    }
+    if (motherLower && (emailCounts[motherLower] || 0) > 1) {
+      rowErrors.push('Mother email appears in multiple rows');
+    }
 
     let fatherAction: ParentAction;
     if (!fatherEmail) {
