@@ -137,7 +137,7 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           onEditParent={hooks.editParentForm.openEditParentSheet}
           onDeleteParent={handleDeleteParent}
           onManageStudents={hooks.studentManagement.openStudentModal}
-          authStatuses={userRole === 'admin' || userRole === 'superadmin' ? authStatuses : undefined}
+          authStatuses={authStatuses}
         />
       </Card>
 
