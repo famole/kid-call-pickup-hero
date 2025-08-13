@@ -3,6 +3,7 @@ import React from 'react';
 import { CardContent } from "@/components/ui/card";
 import { ParentWithStudents } from '@/types/parent';
 import { Child, Class } from '@/types';
+import { ParentAuthStatus } from '@/services/authStatusService';
 
 // Import components
 import ParentSearch from './ParentSearch';
@@ -24,6 +25,7 @@ interface AdminParentsContentProps {
   onReactivateParent?: (parentId: string, parentName: string) => void;
   statusFilter?: 'active' | 'deleted' | 'all';
   onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
+  authStatuses?: Map<string, ParentAuthStatus>;
 }
 
 const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
@@ -36,6 +38,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
   onReactivateParent,
   statusFilter = 'active',
   onStatusFilterChange,
+  authStatuses,
 }) => {
   // Use the class filter hook
   const { 
@@ -93,6 +96,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
         onManageStudents={onManageStudents}
         onReactivateParent={onReactivateParent}
         userRole={userRole}
+        authStatuses={authStatuses}
       />
     </CardContent>
   );

@@ -18,6 +18,7 @@ import LoadingIndicator from './LoadingIndicator';
 import { useAdminParentsHooks } from './AdminParentsHooks';
 import { createStudentWrappers } from './AdminParentsWrappers';
 import { getAllClasses } from '@/services/classService';
+import { useParentAuthStatuses } from '@/hooks/useParentAuthStatuses';
 
 interface AdminParentsLayoutProps {
   userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
@@ -54,6 +55,9 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   loadingProgress,
 }) => {
   const [classes, setClasses] = React.useState<Class[]>([]);
+  
+  // Fetch auth statuses for admins only
+  const { authStatuses } = useParentAuthStatuses();
 
   // Load classes
   React.useEffect(() => {
@@ -133,6 +137,7 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           onEditParent={hooks.editParentForm.openEditParentSheet}
           onDeleteParent={handleDeleteParent}
           onManageStudents={hooks.studentManagement.openStudentModal}
+          authStatuses={userRole === 'admin' || userRole === 'superadmin' ? authStatuses : undefined}
         />
       </Card>
 
