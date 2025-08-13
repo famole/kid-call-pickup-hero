@@ -103,7 +103,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
           <Upload className="mr-2 h-4 w-4" /> Full Import
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="w-[95vw] max-w-7xl">
         <DialogHeader>
           <DialogTitle>Full Import: Students and Parents</DialogTitle>
           <DialogDescription>
