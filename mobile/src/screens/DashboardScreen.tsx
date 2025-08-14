@@ -167,9 +167,26 @@ export default function DashboardScreen({ session }: Props) {
         if (idx >= 0) positions[r.studentId] = idx + 1
       }
     })
-    setQueuePositions(positions)
-
-    setActiveRequests(formatted)
+    formatted.sort((a, b) =>
+      a.studentId.localeCompare(b.studentId) || a.id.localeCompare(b.id)
+    )
+    setActiveRequests((prev) =>
+      prev.length === formatted.length &&
+      prev.every(
+        (r, i) =>
+          r.id === formatted[i].id &&
+          r.studentId === formatted[i].studentId &&
+          r.status === formatted[i].status
+      )
+        ? prev
+        : formatted
+    )
+    setQueuePositions((prev) => {
+      const same =
+        Object.keys(prev).length === Object.keys(positions).length &&
+        Object.entries(positions).every(([k, v]) => prev[k] === v)
+      return same ? prev : positions
+    })
   }, [])
 
   useEffect(() => {
@@ -329,7 +346,6 @@ export default function DashboardScreen({ session }: Props) {
         {data.map((item) => {
           const request = activeRequests.find((r) => r.studentId === item.id)
           const disabled = !!request
-          const pendingPos = request && request.status === 'pending' ? queuePositions[item.id] : undefined
           return (
             <ListItem
               key={item.id}
@@ -350,24 +366,15 @@ export default function DashboardScreen({ session }: Props) {
               title={item.name}
               subTitle={`${item.className ?? 'Class'} • ${item.teacher ?? 'Teacher'}`}
               iconAfter={
-                request ? (
-                  request.status === 'pending' ? (
-                    <XStack alignItems="center" space="$2">
-                      {pendingPos ? (
-                        <Card paddingHorizontal="$2" paddingVertical={3} borderRadius="$10" bordered>
-                          <Text fontSize={11}>#{pendingPos}</Text>
-                        </Card>
-                      ) : null}
-                      <Button size="$2" borderRadius="$6" onPress={() => handleCancel(request.id)}>
-                        Cancel
-                      </Button>
-                    </XStack>
-                  ) : (
-                    <Card paddingHorizontal="$2" paddingVertical={3} borderRadius="$10" bordered>
-                      <Text fontSize={11}>Called</Text>
-                    </Card>
-                  )
-                ) : null
+                request
+                  ? request.status === 'pending'
+                    ? (
+                        <Button size="$2" borderRadius="$6" onPress={() => handleCancel(request.id)}>
+                          Cancel
+                        </Button>
+                      )
+                    : null
+                  : null
               }
             />
           )
