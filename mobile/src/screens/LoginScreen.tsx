@@ -14,6 +14,7 @@ import {
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -23,6 +24,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleLogin = async () => {
     setLoading(true);
@@ -67,10 +69,10 @@ export default function LoginScreen() {
         />
         <Card padding="$6" elevate bordered borderRadius="$6" width="100%" space>
           <Text fontSize={22} fontWeight="bold" textAlign="center" marginBottom={16}>
-            Welcome to Upsy
+            {t('auth.welcomeToUpsy')}
           </Text>
           <Input
-            placeholder="Email"
+            placeholder={t('auth.email')}
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
@@ -79,7 +81,7 @@ export default function LoginScreen() {
             size="$5"
           />
           <Input
-            placeholder="Password"
+            placeholder={t('auth.password')}
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -90,10 +92,10 @@ export default function LoginScreen() {
             <Paragraph color="red" textAlign="center">{error}</Paragraph>
           )}
           <Button onPress={handleLogin} disabled={loading} icon={loading ? <Spinner /> : null} borderRadius="$6" size="$5">
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
           <Button onPress={handleGoogleLogin} disabled={googleLoading} icon={googleLoading ? <Spinner /> : null} borderRadius="$6" size="$5" backgroundColor="#fff" color="#000">
-            {googleLoading ? 'Redirecting…' : 'Sign in with Google'}
+            {googleLoading ? t('auth.signingInWithGoogle') : t('auth.signInWithGoogle')}
           </Button>
         </Card>
       </YStack>
