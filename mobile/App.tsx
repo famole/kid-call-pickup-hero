@@ -9,11 +9,12 @@ import { supabase } from './src/supabaseClient';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import AuthorizationsScreen from './src/screens/AuthorizationsScreen';
+import { Session } from '@supabase/supabase-js';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
   const navigationRef = useNavigationContainerRef();
 
   useEffect(() => {
