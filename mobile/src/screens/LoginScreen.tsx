@@ -65,7 +65,7 @@ export default function LoginScreen() {
 
   return (
     <Theme name="light">
-      <YStack flex={1} justifyContent="center" padding="$4">
+      <YStack flex={1} justifyContent="center" padding="$4" backgroundColor="#3b82f6">
         <Card padding="$6" elevate bordered borderRadius="$4" width="90%" alignSelf="center" space>
           <Input
             placeholder="Email"
