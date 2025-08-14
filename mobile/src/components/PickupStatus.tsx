@@ -37,6 +37,7 @@ export default function PickupStatus({ students, requests, queuePositions }: Pro
   const called = requests.filter((r) => r.status === 'called')
 
   const getStudent = (id: string) => students.find((s) => s.id === id)
+  const getName = (id: string) => getStudent(id)?.name || 'Unknown'
 
   const Section = ({ title, data, chipFor }: { title: string; data: Request[]; chipFor: 'pending' | 'called' }) => (
     data.length === 0 ? null : (
