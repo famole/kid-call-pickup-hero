@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { YStack, Text, Paragraph, Theme, Card } from 'tamagui'
+import { YStack, Text, Paragraph, Theme, Card, AnimatePresence } from 'tamagui'
 
 interface Student {
   id: string;
@@ -32,22 +32,56 @@ export default function PickupStatus({ students, requests, currentParentId }: Pr
     <Theme name="light">
       <Card marginBottom="$4" padding="$4" borderRadius="$4" bordered>
         <YStack space>
-        {pending.length > 0 && (
-          <YStack space>
-            <Text fontWeight="bold">In Queue</Text>
-            {pending.map(req => (
-              <Paragraph key={req.studentId}>{getName(req.studentId)}</Paragraph>
-            ))}
-          </YStack>
-        )}
-        {called.length > 0 && (
-          <YStack space>
-            <Text fontWeight="bold">Called - On the Way</Text>
-            {called.map(req => (
-              <Paragraph key={req.studentId}>{getName(req.studentId)}</Paragraph>
-            ))}
-          </YStack>
-        )}
+          <AnimatePresence>
+            {pending.length > 0 && (
+              <YStack
+                key="pending"
+                space
+                animation="quick"
+                enterStyle={{ opacity: 0, scale: 0.95 }}
+                exitStyle={{ opacity: 0, scale: 0.95 }}
+              >
+                <Text fontWeight="bold">In Queue</Text>
+                <AnimatePresence>
+                  {pending.map(req => (
+                    <Paragraph
+                      key={req.studentId}
+                      animation="quick"
+                      enterStyle={{ opacity: 0, x: -10 }}
+                      exitStyle={{ opacity: 0, x: 10 }}
+                    >
+                      {getName(req.studentId)}
+                    </Paragraph>
+                  ))}
+                </AnimatePresence>
+              </YStack>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {called.length > 0 && (
+              <YStack
+                key="called"
+                space
+                animation="quick"
+                enterStyle={{ opacity: 0, scale: 0.95 }}
+                exitStyle={{ opacity: 0, scale: 0.95 }}
+              >
+                <Text fontWeight="bold">Called - On the Way</Text>
+                <AnimatePresence>
+                  {called.map(req => (
+                    <Paragraph
+                      key={req.studentId}
+                      animation="quick"
+                      enterStyle={{ opacity: 0, x: -10 }}
+                      exitStyle={{ opacity: 0, x: 10 }}
+                    >
+                      {getName(req.studentId)}
+                    </Paragraph>
+                  ))}
+                </AnimatePresence>
+              </YStack>
+            )}
+          </AnimatePresence>
         </YStack>
       </Card>
     </Theme>
