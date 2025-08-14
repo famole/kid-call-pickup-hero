@@ -61,7 +61,9 @@ export default function PickupStatus({ students, requests, queuePositions }: Pro
                 borderRadius="$6"
                 padding="$3"
                 marginBottom="$2"
+                animation="bouncy"
                 enterStyle={{ opacity: 0, scale: 0.98 }}
+                exitStyle={{ opacity: 0, scale: 0.98 }}
               >
                 <XStack space alignItems="center">
                   <Avatar circular size="$3">

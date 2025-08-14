@@ -10,6 +10,35 @@ import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import AuthorizationsScreen from './src/screens/AuthorizationsScreen';
 import { Session } from '@supabase/supabase-js';
+import * as Notifications from 'expo-notifications'
+import { Platform } from 'react-native'
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+})
+
+async function registerForPushNotificationsAsync() {
+  const { status: existingStatus } = await Notifications.getPermissionsAsync()
+  let finalStatus = existingStatus
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync()
+    finalStatus = status
+  }
+  if (finalStatus !== 'granted') {
+    return
+  }
+  await Notifications.getExpoPushTokenAsync()
+  if (Platform.OS === 'android') {
+    Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+    })
+  }
+}
 
 const Stack = createNativeStackNavigator();
 
@@ -21,6 +50,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
     });
+    registerForPushNotificationsAsync();
 
     const {
       data: { subscription }

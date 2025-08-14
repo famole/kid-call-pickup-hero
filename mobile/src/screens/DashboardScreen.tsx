@@ -13,7 +13,8 @@ import {
   Paragraph,
   Avatar
 } from 'tamagui'
-import { ScrollView, RefreshControl, Alert, SafeAreaView } from 'react-native'
+import { ScrollView, RefreshControl, Alert, SafeAreaView, AppState } from 'react-native'
+import * as Notifications from 'expo-notifications'
 import { useNavigation } from '@react-navigation/native'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
@@ -45,6 +46,8 @@ export default function DashboardScreen({ session }: Props) {
   const [queuePositions, setQueuePositions] = useState<Record<string, number>>({})
   const navigation = useNavigation()
   const studentsRef = useRef<Student[]>([])
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const notifiedRef = useRef<Set<string>>(new Set())
 
   // ---------- DATA ----------
   const fetchStudents = useCallback(async () => {
@@ -210,7 +213,6 @@ export default function DashboardScreen({ session }: Props) {
         if (error) throw error
       }
 
-      Alert.alert('Success', 'Pickup requested')
       setSelectedStudentIds([])
       fetchActiveRequests()
     } catch (err: any) {
@@ -264,6 +266,56 @@ export default function DashboardScreen({ session }: Props) {
       supabase.removeChannel(channel)
     }
   }, [fetchActiveRequests])
+
+  // poll backend every 10s when there are active requests
+  useEffect(() => {
+    if (activeRequests.length > 0) {
+      if (!pollRef.current) {
+        pollRef.current = setInterval(() => {
+          fetchActiveRequests()
+        }, 10000)
+      }
+    } else if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+    }
+  }, [activeRequests, fetchActiveRequests])
+
+  // notify when a student is on the way and app is not active
+  useEffect(() => {
+    activeRequests
+      .filter((r) => r.status === 'called')
+      .forEach((r) => {
+        if (!notifiedRef.current.has(r.studentId)) {
+          notifiedRef.current.add(r.studentId)
+          if (AppState.currentState !== 'active') {
+            const st = studentsRef.current.find((s) => s.id === r.studentId)
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: 'Student on the way',
+                body: `${st?.name ?? 'Student'} is on the way`,
+              },
+              trigger: null,
+            })
+          }
+        }
+      })
+
+    const calledIds = activeRequests
+      .filter((r) => r.status === 'called')
+      .map((r) => r.studentId)
+    notifiedRef.current.forEach((id) => {
+      if (!calledIds.includes(id)) {
+        notifiedRef.current.delete(id)
+      }
+    })
+  }, [activeRequests])
 
   const initials = session.user.email?.[0]?.toUpperCase?.() || 'U'
 
