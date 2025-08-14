@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler'
 import 'react-native-url-polyfill/auto'
+import './src/i18n'
 import React, { useEffect, useState } from 'react'
 import { TamaguiProvider, Theme } from 'tamagui'
 import config from './tamagui.config'
