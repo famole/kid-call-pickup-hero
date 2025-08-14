@@ -94,9 +94,56 @@ export default function PickupStatus({ students, requests, queuePositions }: Pro
     <Theme name="light">
       <Card marginBottom="$4" padding="$4" borderRadius="$6" bordered elevate>
         <YStack space>
-          <Section title="In Queue" data={pending} chipFor="pending" />
-          {pending.length && called.length ? <Separator /> : null}
-          <Section title="Called - On the Way" data={called} chipFor="called" />
+          <AnimatePresence>
+            {pending.length > 0 && (
+              <YStack
+                key="pending"
+                space
+                animation="quick"
+                enterStyle={{ opacity: 0, scale: 0.95 }}
+                exitStyle={{ opacity: 0, scale: 0.95 }}
+              >
+                <Text fontWeight="bold">In Queue</Text>
+                <AnimatePresence>
+                  {pending.map(req => (
+                    <Paragraph
+                      key={req.studentId}
+                      animation="quick"
+                      enterStyle={{ opacity: 0, x: -10 }}
+                      exitStyle={{ opacity: 0, x: 10 }}
+                    >
+                      {getName(req.studentId)}
+                    </Paragraph>
+                  ))}
+                </AnimatePresence>
+              </YStack>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {called.length > 0 && (
+              <YStack
+                key="called"
+                space
+                animation="quick"
+                enterStyle={{ opacity: 0, scale: 0.95 }}
+                exitStyle={{ opacity: 0, scale: 0.95 }}
+              >
+                <Text fontWeight="bold">Called - On the Way</Text>
+                <AnimatePresence>
+                  {called.map(req => (
+                    <Paragraph
+                      key={req.studentId}
+                      animation="quick"
+                      enterStyle={{ opacity: 0, x: -10 }}
+                      exitStyle={{ opacity: 0, x: 10 }}
+                    >
+                      {getName(req.studentId)}
+                    </Paragraph>
+                  ))}
+                </AnimatePresence>
+              </YStack>
+            )}
+          </AnimatePresence>
         </YStack>
       </Card>
     </Theme>
