@@ -8,17 +8,16 @@ import {
   Theme,
   Spinner,
   Card,
-  Sheet,
   Separator,
   Paragraph,
   Avatar
 } from 'tamagui'
 import { ScrollView, RefreshControl, Alert, SafeAreaView, AppState } from 'react-native'
 import * as Notifications from 'expo-notifications'
-import { useNavigation } from '@react-navigation/native'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
 import PickupStatus from '../components/PickupStatus'
+import MenuSheet from '../components/MenuSheet'
 
 // TYPES
 
@@ -44,7 +43,6 @@ export default function DashboardScreen({ session }: Props) {
     status: 'pending' | 'called'
   }[]>([])
   const [queuePositions, setQueuePositions] = useState<Record<string, number>>({})
-  const navigation = useNavigation()
   const studentsRef = useRef<Student[]>([])
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const notifiedRef = useRef<Set<string>>(new Set())
@@ -430,15 +428,11 @@ export default function DashboardScreen({ session }: Props) {
         </YStack>
 
         {/* Menu Sheet */}
-        <Sheet modal open={menuOpen} onOpenChange={setMenuOpen} snapPoints={[40]}>
-          <Sheet.Overlay />
-          <Sheet.Handle />
-          <Sheet.Frame padding="$4" alignItems="center" space borderRadius="$6">
-            <Text fontSize="$7" fontWeight="bold">Upsy</Text>
-            <Button size="$4" borderRadius="$6" onPress={() => { setMenuOpen(false); (navigation as any).navigate('Authorizations') }}>Pickup Authorizations</Button>
-            <Button size="$4" borderRadius="$6" theme="red" onPress={handleLogout}>Logout</Button>
-          </Sheet.Frame>
-        </Sheet>
+        <MenuSheet
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          onLogout={handleLogout}
+        />
       </Theme>
     </SafeAreaView>
   )
