@@ -26,6 +26,7 @@ import {
 } from '../../../src/services/pickupAuthorizationService'
 import { getStudentsForParent } from '../../../src/services/studentService'
 import { getAllParents } from '../../../src/services/parentService'
+import MenuSheet from '../components/MenuSheet'
 
 interface FormData {
   studentId: string
@@ -39,6 +40,7 @@ export default function AuthorizationsScreen() {
   const [loading, setLoading] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState<PickupAuthorizationWithDetails | null>(null)
   const [children, setChildren] = useState<{ id: string; name: string }[]>([])
   const [parents, setParents] = useState<{ id: string; name: string }[]>([])
@@ -157,6 +159,10 @@ export default function AuthorizationsScreen() {
     }
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
+
   const SelectorList = ({
     data,
     selectedId,
@@ -213,8 +219,9 @@ export default function AuthorizationsScreen() {
   return (
     <Theme name="light">
       <YStack flex={1} padding="$4" space>
-        <XStack justifyContent="space-between" alignItems="center">
-          <Text fontSize="$7" fontWeight="bold">Authorizations</Text>
+        <XStack alignItems="center" justifyContent="space-between">
+          <Button size="$3" borderRadius="$6" onPress={() => setMenuOpen(true)}>☰</Button>
+          <Text flex={1} textAlign="center" fontSize="$7" fontWeight="bold">Authorizations</Text>
           <Button size="$4" borderRadius="$6" onPress={openAdd}>Add</Button>
         </XStack>
 
@@ -274,6 +281,12 @@ export default function AuthorizationsScreen() {
             {renderForm(handleEdit)}
           </Sheet.Frame>
         </Sheet>
+
+        <MenuSheet
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          onLogout={handleLogout}
+        />
       </YStack>
     </Theme>
   )
