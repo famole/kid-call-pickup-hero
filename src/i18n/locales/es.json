@@ -226,6 +226,7 @@
     "scheduled": "Programada",
     "child": "Hijo",
     "parent": "Padre",
+    "noParentsFound": "No se encontraron padres",
     "authorizedParent": "Padre Autorizado",
     "startDate": "Fecha de Inicio",
     "endDate": "Fecha de Fin",

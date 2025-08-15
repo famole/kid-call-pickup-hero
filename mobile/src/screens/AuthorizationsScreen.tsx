@@ -27,6 +27,7 @@ import {
 import { getStudentsForParent } from '../../../src/services/studentService'
 import { getAllParents } from '../../../src/services/parentService'
 import MenuSheet from '../components/MenuSheet'
+import { useTranslation } from 'react-i18next'
 
 interface FormData {
   studentId: string
@@ -50,6 +51,7 @@ export default function AuthorizationsScreen() {
     startDate: '',
     endDate: '',
   })
+  const { t } = useTranslation()
 
   useEffect(() => {
     loadAuthorizations()
@@ -61,7 +63,7 @@ export default function AuthorizationsScreen() {
       const data = await getPickupAuthorizationsForParent()
       setAuthorizations(data)
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to load authorizations')
+      Alert.alert(t('common.error'), err.message || t('pickupAuthorizations.failedToLoad'))
     } finally {
       setLoading(false)
     }
@@ -103,7 +105,7 @@ export default function AuthorizationsScreen() {
 
   const handleAdd = async () => {
     if (!formData.studentId || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
-      Alert.alert('Error', 'Please fill all fields')
+      Alert.alert(t('common.error'), t('pickupAuthorizations.fillAllFields'))
       return
     }
     setLoading(true)
@@ -117,7 +119,7 @@ export default function AuthorizationsScreen() {
       setAddOpen(false)
       loadAuthorizations()
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to create authorization')
+      Alert.alert(t('common.error'), err.message || t('pickupAuthorizations.failedToCreate'))
     } finally {
       setLoading(false)
     }
@@ -126,7 +128,7 @@ export default function AuthorizationsScreen() {
   const handleEdit = async () => {
     if (!editing) return
     if (!formData.studentId || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
-      Alert.alert('Error', 'Please fill all fields')
+      Alert.alert(t('common.error'), t('pickupAuthorizations.fillAllFields'))
       return
     }
     setLoading(true)
@@ -141,7 +143,7 @@ export default function AuthorizationsScreen() {
       setEditing(null)
       loadAuthorizations()
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to update authorization')
+      Alert.alert(t('common.error'), err.message || t('pickupAuthorizations.failedToUpdate'))
     } finally {
       setLoading(false)
     }
@@ -153,7 +155,7 @@ export default function AuthorizationsScreen() {
       await deletePickupAuthorization(id)
       setAuthorizations((prev) => prev.filter((a) => a.id !== id))
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to delete authorization')
+      Alert.alert(t('common.error'), err.message || t('pickupAuthorizations.failedToRemove'))
     } finally {
       setLoading(false)
     }
@@ -203,16 +205,48 @@ export default function AuthorizationsScreen() {
 
   const renderForm = (onSubmit: () => void) => (
     <YStack padding="$4" space>
-      <Text fontWeight="bold">Child</Text>
-      <SelectorList data={children} selectedId={formData.studentId} onSelect={(v) => handleChange('studentId', v)} emptyLabel="No children found" />
-      <Text fontWeight="bold">Parent</Text>
-      <SelectorList data={parents} selectedId={formData.authorizedParentId} onSelect={(v) => handleChange('authorizedParentId', v)} emptyLabel="No parents found" />
-      <Input placeholder="Start YYYY-MM-DD" value={formData.startDate} onChangeText={(v) => handleChange('startDate', v)} borderRadius="$6" size="$5" />
-      <Input placeholder="End YYYY-MM-DD" value={formData.endDate} onChangeText={(v) => handleChange('endDate', v)} borderRadius="$6" size="$5" />
+      <Text fontWeight="bold">{t('pickupAuthorizations.child')}</Text>
+      <SelectorList
+        data={children}
+        selectedId={formData.studentId}
+        onSelect={(v) => handleChange('studentId', v)}
+        emptyLabel={t('dashboard.noChildrenFound')}
+      />
+      <Text fontWeight="bold">{t('pickupAuthorizations.parent')}</Text>
+      <SelectorList
+        data={parents}
+        selectedId={formData.authorizedParentId}
+        onSelect={(v) => handleChange('authorizedParentId', v)}
+        emptyLabel={t('pickupAuthorizations.noParentsFound')}
+      />
+      <Input
+        placeholder={t('pickupAuthorizations.startDate')}
+        value={formData.startDate}
+        onChangeText={(v) => handleChange('startDate', v)}
+        borderRadius="$6"
+        size="$5"
+      />
+      <Input
+        placeholder={t('pickupAuthorizations.endDate')}
+        value={formData.endDate}
+        onChangeText={(v) => handleChange('endDate', v)}
+        borderRadius="$6"
+        size="$5"
+      />
       <Button onPress={onSubmit} disabled={loading} icon={loading ? <Spinner /> : null} borderRadius="$6" size="$5">
-        {loading ? 'Saving…' : 'Save'}
+        {loading ? t('common.loading') : t('common.save')}
       </Button>
-      <Button onPress={() => { setAddOpen(false); setEditOpen(false); }} variant="outlined" borderRadius="$6" size="$5">Cancel</Button>
+      <Button
+        onPress={() => {
+          setAddOpen(false)
+          setEditOpen(false)
+        }}
+        variant="outlined"
+        borderRadius="$6"
+        size="$5"
+      >
+        {t('common.cancel')}
+      </Button>
     </YStack>
   )
 
@@ -222,12 +256,31 @@ export default function AuthorizationsScreen() {
         <YStack flex={1} padding="$4" space>
         <XStack alignItems="center" justifyContent="space-between">
           <Button size="$3" borderRadius="$6" onPress={() => setMenuOpen(true)}>☰</Button>
-          <Text flex={1} textAlign="center" fontSize="$7" fontWeight="bold">Authorizations</Text>
-          <Button size="$4" borderRadius="$6" onPress={openAdd}>Add</Button>
+          <Text flex={1} textAlign="center" fontSize="$7" fontWeight="bold">
+            {t('pickupAuthorizations.title')}
+          </Text>
+          <Button size="$4" borderRadius="$6" onPress={openAdd}>
+            {t('pickupAuthorizations.addAuthorization')}
+          </Button>
         </XStack>
 
         {loading && authorizations.length === 0 ? (
           <Spinner size="large" />
+        ) : authorizations.length === 0 ? (
+          <YStack flex={1} alignItems="center" justifyContent="center" space="$4" padding="$6">
+            <Text fontSize={64} opacity={0.2}>👥</Text>
+            <YStack space="$2" alignItems="center">
+              <Text fontWeight="bold" fontSize="$6">
+                {t('pickupAuthorizations.noAuthorizationsYet')}
+              </Text>
+              <Paragraph textAlign="center" opacity={0.7}>
+                {t('pickupAuthorizations.noAuthorizationsDescription')}
+              </Paragraph>
+            </YStack>
+            <Button borderRadius="$6" onPress={openAdd}>
+              {t('pickupAuthorizations.createFirstAuthorization')}
+            </Button>
+          </YStack>
         ) : (
           <ScrollView>
             {authorizations.map((auth) => (
@@ -241,13 +294,24 @@ export default function AuthorizationsScreen() {
                         </Avatar.Fallback>
                       </Avatar>
                       <YStack>
-                        <Text fontWeight="bold">{auth.student?.name || 'Child'}</Text>
-                        <Paragraph size="$2" opacity={0.7}>Authorized: {auth.authorizedParent?.name}</Paragraph>
+                        <Text fontWeight="bold">{auth.student?.name || t('pickupAuthorizations.child')}</Text>
+                        <Paragraph size="$2" opacity={0.7}>
+                          {t('pickupAuthorizations.authorizedParent')}: {auth.authorizedParent?.name}
+                        </Paragraph>
                       </YStack>
                     </XStack>
                     <XStack space>
-                      <Button size="$3" borderRadius="$6" onPress={() => openEdit(auth)}>Edit</Button>
-                      <Button size="$3" borderRadius="$6" theme="red" onPress={() => handleDelete(auth.id)}>Delete</Button>
+                      <Button size="$3" borderRadius="$6" onPress={() => openEdit(auth)}>
+                        {t('common.edit')}
+                      </Button>
+                      <Button
+                        size="$3"
+                        borderRadius="$6"
+                        theme="red"
+                        onPress={() => handleDelete(auth.id)}
+                      >
+                        {t('common.delete')}
+                      </Button>
                     </XStack>
                   </XStack>
                   <Separator />
