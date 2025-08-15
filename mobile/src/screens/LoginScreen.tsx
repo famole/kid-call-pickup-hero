@@ -43,12 +43,19 @@ export default function LoginScreen() {
       const redirectUrl = AuthSession.makeRedirectUri({ useProxy: true });
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: redirectUrl },
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
       });
       if (error) throw error;
+      if (!data?.url) throw new Error('No Google auth URL returned');
+
       const result = await AuthSession.startAsync({ authUrl: data.url });
       if (result.type === 'success') {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(result.params);
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
+          result.params
+        );
         if (exchangeError) {
           setError(exchangeError.message);
         }
