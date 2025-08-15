@@ -226,6 +226,7 @@
     "scheduled": "Scheduled",
     "child": "Child",
     "parent": "Parent",
+    "noParentsFound": "No parents found",
     "authorizedParent": "Authorized Parent",
     "startDate": "Start Date",
     "endDate": "End Date",
