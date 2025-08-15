@@ -69,12 +69,29 @@ export default function LoginScreen() {
 
   return (
     <Theme name="light">
-      <YStack flex={1} justifyContent="center" padding="$4" backgroundColor="#3b82f6">
-        <Image
-          source={require('../../assets/upsy_logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center', marginBottom: 20 }}
-        />
-        <Card padding="$6" elevate bordered borderRadius="$6" width="100%" space>
+      <YStack
+        flex={1}
+        justifyContent="center"
+        alignItems="center"
+        padding="$4"
+        backgroundColor="#3b82f6"
+      >
+        <YStack
+          width={120}
+          height={120}
+          borderRadius={60}
+          backgroundColor="#fff"
+          alignItems="center"
+          justifyContent="center"
+          marginBottom={-60}
+          zIndex={1}
+        >
+          <Image
+            source={require('../../assets/upsy_logo.png')}
+            style={{ width: 80, height: 80 }}
+          />
+        </YStack>
+        <Card padding="$6" elevate bordered borderRadius="$6" width="100%" space marginTop={60}>
           <Text fontSize={22} fontWeight="bold" textAlign="center" marginBottom={16}>
             {t('auth.welcomeToUpsy')}
           </Text>
