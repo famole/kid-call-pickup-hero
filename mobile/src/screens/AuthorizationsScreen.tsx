@@ -15,7 +15,7 @@ import {
   Separator,
   Avatar
 } from 'tamagui'
-import { Alert } from 'react-native'
+import { Alert, SafeAreaView } from 'react-native'
 import { supabase } from '../supabaseClient'
 import {
   getPickupAuthorizationsForParent,
@@ -217,8 +217,9 @@ export default function AuthorizationsScreen() {
   )
 
   return (
-    <Theme name="light">
-      <YStack flex={1} padding="$4" space>
+    <SafeAreaView style={{ flex: 1 }}>
+      <Theme name="light">
+        <YStack flex={1} padding="$4" space>
         <XStack alignItems="center" justifyContent="space-between">
           <Button size="$3" borderRadius="$6" onPress={() => setMenuOpen(true)}>☰</Button>
           <Text flex={1} textAlign="center" fontSize="$7" fontWeight="bold">Authorizations</Text>
@@ -282,12 +283,13 @@ export default function AuthorizationsScreen() {
           </Sheet.Frame>
         </Sheet>
 
-        <MenuSheet
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-          onLogout={handleLogout}
-        />
-      </YStack>
-    </Theme>
+          <MenuSheet
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
+            onLogout={handleLogout}
+          />
+        </YStack>
+      </Theme>
+    </SafeAreaView>
   )
 }
