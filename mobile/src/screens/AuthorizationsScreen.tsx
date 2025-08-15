@@ -26,8 +26,8 @@ import {
 } from '../../../src/services/pickupAuthorizationService'
 import { getStudentsForParent } from '../../../src/services/studentService'
 import { getAllParents } from '../../../src/services/parentService'
-import MenuSheet from '../components/MenuSheet'
 import { useTranslation } from 'react-i18next'
+import { useNavigation } from '@react-navigation/native'
 
 interface FormData {
   studentId: string
@@ -41,7 +41,6 @@ export default function AuthorizationsScreen() {
   const [loading, setLoading] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState<PickupAuthorizationWithDetails | null>(null)
   const [children, setChildren] = useState<{ id: string; name: string }[]>([])
   const [parents, setParents] = useState<{ id: string; name: string }[]>([])
@@ -52,6 +51,7 @@ export default function AuthorizationsScreen() {
     endDate: '',
   })
   const { t } = useTranslation()
+  const navigation = useNavigation()
 
   useEffect(() => {
     loadAuthorizations()
@@ -161,9 +161,6 @@ export default function AuthorizationsScreen() {
     }
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-  }
 
   const SelectorList = ({
     data,
@@ -255,14 +252,23 @@ export default function AuthorizationsScreen() {
       <Theme name="light">
         <YStack flex={1} padding="$4" space>
         <XStack alignItems="center" justifyContent="space-between">
-          <Button size="$3" borderRadius="$6" onPress={() => setMenuOpen(true)}>☰</Button>
-          <Text flex={1} textAlign="center" fontSize="$7" fontWeight="bold">
+          <Button size="$3" borderRadius="$6" onPress={() => navigation.goBack()}>←</Button>
+          <Text flex={1} textAlign="center" fontSize="$6" fontWeight="bold">
             {t('pickupAuthorizations.title')}
           </Text>
-          <Button size="$4" borderRadius="$6" onPress={openAdd}>
+          <YStack width="$4" />
+        </XStack>
+
+        {authorizations.length > 0 && (
+          <Button
+            alignSelf="flex-end"
+            marginTop="$3"
+            borderRadius="$6"
+            onPress={openAdd}
+          >
             {t('pickupAuthorizations.addAuthorization')}
           </Button>
-        </XStack>
+        )}
 
         {loading && authorizations.length === 0 ? (
           <Spinner size="large" />
@@ -346,12 +352,6 @@ export default function AuthorizationsScreen() {
             {renderForm(handleEdit)}
           </Sheet.Frame>
         </Sheet>
-
-          <MenuSheet
-            open={menuOpen}
-            onOpenChange={setMenuOpen}
-            onLogout={handleLogout}
-          />
         </YStack>
       </Theme>
     </SafeAreaView>
