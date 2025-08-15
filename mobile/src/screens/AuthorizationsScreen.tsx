@@ -265,6 +265,8 @@ export default function AuthorizationsScreen() {
             marginTop="$3"
             borderRadius="$6"
             onPress={openAdd}
+            backgroundColor="#3b82f6"
+            color="#fff"
           >
             {t('pickupAuthorizations.addAuthorization')}
           </Button>
@@ -283,7 +285,7 @@ export default function AuthorizationsScreen() {
                 {t('pickupAuthorizations.noAuthorizationsDescription')}
               </Paragraph>
             </YStack>
-            <Button borderRadius="$6" onPress={openAdd}>
+            <Button borderRadius="$6" onPress={openAdd} backgroundColor="#3b82f6" color="#fff">
               {t('pickupAuthorizations.createFirstAuthorization')}
             </Button>
           </YStack>
