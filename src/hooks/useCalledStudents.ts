@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) => {
   const [childrenByClass, setChildrenByClass] = useState<{ [key: string]: PickupRequestWithDetails[] }>({});
@@ -18,9 +19,9 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
     }
 
     try {
-      console.log('Fetching called students with teacherClassIds:', teacherClassIds);
+      logger.info('Fetching called students with teacherClassIds:', teacherClassIds);
       const calledStudents = await getCalledStudentsOptimized(classId, teacherClassIds);
-      console.log(`Found ${calledStudents.length} called students`);
+      logger.info(`Found ${calledStudents.length} called students`);
       
       // Group students by class for display
       const groupedByClass = calledStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
@@ -35,7 +36,7 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
       setChildrenByClass(groupedByClass);
       lastFetchRef.current = now;
     } catch (error) {
-      console.error('Error fetching called students:', error);
+      logger.error('Error fetching called students:', error);
       setChildrenByClass({});
     } finally {
       setLoading(false);
@@ -68,7 +69,7 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
           table: 'pickup_requests'
         },
         async (payload) => {
-          console.log('Called students real-time change detected:', payload.eventType, payload);
+          logger.info('Called students real-time change detected:', payload.eventType, payload);
           
           // Handle specific changes for better performance
           if (payload.eventType === 'UPDATE') {
@@ -78,11 +79,11 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
             
             if (newStatus === 'called' && oldStatus !== 'called') {
               // Student was just called - refresh to get full details
-              console.log(`Student ${studentId} was called, refreshing called students`);
+              logger.info(`Student ${studentId} was called, refreshing called students`);
               fetchCalledStudents(true);
             } else if (oldStatus === 'called' && newStatus !== 'called') {
               // Student was picked up or cancelled - remove from called list
-              console.log(`Student ${studentId} no longer called, removing from list`);
+              logger.info(`Student ${studentId} no longer called, removing from list`);
               if (studentId) {
                 setChildrenByClass(prev => {
                   const updated = { ...prev };
@@ -100,7 +101,7 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
             // Request was deleted - remove if it was called
             const studentId = payload.old?.student_id;
             if (studentId) {
-              console.log(`Request for student ${studentId} deleted, removing from called list`);
+              logger.info(`Request for student ${studentId} deleted, removing from called list`);
               setChildrenByClass(prev => {
                 const updated = { ...prev };
                 Object.keys(updated).forEach(classKey => {
@@ -116,18 +117,18 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
         }
       )
       .subscribe((status) => {
-        console.log('Called students subscription status:', status);
+        logger.info('Called students subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to called students changes');
+          logger.info('Successfully subscribed to called students changes');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Called students subscription failed');
+          logger.error('Called students subscription failed');
         }
       });
 
     subscriptionRef.current = channel;
 
     return () => {
-      console.log('Cleaning up called students subscription');
+      logger.info('Cleaning up called students subscription');
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;

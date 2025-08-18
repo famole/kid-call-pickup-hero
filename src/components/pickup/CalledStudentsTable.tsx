@@ -3,22 +3,36 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Clock, User, CheckCheck } from 'lucide-react';
+import { Clock, User, CheckCheck, Undo2 } from 'lucide-react';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/hooks/useTranslation';
+import { updatePickupRequestStatus } from '@/services/pickup/updatePickupRequest';
+import { logger } from '@/utils/logger';
 
 interface CalledStudentsTableProps {
   requests: PickupRequestWithDetails[];
   loading: boolean;
+  onStatusChange?: () => void;
 }
 
 const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
   requests,
-  loading
+  loading,
+  onStatusChange
 }) => {
   const { t } = useTranslation();
+
+  const handleGoBack = async (requestId: string) => {
+    try {
+      await updatePickupRequestStatus(requestId, 'pending');
+      onStatusChange?.();
+    } catch (error) {
+      logger.error('Error changing status back to pending:', error);
+    }
+  };
   const [isMobile, setIsMobile] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 768;
   });
@@ -115,6 +129,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                   <TableHead className="text-left">{t('pickup.parentName')}</TableHead>
                   <TableHead className="text-left">{t('dashboard.calledTime')}</TableHead>
                   <TableHead className="text-left">{t('pickup.status')}</TableHead>
+                  <TableHead className="text-left">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -178,6 +193,17 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                         {t('dashboard.calledForPickup')}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-left">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleGoBack(item.request.id)}
+                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                      >
+                        <Undo2 className="h-4 w-4 mr-2" />
+                        {t('pickup.goBack')}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -199,28 +225,39 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
       <div className="space-y-3">
         {requests.map((item) => (
           <div key={item.request.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <Avatar className="h-12 w-12 flex-shrink-0">
-                <AvatarImage src={item.child?.avatar} alt={item.child?.name} />
-                <AvatarFallback className="bg-school-primary text-white">
-                  {item.child?.name?.charAt(0) || '?'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="font-medium text-gray-900 truncate">
-                  {item.child?.name || t('common.unknownChild')}
-                </div>
-                <div className="text-sm text-gray-600 truncate">
-                  {item.class?.name || t('common.unknownClass')}
-                  {item.class?.grade && ` (${item.class.grade})`}
-                </div>
-                <div className="flex items-center justify-center gap-1 text-sm text-gray-500 mt-1">
-                  <User className="h-3 w-3" />
-                  <span className="truncate">
-                    {item.parent?.name || `${t('forms.parentName')} (ID: ${item.request.parentId?.slice(0, 8)}...)`}
-                  </span>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <Avatar className="h-12 w-12 flex-shrink-0">
+                  <AvatarImage src={item.child?.avatar} alt={item.child?.name} />
+                  <AvatarFallback className="bg-school-primary text-white">
+                    {item.child?.name?.charAt(0) || '?'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-gray-900 truncate">
+                    {item.child?.name || t('common.unknownChild')}
+                  </div>
+                  <div className="text-sm text-gray-600 truncate">
+                    {item.class?.name || t('common.unknownClass')}
+                    {item.class?.grade && ` (${item.class.grade})`}
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                    <User className="h-3 w-3" />
+                    <span className="truncate">
+                      {item.parent?.name || `${t('forms.parentName')} (ID: ${item.request.parentId?.slice(0, 8)}...)`}
+                    </span>
+                  </div>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleGoBack(item.request.id)}
+                className="text-orange-600 border-orange-300 hover:bg-orange-50 flex-shrink-0"
+              >
+                <Undo2 className="h-4 w-4 mr-1" />
+                {t('pickup.goBack')}
+              </Button>
             </div>
             
             <div className="flex items-center gap-2 text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100">

@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   YStack,
@@ -8,261 +7,261 @@ import {
   ListItem,
   Theme,
   Spinner,
-  AnimatePresence,
   Card,
-  Sheet
+  Separator,
+  Paragraph,
+  Avatar
 } from 'tamagui'
-import { ScrollView, RefreshControl, Alert, SafeAreaView, Image } from 'react-native'
-import { useNavigation } from '@react-navigation/native'
-import { Session } from '@supabase/supabase-js';
-import { supabase } from '../supabaseClient';
-import PickupStatus from '../components/PickupStatus';
+import { ScrollView, RefreshControl, Alert, SafeAreaView, AppState } from 'react-native'
+import * as Notifications from 'expo-notifications'
+import { Session } from '@supabase/supabase-js'
+import { supabase } from '../supabaseClient'
+import PickupStatus from '../components/PickupStatus'
+import MenuSheet from '../components/MenuSheet'
 
-type Props = {
-  session: Session;
-};
+// TYPES
+
+type Props = { session: Session }
 
 interface Student {
-  id: string;
-  name: string;
-  className?: string | null;
-  teacher?: string | null;
-  isAuthorized: boolean;
+  id: string
+  name: string
+  className?: string | null
+  teacher?: string | null
+  isAuthorized: boolean
 }
 
 export default function DashboardScreen({ session }: Props) {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [students, setStudents] = useState<Student[]>([])
+  const [refreshing, setRefreshing] = useState(false)
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [activeRequests, setActiveRequests] = useState<{
-    id: string;
-    studentId: string;
-    status: 'pending' | 'called';
-  }[]>([]);
-  const [queuePositions, setQueuePositions] = useState<Record<string, number>>({});
-  const navigation = useNavigation();
-  const studentsRef = useRef<Student[]>([]);
+    id: string
+    studentId: string
+    status: 'pending' | 'called'
+  }[]>([])
+  const [queuePositions, setQueuePositions] = useState<Record<string, number>>({})
+  const studentsRef = useRef<Student[]>([])
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const notifiedRef = useRef<Set<string>>(new Set())
 
+  // ---------- DATA ----------
   const fetchStudents = useCallback(async () => {
-    setRefreshing(true);
+    setRefreshing(true)
 
-    // Look up the parent by email to get their ID
     const { data: parent } = await supabase
       .from('parents')
       .select('id')
       .eq('email', session.user.email)
-      .single();
+      .single()
 
     if (parent) {
-      // Direct children
       const { data: directChildren } = await supabase
         .from('students')
         .select('id, name, classes(name, teacher), student_parents!inner(parent_id)')
-        .eq('student_parents.parent_id', parent.id);
+        .eq('student_parents.parent_id', parent.id)
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0]
 
-      // Authorized children
       const { data: authorized } = await supabase
         .from('pickup_authorizations')
         .select('students(id, name, classes(name, teacher))')
         .eq('authorized_parent_id', parent.id)
         .eq('is_active', true)
         .lte('start_date', today)
-        .gte('end_date', today);
+        .gte('end_date', today)
 
       const formattedDirect = (directChildren || []).map((c: any) => ({
         id: c.id,
         name: c.name,
         className: c.classes?.name ?? null,
         teacher: c.classes?.teacher ?? null,
-        isAuthorized: false
-      }));
+        isAuthorized: false,
+      }))
 
       const formattedAuthorized = (authorized || []).map((a: any) => ({
         id: a.students.id,
         name: a.students.name,
         className: a.students.classes?.name ?? null,
         teacher: a.students.classes?.teacher ?? null,
-        isAuthorized: true
-      }));
+        isAuthorized: true,
+      }))
 
-      const all = [...formattedDirect];
-      formattedAuthorized.forEach(child => {
-        if (!all.some(c => c.id === child.id)) {
-          all.push(child);
-        }
-      });
+      const all = [...formattedDirect]
+      formattedAuthorized.forEach((child) => {
+        if (!all.some((c) => c.id === child.id)) all.push(child)
+      })
 
-      setStudents(all);
+      setStudents(all)
     } else {
-      setStudents([]);
+      setStudents([])
     }
 
-    setRefreshing(false);
-    fetchActiveRequests();
-  }, [session.user.email, fetchActiveRequests]);
+    setRefreshing(false)
+    fetchActiveRequests()
+  }, [session.user.email])
 
   useEffect(() => {
-    studentsRef.current = students;
-  }, [students]);
+    studentsRef.current = students
+  }, [students])
 
   const fetchActiveRequests = useCallback(async () => {
-    const { data: parentId, error: parentError } = await supabase.rpc(
-      'get_current_parent_id'
-    );
+    const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id')
     if (parentError || !parentId) {
-      setActiveRequests([]);
-      return;
+      setActiveRequests([])
+      return
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0]
 
     const [own, authorized] = await Promise.all([
-      supabase
-        .from('student_parents')
-        .select('student_id')
-        .eq('parent_id', parentId),
+      supabase.from('student_parents').select('student_id').eq('parent_id', parentId),
       supabase
         .from('pickup_authorizations')
         .select('student_id')
         .eq('authorized_parent_id', parentId)
         .eq('is_active', true)
         .lte('start_date', today)
-        .gte('end_date', today)
-    ]);
+        .gte('end_date', today),
+    ])
 
     const ids = [
       ...(own.data?.map((r: any) => r.student_id) || []),
-      ...(authorized.data?.map((r: any) => r.student_id) || [])
-    ];
+      ...(authorized.data?.map((r: any) => r.student_id) || []),
+    ]
 
-    const uniqueIds = Array.from(new Set(ids));
+    const uniqueIds = Array.from(new Set(ids))
     if (uniqueIds.length === 0) {
-      setActiveRequests([]);
-      return;
+      setActiveRequests([])
+      return
     }
 
     const { data: requests } = await supabase
       .from('pickup_requests')
       .select('id,student_id,status')
       .in('student_id', uniqueIds)
-      .in('status', ['pending', 'called']);
+      .in('status', ['pending', 'called'])
 
     const formatted = (requests || []).map((r: any) => ({
       id: r.id,
       studentId: r.student_id,
-      status: r.status as 'pending' | 'called'
-    }));
+      status: r.status as 'pending' | 'called',
+    }))
 
-    // Compute queue positions among ALL pending requests by request_time
+    // queue positions across ALL pending
     const { data: pendingAll } = await supabase
       .from('pickup_requests')
       .select('student_id, request_time')
       .eq('status', 'pending')
-      .order('request_time', { ascending: true });
+      .order('request_time', { ascending: true })
 
-    const order = (pendingAll || []).map((r: any) => r.student_id as string);
-    const positions: Record<string, number> = {};
+    const order = (pendingAll || []).map((r: any) => r.student_id as string)
+    const positions: Record<string, number> = {}
     formatted.forEach((r) => {
       if (r.status === 'pending') {
-        const idx = order.indexOf(r.studentId);
-        if (idx >= 0) positions[r.studentId] = idx + 1;
+        const idx = order.indexOf(r.studentId)
+        if (idx >= 0) positions[r.studentId] = idx + 1
       }
-    });
-    setQueuePositions(positions);
-
-    setActiveRequests(formatted);
-  }, []);
+    })
+    formatted.sort((a, b) =>
+      a.studentId.localeCompare(b.studentId) || a.id.localeCompare(b.id)
+    )
+    setActiveRequests((prev) =>
+      prev.length === formatted.length &&
+      prev.every(
+        (r, i) =>
+          r.id === formatted[i].id &&
+          r.studentId === formatted[i].studentId &&
+          r.status === formatted[i].status
+      )
+        ? prev
+        : formatted
+    )
+    setQueuePositions((prev) => {
+      const same =
+        Object.keys(prev).length === Object.keys(positions).length &&
+        Object.entries(positions).every(([k, v]) => prev[k] === v)
+      return same ? prev : positions
+    })
+  }, [])
 
   useEffect(() => {
-    fetchStudents();
-    fetchActiveRequests();
-  }, [fetchStudents, fetchActiveRequests]);
+    fetchStudents()
+    fetchActiveRequests()
+  }, [fetchStudents, fetchActiveRequests])
 
+  // ---------- ACTIONS ----------
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
+    await supabase.auth.signOut()
+  }
 
-  const handleSelectStudent = (id: string) => {
-    setSelectedStudentIds(prev =>
-      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-    );
-  };
+  const toggleSelect = (id: string, disabled: boolean) => {
+    if (disabled) return
+    setSelectedStudentIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    )
+  }
 
   const handleRequestPickup = async () => {
-    if (selectedStudentIds.length === 0) return;
-    setLoading(true);
+    if (selectedStudentIds.length === 0) return
+    setLoading(true)
     try {
-      const { data: parentId, error: parentError } = await supabase.rpc(
-        'get_current_parent_id'
-      );
-      if (parentError || !parentId) {
-        throw new Error('Unable to determine current parent');
-      }
+      const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id')
+      if (parentError || !parentId) throw new Error('Unable to determine current parent')
 
       for (const studentId of selectedStudentIds) {
         const { data: isAuthorized, error: authError } = await supabase.rpc(
           'is_parent_of_student',
-          {
-            student_id: studentId
-          }
-        );
-        if (authError) {
-          throw new Error('Authorization check failed');
-        }
-        if (!isAuthorized) {
-          throw new Error('Not authorized for this student');
-        }
+          { student_id: studentId }
+        )
+        if (authError) throw new Error('Authorization check failed')
+        if (!isAuthorized) throw new Error('Not authorized for this student')
 
         const { error } = await supabase.from('pickup_requests').insert({
           student_id: studentId,
           parent_id: parentId,
           status: 'pending',
-          request_time: new Date().toISOString()
-        });
-
-        if (error) {
-          throw error;
-        }
+          request_time: new Date().toISOString(),
+        })
+        if (error) throw error
       }
 
-      Alert.alert('Success', 'Pickup requested');
-      setSelectedStudentIds([]);
-      fetchActiveRequests();
+      setSelectedStudentIds([])
+      fetchActiveRequests()
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Request failed');
+      Alert.alert('Error', err.message || 'Request failed')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-  
+  }
+
   const handleCancel = async (requestId: string) => {
-    setLoading(true);
+    setLoading(true)
     try {
       const { error } = await supabase
         .from('pickup_requests')
         .update({ status: 'cancelled' })
-        .eq('id', requestId);
-      if (error) throw error;
-      Alert.alert('Cancelled', 'Pickup request cancelled');
-      fetchActiveRequests();
+        .eq('id', requestId)
+      if (error) throw error
+      Alert.alert('Cancelled', 'Pickup request cancelled')
+      fetchActiveRequests()
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Cancel failed');
+      Alert.alert('Error', err.message || 'Cancel failed')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
+  // live updates
   useEffect(() => {
     const handleChange = (payload: any) => {
-      const id = payload.new?.student_id || payload.old?.student_id;
-      if (id && studentsRef.current.some(s => s.id === id)) {
-        fetchActiveRequests();
+      const id = payload.new?.student_id || payload.old?.student_id
+      if (id && studentsRef.current.some((s) => s.id === id)) {
+        fetchActiveRequests()
       }
-    };
+    }
 
     const channel = supabase
       .channel('parent_dashboard_mobile')
@@ -276,138 +275,164 @@ export default function DashboardScreen({ session }: Props) {
         { event: '*', schema: 'public', table: 'pickup_requests', filter: 'status=eq.called' },
         handleChange
       )
-      .subscribe();
+      .subscribe()
 
     return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchActiveRequests]);
+      supabase.removeChannel(channel)
+    }
+  }, [fetchActiveRequests])
+
+  // poll backend every 10s when there are active requests
+  useEffect(() => {
+    if (activeRequests.length > 0) {
+      if (!pollRef.current) {
+        pollRef.current = setInterval(() => {
+          fetchActiveRequests()
+        }, 10000)
+      }
+    } else if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+    }
+  }, [activeRequests, fetchActiveRequests])
+
+  // notify when a student is on the way and app is not active
+  useEffect(() => {
+    activeRequests
+      .filter((r) => r.status === 'called')
+      .forEach((r) => {
+        if (!notifiedRef.current.has(r.studentId)) {
+          notifiedRef.current.add(r.studentId)
+          if (AppState.currentState !== 'active') {
+            const st = studentsRef.current.find((s) => s.id === r.studentId)
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: 'Student on the way',
+                body: `${st?.name ?? 'Student'} is on the way`,
+              },
+              trigger: null,
+            })
+          }
+        }
+      })
+
+    const calledIds = activeRequests
+      .filter((r) => r.status === 'called')
+      .map((r) => r.studentId)
+    notifiedRef.current.forEach((id) => {
+      if (!calledIds.includes(id)) {
+        notifiedRef.current.delete(id)
+      }
+    })
+  }, [activeRequests])
+
+  const initials = session.user.email?.[0]?.toUpperCase?.() || 'U'
+
+  const Section = ({ title, data, authorized }: { title: string; data: Student[]; authorized: boolean }) => (
+    data.length === 0 ? null : (
+      <Card padding="$4" elevate bordered borderRadius="$6" space>
+        <XStack alignItems="center" justifyContent="space-between" marginBottom="$2">
+          <Text fontWeight="bold">{title}</Text>
+          <Text fontSize={12} opacity={0.6}>{data.length}</Text>
+        </XStack>
+        {data.map((item) => {
+          const request = activeRequests.find((r) => r.studentId === item.id)
+          const disabled = !!request
+          return (
+            <ListItem
+              key={item.id}
+              pressTheme
+              borderRadius="$6"
+              paddingVertical="$3"
+              onPress={() => toggleSelect(item.id, disabled)}
+              backgroundColor={selectedStudentIds.includes(item.id) ? '$blue3' : undefined}
+              borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
+              borderColor="$blue7"
+              icon={
+                <Avatar circular size="$3">
+                  <Avatar.Fallback backgroundColor="$blue5">
+                    <Text color="white">{item.name?.[0]?.toUpperCase?.() || 'S'}</Text>
+                  </Avatar.Fallback>
+                </Avatar>
+              }
+              title={item.name}
+              subTitle={`${item.className ?? 'Class'} • ${item.teacher ?? 'Teacher'}`}
+              iconAfter={
+                request
+                  ? request.status === 'pending'
+                    ? (
+                        <Button size="$2" borderRadius="$6" onPress={() => handleCancel(request.id)}>
+                          Cancel
+                        </Button>
+                      )
+                    : null
+                  : null
+              }
+            />
+          )
+        })}
+      </Card>
+    )
+  )
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Theme name="light">
         <YStack flex={1} padding="$4" space>
-          <Card padding="$4" elevate bordered borderRadius="$4">
-            <XStack justifyContent="space-between" alignItems="center" space>
-              <Text fontSize="$6" fontWeight="bold" numberOfLines={1} flex={1}>
-                Welcome {session.user.email}
-              </Text>
-              <Button size="$3" borderRadius="$4" onPress={() => setMenuOpen(true)}>
-                ☰
-              </Button>
+          {/* Header */}
+          <XStack alignItems="center" justifyContent="space-between">
+            <XStack alignItems="center" space="$3">
+              <Avatar circular size="$4">
+                <Avatar.Fallback backgroundColor="$blue7">
+                  <Text color="white" fontWeight="bold">{initials}</Text>
+                </Avatar.Fallback>
+              </Avatar>
+              <YStack>
+                <Text fontWeight="bold" numberOfLines={1}>Hi!</Text>
+                <Paragraph size="$2" opacity={0.7} numberOfLines={1}>{session.user.email}</Paragraph>
+              </YStack>
             </XStack>
-          </Card>
-        <PickupStatus students={students} requests={activeRequests} />
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 16 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />
-          }
-        >
-          {students.filter(s => !s.isAuthorized).length > 0 && (
-            <Card padding="$4" marginBottom="$4" elevate bordered borderRadius="$4" space>
-              <Text fontWeight="bold">Your children</Text>
-              {students
-                .filter(s => !s.isAuthorized)
-                .map(item => {
-                  const request = activeRequests.find(r => r.studentId === item.id)
-                  const disabled = !!request
-                  return (
-                    <ListItem
-                      key={item.id}
-                      pressTheme
-                      animation="quick"
-                      pressStyle={{ scale: 0.97 }}
-                      borderRadius="$4"
-                      borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
-                      borderColor="$blue7"
-                      backgroundColor={
-                        selectedStudentIds.includes(item.id) ? '$blue3' : undefined
-                      }
-                      onPress={() => !disabled && handleSelectStudent(item.id)}
-                      title={item.name}
-                      titleProps={{ numberOfLines: 1 }}
-                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}${request && request.status === 'pending' && queuePositions[item.id] ? ' • #' + queuePositions[item.id] + ' in queue' : ''}`}
-                      icon={
-                        request
-                          ? request.status === 'pending'
-                            ? <Button size="$2" borderRadius="$3" onPress={() => handleCancel(request.id)}>Cancel</Button>
-                            : <Text fontSize="$2">Called</Text>
-                          : null
-                      }
-                    />
-                  )
-                })}
-            </Card>
-          )}
-          {students.filter(s => s.isAuthorized).length > 0 && (
-            <Card padding="$4" space elevate bordered borderRadius="$4">
-              <Text fontWeight="bold">Authorized to pick up</Text>
-              {students
-                .filter(s => s.isAuthorized)
-                .map(item => {
-                  const request = activeRequests.find(r => r.studentId === item.id)
-                  const disabled = !!request
-                  return (
-                    <ListItem
-                      key={item.id}
-                      pressTheme
-                      animation="quick"
-                      pressStyle={{ scale: 0.97 }}
-                      borderRadius="$4"
-                      borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
-                      borderColor="$blue7"
-                      backgroundColor={
-                        selectedStudentIds.includes(item.id) ? '$blue3' : undefined
-                      }
-                      onPress={() => !disabled && handleSelectStudent(item.id)}
-                      title={item.name}
-                      titleProps={{ numberOfLines: 1 }}
-                      subTitle={`${item.className ?? 'Class'} - ${item.teacher ?? 'Teacher'}${request && request.status === 'pending' && queuePositions[item.id] ? ' • #' + queuePositions[item.id] + ' in queue' : ''}`}
-                      icon={
-                        request
-                          ? request.status === 'pending'
-                            ? <Button size="$2" borderRadius="$3" onPress={() => handleCancel(request.id)}>Cancel</Button>
-                            : <Text fontSize="$2">Called</Text>
-                          : null
-                      }
-                    />
-                  )
-                })}
-            </Card>
-          )}
-          {students.length === 0 && (
-            <Text textAlign="center" marginTop="$8">No students found.</Text>
-          )}
-        </ScrollView>
-        <Button
-          size="$5"
-          borderRadius="$4"
-          onPress={handleRequestPickup}
-          disabled={selectedStudentIds.length === 0 || loading}
-          icon={loading ? <Spinner /> : null}
-        >
-          {loading ? 'Requesting...' : 'Request Pickup'}
-        </Button>
-      </YStack>
-      <Sheet modal open={menuOpen} onOpenChange={setMenuOpen} snapPoints={[40]}>
-        <Sheet.Overlay />
-        <Sheet.Handle />
-        <Sheet.Frame padding="$4" alignItems="center" space borderRadius="$4">
-          {/* <Image
-            source={require('../../../public/assets/8268b74f-a6aa-4f00-ac2b-ce117a9c3706.png')}
-            style={{ width: 80, height: 80 }}
-          />  */}
-          <Text fontSize="$7" fontWeight="bold">Upsy</Text>
-          <Button size="$4" borderRadius="$4" onPress={() => { setMenuOpen(false); navigation.navigate('Authorizations' as never); }}>
-            Pickup Authorizations
+            <Button size="$3" borderRadius="$6" onPress={() => setMenuOpen(true)}>☰</Button>
+          </XStack>
+
+          {/* Active status */}
+          <PickupStatus students={students} requests={activeRequests} />
+
+          {/* Lists */}
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />}>
+            <Section title="Your children" data={students.filter((s) => !s.isAuthorized)} authorized={false} />
+            <Separator marginVertical="$3" />
+            <Section title="Authorized to pick up" data={students.filter((s) => s.isAuthorized)} authorized={true} />
+            {students.length === 0 && (
+              <Text textAlign="center" marginTop="$8">No students found.</Text>
+            )}
+          </ScrollView>
+
+          {/* Floating Primary Action */}
+          <Button
+            size="$6"
+            borderRadius="$10"
+            onPress={handleRequestPickup}
+            disabled={selectedStudentIds.length === 0 || loading}
+            icon={loading ? <Spinner /> : null}
+            style={{ position: 'absolute', bottom: 24, left: 16, right: 16 }}
+          >
+            {loading ? 'Requesting…' : selectedStudentIds.length > 0 ? `Request Pickup (${selectedStudentIds.length})` : 'Request Pickup'}
           </Button>
-          <Button size="$4" borderRadius="$4" onPress={handleLogout}>
-            Logout
-          </Button>
-        </Sheet.Frame>
-      </Sheet>
+        </YStack>
+
+        {/* Menu Sheet */}
+        <MenuSheet
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          onLogout={handleLogout}
+        />
       </Theme>
     </SafeAreaView>
   )

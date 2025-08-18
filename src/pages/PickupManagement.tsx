@@ -16,6 +16,7 @@ import { getAllClasses } from '@/services/classService';
 import { getClassesForTeacher } from '@/services/classTeacherService';
 import { supabase } from '@/integrations/supabase/client';
 import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickupRequests';
+import { logger } from '@/utils/logger';
 import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, CheckCheck, LogOut } from 'lucide-react';
@@ -72,8 +73,8 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
         setTeacherClasses(formattedClasses);
         setClasses(formattedClasses);
         
-        console.log(`Teacher ${user.email} is assigned to classes:`, formattedClasses.map(c => c.name));
-        console.log(`Teacher class IDs:`, formattedClasses.map(c => c.id));
+        logger.info(`Teacher ${user.email} is assigned to classes:`, formattedClasses.map(c => c.name));
+        logger.info(`Teacher class IDs:`, formattedClasses.map(c => c.id));
         
         // Auto-select the first class if teacher has only one class, otherwise keep 'all'
         if (formattedClasses.length === 1) {
@@ -81,13 +82,13 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
         }
       }
     } catch (error) {
-      console.error('Error fetching classes:', error);
+      logger.error('Error fetching classes:', error);
     }
   }, [user?.email, isAdmin, isTeacher]);
 
   const teacherClassIds = useMemo(() => {
     const ids = isTeacher ? teacherClasses.map(cls => cls.id) : undefined;
-    console.log('teacherClassIds in PickupManagement:', ids);
+    logger.info('teacherClassIds in PickupManagement:', ids);
     return ids;
   }, [isTeacher, teacherClasses]);
   const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass, teacherClassIds);
@@ -134,9 +135,9 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const handleMarkAsCalledWithRefresh = async (requestId: string) => {
     try {
       await markAsCalled(requestId);
-      console.log('Student marked as called - real-time subscriptions will handle updates');
+      logger.info('Student marked as called - real-time subscriptions will handle updates');
     } catch (error) {
-      console.error('Error marking student as called:', error);
+      logger.error('Error marking student as called:', error);
     }
   };
 
@@ -197,6 +198,10 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
               <CalledStudentsTable 
                 requests={calledStudents}
                 loading={calledLoading}
+                onStatusChange={() => {
+                  refetchCalled();
+                  refetchPending();
+                }}
               />
             </TabsContent>
 
