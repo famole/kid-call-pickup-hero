@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getAllClasses } from '@/services/classService';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, Clock, Phone } from 'lucide-react';
+import { User, Clock, Baby } from 'lucide-react';
 import { Avatar as AvatarComponent, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface OptimizedPendingPickupsTableProps {
@@ -138,7 +138,8 @@ const OptimizedPendingPickupsTable: React.FC<OptimizedPendingPickupsTableProps> 
                         onClick={() => handleCallStudent(item.request.id)}
                         className="bg-school-primary hover:bg-school-primary/90"
                       >
-                        Call Student
+                        <Baby className="h-4 w-4 mr-2" />
+                        Enviado
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -213,8 +214,8 @@ const OptimizedPendingPickupsTable: React.FC<OptimizedPendingPickupsTableProps> 
                   size="sm"
                   className="bg-school-primary hover:bg-school-primary/90 flex-shrink-0"
                 >
-                  <Phone className="h-4 w-4 mr-1" />
-                  Call
+                  <Baby className="h-4 w-4 mr-1" />
+                  Enviado
                 </Button>
               </div>
               

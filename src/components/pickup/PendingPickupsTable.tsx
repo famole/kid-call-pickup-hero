@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Clock, User, Phone } from 'lucide-react';
+import { Clock, User, Baby } from 'lucide-react';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -182,8 +182,8 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                         size="sm"
                         className="bg-school-primary hover:bg-school-primary/90"
                       >
-                        <Phone className="h-4 w-4 mr-2" />
-                        {t('pickup.callForPickup')}
+                        <Baby className="h-4 w-4 mr-2" />
+                        Enviado
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -236,7 +236,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                 size="sm"
                 className="bg-school-primary hover:bg-school-primary/90 flex-shrink-0"
               >
-                <Phone className="h-4 w-4" />
+                <Baby className="h-4 w-4" />
               </Button>
             </div>
             
