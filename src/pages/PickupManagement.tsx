@@ -197,6 +197,10 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
               <CalledStudentsTable 
                 requests={calledStudents}
                 loading={calledLoading}
+                onStatusChange={() => {
+                  refetchCalled();
+                  refetchPending();
+                }}
               />
             </TabsContent>
 
