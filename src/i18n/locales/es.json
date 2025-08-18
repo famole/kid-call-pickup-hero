@@ -199,7 +199,9 @@
     "noAuthorizations": "No se encontraron autorizaciones de recogida",
     "authorizedParent": "Padre Autorizado",
     "active": "Activo",
-    "inactive": "Inactivo"
+    "inactive": "Inactivo",
+    "sent": "Enviado",
+    "goBack": "Volver Atrás"
   },
   "pickupAuthorizations": {
     "title": "Autorizaciones de Recogida",

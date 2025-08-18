@@ -201,7 +201,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                         className="text-orange-600 border-orange-300 hover:bg-orange-50"
                       >
                         <Undo2 className="h-4 w-4 mr-2" />
-                        Volver Atrás
+                        {t('pickup.goBack')}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -256,7 +256,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
                 className="text-orange-600 border-orange-300 hover:bg-orange-50 flex-shrink-0"
               >
                 <Undo2 className="h-4 w-4 mr-1" />
-                Volver
+                {t('pickup.goBack')}
               </Button>
             </div>
             

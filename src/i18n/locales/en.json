@@ -199,7 +199,9 @@
     "noAuthorizations": "No pickup authorizations found",
     "authorizedParent": "Authorized Parent",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "sent": "Sent",
+    "goBack": "Go Back"
   },
   "pickupAuthorizations": {
     "title": "Pickup Authorizations",

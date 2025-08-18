@@ -183,7 +183,7 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                         className="bg-school-primary hover:bg-school-primary/90"
                       >
                         <Baby className="h-4 w-4 mr-2" />
-                        Enviado
+                        {t('pickup.sent')}
                       </Button>
                     </TableCell>
                   </TableRow>

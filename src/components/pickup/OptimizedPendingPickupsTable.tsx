@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { User, Clock, Baby } from 'lucide-react';
 import { Avatar as AvatarComponent, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logger } from '@/utils/logger';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface OptimizedPendingPickupsTableProps {
   selectedClass?: string;
@@ -21,6 +22,7 @@ const OptimizedPendingPickupsTable: React.FC<OptimizedPendingPickupsTableProps> 
   selectedClass,
   onClassChange
 }) => {
+  const { t } = useTranslation();
   const { pendingRequests, loading, markAsCalled } = useOptimizedPickupManagement(selectedClass);
   const [isMobile, setIsMobile] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 768;
@@ -140,7 +142,7 @@ const OptimizedPendingPickupsTable: React.FC<OptimizedPendingPickupsTableProps> 
                         className="bg-school-primary hover:bg-school-primary/90"
                       >
                         <Baby className="h-4 w-4 mr-2" />
-                        Enviado
+                        {t('pickup.sent')}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -216,7 +218,7 @@ const OptimizedPendingPickupsTable: React.FC<OptimizedPendingPickupsTableProps> 
                   className="bg-school-primary hover:bg-school-primary/90 flex-shrink-0"
                 >
                   <Baby className="h-4 w-4 mr-1" />
-                  Enviado
+                  {t('pickup.sent')}
                 </Button>
               </div>
               
