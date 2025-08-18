@@ -13,7 +13,7 @@ import {
 } from 'tamagui';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import { Image } from 'react-native';
+import { Image, StatusBar } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -69,6 +69,7 @@ export default function LoginScreen() {
 
   return (
     <Theme name="light">
+      <StatusBar barStyle="light-content" backgroundColor="#3b82f6" />
       <YStack
         flex={1}
         justifyContent="center"

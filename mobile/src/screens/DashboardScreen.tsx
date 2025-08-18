@@ -12,7 +12,7 @@ import {
   Paragraph,
   Avatar
 } from 'tamagui'
-import { ScrollView, RefreshControl, Alert, SafeAreaView, AppState } from 'react-native'
+import { ScrollView, RefreshControl, Alert, SafeAreaView, AppState, StatusBar } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
@@ -382,9 +382,10 @@ export default function DashboardScreen({ session }: Props) {
   )
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#3b82f6' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#3b82f6" />
       <Theme name="light">
-        <YStack flex={1} padding="$4" space>
+        <YStack flex={1} padding="$4" space backgroundColor="white">
           {/* Header */}
           <Card
             backgroundColor="#3b82f6"
