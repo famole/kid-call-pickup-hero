@@ -10,6 +10,7 @@ import { PickupRequestWithDetails } from '@/types/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/hooks/useTranslation';
 import { updatePickupRequestStatus } from '@/services/pickup/updatePickupRequest';
+import { logger } from '@/utils/logger';
 
 interface CalledStudentsTableProps {
   requests: PickupRequestWithDetails[];
@@ -29,7 +30,7 @@ const CalledStudentsTable: React.FC<CalledStudentsTableProps> = ({
       await updatePickupRequestStatus(requestId, 'pending');
       onStatusChange?.();
     } catch (error) {
-      console.error('Error changing status back to pending:', error);
+      logger.error('Error changing status back to pending:', error);
     }
   };
   const [isMobile, setIsMobile] = useState(() => {

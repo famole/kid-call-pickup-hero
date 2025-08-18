@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { PickupRequest } from '@/types';
+import { logger } from '@/utils/logger';
 
 // Optimized function to get all pickup requests with details in a single query
 export const getPickupRequestsWithDetailsBatch = async (
@@ -36,16 +37,16 @@ export const getPickupRequestsWithDetailsBatch = async (
 
     // If teacher class IDs are provided, filter by those classes
     if (teacherClassIds && teacherClassIds.length > 0) {
-      console.log('Filtering pickup requests by teacherClassIds:', teacherClassIds);
+      logger.info('Filtering pickup requests by teacherClassIds:', teacherClassIds);
       query = query.in('students.class_id', teacherClassIds);
     } else {
-      console.log('No teacherClassIds filter applied, teacherClassIds:', teacherClassIds);
+      logger.info('No teacherClassIds filter applied, teacherClassIds:', teacherClassIds);
     }
 
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching pickup requests with details:', error);
+      logger.error('Error fetching pickup requests with details:', error);
       throw new Error(error.message);
     }
 
@@ -78,7 +79,7 @@ export const getPickupRequestsWithDetailsBatch = async (
       } : null
     }));
   } catch (error) {
-    console.error('Error in getPickupRequestsWithDetailsBatch:', error);
+    logger.error('Error in getPickupRequestsWithDetailsBatch:', error);
     return [];
   }
 };
@@ -125,7 +126,7 @@ export const getCalledStudentsOptimized = async (
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching called students:', error);
+      logger.error('Error fetching called students:', error);
       throw new Error(error.message);
     }
 
@@ -157,7 +158,7 @@ export const getCalledStudentsOptimized = async (
       } : null
     }));
   } catch (error) {
-    console.error('Error in getCalledStudentsOptimized:', error);
+    logger.error('Error in getCalledStudentsOptimized:', error);
     return [];
   }
 };

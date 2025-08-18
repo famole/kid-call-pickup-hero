@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { getStudentById } from '@/services/studentService';
 import { getClassById } from '@/services/classService';
+import { logger } from '@/utils/logger';
 
 // Function to check if a string is a valid UUID
 const isValidUUID = (id: string): boolean => {
@@ -22,7 +23,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
       .eq('status', 'called');
     
     if (error) {
-      console.error('Error fetching called pickup requests:', error);
+      logger.error('Error fetching called pickup requests:', error);
       throw new Error(error.message);
     }
     
@@ -30,7 +31,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     const validRequests = data.filter(req => {
       const isValid = isValidUUID(req.student_id) && isValidUUID(req.parent_id);
       if (!isValid) {
-        console.warn(`Filtering out called request ${req.id} with invalid IDs: student_id=${req.student_id}, parent_id=${req.parent_id}`);
+        logger.warn(`Filtering out called request ${req.id} with invalid IDs: student_id=${req.student_id}, parent_id=${req.parent_id}`);
       }
       return isValid;
     });
@@ -46,7 +47,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
           try {
             classInfo = await getClassById(student.classId);
           } catch (classError) {
-            console.error(`Error fetching class ${student.classId}:`, classError);
+            logger.error(`Error fetching class ${student.classId}:`, classError);
           }
         }
         
@@ -62,7 +63,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
           class: classInfo
         };
       } catch (error) {
-        console.error(`Error fetching details for request ${req.id}:`, error);
+        logger.error(`Error fetching details for request ${req.id}:`, error);
         // Return null for problematic requests and filter them out later
         return null;
       }
@@ -92,7 +93,7 @@ export const getCurrentlyCalled = async (classId?: string): Promise<PickupReques
     
     return validRequestsWithDetails;
   } catch (error) {
-    console.error('Error in getCurrentlyCalled:', error);
+    logger.error('Error in getCurrentlyCalled:', error);
     throw error;
   }
 };

@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User, Clock, Baby } from 'lucide-react';
 import { Avatar as AvatarComponent, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { logger } from '@/utils/logger';
 
 interface OptimizedPendingPickupsTableProps {
   selectedClass?: string;
@@ -45,7 +46,7 @@ const OptimizedPendingPickupsTable: React.FC<OptimizedPendingPickupsTableProps> 
     try {
       await markAsCalled(requestId);
     } catch (error) {
-      console.error('Error calling student:', error);
+      logger.error('Error calling student:', error);
     }
   };
 

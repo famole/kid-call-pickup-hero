@@ -1,17 +1,18 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequest } from '@/types';
+import { logger } from '@/utils/logger';
 
 // Create a new pickup request - now defaults to 'pending' status
 export const createPickupRequest = async (studentId: string): Promise<PickupRequest> => {
   try {
-    console.log('Creating pickup request for student:', studentId);
+    logger.info('Creating pickup request for student:', studentId);
 
     // Get the authenticated parent's ID from the server
     const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
 
     if (parentError || !parentId) {
-      console.error('Unable to determine current parent ID:', parentError);
+      logger.error('Unable to determine current parent ID:', parentError);
       throw new Error('Authentication error.');
     }
     
@@ -21,16 +22,16 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
     });
 
     if (authError) {
-      console.error('Error checking parent authorization:', authError);
+      logger.error('Error checking parent authorization:', authError);
       throw new Error('Unable to verify parent authorization.');
     }
 
     if (!isAuthorized) {
-      console.error('Parent is not authorized for this student');
+      logger.error('Parent is not authorized for this student');
       throw new Error('You are not authorized to request pickup for this student.');
     }
 
-    console.log('Parent authorization verified via enhanced server function (includes pickup authorizations)');
+    logger.info('Parent authorization verified via enhanced server function (includes pickup authorizations)');
     
     const { data, error } = await supabase
       .from('pickup_requests')
@@ -44,11 +45,11 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
       .single();
     
     if (error) {
-      console.error('Error creating pickup request:', error);
+      logger.error('Error creating pickup request:', error);
       throw new Error(error.message);
     }
     
-    console.log('Pickup request created successfully:', data.id);
+    logger.info('Pickup request created successfully:', data.id);
     
     return {
       id: data.id,
@@ -58,7 +59,7 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
       status: data.status as 'pending' | 'called' | 'completed' | 'cancelled'
     };
   } catch (error) {
-    console.error('Error in createPickupRequest:', error);
+    logger.error('Error in createPickupRequest:', error);
     throw error;
   }
 };
