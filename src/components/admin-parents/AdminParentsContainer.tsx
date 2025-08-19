@@ -15,6 +15,7 @@ interface AdminParentsContainerProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
   handleDeleteParent: (parentId: string) => Promise<void>;
+  handleResetParentPassword?: (email: string, name: string) => Promise<void>;
   handleReactivateParent?: (parentId: string, parentName: string) => void;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;
@@ -34,6 +35,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
   onParentUpdated,
   onImportCompleted,
   handleDeleteParent,
+  handleResetParentPassword,
   handleReactivateParent,
   getHeaderTitle,
   getHeaderDescription,
@@ -53,6 +55,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
       onParentUpdated={onParentUpdated}
       onImportCompleted={onImportCompleted}
       handleDeleteParent={handleDeleteParent}
+      handleResetParentPassword={handleResetParentPassword}
       handleReactivateParent={handleReactivateParent}
       getHeaderTitle={getHeaderTitle}
       getHeaderDescription={getHeaderDescription}

@@ -157,3 +157,14 @@ export const reactivateParent = async (id: string): Promise<Parent> => {
     updatedAt: new Date(data.updated_at),
   };
 };
+
+export const resetParentPassword = async (email: string): Promise<void> => {
+  const { error } = await supabase.functions.invoke('reset-parent-password', {
+    body: { email }
+  });
+  
+  if (error) {
+    console.error('Error resetting parent password:', error);
+    throw new Error(error.message);
+  }
+};

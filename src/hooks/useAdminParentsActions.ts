@@ -1,6 +1,6 @@
 
 import { useToast } from "@/components/ui/use-toast";
-import { deleteParent } from '@/services/parentService';
+import { deleteParent, resetParentPassword } from '@/services/parentService';
 import { ParentWithStudents } from '@/types/parent';
 
 interface UseAdminParentsActionsProps {
@@ -63,8 +63,33 @@ export const useAdminParentsActions = ({
     }
   };
 
+  const handleResetParentPassword = async (email: string, name: string): Promise<void> => {
+    const userTypeLabel = userRole === 'superadmin' ? 'superadmin' :
+                         userRole === 'teacher' ? 'teacher' : 
+                         userRole === 'admin' ? 'admin' : 'parent';
+    
+    if (!confirm(`Are you sure you want to reset ${name}'s password? This will remove their authentication account and they will need to set up their password again.`)) {
+      return;
+    }
+    
+    try {
+      await resetParentPassword(email);
+      toast({
+        title: "Success",
+        description: `${name}'s password has been reset. They can now set up their password again.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to reset password for ${name}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     handleDeleteParent,
+    handleResetParentPassword,
     getHeaderTitle,
     getHeaderDescription,
   };

@@ -31,6 +31,7 @@ interface AdminParentsLayoutProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
   handleDeleteParent: (parentId: string) => Promise<void>;
+  handleResetParentPassword?: (email: string, name: string) => Promise<void>;
   handleReactivateParent?: (parentId: string, parentName: string) => void;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;
@@ -50,6 +51,8 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   onParentUpdated,
   onImportCompleted,
   handleDeleteParent,
+  handleResetParentPassword,
+  handleReactivateParent,
   getHeaderTitle,
   getHeaderDescription,
   loadingProgress,
@@ -136,6 +139,8 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           allStudents={allStudents}
           onEditParent={hooks.editParentForm.openEditParentSheet}
           onDeleteParent={handleDeleteParent}
+          onResetParentPassword={handleResetParentPassword}
+          onReactivateParent={handleReactivateParent}
           onManageStudents={hooks.studentManagement.openStudentModal}
           authStatuses={authStatuses}
         />

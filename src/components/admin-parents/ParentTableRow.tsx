@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Users, RotateCcw } from "lucide-react";
+import { Edit, Trash2, Users, RotateCcw, KeyRound } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { ParentAuthStatus } from '@/services/authStatusService';
 import AuthStatusBadge from './AuthStatusBadge';
@@ -17,6 +17,7 @@ interface ParentTableRowProps {
   onDelete: () => void;
   onManageStudents: () => void;
   onReactivate?: () => void;
+  onResetPassword?: () => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   showStudentsColumn: boolean;
   authStatus?: ParentAuthStatus;
@@ -28,6 +29,7 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
   onDelete,
   onManageStudents,
   onReactivate,
+  onResetPassword,
   userRole = 'parent',
   showStudentsColumn,
   authStatus,
@@ -81,6 +83,16 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
               {showStudentsColumn && (
                 <Button variant="outline" size="sm" onClick={onManageStudents}>
                   <Users className="h-4 w-4" />
+                </Button>
+              )}
+              {onResetPassword && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onResetPassword}
+                  className="text-orange-600 hover:text-orange-700"
+                >
+                  <KeyRound className="h-4 w-4" />
                 </Button>
               )}
             </>

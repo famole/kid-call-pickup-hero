@@ -1,1 +1,4 @@
 project_id = "bslcyuufvifphfzdgfcl"
+
+[functions.reset-parent-password]
+verify_jwt = false

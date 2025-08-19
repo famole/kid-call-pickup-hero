@@ -27,6 +27,7 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
 
   const {
     handleDeleteParent,
+    handleResetParentPassword,
     getHeaderTitle,
     getHeaderDescription,
   } = useAdminParentsActions({ userRole, setParents });
@@ -47,6 +48,7 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
       onParentUpdated={onParentUpdated}
       onImportCompleted={onImportCompleted}
       handleDeleteParent={handleDeleteParent}
+      handleResetParentPassword={handleResetParentPassword}
       handleReactivateParent={handleReactivateParent}
       getHeaderTitle={getHeaderTitle}
       getHeaderDescription={getHeaderDescription}
