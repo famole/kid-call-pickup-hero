@@ -38,6 +38,7 @@ interface AdminParentsLayoutProps {
   loadingProgress?: string;
   statusFilter?: 'active' | 'deleted' | 'all';
   onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
+  onAuthStatusRefresh?: () => void;
 }
 
 const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
@@ -56,11 +57,15 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   getHeaderTitle,
   getHeaderDescription,
   loadingProgress,
+  onAuthStatusRefresh,
 }) => {
   const [classes, setClasses] = React.useState<Class[]>([]);
   
   // Fetch auth statuses for admins only
-  const { authStatuses } = useParentAuthStatuses();
+  const { authStatuses, refetchAuthStatuses } = useParentAuthStatuses();
+  
+  // Use onAuthStatusRefresh from props if provided, otherwise use local refetch
+  const handleAuthStatusRefresh = onAuthStatusRefresh || refetchAuthStatuses;
 
   // Load classes
   React.useEffect(() => {

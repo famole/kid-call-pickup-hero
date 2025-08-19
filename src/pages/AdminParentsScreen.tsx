@@ -36,7 +36,11 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
     getUserTypeLabel,
     getHeaderTitle,
     getHeaderDescription,
-  } = useAdminParentsActions({ userRole, setParents });
+  } = useAdminParentsActions({ 
+    userRole, 
+    setParents, 
+    onAuthStatusChange: refreshData 
+  });
 
   const {
     handleReactivateParent,
@@ -62,6 +66,7 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
         loadingProgress={loadingProgress}
         statusFilter={statusFilter}
         onStatusFilterChange={handleStatusFilterChange}
+        onAuthStatusRefresh={refreshData}
       />
       
       <ResetPasswordConfirmDialog

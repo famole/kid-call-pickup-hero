@@ -22,6 +22,7 @@ interface AdminParentsContainerProps {
   loadingProgress?: string;
   statusFilter?: 'active' | 'deleted' | 'all';
   onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
+  onAuthStatusRefresh?: () => void;
 }
 
 const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
@@ -42,6 +43,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
   loadingProgress,
   statusFilter,
   onStatusFilterChange,
+  onAuthStatusRefresh,
 }) => {
   return (
     <AdminParentsLayout
@@ -62,6 +64,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
       loadingProgress={loadingProgress}
       statusFilter={statusFilter}
       onStatusFilterChange={onStatusFilterChange}
+      onAuthStatusRefresh={onAuthStatusRefresh}
     />
   );
 };

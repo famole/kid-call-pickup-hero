@@ -7,11 +7,13 @@ import { ParentWithStudents } from '@/types/parent';
 interface UseAdminParentsActionsProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   setParents: (updateFn: (prev: ParentWithStudents[]) => ParentWithStudents[]) => void;
+  onAuthStatusChange?: () => void;
 }
 
 export const useAdminParentsActions = ({ 
   userRole = 'parent', 
-  setParents 
+  setParents,
+  onAuthStatusChange
 }: UseAdminParentsActionsProps) => {
   const { toast } = useToast();
   const [resetPasswordDialog, setResetPasswordDialog] = useState<{
@@ -82,6 +84,10 @@ export const useAdminParentsActions = ({
         title: "Success",
         description: `${resetPasswordDialog.name}'s password has been reset. They can now set up their password again.`,
       });
+      // Trigger auth status refresh after successful reset
+      if (onAuthStatusChange) {
+        onAuthStatusChange();
+      }
     } catch (error) {
       toast({
         title: "Error",
