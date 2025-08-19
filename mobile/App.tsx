@@ -12,6 +12,7 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import AuthorizationsScreen from './src/screens/AuthorizationsScreen';
 import { Session } from '@supabase/supabase-js';
 import * as Notifications from 'expo-notifications'
+import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
 Notifications.setNotificationHandler({
@@ -32,7 +33,12 @@ async function registerForPushNotificationsAsync() {
   if (finalStatus !== 'granted') {
     return
   }
-  await Notifications.getExpoPushTokenAsync()
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
+  await Notifications.getExpoPushTokenAsync({
+    projectId,
+    useNextNotificationsApi: true,
+  })
   if (Platform.OS === 'android') {
     Notifications.setNotificationChannelAsync('default', {
       name: 'default',
