@@ -21,7 +21,7 @@ interface AdminParentsContentProps {
   allStudents: Child[];
   onEditParent: (parent: ParentWithStudents) => void;
   onDeleteParent: (parentId: string) => Promise<void>;
-  onResetParentPassword?: (email: string, name: string) => Promise<void>;
+  onResetParentPassword?: (email: string, name: string) => void;
   onManageStudents: (parent: ParentWithStudents) => void;
   onReactivateParent?: (parentId: string, parentName: string) => void;
   statusFilter?: 'active' | 'deleted' | 'all';

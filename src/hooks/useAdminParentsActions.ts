@@ -1,5 +1,6 @@
 
-import { useToast } from "@/components/ui/use-toast";
+import { useState } from 'react';
+import { useToast } from "@/hooks/use-toast";
 import { deleteParent, resetParentPassword } from '@/services/parentService';
 import { ParentWithStudents } from '@/types/parent';
 
@@ -13,6 +14,12 @@ export const useAdminParentsActions = ({
   setParents 
 }: UseAdminParentsActionsProps) => {
   const { toast } = useToast();
+  const [resetPasswordDialog, setResetPasswordDialog] = useState<{
+    isOpen: boolean;
+    email: string;
+    name: string;
+  }>({ isOpen: false, email: '', name: '' });
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const handleDeleteParent = async (parentId: string): Promise<void> => {
     const userTypeLabel = userRole === 'superadmin' ? 'superadmin' :
@@ -63,33 +70,47 @@ export const useAdminParentsActions = ({
     }
   };
 
-  const handleResetParentPassword = async (email: string, name: string): Promise<void> => {
-    const userTypeLabel = userRole === 'superadmin' ? 'superadmin' :
-                         userRole === 'teacher' ? 'teacher' : 
-                         userRole === 'admin' ? 'admin' : 'parent';
-    
-    if (!confirm(`Are you sure you want to reset ${name}'s password? This will remove their authentication account and they will need to set up their password again.`)) {
-      return;
-    }
-    
+  const handleResetParentPassword = (email: string, name: string): void => {
+    setResetPasswordDialog({ isOpen: true, email, name });
+  };
+
+  const confirmResetPassword = async (): Promise<void> => {
+    setIsResettingPassword(true);
     try {
-      await resetParentPassword(email);
+      await resetParentPassword(resetPasswordDialog.email);
       toast({
         title: "Success",
-        description: `${name}'s password has been reset. They can now set up their password again.`,
+        description: `${resetPasswordDialog.name}'s password has been reset. They can now set up their password again.`,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to reset password for ${name}`,
+        description: `Failed to reset password for ${resetPasswordDialog.name}`,
         variant: "destructive",
       });
+    } finally {
+      setIsResettingPassword(false);
     }
+  };
+
+  const closeResetPasswordDialog = () => {
+    setResetPasswordDialog({ isOpen: false, email: '', name: '' });
+  };
+
+  const getUserTypeLabel = () => {
+    return userRole === 'superadmin' ? 'superadmin' :
+           userRole === 'teacher' ? 'teacher' : 
+           userRole === 'admin' ? 'admin' : 'parent';
   };
 
   return {
     handleDeleteParent,
     handleResetParentPassword,
+    confirmResetPassword,
+    closeResetPasswordDialog,
+    resetPasswordDialog,
+    isResettingPassword,
+    getUserTypeLabel,
     getHeaderTitle,
     getHeaderDescription,
   };
