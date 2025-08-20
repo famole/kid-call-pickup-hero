@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ParentInput, ParentWithStudents } from '@/types/parent';
 import { createParent } from '@/services/parentService';
 import { useToast } from "@/components/ui/use-toast";
+import { logger } from "@/utils/logger";
 
 interface UseAddParentFormProps {
   onParentAdded: (newParent: ParentWithStudents) => void;
@@ -55,7 +56,7 @@ export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseA
       });
       closeAddParentSheet();
     } catch (error) {
-      console.error('Error adding parent:', error);
+      logger.error('Error adding parent:', error);
       toast({
         title: "Error",
         description: `Failed to add ${newParent.role || 'user'}`,

@@ -19,6 +19,7 @@ import { useAdminParentsHooks } from './AdminParentsHooks';
 import { createStudentWrappers } from './AdminParentsWrappers';
 import { getAllClasses } from '@/services/classService';
 import { useParentAuthStatuses } from '@/hooks/useParentAuthStatuses';
+import { logger } from '@/utils/logger';
 
 interface AdminParentsLayoutProps {
   userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
@@ -74,7 +75,7 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
         const classesData = await getAllClasses();
         setClasses(classesData);
       } catch (error) {
-        console.error('Failed to load classes:', error);
+        logger.error('Failed to load classes:', error);
       }
     };
     loadClasses();

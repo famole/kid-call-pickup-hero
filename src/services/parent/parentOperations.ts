@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Parent, ParentInput } from "@/types/parent";
+import { logger } from "@/utils/logger";
 
 // Core CRUD operations for parents
 export const getAllParents = async (includeDeleted: boolean = false): Promise<Parent[]> => {
@@ -14,7 +15,7 @@ export const getAllParents = async (includeDeleted: boolean = false): Promise<Pa
   const { data, error } = await query.order('name');
   
   if (error) {
-    console.error('Error fetching parents:', error);
+    logger.error('Error fetching parents:', error);
     throw new Error(error.message);
   }
   
@@ -38,7 +39,7 @@ export const getParentById = async (id: string): Promise<Parent | null> => {
     .single();
   
   if (error) {
-    console.error('Error fetching parent:', error);
+    logger.error('Error fetching parent:', error);
     return null;
   }
   
@@ -70,7 +71,7 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
     .single();
 
   if (error) {
-    console.error('Error creating parent:', error);
+    logger.error('Error creating parent:', error);
     // Handle duplicate email error specifically
     if (error.code === '23505' && error.message.includes('parents_email_unique')) {
       throw new Error('A parent with this email address already exists');
@@ -104,7 +105,7 @@ export const updateParent = async (id: string, parentData: ParentInput): Promise
     .single();
   
   if (error) {
-    console.error('Error updating parent:', error);
+    logger.error('Error updating parent:', error);
     throw new Error(error.message);
   }
   
@@ -126,7 +127,7 @@ export const deleteParent = async (id: string): Promise<void> => {
     .eq('id', id);
   
   if (error) {
-    console.error('Error deleting parent:', error);
+    logger.error('Error deleting parent:', error);
     throw new Error(error.message);
   }
 };
@@ -143,7 +144,7 @@ export const reactivateParent = async (id: string): Promise<Parent> => {
     .single();
   
   if (error) {
-    console.error('Error reactivating parent:', error);
+    logger.error('Error reactivating parent:', error);
     throw new Error(error.message);
   }
   
@@ -164,7 +165,7 @@ export const resetParentPassword = async (email: string): Promise<void> => {
   });
   
   if (error) {
-    console.error('Error resetting parent password:', error);
+    logger.error('Error resetting parent password:', error);
     throw new Error(error.message);
   }
 };
