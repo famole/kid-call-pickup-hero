@@ -12,13 +12,19 @@ export const normalizeName = (raw?: string | null): string => {
   if (!raw) return '';
   const value = String(raw).trim();
   if (!value) return '';
+  
+  console.log('Original name value:', value, 'Character codes:', [...value].map(c => c.charCodeAt(0)));
+  
   // Expected format: "Lastname , firstname"
   const parts = value.split(',');
   if (parts.length === 2) {
     const last = parts[0]?.trim();
     const first = parts[1]?.trim();
-    return [first, last].filter(Boolean).join(' ');
+    const result = [first, last].filter(Boolean).join(' ');
+    console.log('Normalized result:', result, 'Character codes:', [...result].map(c => c.charCodeAt(0)));
+    return result;
   }
+  console.log('Direct return:', value, 'Character codes:', [...value].map(c => c.charCodeAt(0)));
   return value;
 };
 
