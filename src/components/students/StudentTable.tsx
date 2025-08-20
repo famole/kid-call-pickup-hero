@@ -120,9 +120,9 @@ const StudentTable = ({
             
             return (
               <TableRow key={student.id}>
-                <TableCell>{student.name}</TableCell>
-                <TableCell>{getClassName(student.classId)}</TableCell>
-                <TableCell className="hidden md:table-cell">
+                <TableCell className="text-left">{student.name}</TableCell>
+                <TableCell className="text-left">{getClassName(student.classId)}</TableCell>
+                <TableCell className="hidden md:table-cell text-left">
                   <span title={parentDisplay}>
                     {parentDisplay.length > 50 
                       ? `${parentDisplay.substring(0, 47)}...` 
