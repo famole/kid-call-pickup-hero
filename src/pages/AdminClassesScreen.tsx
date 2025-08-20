@@ -79,22 +79,24 @@ const AdminClassesScreen = () => {
   return (
     <div className="w-full">
       <div className="container mx-auto py-6">
-        <header className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <School className="h-8 w-8 text-school-primary" />
-              <h1 className="text-3xl font-bold">{t('classes.title')}</h1>
-            </div>
-            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-school-primary">
-              <Plus className="mr-2 h-4 w-4" /> {t('classes.addClass')}
-            </Button>
-          </div>
-        </header>
-        
         <Card>
           <CardHeader>
-            <CardTitle>{t('classes.classList')}</CardTitle>
-            <CardDescription>{t('classes.manageAllClasses')}</CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-start justify-start gap-4 mb-6">
+              <div className="flex items-center gap-3 text-left">
+                <School className="h-8 w-8 text-school-primary" />
+                <h1 className="text-3xl font-bold text-left">{t('classes.title')}</h1>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:ml-auto">
+                <Button 
+                  onClick={() => setIsAddDialogOpen(true)} 
+                  className="bg-school-primary flex-1 sm:flex-none"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> {t('classes.addClass')}
+                </Button>
+              </div>
+            </div>
+            <CardTitle className="text-left">{t('classes.classList')}</CardTitle>
+            <CardDescription className="text-left">{t('classes.manageAllClasses')}</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
