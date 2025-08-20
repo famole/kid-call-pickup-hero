@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Class, Child } from '@/types';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface EditStudentDialogProps {
   open: boolean;
@@ -39,20 +40,22 @@ const EditStudentDialog = ({
   onUpdate,
   isLoading = false
 }: EditStudentDialogProps) => {
+  const { t } = useTranslation();
   const nameId = React.useId();
   const classId = React.useId();
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Student</DialogTitle>
+          <DialogTitle>{t('admin.editStudentTitle')}</DialogTitle>
           <DialogDescription>
-            Update student information. Ensure class selection is valid.
+            {t('admin.editStudent')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor={nameId} className="required">Student Name</Label>
+            <Label htmlFor={nameId} className="required">{t('forms.studentName')}</Label>
             <Input
               id={nameId}
               value={student.name || ''}
@@ -62,14 +65,14 @@ const EditStudentDialog = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor={classId} className="required">Class</Label>
+            <Label htmlFor={classId} className="required">{t('admin.class')}</Label>
             <Select
               value={student.classId || ''}
               onValueChange={(value) => setStudent({...student, classId: value})}
               required
             >
               <SelectTrigger id={classId}>
-                <SelectValue placeholder="Select a class" />
+                <SelectValue placeholder={t('admin.selectClass')} />
               </SelectTrigger>
               <SelectContent>
                 {classList.map((classItem) => (
@@ -87,7 +90,7 @@ const EditStudentDialog = ({
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
           >
-            Cancel
+            {t('admin.cancel')}
           </Button>
           <Button 
             onClick={onUpdate}
@@ -96,10 +99,10 @@ const EditStudentDialog = ({
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
+                {t('admin.updating')}
               </>
             ) : (
-              "Update Student"
+              t('admin.updateStudent')
             )}
           </Button>
         </DialogFooter>
