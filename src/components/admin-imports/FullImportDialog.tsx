@@ -12,9 +12,11 @@ import { getAllClasses } from "@/services/classService";
 import { parseFullImportFile } from "@/utils/fullImportParser";
 import { buildFullImportPreview, applyFullImport, FullImportPreview } from "@/services/import/fullImport";
 import type { FullImportInputRow } from "@/services/import/fullImport";
+import { useTranslation } from '@/hooks/useTranslation';
 
 const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted }) => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [file, setFile] = React.useState<File | null>(null);
   const [classes, setClasses] = React.useState<{ id: string; name: string }[]>([]);
@@ -52,14 +54,14 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
 
   const handleBuildPreview = async () => {
     if (!file) {
-      toast({ title: 'File required', description: 'Please select a CSV or Excel file', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('fullImportDialog.noFileSelected'), variant: 'destructive' });
       return;
     }
     try {
       setLoading(true);
       const rows = await parseFullImportFile(file);
       if (!rows.length) {
-        toast({ title: 'No data', description: 'The file appears to be empty', variant: 'destructive' });
+        toast({ title: t('common.warning'), description: t('fullImportDialog.noDataFound'), variant: 'destructive' });
         setLoading(false);
         return;
       }
@@ -70,9 +72,9 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
         p.rows.map(r => [r.rowIndex, !r.errors.some(e => e.toLowerCase().includes('email'))])
       );
       setRowEnabled(initialEnabled);
-      toast({ title: 'Preview ready', description: `Found ${p.rows.length} rows` });
+      toast({ title: t('common.success'), description: t('fullImportDialog.rowsToProcess', { count: p.rows.length }) });
     } catch (e: any) {
-      toast({ title: 'Failed to parse', description: e.message || 'Invalid file', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('fullImportDialog.fileParsingError'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -105,20 +107,20 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
       setApplying(true);
       const selectedRows = preview.rows.filter(r => rowEnabled[r.rowIndex] !== false);
       if (selectedRows.length === 0) {
-        toast({ title: 'No rows selected', description: 'Please enable at least one row to import', variant: 'destructive' });
+        toast({ title: t('common.warning'), description: t('fullImportDialog.someRowsHaveErrors'), variant: 'destructive' });
         setApplying(false);
         return;
       }
       const res = await applyFullImport({ ...preview, rows: selectedRows });
       if (res.errors.length) {
-        toast({ title: 'Import completed with errors', description: `${res.successes} succeeded, ${res.errors.length} failed`, variant: 'destructive' });
+        toast({ title: t('fullImportDialog.importCompleted'), description: t('fullImportDialog.studentsCreated', { count: res.successes }), variant: 'destructive' });
       } else {
-        toast({ title: 'Import successful', description: `${res.successes} rows imported` });
+        toast({ title: t('common.success'), description: t('fullImportDialog.studentsCreated', { count: res.successes }) });
       }
       setOpen(false);
       onCompleted?.();
     } catch (e: any) {
-      toast({ title: 'Import failed', description: e.message || 'Unknown error', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('fullImportDialog.importFailed'), variant: 'destructive' });
     } finally {
       setApplying(false);
     }
@@ -128,24 +130,23 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
-          <Upload className="mr-2 h-4 w-4" /> Full Import
+          <Upload className="mr-2 h-4 w-4" /> {t('fullImportDialog.trigger')}
         </Button>
       </DialogTrigger>
       <DialogContent className="w-[95vw] max-w-7xl">
         <DialogHeader>
-          <DialogTitle>Full Import: Students and Parents</DialogTitle>
+          <DialogTitle>{t('fullImportDialog.title')}</DialogTitle>
           <DialogDescription>
-            Upload a CSV/XLSX with columns: Class, Student (Lastname, firstname), Father name, Father email, Mother name, Mother email.
-            If you select a class below, the Class column will be ignored.
+            {t('fullImportDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
           <div className="flex flex-col sm:flex-row gap-3">
-            <Input type="file" accept=".csv, .xlsx, .xls" onChange={handleFileChange} />
+            <Input type="file" accept=".csv, .xlsx, .xls" onChange={handleFileChange} placeholder={t('fullImportDialog.selectFile')} />
             <Select value={selectedClassId} onValueChange={setSelectedClassId}>
               <SelectTrigger className="min-w-[220px]">
-                <SelectValue placeholder="Select class (optional)" />
+                <SelectValue placeholder={t('fullImportDialog.selectClass')} />
               </SelectTrigger>
               <SelectContent>
                 {classes.map(c => (
@@ -154,30 +155,30 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
               </SelectContent>
             </Select>
             <Button onClick={handleBuildPreview} disabled={loading} className="bg-school-primary">
-              {loading ? 'Building preview...' : 'Preview'}
+              {loading ? t('fullImportDialog.buildingPreview') : t('fullImportDialog.buildPreview')}
             </Button>
           </div>
           <div className="text-xs text-muted-foreground">
-            Import for class: {selectedClassId ? (classes.find(c => c.id === selectedClassId)?.name || 'Selected class') : 'Using Class column in file (column 1)'}
+            {t('fullImportDialog.classFilter')}: {selectedClassId ? (classes.find(c => c.id === selectedClassId)?.name || t('admin.selectClass')) : t('fullImportDialog.columnHeaders.className')}
           </div>
 
           {preview && (
             <Card className="p-4 space-y-4">
               <div className="text-sm text-muted-foreground">
-                Summary: {preview.stats.students} rows • {preview.stats.createParents} new parents • {preview.stats.updateParents} updates • {preview.stats.linkParents} links • {preview.stats.skippedParents} skipped • {preview.stats.errors} issues
+                {t('fullImportDialog.importSummary')}: {preview.stats.students} {t('common.rows')} • {preview.stats.createParents} {t('fullImportDialog.parentsToCreate')} • {preview.stats.updateParents} {t('fullImportDialog.parentsToUpdate')} • {preview.stats.linkParents} {t('fullImportDialog.parentActions.linkExisting')} • {preview.stats.skippedParents} {t('fullImportDialog.parentActions.skip')} • {preview.stats.errors} {t('fullImportDialog.columnHeaders.errors')}
               </div>
               <div className="max-h-[70vh] overflow-auto border rounded-md">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted">
-                      <th className="p-2 text-left">Include</th>
+                      <th className="p-2 text-left">{t('fullImportDialog.columnHeaders.include')}</th>
                       <th className="p-2 text-left">#</th>
-                      <th className="p-2 text-left">Student</th>
-                      <th className="p-2 text-left">Class</th>
-                      <th className="p-2 text-left">Mother</th>
-                      <th className="p-2 text-left">Father</th>
-                      <th className="p-2 text-left">Primary</th>
-                      <th className="p-2 text-left">Errors</th>
+                      <th className="p-2 text-left">{t('fullImportDialog.columnHeaders.studentName')}</th>
+                      <th className="p-2 text-left">{t('fullImportDialog.columnHeaders.className')}</th>
+                      <th className="p-2 text-left">{t('fullImportDialog.columnHeaders.motherName')}</th>
+                      <th className="p-2 text-left">{t('fullImportDialog.columnHeaders.fatherName')}</th>
+                      <th className="p-2 text-left">{t('studentDetails.primary')}</th>
+                      <th className="p-2 text-left">{t('fullImportDialog.columnHeaders.errors')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -190,7 +191,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                             onCheckedChange={(checked) =>
                               setRowEnabled(prev => ({ ...prev, [r.rowIndex]: Boolean(checked) }))
                             }
-                            aria-label={`Include row ${r.rowIndex}`}
+                            aria-label={`${t('fullImportDialog.columnHeaders.include')} ${t('common.row')} ${r.rowIndex}`}
                           />
                         </td>
                         <td className="p-2">{r.rowIndex}</td>
@@ -208,28 +209,28 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                                   return copy;
                                 })
                               }
-                              placeholder="Mother email"
+                              placeholder={t('fullImportDialog.columnHeaders.motherEmail')}
                               className="h-8"
                             />
                             {r.mother.type === 'skip' && (
-                              <span className="text-muted-foreground">Skip ({r.mother.reason})</span>
+                              <span className="text-muted-foreground">{t('fullImportDialog.parentActions.skip')} ({r.mother.reason})</span>
                             )}
                             {r.mother.type === 'link-existing' && (
                               <div>
-                                <div>Link</div>
+                                <div>{t('fullImportDialog.parentActions.linkExisting')}</div>
                                 <div className="text-xs text-muted-foreground">{r.mother.email}</div>
                               </div>
                             )}
                             {r.mother.type === 'create-new' && (
                               <div>
-                                <div>Create</div>
+                                <div>{t('fullImportDialog.parentActions.createNew')}</div>
                                 <div className="text-xs text-muted-foreground">{r.mother.payload.name} • {r.mother.payload.email}</div>
                               </div>
                             )}
                             {r.mother.type === 'update-existing' && (
                               <div>
-                                <div>Update</div>
-                                <div className="text-xs text-muted-foreground">Name → {r.mother.updates?.name} • {r.mother.email}</div>
+                                <div>{t('fullImportDialog.parentActions.updateExisting')}</div>
+                                <div className="text-xs text-muted-foreground">{t('admin.name')} → {r.mother.updates?.name} • {r.mother.email}</div>
                               </div>
                             )}
                           </div>
@@ -246,28 +247,28 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                                   return copy;
                                 })
                               }
-                              placeholder="Father email"
+                              placeholder={t('fullImportDialog.columnHeaders.fatherEmail')}
                               className="h-8"
                             />
                             {r.father.type === 'skip' && (
-                              <span className="text-muted-foreground">Skip ({r.father.reason})</span>
+                              <span className="text-muted-foreground">{t('fullImportDialog.parentActions.skip')} ({r.father.reason})</span>
                             )}
                             {r.father.type === 'link-existing' && (
                               <div>
-                                <div>Link</div>
+                                <div>{t('fullImportDialog.parentActions.linkExisting')}</div>
                                 <div className="text-xs text-muted-foreground">{r.father.email}</div>
                               </div>
                             )}
                             {r.father.type === 'create-new' && (
                               <div>
-                                <div>Create</div>
+                                <div>{t('fullImportDialog.parentActions.createNew')}</div>
                                 <div className="text-xs text-muted-foreground">{r.father.payload.name} • {r.father.payload.email}</div>
                               </div>
                             )}
                             {r.father.type === 'update-existing' && (
                               <div>
-                                <div>Update</div>
-                                <div className="text-xs text-muted-foreground">Name → {r.father.updates?.name} • {r.father.email}</div>
+                                <div>{t('fullImportDialog.parentActions.updateExisting')}</div>
+                                <div className="text-xs text-muted-foreground">{t('admin.name')} → {r.father.updates?.name} • {r.father.email}</div>
                               </div>
                             )}
                           </div>
@@ -279,7 +280,7 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
                               <div>{r.errors.join('; ')}</div>
                               {r.errors.some(e => e.toLowerCase().includes('email')) && (
                                 <Button size="sm" variant="secondary" onClick={revalidate} disabled={loading}>
-                                  Mark fixed
+                                  {t('common.confirm')}
                                 </Button>
                               )}
                             </div>
@@ -295,9 +296,9 @@ const FullImportDialog: React.FC<{ onCompleted?: () => void } > = ({ onCompleted
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t('fullImportDialog.cancel')}</Button>
           <Button onClick={handleApply} disabled={!preview || applying} className="bg-school-primary">
-            {applying ? 'Importing...' : 'Apply Import'}
+            {applying ? t('fullImportDialog.applying') : t('fullImportDialog.applyImport')}
           </Button>
         </DialogFooter>
       </DialogContent>

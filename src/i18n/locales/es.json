@@ -286,6 +286,56 @@
     "cancel": "Cancelar",
     "import": "Importar"
   },
+  "fullImportDialog": {
+    "trigger": "Importación Completa",
+    "title": "Importación Completa",
+    "description": "Importar estudiantes y padres desde un archivo Excel o CSV. Esto creará estudiantes, padres y sus relaciones.",
+    "selectFile": "Seleccionar archivo Excel o CSV",
+    "classFilter": "Filtro de Clase (Opcional)",
+    "selectClass": "Seleccionar una clase para filtrar datos",
+    "buildPreview": "Vista Previa",
+    "buildingPreview": "Construyendo Vista Previa...",
+    "applyImport": "Aplicar Importación",
+    "applying": "Aplicando Importación...",
+    "cancel": "Cancelar",
+    "noFileSelected": "Por favor selecciona un archivo para importar",
+    "fileParsingError": "Error al analizar el archivo. Por favor verifica el formato.",
+    "noDataFound": "No se encontraron datos válidos en el archivo",
+    "importSummary": "Resumen de Importación",
+    "rowsToProcess": "{{count}} filas para procesar",
+    "studentsToCreate": "{{count}} estudiantes para crear",
+    "parentsToCreate": "{{count}} padres para crear",
+    "parentsToUpdate": "{{count}} padres para actualizar",
+    "studentsCreated": "{{count}} estudiantes creados exitosamente",
+    "importCompleted": "Importación completada exitosamente",
+    "importFailed": "Importación falló",
+    "someRowsHaveErrors": "Algunas filas tienen errores y serán omitidas",
+    "columnHeaders": {
+      "include": "Incluir",
+      "className": "Clase",
+      "studentName": "Nombre del Estudiante",
+      "fatherName": "Nombre del Padre",
+      "fatherEmail": "Correo del Padre",
+      "motherName": "Nombre de la Madre",
+      "motherEmail": "Correo de la Madre",
+      "errors": "Errores",
+      "parentActions": "Acciones de Padres"
+    },
+    "parentActions": {
+      "skip": "Omitir",
+      "createNew": "Crear Nuevo",
+      "linkExisting": "Vincular Existente",
+      "updateExisting": "Actualizar Existente"
+    },
+    "errors": {
+      "missingStudentName": "El nombre del estudiante es requerido",
+      "missingClassInfo": "Falta información de la clase",
+      "classNotFound": "Clase '{{className}}' no encontrada",
+      "duplicateEmail": "Dirección de correo duplicada",
+      "invalidEmail": "Formato de correo inválido",
+      "noParentInfo": "No se proporcionó información de padres"
+    }
+  },
   "authStatusBadge": {
     "noAccount": "Sin Cuenta",
     "google": "Google",
