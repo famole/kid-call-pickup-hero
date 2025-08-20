@@ -7,7 +7,6 @@ import { ParentAuthStatus } from '@/services/authStatusService';
 
 // Import components
 import ParentSearch from './ParentSearch';
-import ParentClassFilter from './ParentClassFilter';
 import ParentsTable from './ParentsTable';
 import DeletedItemsFilter from './DeletedItemsFilter';
 
@@ -70,16 +69,11 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
           <ParentSearch
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
+            selectedClassId={selectedClassId}
+            onClassFilterChange={setSelectedClassId}
+            classList={classes}
           />
         </div>
-        {userRole === 'parent' && (
-          <ParentClassFilter
-            classes={classes}
-            selectedClassId={selectedClassId}
-            onClassChange={setSelectedClassId}
-            isLoading={isLoadingClasses}
-          />
-        )}
         {onStatusFilterChange && (
           <DeletedItemsFilter
             value={statusFilter}

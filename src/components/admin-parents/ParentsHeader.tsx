@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Users, Upload, Download, Plus } from "lucide-react";
 import ImportParentsDialog from './ImportParentsDialog';
 import FullImportDialog from '@/components/admin-imports/FullImportDialog';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -16,6 +16,7 @@ interface ParentsHeaderProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   headerTitle?: string;
   headerDescription?: string;
+  onExportCSV?: () => void;
 }
 
 const ParentsHeader: React.FC<ParentsHeaderProps> = ({
@@ -28,6 +29,7 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
   userRole = 'parent',
   headerTitle,
   headerDescription,
+  onExportCSV,
 }) => {
   const { t } = useTranslation();
 
@@ -40,7 +42,7 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
       case 'admin':
         return t('parentsManagement.addAdmin');
       default:
-        return t('parentsManagement.addParent');
+        return t('admin.addParent');
     }
   };
 
@@ -53,50 +55,43 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
       case 'admin':
         return t('parentsManagement.admins.title');
       default:
-        return t('parentsManagement.title');
-    }
-  };
-
-  const getDefaultDescription = () => {
-    switch (userRole) {
-      case 'superadmin':
-        return t('parentsManagement.superadmins.description');
-      case 'teacher':
-        return t('parentsManagement.teachers.description');
-      case 'admin':
-        return t('parentsManagement.admins.description');
-      default:
-        return t('parentsManagement.description');
+        return t('admin.parents');
     }
   };
 
   return (
-    <div className="flex flex-row items-center justify-between">
-      <div>
-        <h3 className="text-2xl font-semibold leading-none tracking-tight">
-          {headerTitle || getDefaultTitle()}
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          {headerDescription || getDefaultDescription()}
-        </p>
+    <header className="mb-8 text-left">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-start gap-4">
+        <div className="flex items-center gap-3 text-left">
+          <Users className="h-8 w-8 text-school-primary" />
+          <h1 className="text-3xl font-bold text-left">{headerTitle || getDefaultTitle()}</h1>
+        </div>
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
+          {onExportCSV && (
+            <Button onClick={onExportCSV} variant="outline" className="flex-1 sm:flex-none">
+              <Download className="mr-2 h-4 w-4" /> {t('admin.exportCSV')}
+            </Button>
+          )}
+          {userRole === 'parent' && (
+            <>
+              <ImportParentsDialog
+                isOpen={isImportDialogOpen}
+                onOpenChange={openState => openState ? onOpenImportDialog() : onCloseImportDialog()}
+                onFileChange={onImportFileChange}
+                onSubmit={onImportSubmit}
+              />
+              <FullImportDialog />
+            </>
+          )}
+          <Button 
+            onClick={onAddParent} 
+            className="bg-school-primary flex-1 sm:flex-none"
+          >
+            <Plus className="mr-2 h-4 w-4" /> {getButtonLabel()}
+          </Button>
+        </div>
       </div>
-      <div className="flex space-x-2">
-        {userRole === 'parent' && (
-          <>
-            <ImportParentsDialog
-              isOpen={isImportDialogOpen}
-              onOpenChange={openState => openState ? onOpenImportDialog() : onCloseImportDialog()}
-              onFileChange={onImportFileChange}
-              onSubmit={onImportSubmit}
-            />
-            <FullImportDialog />
-          </>
-        )}
-        <Button onClick={onAddParent} className="bg-school-primary">
-          <PlusCircle className="mr-2 h-4 w-4" /> {getButtonLabel()}
-        </Button>
-      </div>
-    </div>
+    </header>
   );
 };
 
