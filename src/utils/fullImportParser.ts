@@ -8,12 +8,28 @@ export type FullImportRow = {
   motherEmail?: string | null;
 };
 
+// Fix UTF-8 double encoding issue where UTF-8 bytes are interpreted as Latin-1
+const fixUTF8Encoding = (str: string): string => {
+  try {
+    // If string contains UTF-8 byte sequences interpreted as Latin-1, fix them
+    const bytes = new Uint8Array(str.split('').map(char => char.charCodeAt(0)));
+    const decoder = new TextDecoder('utf-8');
+    return decoder.decode(bytes);
+  } catch {
+    // If decoding fails, return original string
+    return str;
+  }
+};
+
 export const normalizeName = (raw?: string | null): string => {
   if (!raw) return '';
-  const value = String(raw).trim();
+  let value = String(raw).trim();
   if (!value) return '';
   
-  console.log('Original name value:', value, 'Character codes:', [...value].map(c => c.charCodeAt(0)));
+  // Fix UTF-8 encoding issues
+  value = fixUTF8Encoding(value);
+  
+  console.log('Fixed name value:', value, 'Character codes:', [...value].map(c => c.charCodeAt(0)));
   
   // Expected format: "Lastname , firstname"
   const parts = value.split(',');
