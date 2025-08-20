@@ -262,7 +262,25 @@
     "role": "Rol",
     "selectRole": "Seleccionar rol",
     "cancel": "Cancelar",
-    "addUser": "Agregar {{role}}"
+    "addUser": "Agregar {{role}}",
+    "adding": "Agregando {{role}}...",
+    "success": "{{role}} agregado exitosamente",
+    "errors": {
+      "duplicateEmail": "Ya existe un usuario con esta dirección de correo",
+      "invalidEmail": "Por favor ingrese una dirección de correo válida",
+      "nameRequired": "El nombre es requerido",
+      "emailRequired": "El correo electrónico es requerido",
+      "nameTooShort": "El nombre debe tener al menos 2 caracteres",
+      "nameTooLong": "El nombre debe tener menos de 100 caracteres",
+      "phoneInvalid": "Por favor ingrese un número de teléfono válido",
+      "roleRequired": "Por favor seleccione un rol de usuario",
+      "networkError": "Error de red. Por favor verifique su conexión e inténtelo de nuevo",
+      "serverError": "Error del servidor. Por favor inténtelo más tarde",
+      "unknownError": "Ocurrió un error inesperado. Por favor inténtelo de nuevo",
+      "permissionDenied": "No tienes permisos para crear este tipo de usuario",
+      "emailFormat": "El correo debe estar en formato válido (ejemplo@dominio.com)",
+      "phoneFormat": "El número de teléfono debe estar en formato: +1234567890 o (123) 456-7890"
+    }
   },
   "editParentSheet": {
     "title": "Editar Usuario",

@@ -158,6 +158,9 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
         onNewParentChange={hooks.addParentForm.handleNewParentChange}
         onAddParentSubmit={hooks.addParentForm.handleAddParentSubmit}
         onAddSheetOpenChange={openState => openState ? hooks.addParentForm.openAddParentSheet() : hooks.addParentForm.closeAddParentSheet()}
+        isSubmitting={hooks.addParentForm.isSubmitting}
+        getFieldError={hooks.addParentForm.getFieldError}
+        hasFieldError={hooks.addParentForm.hasFieldError}
         isEditSheetOpen={hooks.editParentForm.isEditSheetOpen}
         editingParent={hooks.editParentForm.editingParent}
         onEditingParentChange={hooks.editParentForm.handleEditingParentChange}
