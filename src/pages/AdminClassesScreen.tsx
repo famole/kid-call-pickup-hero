@@ -8,8 +8,10 @@ import ClassFormDialog from '@/components/admin-classes/ClassFormDialog';
 import DeleteClassDialog from '@/components/admin-classes/DeleteClassDialog';
 import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
 import { useClassManagement } from '@/hooks/useClassManagement';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const AdminClassesScreen = () => {
+  const { t } = useTranslation();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -81,18 +83,18 @@ const AdminClassesScreen = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <School className="h-8 w-8 text-school-primary" />
-              <h1 className="text-3xl font-bold">Manage Classes</h1>
+              <h1 className="text-3xl font-bold">{t('classes.title')}</h1>
             </div>
             <Button onClick={() => setIsAddDialogOpen(true)} className="bg-school-primary">
-              <Plus className="mr-2 h-4 w-4" /> Add Class
+              <Plus className="mr-2 h-4 w-4" /> {t('classes.addClass')}
             </Button>
           </div>
         </header>
         
         <Card>
           <CardHeader>
-            <CardTitle>Class List</CardTitle>
-            <CardDescription>Manage all classes in the school</CardDescription>
+            <CardTitle>{t('classes.classList')}</CardTitle>
+            <CardDescription>{t('classes.manageAllClasses')}</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
