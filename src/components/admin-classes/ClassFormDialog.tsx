@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Class } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { getParentsWithStudents } from '@/services/parentService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ClassFormDialogProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
   onSave,
   onClassDataChange
 }) => {
+  const { t } = useTranslation();
   const [teachers, setTeachers] = useState<ParentWithStudents[]>([]);
   const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,37 +109,37 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit Class' : 'Add New Class'}</DialogTitle>
+          <DialogTitle>{isEditMode ? t('classes.editClass') : t('classes.addNewClass')}</DialogTitle>
           <DialogDescription>
-            {isEditMode ? 'Update class information and assign teachers' : 'Create a new class and assign teachers'}
+            {isEditMode ? t('classes.updateClassInfo') : t('classes.createNewClass')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="className">Class Name</Label>
+            <Label htmlFor="className">{t('classes.className')}</Label>
             <Input 
               id="className" 
               value={classData.name || ''} 
               onChange={e => handleInputChange('name', e.target.value)}
-              placeholder="e.g. Class 1A"
+              placeholder={t('classes.classNamePlaceholder')}
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="grade">Grade</Label>
+            <Label htmlFor="grade">{t('classes.grade')}</Label>
             <Input 
               id="grade" 
               value={classData.grade || ''}
               onChange={e => handleInputChange('grade', e.target.value)}
-              placeholder="e.g. 1st Grade"
+              placeholder={t('classes.gradePlaceholder')}
             />
           </div>
           
           <div className="grid gap-2">
-            <Label>Assign Teachers</Label>
+            <Label>{t('classes.assignTeachers')}</Label>
             {loading ? (
-              <div className="text-sm text-muted-foreground">Loading teachers...</div>
+              <div className="text-sm text-muted-foreground">{t('classes.loadingTeachers')}</div>
             ) : teachers.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No teachers available</div>
+              <div className="text-sm text-muted-foreground">{t('classes.noTeachersAvailable')}</div>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-3">
                 {teachers.map((teacher) => (
@@ -156,18 +158,18 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
             )}
             {selectedTeachers.length > 0 && (
               <div className="text-sm text-muted-foreground">
-                {selectedTeachers.length} teacher(s) selected
+                {selectedTeachers.length} {t('classes.teachersSelected')}
               </div>
             )}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t('classes.cancel')}</Button>
           <Button 
             onClick={handleSave}
             disabled={!classData.name || !classData.grade || selectedTeachers.length === 0}
           >
-            {isEditMode ? 'Update Class' : 'Save Class'}
+            {isEditMode ? t('classes.updateClass') : t('classes.saveClass')}
           </Button>
         </DialogFooter>
       </DialogContent>

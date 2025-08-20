@@ -15,12 +15,14 @@ interface AdminParentsContainerProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
   handleDeleteParent: (parentId: string) => Promise<void>;
+  handleResetParentPassword?: (email: string, name: string) => void;
   handleReactivateParent?: (parentId: string, parentName: string) => void;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;
   loadingProgress?: string;
   statusFilter?: 'active' | 'deleted' | 'all';
   onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
+  onAuthStatusRefresh?: () => void;
 }
 
 const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
@@ -34,12 +36,14 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
   onParentUpdated,
   onImportCompleted,
   handleDeleteParent,
+  handleResetParentPassword,
   handleReactivateParent,
   getHeaderTitle,
   getHeaderDescription,
   loadingProgress,
   statusFilter,
   onStatusFilterChange,
+  onAuthStatusRefresh,
 }) => {
   return (
     <AdminParentsLayout
@@ -53,12 +57,14 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
       onParentUpdated={onParentUpdated}
       onImportCompleted={onImportCompleted}
       handleDeleteParent={handleDeleteParent}
+      handleResetParentPassword={handleResetParentPassword}
       handleReactivateParent={handleReactivateParent}
       getHeaderTitle={getHeaderTitle}
       getHeaderDescription={getHeaderDescription}
       loadingProgress={loadingProgress}
       statusFilter={statusFilter}
       onStatusFilterChange={onStatusFilterChange}
+      onAuthStatusRefresh={onAuthStatusRefresh}
     />
   );
 };

@@ -8,10 +8,27 @@ export type FullImportRow = {
   motherEmail?: string | null;
 };
 
+// Fix UTF-8 double encoding issue where UTF-8 bytes are interpreted as Latin-1
+const fixUTF8Encoding = (str: string): string => {
+  try {
+    // If string contains UTF-8 byte sequences interpreted as Latin-1, fix them
+    const bytes = new Uint8Array(str.split('').map(char => char.charCodeAt(0)));
+    const decoder = new TextDecoder('utf-8');
+    return decoder.decode(bytes);
+  } catch {
+    // If decoding fails, return original string
+    return str;
+  }
+};
+
 export const normalizeName = (raw?: string | null): string => {
   if (!raw) return '';
-  const value = String(raw).trim();
+  let value = String(raw).trim();
   if (!value) return '';
+  
+  // Fix UTF-8 encoding issues
+  value = fixUTF8Encoding(value);
+  
   // Expected format: "Lastname , firstname"
   const parts = value.split(',');
   if (parts.length === 2) {
@@ -25,10 +42,20 @@ export const normalizeName = (raw?: string | null): string => {
 export const parseFullImportFile = async (file: File): Promise<FullImportRow[]> => {
   const XLSX = await import('xlsx');
   const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: 'array' });
+  const workbook = XLSX.read(buffer, { 
+    type: 'array',
+    raw: false,
+    cellText: true,
+    cellHTML: false
+  });
   const firstSheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[firstSheetName];
-  const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { 
+    header: 1, 
+    defval: '',
+    raw: false,
+    blankrows: false
+  });
 
   // Expect first row as header. Filter out empty rows and drop header row
   const dataRows = rows.filter(r => (r?.length || 0) > 0 && r.some(cell => String(cell).trim() !== '')) as any[][];

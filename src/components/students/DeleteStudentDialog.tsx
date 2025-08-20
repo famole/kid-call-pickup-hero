@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Child } from '@/types';
-import { Loader2 } from 'lucide-react'; // Import Loader2
+import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface DeleteStudentDialogProps {
   open: boolean;
@@ -25,37 +26,39 @@ const DeleteStudentDialog = ({
   onOpenChange,
   student,
   onDelete,
-  isLoading = false // Destructure with a default value
+  isLoading = false
 }: DeleteStudentDialogProps) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Student</DialogTitle>
+          <DialogTitle>{t('admin.deleteStudent')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete {student?.name}? This action cannot be undone.
+            {t('admin.deleteStudentConfirm', { studentName: student?.name })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)} 
-            disabled={isLoading} // Disable if loading
+            disabled={isLoading}
           >
-            Cancel
+            {t('admin.cancel')}
           </Button>
           <Button 
             variant="destructive" 
             onClick={onDelete} 
-            disabled={isLoading} // Disable if loading
+            disabled={isLoading}
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting...
+                {t('admin.deleting')}
               </>
             ) : (
-              "Delete"
+              t('admin.delete')
             )}
           </Button>
         </DialogFooter>

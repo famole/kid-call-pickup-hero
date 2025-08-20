@@ -13,7 +13,7 @@ import {
 } from 'tamagui';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import { Image } from 'react-native';
+import { Image, StatusBar } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -69,6 +69,7 @@ export default function LoginScreen() {
 
   return (
     <Theme name="light">
+      <StatusBar barStyle="light-content" backgroundColor="#3b82f6" />
       <YStack
         flex={1}
         justifyContent="center"
@@ -77,21 +78,21 @@ export default function LoginScreen() {
         backgroundColor="#3b82f6"
       >
         <YStack
-          width={120}
-          height={120}
-          borderRadius={60}
+          width={140}
+          height={140}
+          borderRadius={70}
           backgroundColor="#fff"
           alignItems="center"
           justifyContent="center"
-          marginBottom={-60}
+          marginBottom="$4"
           zIndex={1}
         >
           <Image
             source={require('../../assets/upsy_logo.png')}
-            style={{ width: 80, height: 80 }}
+            style={{ width: 100, height: 100 }}
           />
         </YStack>
-        <Card padding="$6" elevate bordered borderRadius="$6" width="100%" space marginTop={60}>
+        <Card padding="$6" elevate bordered borderRadius="$6" width="100%" space="$4">
           <Text fontSize={22} fontWeight="bold" textAlign="center" marginBottom={16}>
             {t('auth.welcomeToUpsy')}
           </Text>
@@ -115,7 +116,7 @@ export default function LoginScreen() {
           {error && (
             <Paragraph color="red" textAlign="center">{error}</Paragraph>
           )}
-          <Button onPress={handleLogin} disabled={loading} icon={loading ? <Spinner /> : null} borderRadius="$6" size="$5">
+          <Button onPress={handleLogin} disabled={loading} icon={loading ? <Spinner /> : null} borderRadius="$6" size="$5" marginTop="$4">
             {loading ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
           <Button onPress={handleGoogleLogin} disabled={googleLoading} icon={googleLoading ? <Spinner /> : null} borderRadius="$6" size="$5" backgroundColor="#fff" color="#000">

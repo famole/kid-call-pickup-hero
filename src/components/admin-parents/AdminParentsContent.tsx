@@ -7,7 +7,6 @@ import { ParentAuthStatus } from '@/services/authStatusService';
 
 // Import components
 import ParentSearch from './ParentSearch';
-import ParentClassFilter from './ParentClassFilter';
 import ParentsTable from './ParentsTable';
 import DeletedItemsFilter from './DeletedItemsFilter';
 
@@ -21,6 +20,7 @@ interface AdminParentsContentProps {
   allStudents: Child[];
   onEditParent: (parent: ParentWithStudents) => void;
   onDeleteParent: (parentId: string) => Promise<void>;
+  onResetParentPassword?: (email: string, name: string) => void;
   onManageStudents: (parent: ParentWithStudents) => void;
   onReactivateParent?: (parentId: string, parentName: string) => void;
   statusFilter?: 'active' | 'deleted' | 'all';
@@ -34,6 +34,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
   allStudents,
   onEditParent,
   onDeleteParent,
+  onResetParentPassword,
   onManageStudents,
   onReactivateParent,
   statusFilter = 'active',
@@ -68,16 +69,11 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
           <ParentSearch
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
+            selectedClassId={selectedClassId}
+            onClassFilterChange={setSelectedClassId}
+            classList={classes}
           />
         </div>
-        {userRole === 'parent' && (
-          <ParentClassFilter
-            classes={classes}
-            selectedClassId={selectedClassId}
-            onClassChange={setSelectedClassId}
-            isLoading={isLoadingClasses}
-          />
-        )}
         {onStatusFilterChange && (
           <DeletedItemsFilter
             value={statusFilter}
@@ -95,6 +91,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
         onDeleteParent={onDeleteParent}
         onManageStudents={onManageStudents}
         onReactivateParent={onReactivateParent}
+        onResetParentPassword={onResetParentPassword}
         userRole={userRole}
         authStatuses={authStatuses}
       />

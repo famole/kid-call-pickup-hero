@@ -27,6 +27,7 @@ import { getParentsWithStudents, addStudentToParent } from '@/services/parentSer
 import { getAllStudents as fetchAllStudentsService } from '@/services/studentService'; // Renamed to avoid conflict
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // Import new components
 import ViewParentDetailsDialog from '@/components/parent-management/ViewParentDetailsDialog';
@@ -34,6 +35,7 @@ import AssignStudentDialog from '@/components/parent-management/AssignStudentDia
 
 const ParentManagement: React.FC = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [parents, setParents] = useState<ParentWithStudents[]>([]);
   const [unassignedStudents, setUnassignedStudents] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ const ParentManagement: React.FC = () => {
       } catch (error) {
         console.error("Error loading data:", error);
         toast({
-          title: "Error",
+          title: t('common.error'),
           description: "Failed to load parent and student data",
           variant: "destructive",
         });
@@ -73,7 +75,7 @@ const ParentManagement: React.FC = () => {
     };
     
     loadData();
-  }, [toast]);
+  }, [toast, t]);
   
   const filteredParents = parents.filter(parent => 
     parent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,7 +86,7 @@ const ParentManagement: React.FC = () => {
     try {
       const student = unassignedStudents.find(s => s.id === studentId);
       if (!student) {
-        toast({ title: "Error", description: "Student not found.", variant: "destructive" });
+        toast({ title: t('common.error'), description: "Student not found.", variant: "destructive" });
         return;
       }
       
@@ -114,7 +116,7 @@ const ParentManagement: React.FC = () => {
       setUnassignedStudents(prev => prev.filter(s => s.id !== studentId));
       
       toast({
-        title: "Success",
+        title: t('common.success'),
         description: "Student assigned to parent successfully",
       });
       
@@ -123,7 +125,7 @@ const ParentManagement: React.FC = () => {
     } catch (error) {
       console.error("Error assigning student:", error);
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: "Failed to assign student to parent",
         variant: "destructive",
       });
@@ -134,9 +136,9 @@ const ParentManagement: React.FC = () => {
     <div className="container mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle>Parent Management</CardTitle>
+          <CardTitle>{t('parentManagement.title')}</CardTitle>
           <CardDescription>
-            View registered parents and manage their student connections
+            {t('parentManagement.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -144,7 +146,7 @@ const ParentManagement: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
               <Input
-                placeholder="Search parents..."
+                placeholder={t('parentManagement.searchPlaceholder')}
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -153,23 +155,23 @@ const ParentManagement: React.FC = () => {
           </div>
           
           {loading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className="text-center py-8">{t('parentManagement.loading')}</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Students</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>{t('parentManagement.tableHeaders.name')}</TableHead>
+                  <TableHead>{t('parentManagement.tableHeaders.email')}</TableHead>
+                  <TableHead>{t('parentManagement.tableHeaders.phone')}</TableHead>
+                  <TableHead>{t('parentManagement.tableHeaders.students')}</TableHead>
+                  <TableHead>{t('parentManagement.tableHeaders.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredParents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8">
-                      {searchTerm ? "No parents matching your search" : "No parents registered yet"}
+                      {searchTerm ? t('parentManagement.noParentsSearch') : t('parentManagement.noParentsRegistered')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -191,12 +193,12 @@ const ParentManagement: React.FC = () => {
                             ))}
                             {parent.students.length > 2 && (
                               <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded dark:bg-gray-700 dark:text-gray-200">
-                                +{parent.students.length - 2} more
+                                +{parent.students.length - 2} {t('parentManagement.more')}
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-400 dark:text-gray-500 text-sm">No students assigned</span>
+                          <span className="text-gray-400 dark:text-gray-500 text-sm">{t('parentManagement.noStudentsAssigned')}</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -210,7 +212,7 @@ const ParentManagement: React.FC = () => {
                               setIsViewDialogOpen(true);
                             }}
                           >
-                            View
+                            {t('parentManagement.viewButton')}
                           </Button>
                           <Button 
                             variant="outline" 
@@ -223,7 +225,7 @@ const ParentManagement: React.FC = () => {
                             disabled={unassignedStudents.length === 0 && !parent.students?.length} // Disable if no students to assign and no students already assigned (edge case, usually unassignedStudents check is enough)
                           >
                             <LinkIcon className="h-4 w-4" />
-                            Assign Student
+                            {t('parentManagement.assignStudentButton')}
                           </Button>
                         </div>
                       </TableCell>

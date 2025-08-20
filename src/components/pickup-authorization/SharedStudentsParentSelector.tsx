@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ParentWithSharedStudents {
   id: string;
@@ -40,11 +41,12 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
   parents,
   value,
   onValueChange,
-  placeholder = "Select a parent",
+  placeholder,
   showOnlySharedParents,
   onToggleFilter,
   parentsWhoShareStudents,
 }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const selectedParent = parents.find((parent) => parent.id === value);
@@ -65,7 +67,7 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
           )}
         >
           <Filter className="h-3 w-3" />
-          {showOnlySharedParents ? "Shared Parents Only" : "All Parents"}
+          {showOnlySharedParents ? t('pickupAuthorizations.sharedParentsOnly') : t('pickupAuthorizations.allParents')}
           {showOnlySharedParents && parentsWhoShareStudents.length > 0 && (
             <span className="bg-school-primary text-white rounded-full px-1.5 py-0.5 text-xs min-w-[1.25rem] h-5 flex items-center justify-center">
               {parentsWhoShareStudents.length}
@@ -75,7 +77,7 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
         {parentsWhoShareStudents.length > 0 && (
           <div className="flex items-center gap-1 text-xs text-gray-500">
             <Users className="h-3 w-3" />
-            <span>{parentsWhoShareStudents.length} parent(s) share children with you</span>
+            <span>{t('pickupAuthorizations.parentsShareChildren', { count: parentsWhoShareStudents.length })}</span>
           </div>
         )}
       </div>
@@ -93,12 +95,12 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
                 <span className="truncate">{selectedParent.name}</span>
                 {selectedParent.sharedStudentNames && selectedParent.sharedStudentNames.length > 0 && (
                   <span className="text-xs text-school-primary truncate">
-                    Shares: {selectedParent.sharedStudentNames.join(', ')}
+                    {t('pickupAuthorizations.shares')}: {selectedParent.sharedStudentNames.join(', ')}
                   </span>
                 )}
               </div>
             ) : (
-              placeholder
+              placeholder || t('pickupAuthorizations.selectParent')
             )}
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -107,10 +109,10 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
           <Command>
             <div className="flex items-center border-b px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <CommandInput placeholder="Search parents..." className="flex h-11" />
+              <CommandInput placeholder={t('pickupAuthorizations.searchParents')} className="flex h-11" />
             </div>
             <CommandList className="max-h-[300px] overflow-y-auto">
-              <CommandEmpty>No parents found.</CommandEmpty>
+              <CommandEmpty>{t('pickupAuthorizations.noParentsFound')}</CommandEmpty>
               <CommandGroup>
                 {displayParents.map((parent) => (
                   <CommandItem
@@ -137,7 +139,7 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
                       <span className="text-xs text-gray-500 truncate w-full">{parent.email}</span>
                       {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
                         <span className="text-xs text-school-primary truncate w-full">
-                          Shares: {parent.sharedStudentNames.join(', ')}
+                          {t('pickupAuthorizations.shares')}: {parent.sharedStudentNames.join(', ')}
                         </span>
                       )}
                     </div>

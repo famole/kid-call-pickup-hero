@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Pencil, Trash } from "lucide-react";
 import { Class } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ClassListTableProps {
   classList: Class[];
@@ -25,6 +26,8 @@ const ClassListTable: React.FC<ClassListTableProps> = ({
   onEditClass,
   onDeletePrompt
 }) => {
+  const { t } = useTranslation();
+  
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -37,17 +40,17 @@ const ClassListTable: React.FC<ClassListTableProps> = ({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="text-center">Name</TableHead>
-          <TableHead className="text-center">Grade</TableHead>
-          <TableHead className="text-center">Teacher</TableHead>
-          <TableHead className="text-center">Actions</TableHead>
+          <TableHead className="text-center">{t('classes.name')}</TableHead>
+          <TableHead className="text-center">{t('classes.grade')}</TableHead>
+          <TableHead className="text-center">{t('classes.teacher')}</TableHead>
+          <TableHead className="text-center">{t('classes.actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {classList.length === 0 ? (
           <TableRow>
             <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-              No classes found
+              {t('classes.noClassesFound')}
             </TableCell>
           </TableRow>
         ) : (
@@ -61,6 +64,7 @@ const ClassListTable: React.FC<ClassListTableProps> = ({
                   variant="outline" 
                   size="sm" 
                   onClick={() => onEditClass(classItem)}
+                  title={t('classes.edit')}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -69,6 +73,7 @@ const ClassListTable: React.FC<ClassListTableProps> = ({
                   size="sm" 
                   className="text-red-500 border-red-200 hover:bg-red-50"
                   onClick={() => onDeletePrompt(classItem)}
+                  title={t('classes.delete')}
                 >
                   <Trash className="h-4 w-4" />
                 </Button>

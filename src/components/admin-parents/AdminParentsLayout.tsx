@@ -19,6 +19,7 @@ import { useAdminParentsHooks } from './AdminParentsHooks';
 import { createStudentWrappers } from './AdminParentsWrappers';
 import { getAllClasses } from '@/services/classService';
 import { useParentAuthStatuses } from '@/hooks/useParentAuthStatuses';
+import { logger } from '@/utils/logger';
 
 interface AdminParentsLayoutProps {
   userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
@@ -31,12 +32,14 @@ interface AdminParentsLayoutProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
   handleDeleteParent: (parentId: string) => Promise<void>;
+  handleResetParentPassword?: (email: string, name: string) => void;
   handleReactivateParent?: (parentId: string, parentName: string) => void;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;
   loadingProgress?: string;
   statusFilter?: 'active' | 'deleted' | 'all';
   onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
+  onAuthStatusRefresh?: () => void;
 }
 
 const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
@@ -50,14 +53,20 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   onParentUpdated,
   onImportCompleted,
   handleDeleteParent,
+  handleResetParentPassword,
+  handleReactivateParent,
   getHeaderTitle,
   getHeaderDescription,
   loadingProgress,
+  onAuthStatusRefresh,
 }) => {
   const [classes, setClasses] = React.useState<Class[]>([]);
   
   // Fetch auth statuses for admins only
-  const { authStatuses } = useParentAuthStatuses();
+  const { authStatuses, refetchAuthStatuses } = useParentAuthStatuses();
+  
+  // Use onAuthStatusRefresh from props if provided, otherwise use local refetch
+  const handleAuthStatusRefresh = onAuthStatusRefresh || refetchAuthStatuses;
 
   // Load classes
   React.useEffect(() => {
@@ -66,7 +75,7 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
         const classesData = await getAllClasses();
         setClasses(classesData);
       } catch (error) {
-        console.error('Failed to load classes:', error);
+        logger.error('Failed to load classes:', error);
       }
     };
     loadClasses();
@@ -136,6 +145,8 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           allStudents={allStudents}
           onEditParent={hooks.editParentForm.openEditParentSheet}
           onDeleteParent={handleDeleteParent}
+          onResetParentPassword={handleResetParentPassword}
+          onReactivateParent={handleReactivateParent}
           onManageStudents={hooks.studentManagement.openStudentModal}
           authStatuses={authStatuses}
         />
@@ -147,6 +158,9 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
         onNewParentChange={hooks.addParentForm.handleNewParentChange}
         onAddParentSubmit={hooks.addParentForm.handleAddParentSubmit}
         onAddSheetOpenChange={openState => openState ? hooks.addParentForm.openAddParentSheet() : hooks.addParentForm.closeAddParentSheet()}
+        isSubmitting={hooks.addParentForm.isSubmitting}
+        getFieldError={hooks.addParentForm.getFieldError}
+        hasFieldError={hooks.addParentForm.hasFieldError}
         isEditSheetOpen={hooks.editParentForm.isEditSheetOpen}
         editingParent={hooks.editParentForm.editingParent}
         onEditingParentChange={hooks.editParentForm.handleEditingParentChange}

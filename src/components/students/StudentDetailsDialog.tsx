@@ -13,6 +13,7 @@ import { Calendar, Users, Clock } from "lucide-react";
 import { Child, Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
 import { getPickupAuthorizationsForStudent } from '@/services/pickupAuthorizationService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface StudentDetailsDialogProps {
   open: boolean;
@@ -50,6 +51,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   getClassName,
   classList,
 }) => {
+  const { t } = useTranslation();
   const [parentRelations, setParentRelations] = useState<StudentParentRelation[]>([]);
   const [pickupAuthorizations, setPickupAuthorizations] = useState<PickupAuthorization[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -156,18 +158,18 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   };
 
   const getAuthorizationStatus = (startDate: string, endDate: string) => {
-    if (isExpired(endDate)) return { label: 'Expired', variant: 'destructive' as const };
-    if (isActive(startDate, endDate)) return { label: 'Active', variant: 'default' as const };
-    return { label: 'Scheduled', variant: 'outline' as const };
+    if (isExpired(endDate)) return { label: t('studentDetails.expired'), variant: 'destructive' as const };
+    if (isActive(startDate, endDate)) return { label: t('studentDetails.active'), variant: 'default' as const };
+    return { label: t('studentDetails.scheduled'), variant: 'outline' as const };
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Student Details</DialogTitle>
+          <DialogTitle>{t('studentDetails.title')}</DialogTitle>
           <DialogDescription>
-            Complete information about {student.name}
+            {t('studentDetails.description', { studentName: student.name })}
           </DialogDescription>
         </DialogHeader>
 
@@ -175,7 +177,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
           {/* Student Basic Info */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Student Information</CardTitle>
+              <CardTitle className="text-lg">{t('studentDetails.studentInformation')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center space-x-4">
@@ -185,7 +187,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                 </Avatar>
                 <div>
                   <h3 className="text-xl font-semibold">{student.name}</h3>
-                  <p className="text-muted-foreground">Student ID: {student.id}</p>
+                  <p className="text-muted-foreground">{t('studentDetails.studentId')}: {student.id}</p>
                 </div>
               </div>
             </CardContent>
@@ -194,26 +196,26 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
           {/* Class Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Class Information</CardTitle>
+              <CardTitle className="text-lg">{t('studentDetails.classInformation')}</CardTitle>
             </CardHeader>
             <CardContent>
               {classInfo ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Class Name</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('studentDetails.className')}</p>
                     <p className="text-lg">{classInfo.name}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Grade</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('studentDetails.grade')}</p>
                     <p className="text-lg">{classInfo.grade}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Teacher</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('studentDetails.teacher')}</p>
                     <p className="text-lg">{classInfo.teacher}</p>
                   </div>
                 </div>
               ) : (
-                <p className="text-muted-foreground">No class information available</p>
+                <p className="text-muted-foreground">{t('studentDetails.noClassInfo')}</p>
               )}
             </CardContent>
           </Card>
@@ -221,11 +223,11 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
           {/* Parent Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Parent/Guardian Information</CardTitle>
+              <CardTitle className="text-lg">{t('studentDetails.parentGuardianInfo')}</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p className="text-muted-foreground">Loading parent information...</p>
+                <p className="text-muted-foreground">{t('studentDetails.loadingParentInfo')}</p>
               ) : parentRelations.length > 0 ? (
                 <div className="space-y-4">
                   {parentRelations.map((parent) => (
@@ -234,7 +236,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                         <h4 className="font-semibold">{parent.parentName}</h4>
                         <div className="flex gap-2">
                           {parent.isPrimary && (
-                            <Badge variant="default">Primary</Badge>
+                            <Badge variant="default">{t('studentDetails.primary')}</Badge>
                           )}
                           {parent.relationship && (
                             <Badge variant="secondary">{parent.relationship}</Badge>
@@ -244,13 +246,13 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                         {parent.parentEmail && (
                           <div>
-                            <span className="font-medium">Email: </span>
+                            <span className="font-medium">{t('studentDetails.email')}: </span>
                             <span className="text-muted-foreground">{parent.parentEmail}</span>
                           </div>
                         )}
                         {parent.parentPhone && (
                           <div>
-                            <span className="font-medium">Phone: </span>
+                            <span className="font-medium">{t('studentDetails.phone')}: </span>
                             <span className="text-muted-foreground">{parent.parentPhone}</span>
                           </div>
                         )}
@@ -259,7 +261,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No parent/guardian information available</p>
+                <p className="text-muted-foreground">{t('studentDetails.noParentInfo')}</p>
               )}
             </CardContent>
           </Card>
@@ -269,12 +271,12 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Authorized Pickup Parents
+                {t('studentDetails.authorizedPickupParents')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p className="text-muted-foreground">Loading pickup authorizations...</p>
+                <p className="text-muted-foreground">{t('studentDetails.loadingPickupAuth')}</p>
               ) : pickupAuthorizations.length > 0 ? (
                 <div className="space-y-4">
                   {pickupAuthorizations.map((auth) => {
@@ -298,7 +300,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
                             <span className="text-muted-foreground">
-                              Created {formatDate(auth.createdAt)}
+                              {t('studentDetails.created')} {formatDate(auth.createdAt)}
                             </span>
                           </div>
                         </div>
@@ -309,9 +311,9 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
               ) : (
                 <div className="text-center py-6">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Pickup Authorizations</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{t('studentDetails.noPickupAuth')}</h3>
                   <p className="text-gray-500">
-                    No additional parents have been authorized to pick up this student.
+                    {t('studentDetails.noPickupAuthDesc')}
                   </p>
                 </div>
               )}

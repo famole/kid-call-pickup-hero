@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Search, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface Parent {
   id: string;
@@ -26,11 +27,12 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
   parents,
   value,
   onValueChange,
-  placeholder = "Search for a parent by name",
+  placeholder,
   showOnlySharedParents,
   onToggleFilter,
   parentsWhoShareStudents,
 }) => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filteredParents, setFilteredParents] = useState<Parent[]>([]);
@@ -91,7 +93,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label>Authorized Parent</Label>
+        <Label>{t('pickupAuthorizations.authorizedParent')}</Label>
         {parentsWhoShareStudents.length > 0 && (
           <Button
             type="button"
@@ -101,7 +103,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
             className="text-xs"
           >
             <Users className="h-3 w-3 mr-1" />
-            {showOnlySharedParents ? 'Show All' : 'Shared Only'}
+            {showOnlySharedParents ? t('pickupAuthorizations.showAll') : t('pickupAuthorizations.sharedOnly')}
             {showOnlySharedParents && (
               <Badge variant="secondary" className="ml-1 text-xs">
                 {parentsWhoShareStudents.length}
@@ -133,7 +135,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
             <Input
               ref={inputRef}
               type="text"
-              placeholder={placeholder}
+              placeholder={placeholder || t('pickupAuthorizations.searchForParent')}
               value={searchTerm}
               onChange={handleInputChange}
               onFocus={() => searchTerm.length > 0 && setIsOpen(true)}
@@ -156,7 +158,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
                   <div className="font-medium text-sm">{parent.name}</div>
                   {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
                     <div className="text-xs text-gray-500 mt-1">
-                      Shares: {parent.sharedStudentNames.join(', ')}
+                      {t('pickupAuthorizations.shares')}: {parent.sharedStudentNames.join(', ')}
                     </div>
                   )}
                 </button>
@@ -170,7 +172,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
               className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg"
             >
               <div className="px-3 py-2 text-sm text-gray-500">
-                No parents found matching "{searchTerm}"
+                {t('pickupAuthorizations.noParentsFoundSearching', { searchTerm })}
               </div>
             </div>
           )}
@@ -179,7 +181,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
 
       {showOnlySharedParents && parentsWhoShareStudents.length > 0 && (
         <p className="text-xs text-gray-500">
-          Searching among {parentsWhoShareStudents.length} parent(s) who share children with you
+          {t('pickupAuthorizations.searchingAmong', { count: parentsWhoShareStudents.length })}
         </p>
       )}
     </div>

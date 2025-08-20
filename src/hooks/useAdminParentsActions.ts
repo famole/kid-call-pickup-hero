@@ -1,18 +1,27 @@
 
-import { useToast } from "@/components/ui/use-toast";
-import { deleteParent } from '@/services/parentService';
+import { useState } from 'react';
+import { useToast } from "@/hooks/use-toast";
+import { deleteParent, resetParentPassword } from '@/services/parentService';
 import { ParentWithStudents } from '@/types/parent';
 
 interface UseAdminParentsActionsProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   setParents: (updateFn: (prev: ParentWithStudents[]) => ParentWithStudents[]) => void;
+  onAuthStatusChange?: () => void;
 }
 
 export const useAdminParentsActions = ({ 
   userRole = 'parent', 
-  setParents 
+  setParents,
+  onAuthStatusChange
 }: UseAdminParentsActionsProps) => {
   const { toast } = useToast();
+  const [resetPasswordDialog, setResetPasswordDialog] = useState<{
+    isOpen: boolean;
+    email: string;
+    name: string;
+  }>({ isOpen: false, email: '', name: '' });
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const handleDeleteParent = async (parentId: string): Promise<void> => {
     const userTypeLabel = userRole === 'superadmin' ? 'superadmin' :
@@ -63,8 +72,51 @@ export const useAdminParentsActions = ({
     }
   };
 
+  const handleResetParentPassword = (email: string, name: string): void => {
+    setResetPasswordDialog({ isOpen: true, email, name });
+  };
+
+  const confirmResetPassword = async (): Promise<void> => {
+    setIsResettingPassword(true);
+    try {
+      await resetParentPassword(resetPasswordDialog.email);
+      toast({
+        title: "Success",
+        description: `${resetPasswordDialog.name}'s password has been reset. They can now set up their password again.`,
+      });
+      // Trigger auth status refresh after successful reset
+      if (onAuthStatusChange) {
+        onAuthStatusChange();
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to reset password for ${resetPasswordDialog.name}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const closeResetPasswordDialog = () => {
+    setResetPasswordDialog({ isOpen: false, email: '', name: '' });
+  };
+
+  const getUserTypeLabel = () => {
+    return userRole === 'superadmin' ? 'superadmin' :
+           userRole === 'teacher' ? 'teacher' : 
+           userRole === 'admin' ? 'admin' : 'parent';
+  };
+
   return {
     handleDeleteParent,
+    handleResetParentPassword,
+    confirmResetPassword,
+    closeResetPasswordDialog,
+    resetPasswordDialog,
+    isResettingPassword,
+    getUserTypeLabel,
     getHeaderTitle,
     getHeaderDescription,
   };

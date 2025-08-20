@@ -11,6 +11,7 @@ import {
 import { ParentWithStudents } from '@/types/parent';
 import { ParentAuthStatus } from '@/services/authStatusService';
 import ParentTableRow from './ParentTableRow';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ParentsTableProps {
   parents: ParentWithStudents[];
@@ -20,6 +21,7 @@ interface ParentsTableProps {
   onDeleteParent: (parentId: string) => void;
   onManageStudents: (parent: ParentWithStudents) => void;
   onReactivateParent?: (parentId: string, parentName: string) => void;
+  onResetParentPassword?: (email: string, name: string) => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   authStatuses?: Map<string, ParentAuthStatus>;
 }
@@ -32,10 +34,13 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
   onDeleteParent,
   onManageStudents,
   onReactivateParent,
+  onResetParentPassword,
   userRole = 'parent',
   authStatuses,
 }) => {
-  const getUserTypeLabel = () => {
+  const { t } = useTranslation();
+
+  const getUserTypeKey = (): string => {
     switch (userRole) {
       case 'superadmin':
         return 'superadmins';
@@ -54,24 +59,27 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Phone</TableHead>
-          {shouldShowStudentsColumn && <TableHead>Students</TableHead>}
-          <TableHead>Actions</TableHead>
+          <TableHead>{t('parentsManagement.tableHeaders.name', { defaultValue: 'Name' })}</TableHead>
+          <TableHead>{t('parentsManagement.tableHeaders.email', { defaultValue: 'Email' })}</TableHead>
+          <TableHead>{t('parentsManagement.tableHeaders.phone', { defaultValue: 'Phone' })}</TableHead>
+          {shouldShowStudentsColumn && <TableHead>{t('parentsManagement.tableHeaders.students', { defaultValue: 'Students' })}</TableHead>}
+          <TableHead>{t('parentsManagement.tableHeaders.actions', { defaultValue: 'Actions' })}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {isLoading ? (
           <TableRow>
             <TableCell colSpan={shouldShowStudentsColumn ? 5 : 4} className="text-center">
-              Loading {getUserTypeLabel()}...
+              {t(`parentsManagement.loading.${getUserTypeKey()}`)}
             </TableCell>
           </TableRow>
         ) : parents.length === 0 ? (
           <TableRow>
             <TableCell colSpan={shouldShowStudentsColumn ? 5 : 4} className="text-center">
-              {searchTerm ? `No ${getUserTypeLabel()} found matching "${searchTerm}".` : `No ${getUserTypeLabel()} found. Add one to get started.`}
+              {searchTerm 
+                ? t(`parentsManagement.noResultsSearch.${getUserTypeKey()}`, { searchTerm })
+                : `${t(`parentsManagement.noResults.${getUserTypeKey()}`)}. ${t(`parentsManagement.addToStart.${getUserTypeKey()}`)}`
+              }
             </TableCell>
           </TableRow>
         ) : (
@@ -83,6 +91,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
               onDelete={() => onDeleteParent(parent.id)}
               onManageStudents={() => onManageStudents(parent)}
               onReactivate={onReactivateParent ? () => onReactivateParent(parent.id, parent.name) : undefined}
+              onResetPassword={onResetParentPassword ? () => onResetParentPassword(parent.email, parent.name) : undefined}
               userRole={userRole}
               showStudentsColumn={shouldShowStudentsColumn}
               authStatus={authStatuses?.get(parent.email.toLowerCase())}

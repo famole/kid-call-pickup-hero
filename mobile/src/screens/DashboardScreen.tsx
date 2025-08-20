@@ -12,7 +12,7 @@ import {
   Paragraph,
   Avatar
 } from 'tamagui'
-import { ScrollView, RefreshControl, Alert, SafeAreaView, AppState } from 'react-native'
+import { ScrollView, RefreshControl, Alert, SafeAreaView, AppState, StatusBar } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
@@ -382,24 +382,43 @@ export default function DashboardScreen({ session }: Props) {
   )
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#3b82f6' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#3b82f6" />
       <Theme name="light">
-        <YStack flex={1} padding="$4" space>
+        <YStack flex={1} padding="$4" space backgroundColor="white">
           {/* Header */}
-          <XStack alignItems="center" justifyContent="space-between">
-            <XStack alignItems="center" space="$3">
-              <Avatar circular size="$4">
-                <Avatar.Fallback backgroundColor="$blue7">
-                  <Text color="white" fontWeight="bold">{initials}</Text>
-                </Avatar.Fallback>
-              </Avatar>
-              <YStack>
-                <Text fontWeight="bold" numberOfLines={1}>Hi!</Text>
-                <Paragraph size="$2" opacity={0.7} numberOfLines={1}>{session.user.email}</Paragraph>
-              </YStack>
+          <Card
+            backgroundColor="#3b82f6"
+            borderRadius="$8"
+            padding="$3"
+            elevate
+            marginBottom="$4"
+          >
+            <XStack alignItems="center" justifyContent="space-between">
+              <XStack alignItems="center" space="$3">
+                <Avatar circular size="$4">
+                  <Avatar.Fallback backgroundColor="white">
+                    <Text color="#3b82f6" fontWeight="bold">{initials}</Text>
+                  </Avatar.Fallback>
+                </Avatar>
+                <YStack>
+                  <Text fontWeight="bold" numberOfLines={1} color="white">Hi!</Text>
+                  <Paragraph size="$2" color="white" opacity={0.8} numberOfLines={1}>
+                    {session.user.email}
+                  </Paragraph>
+                </YStack>
+              </XStack>
+              <Button
+                size="$3"
+                borderRadius="$6"
+                backgroundColor="white"
+                color="#3b82f6"
+                onPress={() => setMenuOpen(true)}
+              >
+                ☰
+              </Button>
             </XStack>
-            <Button size="$3" borderRadius="$6" onPress={() => setMenuOpen(true)}>☰</Button>
-          </XStack>
+          </Card>
 
           {/* Active status */}
           <PickupStatus students={students} requests={activeRequests} />
@@ -421,9 +440,16 @@ export default function DashboardScreen({ session }: Props) {
             onPress={handleRequestPickup}
             disabled={selectedStudentIds.length === 0 || loading}
             icon={loading ? <Spinner /> : null}
+            backgroundColor="#3b82f6"
+            color="white"
+            pressStyle={{ backgroundColor: '#1e40af' }}
             style={{ position: 'absolute', bottom: 24, left: 16, right: 16 }}
           >
-            {loading ? 'Requesting…' : selectedStudentIds.length > 0 ? `Request Pickup (${selectedStudentIds.length})` : 'Request Pickup'}
+            {loading
+              ? 'Requesting…'
+              : selectedStudentIds.length > 0
+              ? `Request Pickup (${selectedStudentIds.length})`
+              : 'Request Pickup'}
           </Button>
         </YStack>
 

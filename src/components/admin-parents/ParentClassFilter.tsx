@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Class } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ParentClassFilterProps {
   classes: Class[];
@@ -22,14 +23,16 @@ const ParentClassFilter: React.FC<ParentClassFilterProps> = ({
   onClassChange,
   isLoading = false,
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="w-full max-w-xs">
       <Select value={selectedClassId} onValueChange={onClassChange} disabled={isLoading}>
         <SelectTrigger>
-          <SelectValue placeholder="Filter by class" />
+          <SelectValue placeholder={t('parentClassFilter.filterByClass')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Classes</SelectItem>
+          <SelectItem value="all">{t('parentClassFilter.allClasses')}</SelectItem>
           {classes.map((cls) => (
             <SelectItem key={cls.id} value={cls.id}>
               {cls.name} - {cls.grade}

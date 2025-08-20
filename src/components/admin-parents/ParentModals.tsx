@@ -13,6 +13,9 @@ interface ParentModalsProps {
   onNewParentChange: (parent: ParentInput) => void;
   onAddParentSubmit: (e?: React.FormEvent) => Promise<void>;
   onAddSheetOpenChange: (isOpen: boolean) => void;
+  isSubmitting?: boolean;
+  getFieldError?: (fieldName: string) => any;
+  hasFieldError?: (fieldName: string) => boolean;
 
   // Edit Parent Sheet
   isEditSheetOpen: boolean;
@@ -41,6 +44,9 @@ const ParentModals: React.FC<ParentModalsProps> = ({
   onNewParentChange,
   onAddParentSubmit,
   onAddSheetOpenChange,
+  isSubmitting,
+  getFieldError,
+  hasFieldError,
 
   // Edit Parent Sheet props
   isEditSheetOpen,
@@ -71,6 +77,9 @@ const ParentModals: React.FC<ParentModalsProps> = ({
         onNewParentChange={onNewParentChange}
         onSubmit={onAddParentSubmit}
         userRole={userRole}
+        isSubmitting={isSubmitting}
+        getFieldError={getFieldError}
+        hasFieldError={hasFieldError}
       />
 
       <EditParentSheet

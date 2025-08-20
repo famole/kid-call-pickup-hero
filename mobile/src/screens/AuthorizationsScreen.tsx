@@ -15,7 +15,7 @@ import {
   Separator,
   Avatar
 } from 'tamagui'
-import { Alert, SafeAreaView } from 'react-native'
+import { Alert, SafeAreaView, StatusBar } from 'react-native'
 import { supabase } from '../supabaseClient'
 import {
   getPickupAuthorizationsForParent,
@@ -248,9 +248,10 @@ export default function AuthorizationsScreen() {
   )
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#3b82f6' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#3b82f6" />
       <Theme name="light">
-        <YStack flex={1} padding="$4" space>
+        <YStack flex={1} padding="$4" space backgroundColor="white">
         <XStack alignItems="center" justifyContent="space-between">
           <Button size="$3" borderRadius="$6" onPress={() => navigation.goBack()}>←</Button>
           <Text flex={1} textAlign="center" fontSize="$6" fontWeight="bold">

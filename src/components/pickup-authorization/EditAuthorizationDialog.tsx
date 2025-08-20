@@ -9,6 +9,7 @@ import {
 import { useEditAuthorizationDialog } from '@/hooks/useEditAuthorizationDialog';
 import AddAuthorizationForm from './AddAuthorizationForm';
 import { PickupAuthorizationWithDetails } from '@/services/pickupAuthorizationService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface EditAuthorizationDialogProps {
   authorization: PickupAuthorizationWithDetails | null;
@@ -23,6 +24,7 @@ const EditAuthorizationDialog: React.FC<EditAuthorizationDialogProps> = ({
   onOpenChange,
   onAuthorizationUpdated
 }) => {
+  const { t } = useTranslation();
   const {
     children,
     allParents,
@@ -42,8 +44,8 @@ const EditAuthorizationDialog: React.FC<EditAuthorizationDialogProps> = ({
       <DrawerContent className="h-full w-[400px] ml-auto fixed right-0 top-0 rounded-l-lg">
         <div className="mx-auto w-full max-w-sm p-6 h-full overflow-y-auto">
           <DrawerHeader className="px-0">
-            <DrawerTitle>Edit Pickup Authorization</DrawerTitle>
-            <DrawerDescription>Update the authorization details.</DrawerDescription>
+            <DrawerTitle>{t('pickupAuthorizations.editPickupAuthorization')}</DrawerTitle>
+            <DrawerDescription>{t('pickupAuthorizations.editPickupAuthorizationDescription')}</DrawerDescription>
           </DrawerHeader>
           <AddAuthorizationForm
             children={children}
@@ -56,8 +58,8 @@ const EditAuthorizationDialog: React.FC<EditAuthorizationDialogProps> = ({
             showOnlySharedParents={showOnlySharedParents}
             onToggleParentFilter={toggleParentFilter}
             parentsWhoShareStudents={parentsWhoShareStudents}
-            submitLabel="Update Authorization"
-            loadingLabel="Updating..."
+            submitLabel={t('pickupAuthorizations.updateAuthorization')}
+            loadingLabel={t('pickupAuthorizations.updating')}
           />
         </div>
       </DrawerContent>

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Class } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface DeleteClassDialogProps {
   isOpen: boolean;
@@ -24,18 +25,20 @@ const DeleteClassDialog: React.FC<DeleteClassDialogProps> = ({
   onClose,
   onConfirmDelete
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Class</DialogTitle>
+          <DialogTitle>{t('classes.deleteClass')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete {classToDelete?.name}? This action cannot be undone.
+            {t('classes.confirmDelete', { className: classToDelete?.name })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button variant="destructive" onClick={onConfirmDelete}>Delete</Button>
+          <Button variant="outline" onClick={onClose}>{t('classes.cancel')}</Button>
+          <Button variant="destructive" onClick={onConfirmDelete}>{t('classes.delete')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

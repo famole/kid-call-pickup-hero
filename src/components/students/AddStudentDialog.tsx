@@ -21,6 +21,7 @@ import {
 import { Class, Child } from '@/types';
 import { Loader2 } from "lucide-react";
 import { isValidUUID } from '@/utils/validators';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AddStudentDialogProps {
   open: boolean;
@@ -41,8 +42,10 @@ const AddStudentDialog = ({
   onSave,
   isLoading = false
 }: AddStudentDialogProps) => {
+  const { t } = useTranslation();
   const studentNameId = React.useId();
   const studentClassId = React.useId();
+  
   // Validate that the classId is a valid UUID before setting it
   const handleClassChange = (classId: string) => {
     if (isValidUUID(classId)) {
@@ -63,14 +66,14 @@ const AddStudentDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Student</DialogTitle>
+          <DialogTitle>{t('admin.addStudentTitle')}</DialogTitle>
           <DialogDescription>
-            Add a new student to your school. Fill in the required fields.
+            {t('admin.addStudent')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor={studentNameId} className="required">Student Name</Label>
+            <Label htmlFor={studentNameId} className="required">{t('forms.studentName')}</Label>
             <Input
               id={studentNameId}
               value={newStudent.name || ''}
@@ -81,14 +84,14 @@ const AddStudentDialog = ({
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor={studentClassId} className="required">Class</Label>
+            <Label htmlFor={studentClassId} className="required">{t('admin.class')}</Label>
             <Select
               value={newStudent.classId || ''}
               onValueChange={handleClassChange}
               required
             >
               <SelectTrigger id={studentClassId}>
-                <SelectValue placeholder="Select a class" />
+                <SelectValue placeholder={t('admin.selectClass')} />
               </SelectTrigger>
               <SelectContent>
                 {classList.map((classItem) => (
@@ -109,7 +112,7 @@ const AddStudentDialog = ({
             }}
             disabled={isLoading}
           >
-            Cancel
+            {t('admin.cancel')}
           </Button>
           <Button 
             onClick={onSave}
@@ -118,10 +121,10 @@ const AddStudentDialog = ({
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {t('admin.saving')}
               </>
             ) : (
-              "Save Student"
+              t('admin.saveStudent')
             )}
           </Button>
         </DialogFooter>

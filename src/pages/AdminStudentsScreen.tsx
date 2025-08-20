@@ -150,26 +150,17 @@ const AdminStudentsScreen = () => {
 
   return (
     <div className="container mx-auto py-6">
-      <StudentsHeader 
-        onExportCSV={onExportCSV}
-        onImportCSV={() => setIsCSVModalOpen(true)}
-        onAddStudent={() => {
-          resetNewStudent();
-          setIsAddDialogOpen(true);
-        }}
-        onFullImportCompleted={reloadData}
-      />
-      
       <Card>
         <CardHeader>
-          <CardTitle>Student List</CardTitle>
-          <CardDescription>
-            {isLoading ? (
-              <Skeleton className="h-4 w-48" />
-            ) : (
-              `Manage all students - ${filteredStudents.length} of ${studentList.length} students shown`
-            )}
-          </CardDescription>
+          <StudentsHeader 
+            onExportCSV={onExportCSV}
+            onImportCSV={() => setIsCSVModalOpen(true)}
+            onAddStudent={() => {
+              resetNewStudent();
+              setIsAddDialogOpen(true);
+            }}
+            onFullImportCompleted={reloadData}
+          />
         </CardHeader>
         <CardContent>
           {isLoading ? (
