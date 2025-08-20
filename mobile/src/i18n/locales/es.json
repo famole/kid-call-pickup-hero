@@ -1,0 +1,71 @@
+{
+  "auth": {
+    "login": "Iniciar Sesión",
+    "logout": "Cerrar Sesión",
+    "loginWithEmail": "Iniciar con Email",
+    "password": "Contraseña",
+    "email": "Correo",
+    "signIn": "Entrar",
+    "signOut": "Salir"
+  },
+  "navigation": {
+    "dashboard": "Panel Principal",
+    "authorizations": "Autorizaciones",
+    "pickupAuth": "Auth. Recogida"
+  },
+  "dashboard": {
+    "welcome": "Bienvenido",
+    "todaysPickups": "Recogidas de Hoy",
+    "upcomingAuth": "Próximas Autorizaciones",
+    "noPickups": "No hay recogidas programadas",
+    "loading": "Cargando..."
+  },
+  "pickupAuthorizations": {
+    "title": "Autorizaciones de Recogida",
+    "description": "Gestiona quién puede recoger a tus hijos",
+    "addAuthorization": "Agregar Autorización",
+    "noAuthorizationsYet": "No hay autorizaciones aún",
+    "noAuthorizationsDescription": "Crea autorizaciones para permitir que otros recojan a tus hijos",
+    "createFirstAuthorization": "Crear Autorización",
+    "child": "Hijo",
+    "parent": "Padre",
+    "startDate": "Fecha Inicio",
+    "endDate": "Fecha Fin",
+    "selectChild": "Seleccionar hijo",
+    "searchForParent": "Buscar padre",
+    "createAuthorization": "Crear Autorización",
+    "updateAuthorization": "Actualizar Autorización",
+    "creating": "Creando...",
+    "updating": "Actualizando...",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "expired": "Expirada",
+    "scheduled": "Programada",
+    "createdBy": "Creado por",
+    "authorizedTo": "Autorizado a",
+    "removeAuthorization": "Eliminar Autorización",
+    "editAuthorization": "Editar Autorización",
+    "authorizationCreated": "Autorización creada exitosamente",
+    "authorizationUpdated": "Autorización actualizada exitosamente",
+    "authorizationRemoved": "Autorización eliminada exitosamente",
+    "failedToCreate": "Error al crear autorización",
+    "failedToUpdate": "Error al actualizar autorización",
+    "failedToRemove": "Error al eliminar autorización",
+    "failedToLoad": "Error al cargar autorizaciones"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "back": "Atrás",
+    "done": "Listo",
+    "ok": "OK",
+    "yes": "Sí",
+    "no": "No"
+  }
+}
