@@ -95,8 +95,6 @@ const AdminClassesScreen = () => {
                 </Button>
               </div>
             </div>
-            <CardTitle className="text-left">{t('classes.classList')}</CardTitle>
-            <CardDescription className="text-left">{t('classes.manageAllClasses')}</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
