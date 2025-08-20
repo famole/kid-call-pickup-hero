@@ -21,13 +21,13 @@ const StudentsHeader = ({
   const { t } = useTranslation();
   
   return (
-    <header className="mb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-start gap-4">
-        <div className="flex items-center gap-3">
+    <header className="mb-8 text-left">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-start gap-4">
+        <div className="flex items-center gap-3 text-left">
           <UserRound className="h-8 w-8 text-school-primary" />
-          <h1 className="text-3xl font-bold">{t('admin.manageStudents')}</h1>
+          <h1 className="text-3xl font-bold text-left">{t('admin.manageStudents')}</h1>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
           <Button onClick={onExportCSV} variant="outline" className="flex-1 sm:flex-none">
             <Download className="mr-2 h-4 w-4" /> {t('admin.exportCSV')}
           </Button>
