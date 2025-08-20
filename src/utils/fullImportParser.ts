@@ -25,10 +25,20 @@ export const normalizeName = (raw?: string | null): string => {
 export const parseFullImportFile = async (file: File): Promise<FullImportRow[]> => {
   const XLSX = await import('xlsx');
   const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: 'array' });
+  const workbook = XLSX.read(buffer, { 
+    type: 'array',
+    raw: false,
+    cellText: true,
+    cellHTML: false
+  });
   const firstSheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[firstSheetName];
-  const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { 
+    header: 1, 
+    defval: '',
+    raw: false,
+    blankrows: false
+  });
 
   // Expect first row as header. Filter out empty rows and drop header row
   const dataRows = rows.filter(r => (r?.length || 0) > 0 && r.some(cell => String(cell).trim() !== '')) as any[][];
