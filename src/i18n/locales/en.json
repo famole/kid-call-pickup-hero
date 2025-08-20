@@ -428,7 +428,7 @@
     "historyTitle": "Withdrawal History",
     "historyDescription": "Complete record of all withdrawals and self-checkouts",
     "student": "Student",
-    "class": "Class", 
+    "class": "Class",
     "type": "Type",
     "responsiblePerson": "Responsible Person",
     "date": "Date & Time",
@@ -445,5 +445,109 @@
     "allStudents": "All students",
     "withdrawalDetails": "Withdrawal Details",
     "detailsDescription": "Complete information about the selected withdrawal"
+  },
+  "parentManagement": {
+    "title": "Parent Management",
+    "description": "View registered parents and manage their student connections",
+    "searchPlaceholder": "Search parents...",
+    "noParentsSearch": "No parents matching your search",
+    "noParentsRegistered": "No parents registered yet",
+    "noStudentsAssigned": "No students assigned",
+    "viewButton": "View",
+    "assignStudentButton": "Assign Student",
+    "loading": "Loading...",
+    "tableHeaders": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "students": "Students",
+      "actions": "Actions"
+    },
+    "more": "more"
+  },
+  "parentsManagement": {
+    "title": "Parents Management",
+    "description": "Manage parent accounts and student relationships",
+    "teachers": {
+      "title": "Teachers Management",
+      "description": "Manage teacher accounts and permissions"
+    },
+    "admins": {
+      "title": "Admins Management",
+      "description": "Manage admin accounts and permissions"
+    },
+    "superadmins": {
+      "title": "Superadmins Management",
+      "description": "Manage superadmin accounts and permissions"
+    },
+    "addParent": "Add Parent",
+    "addTeacher": "Add Teacher",
+    "addAdmin": "Add Admin",
+    "addSuperadmin": "Add Superadmin",
+    "searchPlaceholder": "Search by parent name, email, or children...",
+    "loading": {
+      "parents": "Loading parents...",
+      "teachers": "Loading teachers...",
+      "admins": "Loading admins...",
+      "superadmins": "Loading superadmins..."
+    },
+    "noResults": {
+      "parents": "No parents found",
+      "teachers": "No teachers found",
+      "admins": "No admins found",
+      "superadmins": "No superadmins found"
+    },
+    "noResultsSearch": {
+      "parents": "No parents found matching \"{{searchTerm}}\"",
+      "teachers": "No teachers found matching \"{{searchTerm}}\"",
+      "admins": "No admins found matching \"{{searchTerm}}\"",
+      "superadmins": "No superadmins found matching \"{{searchTerm}}\""
+    },
+    "addToStart": {
+      "parents": "Add one to get started",
+      "teachers": "Add one to get started",
+      "admins": "Add one to get started",
+      "superadmins": "Add one to get started"
+    },
+    "deleted": "Deleted",
+    "notAvailable": "N/A",
+    "studentsCount": "{{count}} students",
+    "studentsCount_one": "{{count}} student"
+  },
+  "resetPasswordDialog": {
+    "title": "Reset Password",
+    "description": "Are you sure you want to reset <strong>{{parentName}}'s</strong> password?",
+    "thisWill": "This will:",
+    "removeAccount": "Remove their current authentication account",
+    "setStatusNotConfigured": "Set their password status to \"not configured\"",
+    "allowSetupAgain": "Allow them to set up their password again like the first time",
+    "cancel": "Cancel",
+    "reset": "Reset Password",
+    "resetting": "Resetting..."
+  },
+  "studentManagement": {
+    "title": "Manage Students for {{parentName}}",
+    "description": "Add, remove, or modify student relationships for this parent",
+    "currentStudents": "Current Students ({{count}})",
+    "noStudentsAssociated": "No students associated with this parent",
+    "unsetPrimary": "Unset as primary",
+    "setPrimary": "Set as primary",
+    "removeStudent": "Remove student",
+    "addStudent": "Add Student",
+    "searchStudents": "Search Students",
+    "searchPlaceholder": "Search by student name...",
+    "filterByClass": "Filter by Class",
+    "allClasses": "All Classes",
+    "studentsAvailable": "Student ({{count}} available)",
+    "studentsAvailable_one": "Student ({{count}} available)",
+    "selectStudent": "Select a student",
+    "noStudentsMatch": "No students match your filters",
+    "relationship": "Relationship (optional)",
+    "relationshipPlaceholder": "e.g., Mother, Father, Guardian",
+    "primaryParent": "Primary Parent/Guardian",
+    "addStudentButton": "Add Student",
+    "cancel": "Cancel",
+    "noAvailableStudents": "No available students to add",
+    "close": "Close"
   }
 }

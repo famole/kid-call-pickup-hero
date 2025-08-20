@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import ImportParentsDialog from './ImportParentsDialog';
 import FullImportDialog from '@/components/admin-imports/FullImportDialog';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ParentsHeaderProps {
   onAddParent: () => void;
@@ -28,37 +29,55 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
   headerTitle,
   headerDescription,
 }) => {
+  const { t } = useTranslation();
+
   const getButtonLabel = () => {
     switch (userRole) {
       case 'superadmin':
-        return 'Add Superadmin';
+        return t('parentsManagement.addSuperadmin');
       case 'teacher':
-        return 'Add Teacher';
+        return t('parentsManagement.addTeacher');
       case 'admin':
-        return 'Add Admin';
+        return t('parentsManagement.addAdmin');
       default:
-        return 'Add Parent';
+        return t('parentsManagement.addParent');
     }
   };
 
-  const defaultTitle = userRole === 'superadmin' ? 'Superadmins Management' :
-                     userRole === 'teacher' ? 'Teachers Management' : 
-                     userRole === 'admin' ? 'Admins Management' : 
-                     'Parents Management';
+  const getDefaultTitle = () => {
+    switch (userRole) {
+      case 'superadmin':
+        return t('parentsManagement.superadmins.title');
+      case 'teacher':
+        return t('parentsManagement.teachers.title');
+      case 'admin':
+        return t('parentsManagement.admins.title');
+      default:
+        return t('parentsManagement.title');
+    }
+  };
 
-  const defaultDescription = userRole === 'superadmin' ? 'Manage superadmin accounts and permissions' :
-                           userRole === 'teacher' ? 'Manage teacher accounts and permissions' :
-                           userRole === 'admin' ? 'Manage admin accounts and permissions' :
-                           'Manage parent accounts and student relationships';
+  const getDefaultDescription = () => {
+    switch (userRole) {
+      case 'superadmin':
+        return t('parentsManagement.superadmins.description');
+      case 'teacher':
+        return t('parentsManagement.teachers.description');
+      case 'admin':
+        return t('parentsManagement.admins.description');
+      default:
+        return t('parentsManagement.description');
+    }
+  };
 
   return (
     <div className="flex flex-row items-center justify-between">
       <div>
         <h3 className="text-2xl font-semibold leading-none tracking-tight">
-          {headerTitle || defaultTitle}
+          {headerTitle || getDefaultTitle()}
         </h3>
         <p className="text-sm text-muted-foreground">
-          {headerDescription || defaultDescription}
+          {headerDescription || getDefaultDescription()}
         </p>
       </div>
       <div className="flex space-x-2">

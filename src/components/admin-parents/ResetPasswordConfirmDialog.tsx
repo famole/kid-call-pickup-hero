@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ResetPasswordConfirmDialogProps {
   open: boolean;
@@ -27,6 +28,8 @@ const ResetPasswordConfirmDialog: React.FC<ResetPasswordConfirmDialogProps> = ({
   userTypeLabel,
   isLoading = false,
 }) => {
+  const { t } = useTranslation();
+
   const handleConfirm = async () => {
     await onConfirm();
     onOpenChange(false);
@@ -36,26 +39,30 @@ const ResetPasswordConfirmDialog: React.FC<ResetPasswordConfirmDialogProps> = ({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Reset Password</AlertDialogTitle>
+          <AlertDialogTitle>{t('resetPasswordDialog.title')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to reset <strong>{parentName}'s</strong> password? 
+            <div dangerouslySetInnerHTML={{ 
+              __html: t('resetPasswordDialog.description', { parentName }) 
+            }} />
             <br /><br />
-            This will:
+            {t('resetPasswordDialog.thisWill')}
             <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Remove their current authentication account</li>
-              <li>Set their password status to "not configured"</li>
-              <li>Allow them to set up their password again like the first time</li>
+              <li>{t('resetPasswordDialog.removeAccount')}</li>
+              <li>{t('resetPasswordDialog.setStatusNotConfigured')}</li>
+              <li>{t('resetPasswordDialog.allowSetupAgain')}</li>
             </ul>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>
+            {t('resetPasswordDialog.cancel')}
+          </AlertDialogCancel>
           <AlertDialogAction 
             onClick={handleConfirm}
             disabled={isLoading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isLoading ? "Resetting..." : "Reset Password"}
+            {isLoading ? t('resetPasswordDialog.resetting') : t('resetPasswordDialog.reset')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

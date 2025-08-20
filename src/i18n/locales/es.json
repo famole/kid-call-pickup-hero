@@ -438,11 +438,115 @@
     "authorizedPickup": "Retiro Autorizado",
     "selfCheckout": "Auto-Salida",
     "unknown": "Desconocido",
-    "parent": "Padre/Madre",
+    "parent": "Padre/Madre", 
     "authorizedParent": "Padre Autorizado",
     "filterByStudent": "Filtrar por estudiante",
     "allStudents": "Todos los estudiantes",
     "withdrawalDetails": "Detalles del Retiro",
     "detailsDescription": "Información completa del retiro seleccionado"
+  },
+  "parentManagement": {
+    "title": "Gestión de Padres",
+    "description": "Ver padres registrados y gestionar sus conexiones con estudiantes",
+    "searchPlaceholder": "Buscar padres...",
+    "noParentsSearch": "No hay padres que coincidan con tu búsqueda",
+    "noParentsRegistered": "No hay padres registrados aún",
+    "noStudentsAssigned": "No hay estudiantes asignados",
+    "viewButton": "Ver",
+    "assignStudentButton": "Asignar Estudiante",
+    "loading": "Cargando...",
+    "tableHeaders": {
+      "name": "Nombre",
+      "email": "Correo",
+      "phone": "Teléfono",
+      "students": "Estudiantes",
+      "actions": "Acciones"
+    },
+    "more": "más"
+  },
+  "parentsManagement": {
+    "title": "Gestión de Padres",
+    "description": "Gestionar cuentas de padres y relaciones con estudiantes",
+    "teachers": {
+      "title": "Gestión de Profesores",
+      "description": "Gestionar cuentas de profesores y permisos"
+    },
+    "admins": {
+      "title": "Gestión de Administradores",
+      "description": "Gestionar cuentas de administradores y permisos"
+    },
+    "superadmins": {
+      "title": "Gestión de Superadministradores",
+      "description": "Gestionar cuentas de superadministradores y permisos"
+    },
+    "addParent": "Agregar Padre",
+    "addTeacher": "Agregar Profesor",
+    "addAdmin": "Agregar Administrador",
+    "addSuperadmin": "Agregar Superadministrador",
+    "searchPlaceholder": "Buscar por nombre de padre, correo o hijos...",
+    "loading": {
+      "parents": "Cargando padres...",
+      "teachers": "Cargando profesores...",
+      "admins": "Cargando administradores...",
+      "superadmins": "Cargando superadministradores..."
+    },
+    "noResults": {
+      "parents": "No se encontraron padres",
+      "teachers": "No se encontraron profesores",
+      "admins": "No se encontraron administradores",
+      "superadmins": "No se encontraron superadministradores"
+    },
+    "noResultsSearch": {
+      "parents": "No se encontraron padres que coincidan con \"{{searchTerm}}\"",
+      "teachers": "No se encontraron profesores que coincidan con \"{{searchTerm}}\"",
+      "admins": "No se encontraron administradores que coincidan con \"{{searchTerm}}\"",
+      "superadmins": "No se encontraron superadministradores que coincidan con \"{{searchTerm}}\""
+    },
+    "addToStart": {
+      "parents": "Agrega uno para comenzar",
+      "teachers": "Agrega uno para comenzar",
+      "admins": "Agrega uno para comenzar",
+      "superadmins": "Agrega uno para comenzar"
+    },
+    "deleted": "Eliminado",
+    "notAvailable": "N/D",
+    "studentsCount": "{{count}} estudiantes",
+    "studentsCount_one": "{{count}} estudiante"
+  },
+  "resetPasswordDialog": {
+    "title": "Restablecer Contraseña",
+    "description": "¿Estás seguro de que quieres restablecer la contraseña de <strong>{{parentName}}</strong>?",
+    "thisWill": "Esto:",
+    "removeAccount": "Eliminará su cuenta de autenticación actual",
+    "setStatusNotConfigured": "Establecerá su estado de contraseña como \"no configurado\"",
+    "allowSetupAgain": "Les permitirá configurar su contraseña nuevamente como la primera vez",
+    "cancel": "Cancelar",
+    "reset": "Restablecer Contraseña",
+    "resetting": "Restableciendo..."
+  },
+  "studentManagement": {
+    "title": "Gestionar Estudiantes para {{parentName}}",
+    "description": "Agregar, eliminar o modificar relaciones de estudiantes para este padre",
+    "currentStudents": "Estudiantes Actuales ({{count}})",
+    "noStudentsAssociated": "No hay estudiantes asociados con este padre",
+    "unsetPrimary": "Quitar como principal",
+    "setPrimary": "Establecer como principal",
+    "removeStudent": "Eliminar estudiante",
+    "addStudent": "Agregar Estudiante",
+    "searchStudents": "Buscar Estudiantes",
+    "searchPlaceholder": "Buscar por nombre de estudiante...",
+    "filterByClass": "Filtrar por Clase",
+    "allClasses": "Todas las Clases",
+    "studentsAvailable": "Estudiante ({{count}} disponibles)",
+    "studentsAvailable_one": "Estudiante ({{count}} disponible)",
+    "selectStudent": "Seleccionar un estudiante",
+    "noStudentsMatch": "No hay estudiantes que coincidan con tus filtros",
+    "relationship": "Relación (opcional)",
+    "relationshipPlaceholder": "ej., Madre, Padre, Tutor",
+    "primaryParent": "Padre/Tutor Principal",
+    "addStudentButton": "Agregar Estudiante",
+    "cancel": "Cancelar",
+    "noAvailableStudents": "No hay estudiantes disponibles para agregar",
+    "close": "Cerrar"
   }
 }

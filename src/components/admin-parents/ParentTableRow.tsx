@@ -10,6 +10,7 @@ import { Edit, Trash2, Users, RotateCcw, KeyRound } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { ParentAuthStatus } from '@/services/authStatusService';
 import AuthStatusBadge from './AuthStatusBadge';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ParentTableRowProps {
   parent: ParentWithStudents;
@@ -34,7 +35,9 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
   showStudentsColumn,
   authStatus,
 }) => {
+  const { t } = useTranslation();
   const isDeleted = !!parent.deletedAt;
+  
   return (
     <TableRow className={isDeleted ? "opacity-60 bg-muted/20" : ""}>
       <TableCell className="font-medium">
@@ -42,7 +45,7 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
           {parent.name}
           {isDeleted && (
             <Badge variant="secondary" className="text-xs">
-              Deleted
+              {t('parentsManagement.deleted')}
             </Badge>
           )}
         </div>
@@ -53,9 +56,14 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
           <AuthStatusBadge authStatus={authStatus} />
         </div>
       </TableCell>
-      <TableCell>{parent.phone || 'N/A'}</TableCell>
+      <TableCell>{parent.phone || t('parentsManagement.notAvailable')}</TableCell>
       {showStudentsColumn && (
-        <TableCell>{parent.students?.length || 0} students</TableCell>
+        <TableCell>
+          {t('parentsManagement.studentsCount', { 
+            count: parent.students?.length || 0,
+            defaultValue: `${parent.students?.length || 0} students`
+          })}
+        </TableCell>
       )}
       <TableCell>
         <div className="flex space-x-2">

@@ -16,6 +16,7 @@ import { Star, StarOff, Trash2, UserPlus, Search } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { Child, Class } from '@/types';
 import { logger } from '@/utils/logger';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface StudentManagementModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
   onRemoveStudent,
   onTogglePrimary,
 }) => {
+  const { t } = useTranslation();
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [relationship, setRelationship] = useState('');
@@ -105,16 +107,18 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Manage Students for {parent.name}</DialogTitle>
+          <DialogTitle>{t('studentManagement.title', { parentName: parent.name })}</DialogTitle>
           <DialogDescription>
-            Add, remove, or modify student relationships for this parent.
+            {t('studentManagement.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Current Students */}
           <div>
-            <h3 className="font-medium mb-3">Current Students ({parent.students?.length || 0})</h3>
+            <h3 className="font-medium mb-3">
+              {t('studentManagement.currentStudents', { count: parent.students?.length || 0 })}
+            </h3>
             {parent.students && parent.students.length > 0 ? (
               <div className="space-y-2">
                 {parent.students.map(student => (
@@ -132,7 +136,7 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        title={student.isPrimary ? "Unset as primary" : "Set as primary"}
+                        title={student.isPrimary ? t('studentManagement.unsetPrimary') : t('studentManagement.setPrimary')}
                         disabled={!student.parentRelationshipId}
                         onClick={() => {
                           if (student.parentRelationshipId) {
@@ -145,7 +149,7 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        title="Remove student"
+                        title={t('studentManagement.removeStudent')}
                         disabled={!student.parentRelationshipId}
                         onClick={() => {
                           if (student.parentRelationshipId) {
@@ -160,14 +164,14 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">No students associated with this parent.</p>
+              <p className="text-gray-500 text-sm">{t('studentManagement.noStudentsAssociated')}</p>
             )}
           </div>
 
           {/* Add Student Section */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium">Add Student</h3>
+              <h3 className="font-medium">{t('studentManagement.addStudent')}</h3>
               {!showAddForm && (
                 <Button
                   variant="outline"
@@ -175,7 +179,7 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                   onClick={() => setShowAddForm(true)}
                   disabled={availableStudents.length === 0}
                 >
-                  <UserPlus className="h-4 w-4 mr-1" /> Add Student
+                  <UserPlus className="h-4 w-4 mr-1" /> {t('studentManagement.addStudent')}
                 </Button>
               )}
             </div>
@@ -185,11 +189,11 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                 {/* Search and Filter Controls */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Search Students</Label>
+                    <Label>{t('studentManagement.searchStudents')}</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                       <Input
-                        placeholder="Search by student name..."
+                        placeholder={t('studentManagement.searchPlaceholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -197,13 +201,13 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Filter by Class</Label>
+                    <Label>{t('studentManagement.filterByClass')}</Label>
                     <Select value={selectedClassFilter} onValueChange={setSelectedClassFilter}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Filter by class" />
+                        <SelectValue placeholder={t('studentManagement.filterByClass')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Classes</SelectItem>
+                        <SelectItem value="all">{t('studentManagement.allClasses')}</SelectItem>
                         {classes.map((cls) => (
                           <SelectItem key={cls.id} value={cls.id}>
                             {cls.name} - {cls.grade}
@@ -215,14 +219,19 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={studentId}>Student ({availableStudents.length} available)</Label>
+                  <Label htmlFor={studentId}>
+                    {t('studentManagement.studentsAvailable', { 
+                      count: availableStudents.length,
+                      defaultValue: `Student (${availableStudents.length} available)`
+                    })}
+                  </Label>
                   <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a student" />
+                      <SelectValue placeholder={t('studentManagement.selectStudent')} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableStudents.length === 0 ? (
-                        <SelectItem value="" disabled>No students match your filters</SelectItem>
+                        <SelectItem value="" disabled>{t('studentManagement.noStudentsMatch')}</SelectItem>
                       ) : (
                         availableStudents.map(student => {
                           const studentClass = classes.find(c => c.id === student.classId);
@@ -238,10 +247,10 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor={relationshipId}>Relationship (optional)</Label>
+                  <Label htmlFor={relationshipId}>{t('studentManagement.relationship')}</Label>
                   <Input
                     id={relationshipId}
-                    placeholder="e.g., Mother, Father, Guardian" 
+                    placeholder={t('studentManagement.relationshipPlaceholder')}
                     value={relationship}
                     onChange={(e) => setRelationship(e.target.value)}
                   />
@@ -255,27 +264,27 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                     checked={isPrimary}
                     onChange={(e) => setIsPrimary(e.target.checked)}
                   />
-                  <Label htmlFor={primaryId}>Primary Parent/Guardian</Label>
+                  <Label htmlFor={primaryId}>{t('studentManagement.primaryParent')}</Label>
                 </div>
                 
                 <div className="flex space-x-2 pt-2">
                   <Button onClick={handleAddStudent} disabled={!selectedStudentId}>
-                    Add Student
+                    {t('studentManagement.addStudentButton')}
                   </Button>
                   <Button variant="outline" onClick={() => setShowAddForm(false)}>
-                    Cancel
+                    {t('studentManagement.cancel')}
                   </Button>
                 </div>
               </div>
             ) : availableStudents.length === 0 ? (
-              <p className="text-gray-500 text-sm">No available students to add.</p>
+              <p className="text-gray-500 text-sm">{t('studentManagement.noAvailableStudents')}</p>
             ) : null}
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Close
+            {t('studentManagement.close')}
           </Button>
         </DialogFooter>
       </DialogContent>
