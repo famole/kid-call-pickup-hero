@@ -12,6 +12,7 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog";
 import { FileUp } from "lucide-react";
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ImportParentsDialogProps {
   isOpen: boolean;
@@ -26,24 +27,26 @@ const ImportParentsDialog: React.FC<ImportParentsDialogProps> = ({
   onFileChange,
   onSubmit,
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
-          <FileUp className="mr-2 h-4 w-4" /> Import
+          <FileUp className="mr-2 h-4 w-4" /> {t('importParentsDialog.trigger')}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Import Parents</DialogTitle>
+          <DialogTitle>{t('importParentsDialog.title')}</DialogTitle>
           <DialogDescription>
-            Upload a CSV file with parent data. The file should have columns for name, email, and phone (optional).
+            {t('importParentsDialog.description')}
           </DialogDescription>
         </DialogHeader>
         <Input type="file" accept=".csv" onChange={onFileChange} />
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={onSubmit} className="bg-school-primary">Import</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('importParentsDialog.cancel')}</Button>
+          <Button onClick={onSubmit} className="bg-school-primary">{t('importParentsDialog.import')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

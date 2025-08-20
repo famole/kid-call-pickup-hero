@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash, Eye } from "lucide-react";
 import { Child } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface StudentTableProps {
   studentList: Child[];
@@ -30,6 +31,7 @@ const StudentTable = ({
   onDelete,
   onViewDetails
 }: StudentTableProps) => {
+  const { t } = useTranslation();
   const [studentParentData, setStudentParentData] = useState<Record<string, { parentNames: string[], relationshipCount: number }>>({});
   
   // Fetch parent information for all students
@@ -90,23 +92,23 @@ const StudentTable = ({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Class</TableHead>
-          <TableHead className="hidden md:table-cell">Parents</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>{t('studentTable.name')}</TableHead>
+          <TableHead>{t('studentTable.class')}</TableHead>
+          <TableHead className="hidden md:table-cell">{t('studentTable.parents')}</TableHead>
+          <TableHead className="text-right">{t('studentTable.actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {isLoading ? (
           <TableRow>
             <TableCell colSpan={4} className="text-center py-8">
-              Loading students...
+              {t('studentTable.loadingStudents')}
             </TableCell>
           </TableRow>
         ) : studentList.length === 0 ? (
           <TableRow>
             <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-              No students found
+              {t('studentTable.noStudentsFound')}
             </TableCell>
           </TableRow>
         ) : (
@@ -114,7 +116,7 @@ const StudentTable = ({
             const parentData = studentParentData[student.id];
             const parentDisplay = parentData?.parentNames.length > 0 
               ? parentData.parentNames.join(', ')
-              : 'No parents assigned';
+              : t('studentTable.noParentsAssigned');
             
             return (
               <TableRow key={student.id}>

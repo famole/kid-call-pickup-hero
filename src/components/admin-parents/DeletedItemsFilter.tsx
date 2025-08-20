@@ -1,6 +1,7 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface DeletedItemsFilterProps {
   value: 'active' | 'deleted' | 'all';
@@ -13,20 +14,22 @@ const DeletedItemsFilter: React.FC<DeletedItemsFilterProps> = ({
   onValueChange,
   itemType,
 }) => {
+  const { t } = useTranslation();
+  
   const getLabel = () => {
     switch (itemType) {
       case 'parents':
-        return 'Parent Status';
+        return t('deletedItemsFilter.parentStatus');
       case 'teachers':
-        return 'Teacher Status';
+        return t('deletedItemsFilter.teacherStatus');
       case 'students':
-        return 'Student Status';
+        return t('deletedItemsFilter.studentStatus');
       case 'admins':
-        return 'Admin Status';
+        return t('deletedItemsFilter.adminStatus');
       case 'superadmins':
-        return 'Superadmin Status';
+        return t('deletedItemsFilter.superadminStatus');
       default:
-        return 'Status';
+        return t('deletedItemsFilter.status');
     }
   };
 
@@ -37,12 +40,12 @@ const DeletedItemsFilter: React.FC<DeletedItemsFilterProps> = ({
       </Label>
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger id="status-filter" className="w-[180px]">
-          <SelectValue placeholder="Select status" />
+          <SelectValue placeholder={t('deletedItemsFilter.selectStatus')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="active">Active Only</SelectItem>
-          <SelectItem value="deleted">Deleted Only</SelectItem>
-          <SelectItem value="all">All</SelectItem>
+          <SelectItem value="active">{t('deletedItemsFilter.activeOnly')}</SelectItem>
+          <SelectItem value="deleted">{t('deletedItemsFilter.deletedOnly')}</SelectItem>
+          <SelectItem value="all">{t('deletedItemsFilter.all')}</SelectItem>
         </SelectContent>
       </Select>
     </div>

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { ParentWithStudents, ParentInput } from '@/types/parent';
 import { useAuth } from '@/context/auth/AuthProvider';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface EditParentSheetProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
   userRole = 'parent',
 }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const nameId = React.useId();
   const emailId = React.useId();
   const phoneId = React.useId();
@@ -87,44 +89,44 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Edit User</SheetTitle>
+          <SheetTitle>{t('editParentSheet.title')}</SheetTitle>
           <SheetDescription>
-            Update user information and role.
+            {t('editParentSheet.description')}
           </SheetDescription>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor={nameId}>Name</Label>
+            <Label htmlFor={nameId}>{t('editParentSheet.name')}</Label>
             <Input
               id={nameId}
-              placeholder="Enter full name" 
+              placeholder={t('editParentSheet.namePlaceholder')} 
               value={editingParent.name}
               onChange={(e) => onEditingParentChange({...editingParent, name: e.target.value})}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={emailId}>Email</Label>
+            <Label htmlFor={emailId}>{t('editParentSheet.email')}</Label>
             <Input
               id={emailId}
               type="email" 
-              placeholder="Enter email address" 
+              placeholder={t('editParentSheet.emailPlaceholder')} 
               value={editingParent.email}
               onChange={(e) => onEditingParentChange({...editingParent, email: e.target.value})}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={phoneId}>Phone (optional)</Label>
+            <Label htmlFor={phoneId}>{t('editParentSheet.phone')}</Label>
             <Input
               id={phoneId}
-              placeholder="Enter phone number" 
+              placeholder={t('editParentSheet.phonePlaceholder')} 
               value={editingParent.phone || ''}
               onChange={(e) => onEditingParentChange({...editingParent, phone: e.target.value})}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={roleId}>Role</Label>
+            <Label htmlFor={roleId}>{t('editParentSheet.role')}</Label>
             <Select
               value={editingParent.role || 'parent'}
               onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin') => 
@@ -133,7 +135,7 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
               disabled={!roleEditable}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select role" />
+                <SelectValue placeholder={t('editParentSheet.selectRole')} />
               </SelectTrigger>
               <SelectContent>
                 {availableRoles.map((role) => (
@@ -145,14 +147,14 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
             </Select>
             {!roleEditable && (
               <p className="text-xs text-muted-foreground">
-                You cannot modify this user's role or your own role.
+                {t('editParentSheet.roleEditRestriction')}
               </p>
             )}
           </div>
           <SheetFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('editParentSheet.cancel')}</Button>
             <Button type="submit" className="bg-school-primary">
-              Update {editingParent.role?.charAt(0).toUpperCase() + editingParent.role?.slice(1) || 'User'}
+              {t('editParentSheet.updateUser', { role: editingParent.role?.charAt(0).toUpperCase() + editingParent.role?.slice(1) || 'User' })}
             </Button>
           </SheetFooter>
         </form>
