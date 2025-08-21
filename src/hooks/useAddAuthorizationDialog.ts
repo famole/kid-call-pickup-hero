@@ -68,11 +68,15 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
 
-      // Load ALL parents from the system
-      const allParentsData = await getAllParents();
-      
-      // Filter out the current user from the list of parents
-      const filteredParents = allParentsData.filter(parent => parent.id !== currentParentId);
+  // Load ALL parents from the system (excluding family and other roles)
+  const allParentsData = await getAllParents();
+  
+  // Filter out the current user and family/other roles from the list of parents
+  const filteredParents = allParentsData.filter(parent => 
+    parent.id !== currentParentId && 
+    parent.role && 
+    !['family', 'other'].includes(parent.role)
+  );
       
       // Convert to the expected format
       const formattedAllParents = filteredParents.map(parent => ({

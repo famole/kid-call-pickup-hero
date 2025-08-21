@@ -37,6 +37,15 @@ export interface PickupAuthorizationWithDetails extends PickupAuthorization {
   };
 }
 
+import { ParentWithStudents } from '@/types/parent';
+
+// Helper function to filter out family and other roles from parent searches
+export const filterSearchableParents = (parents: ParentWithStudents[]) => {
+  return parents.filter(parent => 
+    parent.role && !['family', 'other'].includes(parent.role)
+  );
+};
+
 // Create a new pickup authorization
 export const createPickupAuthorization = async (
   authorizationData: PickupAuthorizationInput
