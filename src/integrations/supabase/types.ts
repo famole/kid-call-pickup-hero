@@ -236,6 +236,72 @@ export type Database = {
           },
         ]
       }
+      pickup_invitations: {
+        Row: {
+          accepted_parent_id: string | null
+          created_at: string
+          end_date: string
+          expires_at: string
+          id: string
+          invitation_status: string
+          invitation_token: string
+          invited_email: string
+          invited_name: string
+          invited_role: Database["public"]["Enums"]["app_role"]
+          inviting_parent_id: string
+          start_date: string
+          student_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          accepted_parent_id?: string | null
+          created_at?: string
+          end_date: string
+          expires_at?: string
+          id?: string
+          invitation_status?: string
+          invitation_token?: string
+          invited_email: string
+          invited_name: string
+          invited_role?: Database["public"]["Enums"]["app_role"]
+          inviting_parent_id: string
+          start_date: string
+          student_ids: string[]
+          updated_at?: string
+        }
+        Update: {
+          accepted_parent_id?: string | null
+          created_at?: string
+          end_date?: string
+          expires_at?: string
+          id?: string
+          invitation_status?: string
+          invitation_token?: string
+          invited_email?: string
+          invited_name?: string
+          invited_role?: Database["public"]["Enums"]["app_role"]
+          inviting_parent_id?: string
+          start_date?: string
+          student_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_invitations_accepted_parent_id_fkey"
+            columns: ["accepted_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_invitations_inviting_parent_id_fkey"
+            columns: ["inviting_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pickup_requests: {
         Row: {
           id: string
