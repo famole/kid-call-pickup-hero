@@ -175,11 +175,22 @@ export const getInvitationByToken = async (token: string): Promise<PickupInvitat
 // Send invitation email
 export const sendInvitationEmail = async (invitationId: string): Promise<void> => {
   try {
-    const { error } = await supabase.functions.invoke('send-pickup-invitation', {
+    const { data, error } = await supabase.functions.invoke('send-pickup-invitation', {
       body: { invitationId }
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase function error:', error);
+      throw new Error(`Failed to send invitation email: ${error.message || error}`);
+    }
+    
+    // Check if the function returned an error in the response body
+    if (data && data.error) {
+      console.error('Edge function returned error:', data.error);
+      throw new Error(`Failed to send invitation email: ${data.error}`);
+    }
+    
+    console.log('Invitation email sent successfully:', data);
   } catch (error) {
     console.error('Error sending invitation email:', error);
     throw new Error('Failed to send invitation email');
