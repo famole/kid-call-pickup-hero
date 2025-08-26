@@ -302,26 +302,24 @@ const PickupAuthorizationManagement: React.FC = () => {
                               </div>
                               
                               <div className="space-y-2">
-                                <div className="space-y-1">
-                                  <p className="text-sm text-gray-600 break-words">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm text-gray-600">
                                     <span className="font-medium">{t('pickupAuthorizations.createdBy')}:</span>{' '}
-                                    <span className="block sm:inline mt-1 sm:mt-0">
+                                    <span>
                                       {auth.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
                                     </span>
                                   </p>
                                 </div>
                                 
-                                <div className="space-y-1">
-                                  <p className="text-sm text-gray-600 break-words">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm text-gray-600">
                                     <span className="font-medium">{t('pickupAuthorizations.authorizedTo')}:</span>{' '}
-                                    <span className="block sm:inline mt-1 sm:mt-0">
+                                    <span>
                                       {auth.authorizedParent?.name || t('pickupAuthorizations.unknownParent')}
                                     </span>
                                   </p>
                                   {auth.authorizedParent?.role && (
-                                    <div className="flex items-center gap-2">
-                                      <RoleBadge role={auth.authorizedParent.role} size="sm" />
-                                    </div>
+                                    <RoleBadge role={auth.authorizedParent.role} size="sm" />
                                   )}
                                 </div>
                                 
