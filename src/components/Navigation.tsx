@@ -64,10 +64,19 @@ const Navigation: React.FC = () => {
     { path: '/admin', label: t('navigation.adminPanel'), icon: Settings, roles: ['admin', 'superadmin'] },
   ];
 
-  // For invited users, only show the dashboard
-  const visibleItems = isInvitedUser 
+  // For invited users who are not admins/teachers, only show the dashboard
+  // Admins and teachers should always see their full navigation regardless of invited status
+  const visibleItems = (isInvitedUser && !['admin', 'teacher', 'superadmin'].includes(user?.role || ''))
     ? navigationItems.filter(item => item.path === '/')
     : navigationItems.filter(item => user?.role && item.roles.includes(user.role));
+
+  // Debug logging to console
+  React.useEffect(() => {
+    console.log('🔍 Navigation Debug - User:', user);
+    console.log('🔍 Navigation Debug - User Role:', user?.role);
+    console.log('🔍 Navigation Debug - Is Invited User:', isInvitedUser);
+    console.log('🔍 Navigation Debug - Visible Items:', visibleItems.map(item => item.path));
+  }, [user, isInvitedUser, visibleItems]);
 
   const NavItems = ({ mobile = false }) => (
     <>
