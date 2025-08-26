@@ -209,16 +209,14 @@ const PickupAuthorizationManagement: React.FC = () => {
                             </div>
                             
                             <div className="space-y-2">
-                              <div className="space-y-1">
-                                <p className="text-sm text-gray-600 break-words">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm text-gray-600">
                                   <span className="font-medium">{t('pickupAuthorizations.invitedPerson')}:</span>{' '}
-                                  <span className="block sm:inline mt-1 sm:mt-0">
+                                  <span>
                                     {invitation.invitedName} ({invitation.invitedEmail})
                                   </span>
                                 </p>
-                                <div className="flex items-center gap-2">
-                                  <RoleBadge role={invitation.invitedRole} size="sm" />
-                                </div>
+                                <RoleBadge role={invitation.invitedRole} size="sm" />
                               </div>
                               
                               <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
