@@ -81,29 +81,54 @@ export const useAuthProvider = (): AuthState & {
     try {
       logger.log('Handling user session for:', authUser.email);
       
+      // Check for invitation token in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const invitationToken = urlParams.get('invitation_token');
+      
       // Check if this is an OAuth user
       const isOAuthUser =
         !!(authUser.app_metadata?.provider &&
           authUser.app_metadata.provider !== 'email');
       
       logger.log('Is OAuth user:', isOAuthUser);
+      logger.log('Invitation token found:', !!invitationToken);
       
       // Get user data from our database based on the auth user
       let parentData = await getParentData(authUser.email);
       logger.log('Parent data found:', parentData ? 'Yes' : 'No');
       
-      // If no parent data exists and this is an OAuth user, reject the authentication
+      // If no parent data exists and this is an OAuth user, check if there's an invitation
       if (!parentData && isOAuthUser) {
-        logger.log('OAuth user not found in database, redirecting to unauthorized page');
-        await supabase.auth.signOut();
-        setUser(null);
-        setLoading(false);
-        
-        // Redirect to unauthorized access page
-        if (typeof window !== 'undefined') {
-          window.location.href = '/unauthorized-access';
+        if (invitationToken) {
+          try {
+            // Try to accept the invitation
+            const { updatePickupInvitation } = await import('@/services/pickupInvitationService');
+            await updatePickupInvitation(invitationToken, { invitationStatus: 'accepted' });
+            logger.log('Invitation accepted via OAuth');
+            
+            // Clear the invitation token from URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Continue with normal flow - the invitation should have created the parent record
+            parentData = await getParentData(authUser.email);
+          } catch (invitationError) {
+            logger.error('Error accepting invitation via OAuth:', invitationError);
+          }
         }
-        return;
+        
+        // If still no parent data after invitation attempt, reject the authentication
+        if (!parentData) {
+          logger.log('OAuth user not found in database, redirecting to unauthorized page');
+          await supabase.auth.signOut();
+          setUser(null);
+          setLoading(false);
+          
+          // Redirect to unauthorized access page
+          if (typeof window !== 'undefined') {
+            window.location.href = '/unauthorized-access';
+          }
+          return;
+        }
       }
 
       if (parentData) {

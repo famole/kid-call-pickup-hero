@@ -120,6 +120,65 @@ export const updatePickupInvitation = async (
   if (updates.endDate !== undefined) updateData.end_date = updates.endDate;
   if (updates.invitationStatus !== undefined) updateData.invitation_status = updates.invitationStatus;
 
+  // If accepting the invitation, create parent record and authorizations
+  if (updates.invitationStatus === 'accepted') {
+    // First get the invitation details
+    const { data: invitation, error: invitationError } = await supabase
+      .from('pickup_invitations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (invitationError) throw invitationError;
+
+    // Create or update the parent record
+    const { data: existingParent } = await supabase
+      .from('parents')
+      .select('id')
+      .eq('email', invitation.invited_email)
+      .single();
+
+    let parentId: string;
+
+    if (existingParent) {
+      parentId = existingParent.id;
+    } else {
+      // Create new parent record
+      const { data: newParent, error: parentError } = await supabase
+        .from('parents')
+        .insert({
+          name: invitation.invited_name,
+          email: invitation.invited_email,
+          role: 'parent',
+          password_set: true
+        })
+        .select('id')
+        .single();
+
+      if (parentError) throw parentError;
+      parentId = newParent.id;
+    }
+
+    // Update the invitation with the accepted parent ID
+    updateData.accepted_parent_id = parentId;
+
+    // Create pickup authorizations for all students in the invitation
+    const authorizationsToCreate = invitation.student_ids.map((studentId: string) => ({
+      student_id: studentId,
+      authorizing_parent_id: invitation.inviting_parent_id,
+      authorized_parent_id: parentId,
+      start_date: invitation.start_date,
+      end_date: invitation.end_date,
+      is_active: true
+    }));
+
+    const { error: authError } = await supabase
+      .from('pickup_authorizations')
+      .insert(authorizationsToCreate);
+
+    if (authError) throw authError;
+  }
+
   const { data, error } = await supabase
     .from('pickup_invitations')
     .update(updateData)
