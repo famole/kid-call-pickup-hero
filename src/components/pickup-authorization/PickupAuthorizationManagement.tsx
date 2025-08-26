@@ -47,6 +47,27 @@ const PickupAuthorizationManagement: React.FC = () => {
     loadAuthorizations();
   }, []);
 
+  // Refresh data when the component becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadAuthorizations();
+      }
+    };
+
+    const handleFocus = () => {
+      loadAuthorizations();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   const loadAuthorizations = async () => {
     try {
       setLoading(true);
