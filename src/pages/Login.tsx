@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,13 +24,19 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const invitationToken = searchParams.get('invitation_token');
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      if (invitationToken) {
+        navigate(`/invitation/${invitationToken}`);
+      } else {
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, invitationToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +48,13 @@ const Login = () => {
         title: t('auth.welcomeBack'),
         description: t('auth.welcomeBack'),
       });
-      navigate('/');
+      
+      // Redirect to invitation if token exists, otherwise to home
+      if (invitationToken) {
+        navigate(`/invitation/${invitationToken}`);
+      } else {
+        navigate('/');
+      }
     } catch (error: any) {
       console.error('Authentication error:', error);
       toast({
@@ -59,10 +71,14 @@ const Login = () => {
     setIsGoogleLoading(true);
     
     try {
+      const redirectTo = invitationToken 
+        ? `${window.location.origin}/invitation/${invitationToken}`
+        : `${window.location.origin}/`;
+        
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo
         }
       });
       
@@ -118,8 +134,11 @@ const Login = () => {
 
       // Check if this is a preloaded account that needs password setup
       if (parentData.is_preloaded && !parentData.password_set) {
-        // Redirect to password setup with email parameter
-        navigate(`/password-setup?email=${encodeURIComponent(firstTimeEmail)}`);
+        // Redirect to password setup with email parameter and invitation token if exists
+        const passwordSetupUrl = invitationToken 
+          ? `/password-setup?email=${encodeURIComponent(firstTimeEmail)}&invitation_token=${invitationToken}`
+          : `/password-setup?email=${encodeURIComponent(firstTimeEmail)}`;
+        navigate(passwordSetupUrl);
       } else if (parentData.password_set) {
         toast({
           title: t('errors.accountAlreadySetup'),
