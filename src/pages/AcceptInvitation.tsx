@@ -164,8 +164,14 @@ const AcceptInvitation = () => {
       // Accept the invitation after successful authentication
       if (authResult.data.user) {
         try {
-          await updatePickupInvitation(invitation.id, { invitationStatus: 'accepted' });
-          toast.success(isSignUp ? 'Cuenta creada e invitación aceptada' : 'Sesión iniciada e invitación aceptada');
+          // Check if invitation is still pending before accepting
+          const currentInvitation = await getInvitationByToken(token!);
+          if (currentInvitation && currentInvitation.invitationStatus === 'pending') {
+            await updatePickupInvitation(invitation.id, { invitationStatus: 'accepted' });
+            toast.success(isSignUp ? 'Cuenta creada e invitación aceptada' : 'Sesión iniciada e invitación aceptada');
+          } else {
+            toast.success(isSignUp ? 'Cuenta creada' : 'Sesión iniciada');
+          }
           
           // Add a small delay before redirect to ensure invitation is processed
           setTimeout(() => {

@@ -106,8 +106,8 @@ export const useAuthProvider = (): AuthState & {
           
           // Get invitation details first
           const invitationData = await getInvitationByToken(invitationToken);
-          if (invitationData && invitationData.invitedEmail === authUser.email) {
-            // Accept the invitation
+          if (invitationData && invitationData.invitedEmail === authUser.email && invitationData.invitationStatus === 'pending') {
+            // Accept the invitation only if it's still pending
             await updatePickupInvitation(invitationData.id, { invitationStatus: 'accepted' });
             logger.log('Invitation accepted successfully');
             
@@ -118,6 +118,8 @@ export const useAuthProvider = (): AuthState & {
             
             // Refresh parent data after invitation acceptance
             parentData = await getParentData(authUser.email);
+          } else if (invitationData) {
+            logger.log('Invitation already processed or not valid for this user');
           }
         } catch (invitationError) {
           logger.error('Error accepting invitation:', invitationError);
