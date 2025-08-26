@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send the invitation email
     const emailResponse = await resend.emails.send({
-      from: "Autorizaciones de Recogida <onboarding@resend.dev>",
+      from: "Autorizaciones de Recogida <noreply@mail.upsy.uy>",
       to: [invitation.invited_email],
       subject: `Invitación para autorización de recogida - ${studentNames}`,
       html: `
