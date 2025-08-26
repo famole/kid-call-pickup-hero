@@ -559,6 +559,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_invited_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_parent_of_student: {
         Args: { student_id: string }
         Returns: boolean

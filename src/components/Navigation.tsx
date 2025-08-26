@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 
 const Navigation: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isInvitedUser } = useAuth();
   const { t, changeLanguage, getCurrentLanguage } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,9 +64,10 @@ const Navigation: React.FC = () => {
     { path: '/admin', label: t('navigation.adminPanel'), icon: Settings, roles: ['admin', 'superadmin'] },
   ];
 
-  const visibleItems = navigationItems.filter(item => 
-    user?.role && item.roles.includes(user.role)
-  );
+  // For invited users, only show the dashboard
+  const visibleItems = isInvitedUser 
+    ? navigationItems.filter(item => item.path === '/')
+    : navigationItems.filter(item => user?.role && item.roles.includes(user.role));
 
   const NavItems = ({ mobile = false }) => (
     <>

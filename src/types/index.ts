@@ -5,6 +5,7 @@ export type User = {
   name: string;
   role: 'parent' | 'admin' | 'teacher' | 'superadmin' | 'family' | 'other';
   avatar?: string;
+  isInvitedUser?: boolean;
 };
 
 export type Child = {

@@ -112,12 +112,22 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
 };
 
 // Create a User object from parent data
-export const createUserFromParentData = (parentData: any): User => {
+export const createUserFromParentData = async (parentData: any): Promise<User> => {
+  // Check if user is invited (only has authorizations, no direct student relationships)
+  let isInvitedUser = false;
+  try {
+    const { data } = await supabase.rpc('is_invited_user');
+    isInvitedUser = data || false;
+  } catch (error) {
+    console.error('Error checking invited user status:', error);
+  }
+
   return {
     id: parentData.id,
     email: parentData.email,
     name: parentData.name || parentData.email?.split('@')[0] || 'User',
     role: parentData.role || 'parent', // This will now include 'teacher' role
+    isInvitedUser,
   };
 };
 

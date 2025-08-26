@@ -145,7 +145,8 @@ export const useAuthProvider = (): AuthState & {
         if (parentData.is_preloaded && !parentData.password_set) {
           logger.log('User needs password setup');
           // Set the user so password setup page can access their info
-          setUser(createUserFromParentData(parentData));
+          const user = await createUserFromParentData(parentData);
+          setUser(user);
 
           // Only redirect if we're not already on the password setup page
           if (window.location.pathname !== '/password-setup') {
@@ -155,7 +156,7 @@ export const useAuthProvider = (): AuthState & {
         }
 
         // If we found or created parent data, use it to create our app user
-        const user = createUserFromParentData(parentData);
+        const user = await createUserFromParentData(parentData);
         logger.log('Created user with role:', user.role);
         setUser(user);
       } else {
@@ -233,6 +234,7 @@ export const useAuthProvider = (): AuthState & {
     loading,
     login,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    isInvitedUser: user?.isInvitedUser || false
   };
 };
