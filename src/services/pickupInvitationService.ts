@@ -149,7 +149,7 @@ export const updatePickupInvitation = async (
         .insert({
           name: invitation.invited_name,
           email: invitation.invited_email,
-          role: 'parent',
+          role: invitation.invited_role,
           password_set: true
         })
         .select('id')
