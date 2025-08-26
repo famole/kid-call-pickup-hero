@@ -95,14 +95,17 @@ const AcceptInvitation = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!invitation || !token) return;
+    
     setProcessing(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/?invitation_token=${token}`,
           queryParams: {
-            invitation_token: token
+            invitation_token: token,
+            invitation_id: invitation.id
           }
         }
       });
@@ -135,7 +138,8 @@ const AcceptInvitation = () => {
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
-              name: invitation.invitedName
+              name: invitation.invitedName,
+              invitation_token: token // Pass the token in user metadata
             }
           }
         });
@@ -158,10 +162,25 @@ const AcceptInvitation = () => {
       }
 
       // Accept the invitation after successful authentication
-      await updatePickupInvitation(invitation.id, { invitationStatus: 'accepted' });
-      
-      toast.success(isSignUp ? 'Cuenta creada e invitación aceptada' : 'Sesión iniciada e invitación aceptada');
-      navigate('/');
+      if (authResult.data.user) {
+        try {
+          await updatePickupInvitation(invitation.id, { invitationStatus: 'accepted' });
+          toast.success(isSignUp ? 'Cuenta creada e invitación aceptada' : 'Sesión iniciada e invitación aceptada');
+          
+          // Add a small delay before redirect to ensure invitation is processed
+          setTimeout(() => {
+            navigate('/');
+          }, 1000);
+        } catch (invitationError) {
+          console.error('Error accepting invitation:', invitationError);
+          toast.error('Usuario creado pero error al aceptar invitación. Contacta al administrador.');
+          
+          // Still redirect to dashboard even if invitation acceptance fails
+          setTimeout(() => {
+            navigate('/');
+          }, 2000);
+        }
+      }
       
     } catch (error) {
       console.error('Error with authentication:', error);

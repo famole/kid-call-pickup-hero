@@ -81,9 +81,9 @@ export const useAuthProvider = (): AuthState & {
     try {
       logger.log('Handling user session for:', authUser.email);
       
-      // Check for invitation token in URL
+      // Check for invitation token in URL or user metadata
       const urlParams = new URLSearchParams(window.location.search);
-      const invitationToken = urlParams.get('invitation_token');
+      const invitationToken = urlParams.get('invitation_token') || authUser.user_metadata?.invitation_token;
       
       // Check if this is an OAuth user
       const isOAuthUser =
@@ -97,38 +97,45 @@ export const useAuthProvider = (): AuthState & {
       let parentData = await getParentData(authUser.email);
       logger.log('Parent data found:', parentData ? 'Yes' : 'No');
       
-      // If no parent data exists and this is an OAuth user, check if there's an invitation
-      if (!parentData && isOAuthUser) {
-        if (invitationToken) {
-          try {
-            // Try to accept the invitation
-            const { updatePickupInvitation } = await import('@/services/pickupInvitationService');
-            await updatePickupInvitation(invitationToken, { invitationStatus: 'accepted' });
-            logger.log('Invitation accepted via OAuth');
+      // Handle invitation acceptance if we have a token
+      if (invitationToken && !parentData) {
+        try {
+          logger.log('Processing invitation with token:', invitationToken);
+          // Try to accept the invitation by token
+          const { getInvitationByToken, updatePickupInvitation } = await import('@/services/pickupInvitationService');
+          
+          // Get invitation details first
+          const invitationData = await getInvitationByToken(invitationToken);
+          if (invitationData && invitationData.invitedEmail === authUser.email) {
+            // Accept the invitation
+            await updatePickupInvitation(invitationData.id, { invitationStatus: 'accepted' });
+            logger.log('Invitation accepted successfully');
             
             // Clear the invitation token from URL
-            window.history.replaceState({}, document.title, window.location.pathname);
+            if (urlParams.get('invitation_token')) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
             
-            // Continue with normal flow - the invitation should have created the parent record
+            // Refresh parent data after invitation acceptance
             parentData = await getParentData(authUser.email);
-          } catch (invitationError) {
-            logger.error('Error accepting invitation via OAuth:', invitationError);
           }
+        } catch (invitationError) {
+          logger.error('Error accepting invitation:', invitationError);
         }
+      }
+      
+      // If no parent data exists and this is an OAuth user without invitation, reject the authentication
+      if (!parentData && isOAuthUser) {
+        logger.log('OAuth user not found in database, redirecting to unauthorized page');
+        await supabase.auth.signOut();
+        setUser(null);
+        setLoading(false);
         
-        // If still no parent data after invitation attempt, reject the authentication
-        if (!parentData) {
-          logger.log('OAuth user not found in database, redirecting to unauthorized page');
-          await supabase.auth.signOut();
-          setUser(null);
-          setLoading(false);
-          
-          // Redirect to unauthorized access page
-          if (typeof window !== 'undefined') {
-            window.location.href = '/unauthorized-access';
-          }
-          return;
+        // Redirect to unauthorized access page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/unauthorized-access';
         }
+        return;
       }
 
       if (parentData) {
