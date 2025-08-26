@@ -883,5 +883,12 @@
     "cancel": "Cancel",
     "noAvailableStudents": "No available students to add",
     "close": "Close"
+  },
+  "roles": {
+    "parent": "Parent",
+    "family": "Family",
+    "other": "Other",
+    "teacher": "Teacher",
+    "admin": "Admin"
   }
 }

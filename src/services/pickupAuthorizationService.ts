@@ -25,11 +25,13 @@ export interface PickupAuthorizationWithDetails extends PickupAuthorization {
     id: string;
     name: string;
     email: string;
+    role?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other';
   };
   authorizedParent?: {
     id: string;
     name: string;
     email: string;
+    role?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other';
   };
   student?: {
     id: string;
@@ -91,8 +93,8 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
     .from('pickup_authorizations')
     .select(`
       *,
-      authorizing_parent:parents!authorizing_parent_id (id, name, email),
-      authorized_parent:parents!authorized_parent_id (id, name, email)
+      authorizing_parent:parents!authorizing_parent_id (id, name, email, role),
+      authorized_parent:parents!authorized_parent_id (id, name, email, role)
     `)
     .eq('authorizing_parent_id', currentParentId)
     .order('created_at', { ascending: false });

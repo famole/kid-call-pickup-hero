@@ -780,5 +780,12 @@
     "cancel": "Cancelar",
     "noAvailableStudents": "No hay estudiantes disponibles para agregar",
     "close": "Cerrar"
+  },
+  "roles": {
+    "parent": "Padre",
+    "family": "Familia",
+    "other": "Otro",
+    "teacher": "Maestro",
+    "admin": "Admin"
   }
 }

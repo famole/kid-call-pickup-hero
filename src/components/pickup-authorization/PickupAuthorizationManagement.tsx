@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, Plus, Trash2, Edit } from 'lucide-react';
+import RoleBadge from './RoleBadge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
@@ -176,18 +177,34 @@ const PickupAuthorizationManagement: React.FC = () => {
                         </div>
                         
                         <div className="space-y-2">
-                          <p className="text-sm text-gray-600 break-words">
-                            <span className="font-medium">{t('pickupAuthorizations.createdBy')}:</span>{' '}
-                            <span className="block sm:inline mt-1 sm:mt-0">
-                              {auth.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
-                            </span>
-                          </p>
-                          <p className="text-sm text-gray-600 break-words">
-                            <span className="font-medium">{t('pickupAuthorizations.authorizedTo')}:</span>{' '}
-                            <span className="block sm:inline mt-1 sm:mt-0">
-                              {auth.authorizedParent?.name || t('pickupAuthorizations.unknownParent')}
-                            </span>
-                          </p>
+                          <div className="space-y-1">
+                            <p className="text-sm text-gray-600 break-words">
+                              <span className="font-medium">{t('pickupAuthorizations.createdBy')}:</span>{' '}
+                              <span className="block sm:inline mt-1 sm:mt-0">
+                                {auth.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
+                              </span>
+                            </p>
+                            {auth.authorizingParent?.role && (
+                              <div className="flex items-center gap-2">
+                                <RoleBadge role={auth.authorizingParent.role} size="sm" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <p className="text-sm text-gray-600 break-words">
+                              <span className="font-medium">{t('pickupAuthorizations.authorizedTo')}:</span>{' '}
+                              <span className="block sm:inline mt-1 sm:mt-0">
+                                {auth.authorizedParent?.name || t('pickupAuthorizations.unknownParent')}
+                              </span>
+                            </p>
+                            {auth.authorizedParent?.role && (
+                              <div className="flex items-center gap-2">
+                                <RoleBadge role={auth.authorizedParent.role} size="sm" />
+                              </div>
+                            )}
+                          </div>
+                          
                           <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
                             <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                             <span className="break-words">
