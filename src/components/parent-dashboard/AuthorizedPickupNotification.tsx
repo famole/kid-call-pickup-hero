@@ -28,9 +28,22 @@ const AuthorizedPickupNotification: React.FC<AuthorizedPickupNotificationProps> 
 }) => {
   const { t } = useTranslation();
 
+  // Debug logging to see what's being passed to the component
+  console.log('🔍 AuthorizedPickupNotification received:', {
+    requestsCount: requests.length,
+    requests: requests.map(r => ({
+      id: r.id,
+      studentId: r.studentId,
+      parentId: r.parentId
+    }))
+  });
+
   if (requests.length === 0) {
+    console.log('🔍 AuthorizedPickupNotification: Not rendering (no requests)');
     return null;
   }
+
+  console.log('🔍 AuthorizedPickupNotification: RENDERING with', requests.length, 'requests');
 
   return (
     <Card className="w-full md:w-[90%] mx-auto border-blue-200 bg-blue-50">
