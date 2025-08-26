@@ -53,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const studentNames = students?.map(s => s.name).join(', ') || '';
     const inviterName = invitation.inviting_parent?.name || 'Un padre del colegio';
-    const appUrl = Deno.env.get("SUPABASE_URL")?.replace('//', '//164bb4c6-3e1e-44df-b3a2-7094f661598c.sandbox.lovable.dev') || 'https://164bb4c6-3e1e-44df-b3a2-7094f661598c.sandbox.lovable.dev';
+    const appUrl = 'https://164bb4c6-3e1e-44df-b3a2-7094f661598c.sandbox.lovable.dev';
     const acceptUrl = `${appUrl}/accept-invitation/${invitation.invitation_token}`;
 
     // Send the invitation email
