@@ -184,11 +184,6 @@ const PickupAuthorizationManagement: React.FC = () => {
                                 {auth.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
                               </span>
                             </p>
-                            {auth.authorizingParent?.role && (
-                              <div className="flex items-center gap-2">
-                                <RoleBadge role={auth.authorizingParent.role} size="sm" />
-                              </div>
-                            )}
                           </div>
                           
                           <div className="space-y-1">
