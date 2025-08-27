@@ -4,6 +4,7 @@ import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Car, Info } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/context/AuthContext';
 
 interface CalledRequestsCardProps {
   calledRequests: PickupRequest[];
@@ -17,8 +18,14 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
   currentParentId
 }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
 
-  if (calledRequests.length === 0) {
+  // Filter requests based on user role
+  const filteredRequests = user?.role === 'family' || user?.role === 'other'
+    ? calledRequests.filter(req => req.parentId === currentParentId)
+    : calledRequests;
+
+  if (filteredRequests.length === 0) {
     return null;
   }
 
@@ -27,10 +34,10 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Car className="h-5 w-5 text-green-600 animate-bounce" />
-          🚗 {t('dashboard.readyForPickup', { count: calledRequests.length })}
+          🚗 {t('dashboard.readyForPickup', { count: filteredRequests.length })}
         </CardTitle>
         <CardDescription>
-          {calledRequests.some(req => currentParentId && req.parentId !== currentParentId) ? (
+          {filteredRequests.some(req => currentParentId && req.parentId !== currentParentId) ? (
             <>
               {t('dashboard.childrenReadyHeadToPickup')}
               <br />
@@ -45,7 +52,7 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {calledRequests.map((request) => {
+          {filteredRequests.map((request) => {
             const child = children.find(c => c.id === request.studentId);
             const isRequestedByOtherParent = currentParentId && request.parentId !== currentParentId;
             
