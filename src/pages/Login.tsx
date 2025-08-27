@@ -31,7 +31,7 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated) {
       if (invitationToken) {
-        navigate(`/invitation/${invitationToken}`);
+        navigate(`/accept-invitation/${invitationToken}`);
       } else {
         navigate('/');
       }
@@ -51,7 +51,7 @@ const Login = () => {
       
       // Redirect to invitation if token exists, otherwise to home
       if (invitationToken) {
-        navigate(`/invitation/${invitationToken}`);
+        navigate(`/accept-invitation/${invitationToken}`);
       } else {
         navigate('/');
       }
@@ -72,7 +72,7 @@ const Login = () => {
     
     try {
       const redirectTo = invitationToken 
-        ? `${window.location.origin}/invitation/${invitationToken}`
+        ? `${window.location.origin}/accept-invitation/${invitationToken}`
         : `${window.location.origin}/`;
         
       const { data, error } = await supabase.auth.signInWithOAuth({
