@@ -143,13 +143,13 @@ export const updatePickupInvitation = async (
     if (existingParent) {
       parentId = existingParent.id;
     } else {
-      // Create new parent record
+      // Create new parent record with proper app_role
       const { data: newParent, error: parentError } = await supabase
         .from('parents')
         .insert({
           name: invitation.invited_name,
           email: invitation.invited_email,
-          role: invitation.invited_role,
+          role: 'parent', // Always create as 'parent' role regardless of invitation type
           password_set: true
         })
         .select('id')
