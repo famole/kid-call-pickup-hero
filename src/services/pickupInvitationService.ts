@@ -122,6 +122,8 @@ export const updatePickupInvitation = async (
 
   // If accepting the invitation, create parent record and authorizations
   if (updates.invitationStatus === 'accepted') {
+    console.log('Starting invitation acceptance process...');
+    
     // First get the invitation details
     const { data: invitation, error: invitationError } = await supabase
       .from('pickup_invitations')
@@ -129,20 +131,32 @@ export const updatePickupInvitation = async (
       .eq('id', id)
       .single();
 
-    if (invitationError) throw invitationError;
+    if (invitationError) {
+      console.error('Error fetching invitation:', invitationError);
+      throw invitationError;
+    }
+    console.log('Invitation fetched successfully:', invitation);
 
     // Create or update the parent record
-    const { data: existingParent } = await supabase
+    console.log('Checking for existing parent with email:', invitation.invited_email);
+    const { data: existingParent, error: existingParentError } = await supabase
       .from('parents')
       .select('id')
       .eq('email', invitation.invited_email)
       .single();
 
+    if (existingParentError && existingParentError.code !== 'PGRST116') {
+      console.error('Error checking existing parent:', existingParentError);
+      throw existingParentError;
+    }
+
     let parentId: string;
 
     if (existingParent) {
+      console.log('Found existing parent:', existingParent.id);
       parentId = existingParent.id;
     } else {
+      console.log('Creating new parent record...');
       // Create new parent record with the invited role
       const { data: newParent, error: parentError } = await supabase
         .from('parents')
@@ -155,7 +169,11 @@ export const updatePickupInvitation = async (
         .select('id')
         .single();
 
-      if (parentError) throw parentError;
+      if (parentError) {
+        console.error('Error creating parent:', parentError);
+        throw parentError;
+      }
+      console.log('Created new parent:', newParent.id);
       parentId = newParent.id;
     }
 
