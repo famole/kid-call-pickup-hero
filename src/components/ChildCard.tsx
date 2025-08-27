@@ -117,7 +117,7 @@ const ChildCard: React.FC<ChildCardProps> = ({
               </div>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground text-left">
             {childClass ? childClass.name : t('common.unknownClass')}
           </p>
           {isAuthorized && (
