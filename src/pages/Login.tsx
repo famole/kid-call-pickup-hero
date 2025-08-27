@@ -124,6 +124,12 @@ const Login = () => {
         .single();
 
       if (error) {
+        // If invitation token exists and user doesn't exist, redirect to invitation signup
+        if (invitationToken) {
+          navigate(`/invitation-signup/${invitationToken}?email=${encodeURIComponent(firstTimeEmail)}`);
+          return;
+        }
+
         toast({
           title: t('errors.emailNotFound'),
           description: t('errors.emailNotInSystem'),
@@ -178,7 +184,10 @@ const Login = () => {
             </div>
             <CardTitle className="text-2xl text-center">{t('auth.firstTimeSetup')}</CardTitle>
             <CardDescription className="text-center">
-              {t('auth.enterEmailToSetup')}
+              {invitationToken 
+                ? 'Ingresá tu email para configurar tu cuenta y aceptar la invitación'
+                : t('auth.enterEmailToSetup')
+              }
             </CardDescription>
           </CardHeader>
           
