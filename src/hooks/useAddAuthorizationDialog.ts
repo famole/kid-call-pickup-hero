@@ -71,19 +71,21 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
       
       // Enhance available parents data with shared student information
-      const enhancedAvailableParents = availableParents.map(parent => {
-        const sharedStudentIds = sharedStudents[parent.id] || [];
-        const sharedStudentNames = userChildren
-          .filter(child => sharedStudentIds.includes(child.id))
-          .map(child => child.name);
-        
-        return {
-          ...parent,
-          students: parent.students || [],
-          sharedStudentIds,
-          sharedStudentNames,
-        };
-      });
+      const enhancedAvailableParents = availableParents
+        .filter(parent => parent && parent.id) // Filter out null parents
+        .map(parent => {
+          const sharedStudentIds = sharedStudents[parent.id] || [];
+          const sharedStudentNames = userChildren
+            .filter(child => sharedStudentIds.includes(child.id))
+            .map(child => child.name);
+          
+          return {
+            ...parent,
+            students: parent.students || [],
+            sharedStudentIds,
+            sharedStudentNames,
+          };
+        });
 
       // Filter to get parents who actually share students (have shared students)
       const parentsWithSharedStudents = enhancedAvailableParents.filter(parent => 

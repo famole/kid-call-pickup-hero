@@ -195,9 +195,15 @@ export const getAvailableParentsForAuthorization = async (): Promise<{
   // Add shared parents (parents of same students)
   for (const relation of sharedParentRelations) {
     const parentId = relation.parent_id;
+    const parentData = relation.parent;
+    
+    // Skip if parent data is null (due to RLS restrictions)
+    if (!parentData || !parentData.id) {
+      continue;
+    }
     
     if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, relation.parent);
+      parentMap.set(parentId, parentData);
       sharedStudents[parentId] = [];
     }
     
@@ -207,8 +213,15 @@ export const getAvailableParentsForAuthorization = async (): Promise<{
   // Add family/other role members (don't count them as shared students)
   for (const auth of authorizedFamilyMembers || []) {
     const parentId = auth.authorized_parent_id;
+    const parentData = auth.authorized_parent;
+    
+    // Skip if parent data is null (due to RLS restrictions)
+    if (!parentData || !parentData.id) {
+      continue;
+    }
+    
     if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, auth.authorized_parent);
+      parentMap.set(parentId, parentData);
       // Family members don't have shared students in this context
       sharedStudents[parentId] = [];
     }
@@ -271,9 +284,15 @@ export const getParentsWhoShareStudents = async (): Promise<{
 
   for (const relation of sharedParentRelations) {
     const parentId = relation.parent_id;
+    const parentData = relation.parent;
+    
+    // Skip if parent data is null (due to RLS restrictions)
+    if (!parentData || !parentData.id) {
+      continue;
+    }
     
     if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, relation.parent);
+      parentMap.set(parentId, parentData);
       sharedStudents[parentId] = [];
     }
     

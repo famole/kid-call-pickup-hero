@@ -75,7 +75,9 @@ export const useEditAuthorizationDialog = (
 
       // Load only available parents (family/other + shared students parents)
       const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
-      const enhancedAvailableParents = availableParents.map(parent => {
+      const enhancedAvailableParents = availableParents
+        .filter(parent => parent && parent.id) // Filter out null parents
+        .map(parent => {
         const sharedStudentIds = sharedStudents[parent.id] || [];
         const sharedStudentNames = userChildren
           .filter(child => sharedStudentIds.includes(child.id))
