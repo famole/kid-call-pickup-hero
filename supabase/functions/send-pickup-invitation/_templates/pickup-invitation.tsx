@@ -41,7 +41,7 @@ export const PickupInvitationEmail = ({
         {/* Header with Logo */}
         <Section style={header}>
           <Img
-            src="https://164bb4c6-3e1e-44df-b3a2-7094f661598c.sandbox.lovable.dev/assets/upsy_logo.png"
+            src="https://bslcyuufvifphfzdgfcl.supabase.co/storage/v1/object/public/assets/upsy_logo.png"
             width="80"
             height="80"
             alt="Upsy Logo"
