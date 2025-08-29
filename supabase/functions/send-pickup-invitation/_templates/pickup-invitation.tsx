@@ -42,12 +42,11 @@ export const PickupInvitationEmail = ({
         <Section style={header}>
           <Img
             src="https://auth.upsy.uy/storage/v1/object/public/Assets/upsy_transparent.png"
-            width="80"
-            height="80"
+            width="120"
+            height="120"
             alt="Upsy Logo"
             style={logo}
           />
-          <Heading style={h1}>Upsy</Heading>
           <Text style={tagline}>Gestión escolar simplificada</Text>
         </Section>
         
