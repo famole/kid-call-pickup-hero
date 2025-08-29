@@ -30,9 +30,13 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      // Let the auth provider handle all redirects including invitation checks
+      // This prevents overriding the invitation redirect logic
       if (invitationToken) {
         navigate(`/accept-invitation/${invitationToken}`);
       } else {
+        // For already authenticated users without invitation token, just go home
+        // The auth provider would have already handled any pending invitations
         navigate('/');
       }
     }
@@ -49,12 +53,8 @@ const Login = () => {
         description: t('auth.welcomeBack'),
       });
       
-      // Redirect to invitation if token exists, otherwise to home
-      if (invitationToken) {
-        navigate(`/accept-invitation/${invitationToken}`);
-      } else {
-        navigate('/');
-      }
+      // Let the auth provider handle redirects based on pending invitations
+      // No need to force navigate here as handleUserSession will handle it
     } catch (error: any) {
       console.error('Authentication error:', error);
       toast({

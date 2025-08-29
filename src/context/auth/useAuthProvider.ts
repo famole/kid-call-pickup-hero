@@ -157,6 +157,30 @@ export const useAuthProvider = (): AuthState & {
           return;
         }
 
+        // Check for pending invitations for this user
+        try {
+          const { data: pendingInvitations } = await supabase
+            .from('pickup_invitations')
+            .select('invitation_token')
+            .eq('invited_email', authUser.email)
+            .eq('invitation_status', 'pending')
+            .gt('expires_at', new Date().toISOString())
+            .limit(1);
+
+          // If user has pending invitations and we're not already on an invitation page, redirect
+          if (pendingInvitations && pendingInvitations.length > 0 && 
+              !window.location.pathname.includes('accept-invitation') &&
+              !window.location.pathname.includes('password-setup')) {
+            const invitationToken = pendingInvitations[0].invitation_token;
+            logger.log('Found pending invitation, redirecting to accept invitation page');
+            window.location.href = `/accept-invitation/${invitationToken}`;
+            return;
+          }
+        } catch (invitationCheckError) {
+          logger.error('Error checking for pending invitations:', invitationCheckError);
+          // Continue with normal flow if invitation check fails
+        }
+
         // If we found or created parent data, use it to create our app user
         const user = await createUserFromParentData(parentData);
         logger.log('Created user with role:', user.role);
