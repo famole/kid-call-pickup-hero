@@ -291,19 +291,45 @@ const AcceptInvitation = () => {
                 className="h-24 w-auto object-contain"
               />
             </div>
-            <div className="text-center">
-              <CardTitle className="text-destructive">Error</CardTitle>
-              <CardDescription>Upsy - Gestión escolar simplificada</CardDescription>
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <CardTitle className="text-xl text-destructive">¡Ups! Algo salió mal</CardTitle>
+              <CardDescription className="text-muted-foreground leading-relaxed">
+                {error === 'Token de invitación no válido' && 'El enlace de invitación no es válido o ha sido modificado.'}
+                {error === 'Invitación no encontrada o expirada' && 'Esta invitación no existe o ha expirado. Por favor, solicita una nueva invitación.'}
+                {!error.includes('Token') && !error.includes('Invitación') && 'No pudimos cargar los detalles de la invitación en este momento.'}
+              </CardDescription>
+              <p className="text-xs text-school-primary/70 font-medium">Upsy - Gestión escolar simplificada</p>
             </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button 
-              onClick={() => navigate('/login')} 
-              className="w-full bg-school-primary hover:bg-school-primary/90 text-white"
-            >
-              Volver al inicio
-            </Button>
+          <CardContent className="space-y-4">
+            <div className="bg-muted/30 border border-muted/50 p-4 rounded-lg">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2">¿Qué puedes hacer?</h4>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• Verifica que el enlace esté completo</li>
+                <li>• Solicita una nueva invitación al remitente</li>
+                <li>• Contacta al administrador si el problema persiste</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <Button 
+                onClick={() => navigate('/login')} 
+                className="w-full bg-school-primary hover:bg-school-primary/90 text-white"
+              >
+                Ir al inicio de sesión
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => window.location.reload()} 
+                className="w-full border-school-primary/20 text-school-primary hover:bg-school-primary/5"
+              >
+                Intentar nuevamente
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
