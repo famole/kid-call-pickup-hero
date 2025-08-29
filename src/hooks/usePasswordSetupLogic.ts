@@ -33,11 +33,11 @@ export const usePasswordSetupLogic = () => {
       if (emailFromUrl && !user) {
         console.log('Checking for preloaded account with email:', emailFromUrl);
         try {
-          const { data: parentDataResult, error } = await supabase
-            .from('parents')
-            .select('*')
-            .eq('email', emailFromUrl)
-            .single();
+        const { data: parentDataResult, error } = await supabase
+          .from('parents')
+          .select('*')
+          .eq('email', emailFromUrl)
+          .maybeSingle();
 
           console.log('Preloaded account check result:', {
             error: error?.message,
@@ -83,7 +83,7 @@ export const usePasswordSetupLogic = () => {
             .from('parents')
             .select('*')
             .eq('email', user.email)
-            .single();
+            .maybeSingle();
 
           console.log('Authenticated user parent data:', {
             error: error?.message,

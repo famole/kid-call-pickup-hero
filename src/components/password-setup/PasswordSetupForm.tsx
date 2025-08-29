@@ -66,7 +66,7 @@ const PasswordSetupForm = () => {
         .from('parents')
         .select('password_set, is_preloaded')
         .eq('email', userEmail)
-        .single();
+        .maybeSingle();
 
       // If user is not authenticated, we need to handle different scenarios
       if (!user) {

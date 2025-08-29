@@ -121,7 +121,7 @@ const Login = () => {
         .from('parents')
         .select('email, password_set, is_preloaded')
         .eq('email', firstTimeEmail)
-        .single();
+        .maybeSingle();
 
       if (error) {
         // If invitation token exists and user doesn't exist, redirect to invitation signup
@@ -138,8 +138,8 @@ const Login = () => {
         return;
       }
 
-      // Check if this is a preloaded account that needs password setup
-      if (parentData.is_preloaded && !parentData.password_set) {
+      // Check if this account needs password setup (preloaded or password was reset)
+      if (!parentData.password_set) {
         // Redirect to password setup with email parameter and invitation token if exists
         const passwordSetupUrl = invitationToken 
           ? `/password-setup?email=${encodeURIComponent(firstTimeEmail)}&invitation_token=${invitationToken}`
