@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { Resend } from "npm:resend@2.0.0";
+import React from 'npm:react@18.3.1';
+import { renderAsync } from 'npm:@react-email/components@0.0.22';
+import { PickupInvitationEmail } from './_templates/pickup-invitation.tsx';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -56,67 +59,26 @@ const handler = async (req: Request): Promise<Response> => {
     const appUrl = 'https://164bb4c6-3e1e-44df-b3a2-7094f661598c.sandbox.lovable.dev';
     const acceptUrl = `${appUrl}/accept-invitation/${invitation.invitation_token}`;
 
+    // Render the React Email template
+    const html = await renderAsync(
+      React.createElement(PickupInvitationEmail, {
+        invitedName: invitation.invited_name,
+        inviterName: inviterName,
+        studentNames: studentNames,
+        startDate: new Date(invitation.start_date).toLocaleDateString('es-ES'),
+        endDate: new Date(invitation.end_date).toLocaleDateString('es-ES'),
+        role: invitation.invited_role,
+        acceptUrl: acceptUrl,
+        expiresAt: `${new Date(invitation.expires_at).toLocaleDateString('es-ES')} a las ${new Date(invitation.expires_at).toLocaleTimeString('es-ES')}`,
+      })
+    );
+
     // Send the invitation email
     const emailResponse = await resend.emails.send({
-      from: "Autorizaciones de Recogida <noreply@mail.upsy.uy>",
+      from: "Upsy - Autorizaciones <noreply@mail.upsy.uy>",
       to: [invitation.invited_email],
       subject: `Invitación para autorización de recogida - ${studentNames}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">
-            Invitación de Autorización de Recogida
-          </h1>
-          
-          <p>Hola <strong>${invitation.invited_name}</strong>,</p>
-          
-          <p>
-            <strong>${inviterName}</strong> te ha invitado a autorizar la recogida de 
-            ${studentNames === '' ? 'sus hijos' : studentNames} en el colegio.
-          </p>
-          
-          <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #1f2937;">Detalles de la Autorización:</h3>
-            <ul style="color: #4b5563;">
-              <li><strong>Estudiantes:</strong> ${studentNames}</li>
-              <li><strong>Fecha de inicio:</strong> ${new Date(invitation.start_date).toLocaleDateString('es-ES')}</li>
-              <li><strong>Fecha de fin:</strong> ${new Date(invitation.end_date).toLocaleDateString('es-ES')}</li>
-              <li><strong>Rol:</strong> ${invitation.invited_role === 'family' ? 'Familiar' : 'Otro'}</li>
-            </ul>
-          </div>
-          
-          <p>
-            Para aceptar esta invitación y poder recoger a los estudiantes, 
-            haz clic en el siguiente botón:
-          </p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${acceptUrl}" 
-               style="background-color: #2563eb; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 6px; font-weight: bold; 
-                      display: inline-block;">
-              Aceptar Invitación
-            </a>
-          </div>
-          
-          <p style="color: #6b7280; font-size: 14px;">
-            Si no puedes hacer clic en el botón, copia y pega el siguiente enlace en tu navegador:
-            <br>
-            <a href="${acceptUrl}" style="color: #2563eb;">${acceptUrl}</a>
-          </p>
-          
-          <p style="color: #6b7280; font-size: 14px;">
-            Esta invitación expirará el ${new Date(invitation.expires_at).toLocaleDateString('es-ES')} 
-            a las ${new Date(invitation.expires_at).toLocaleTimeString('es-ES')}.
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-          
-          <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-            Este mensaje fue enviado por el sistema de gestión escolar.<br>
-            Si no esperabas recibir este correo, puedes ignorarlo de forma segura.
-          </p>
-        </div>
-      `,
+      html,
     });
 
     console.log("Email API response:", JSON.stringify(emailResponse, null, 2));
