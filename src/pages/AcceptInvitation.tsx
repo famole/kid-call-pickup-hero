@@ -10,6 +10,7 @@ import { getInvitationByToken, updatePickupInvitation } from '@/services/pickupI
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { Separator } from '@/components/ui/separator';
+import Logo from '@/components/Logo';
 
 interface InvitationDetails {
   id: string;
@@ -255,10 +256,17 @@ const AcceptInvitation = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-school-primary/10">
+          <CardHeader className="flex flex-col items-center space-y-4">
+            <Logo size="lg" />
+            <div className="text-center">
+              <CardTitle className="text-school-primary">Upsy</CardTitle>
+              <CardDescription>Gestión escolar simplificada</CardDescription>
+            </div>
+          </CardHeader>
           <CardContent className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-school-primary" />
             <span className="ml-2">Cargando invitación...</span>
           </CardContent>
         </Card>
@@ -268,14 +276,21 @@ const AcceptInvitation = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error</CardTitle>
+      <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-school-primary/10">
+          <CardHeader className="flex flex-col items-center space-y-4">
+            <Logo size="lg" />
+            <div className="text-center">
+              <CardTitle className="text-destructive">Error</CardTitle>
+              <CardDescription>Upsy - Gestión escolar simplificada</CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={() => navigate('/login')} className="w-full">
+            <Button 
+              onClick={() => navigate('/login')} 
+              className="w-full bg-school-primary hover:bg-school-primary/90 text-white"
+            >
               Volver al inicio
             </Button>
           </CardContent>
@@ -291,26 +306,23 @@ const AcceptInvitation = () => {
   // Show login form for existing users
   if (showLoginForm) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="space-y-1 flex flex-col items-center">
-            <div className="mb-4">
-              <img
-                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
-                alt="Upsy"
-                className="h-16 w-auto object-contain"
-              />
+      <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-school-primary/10">
+          <CardHeader className="space-y-4 flex flex-col items-center">
+            <Logo size="lg" />
+            <div className="text-center space-y-2">
+              <CardTitle className="text-2xl text-school-primary">Iniciar Sesión</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Inicia sesión para aceptar la invitación
+              </CardDescription>
+              <p className="text-xs text-school-primary/70 font-medium">Upsy - Gestión escolar simplificada</p>
             </div>
-            <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
-            <CardDescription className="text-center">
-              Inicia sesión para aceptar la invitación
-            </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-4">
             {/* Invitation Details */}
-            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-              <h3 className="font-semibold text-sm">Detalles de la invitación:</h3>
+            <div className="bg-school-primary/5 border border-school-primary/20 p-4 rounded-lg space-y-2">
+              <h3 className="font-semibold text-sm text-school-primary">Detalles de la invitación:</h3>
               <div className="space-y-1 text-xs text-muted-foreground">
                 <p><strong>Invitado por:</strong> {invitation.invitingParentName}</p>
                 <p><strong>Para:</strong> {invitation.invitedName}</p>
@@ -415,26 +427,23 @@ const AcceptInvitation = () => {
   // Show signup form for new users
   if (showSignupForm) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="space-y-1 flex flex-col items-center">
-            <div className="mb-4">
-              <img
-                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
-                alt="Upsy"
-                className="h-16 w-auto object-contain"
-              />
+      <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-school-primary/10">
+          <CardHeader className="space-y-4 flex flex-col items-center">
+            <Logo size="lg" />
+            <div className="text-center space-y-2">
+              <CardTitle className="text-2xl text-school-primary">Crear Cuenta</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Crea tu cuenta para aceptar la invitación
+              </CardDescription>
+              <p className="text-xs text-school-primary/70 font-medium">Upsy - Gestión escolar simplificada</p>
             </div>
-            <CardTitle className="text-2xl text-center">Crear Cuenta</CardTitle>
-            <CardDescription className="text-center">
-              Crea tu cuenta para aceptar la invitación
-            </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-4">
             {/* Invitation Details */}
-            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-              <h3 className="font-semibold text-sm">Detalles de la invitación:</h3>
+            <div className="bg-school-primary/5 border border-school-primary/20 p-4 rounded-lg space-y-2">
+              <h3 className="font-semibold text-sm text-school-primary">Detalles de la invitación:</h3>
               <div className="space-y-1 text-xs text-muted-foreground">
                 <p><strong>Invitado por:</strong> {invitation.invitingParentName}</p>
                 <p><strong>Para:</strong> {invitation.invitedName}</p>
@@ -569,17 +578,21 @@ const AcceptInvitation = () => {
 
   // Show accept/decline screen for authenticated users
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Invitación de Autorización de Recogida</CardTitle>
-          <CardDescription>
-            Has sido invitado/a para autorizar la recogida de estudiantes
-          </CardDescription>
+    <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-school-primary/10">
+        <CardHeader className="space-y-4 flex flex-col items-center">
+          <Logo size="lg" />
+          <div className="text-center space-y-2">
+            <CardTitle className="text-xl text-school-primary">Invitación de Autorización de Recogida</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Has sido invitado/a para autorizar la recogida de estudiantes
+            </CardDescription>
+            <p className="text-xs text-school-primary/70 font-medium">Upsy - Gestión escolar simplificada</p>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <h3 className="font-semibold mb-2">Detalles de la invitación:</h3>
+          <div className="bg-school-primary/5 border border-school-primary/20 p-4 rounded-lg space-y-2">
+            <h3 className="font-semibold mb-2 text-school-primary">Detalles de la invitación:</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
               <p><strong>Invitado por:</strong> {invitation.invitingParentName}</p>
               <p><strong>Para:</strong> {invitation.invitedName}</p>
@@ -595,7 +608,7 @@ const AcceptInvitation = () => {
             <Button 
               onClick={handleAccept} 
               disabled={processing}
-              className="flex-1"
+              className="flex-1 bg-school-primary hover:bg-school-primary/90 text-white"
             >
               {processing ? (
                 <>
@@ -610,7 +623,7 @@ const AcceptInvitation = () => {
               onClick={handleDecline} 
               variant="outline" 
               disabled={processing}
-              className="flex-1"
+              className="flex-1 border-school-primary text-school-primary hover:bg-school-primary/10"
             >
               {processing ? (
                 <>
