@@ -89,8 +89,14 @@ const AcceptInvitation = () => {
         setEmail(invitationDetails.invitedEmail);
         setName(invitationDetails.invitedName);
 
-        // If user is authenticated, show accept invitation screen
+        // If user is authenticated, check if they match the invitation
         if (user) {
+          // Check if logged-in user matches invitation recipient
+          if (user.email !== invitationDetails.invitedEmail) {
+            setError('user_mismatch');
+            setLoading(false);
+            return;
+          }
           setLoading(false);
           return;
         }
@@ -297,11 +303,18 @@ const AcceptInvitation = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <CardTitle className="text-xl text-destructive">¡Ups! Algo salió mal</CardTitle>
+              <CardTitle className="text-xl text-destructive">
+                {error === 'user_mismatch' ? 'Usuario incorrecto' : '¡Ups! Algo salió mal'}
+              </CardTitle>
               <CardDescription className="text-muted-foreground leading-relaxed">
+                {error === 'user_mismatch' && (
+                  <>
+                    Esta invitación es para <strong>{invitation?.invitedEmail}</strong>, pero tienes la sesión iniciada como <strong>{user?.email}</strong>.
+                  </>
+                )}
                 {error === 'Token de invitación no válido' && 'El enlace de invitación no es válido o ha sido modificado.'}
                 {error === 'Invitación no encontrada o expirada' && 'Esta invitación no existe o ha expirado. Por favor, solicita una nueva invitación.'}
-                {!error.includes('Token') && !error.includes('Invitación') && 'No pudimos cargar los detalles de la invitación en este momento.'}
+                {!error.includes('Token') && !error.includes('Invitación') && error !== 'user_mismatch' && 'No pudimos cargar los detalles de la invitación en este momento.'}
               </CardDescription>
               <p className="text-xs text-school-primary/70 font-medium">Upsy - Gestión escolar simplificada</p>
             </div>
@@ -310,18 +323,42 @@ const AcceptInvitation = () => {
             <div className="bg-muted/30 border border-muted/50 p-4 rounded-lg">
               <h4 className="text-sm font-semibold text-muted-foreground mb-2">¿Qué puedes hacer?</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Verifica que el enlace esté completo</li>
-                <li>• Solicita una nueva invitación al remitente</li>
-                <li>• Contacta al administrador si el problema persiste</li>
+                {error === 'user_mismatch' ? (
+                  <>
+                    <li>• Cierra sesión y accede con la cuenta correcta</li>
+                    <li>• Solicita una nueva invitación para tu email actual</li>
+                    <li>• Verifica que estés usando el enlace correcto</li>
+                  </>
+                ) : (
+                  <>
+                    <li>• Verifica que el enlace esté completo</li>
+                    <li>• Solicita una nueva invitación al remitente</li>
+                    <li>• Contacta al administrador si el problema persiste</li>
+                  </>
+                )}
               </ul>
             </div>
             <div className="space-y-2">
-              <Button 
-                onClick={() => navigate('/login')} 
-                className="w-full bg-school-primary hover:bg-school-primary/90 text-white"
-              >
-                Ir al inicio de sesión
-              </Button>
+              {error === 'user_mismatch' ? (
+                <>
+                  <Button 
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      navigate('/login');
+                    }} 
+                    className="w-full bg-school-primary hover:bg-school-primary/90 text-white"
+                  >
+                    Cerrar sesión e ir al login
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  onClick={() => navigate('/login')} 
+                  className="w-full bg-school-primary hover:bg-school-primary/90 text-white"
+                >
+                  Ir al inicio de sesión
+                </Button>
+              )}
               <Button 
                 variant="outline"
                 onClick={() => window.location.reload()} 
