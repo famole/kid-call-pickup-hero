@@ -4,11 +4,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   updatePickupAuthorization,
-  getParentsWhoShareStudents,
+  getAvailableParentsForAuthorization,
   PickupAuthorizationWithDetails
 } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
-import { getAllParents } from '@/services/parentService';
 import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
@@ -74,17 +73,9 @@ export const useEditAuthorizationDialog = (
       const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
 
-      const allParentsData = await getAllParents();
-      const filteredParents = allParentsData.filter(p => p.id !== currentParentId);
-      const formattedAllParents = filteredParents.map(parent => ({
-        ...parent,
-        students: [],
-        sharedStudentIds: [],
-        sharedStudentNames: []
-      }));
-
-      const { parents: sharedParents, sharedStudents } = await getParentsWhoShareStudents();
-      const enhancedSharedParents = sharedParents.map(parent => {
+      // Load only available parents (family/other + shared students parents)
+      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
+      const enhancedAvailableParents = availableParents.map(parent => {
         const sharedStudentIds = sharedStudents[parent.id] || [];
         const sharedStudentNames = userChildren
           .filter(child => sharedStudentIds.includes(child.id))
@@ -97,8 +88,13 @@ export const useEditAuthorizationDialog = (
         };
       });
 
-      setAllParents(formattedAllParents);
-      setParentsWhoShareStudents(enhancedSharedParents);
+      // Filter to get parents who actually share students (have shared students)
+      const parentsWithSharedStudents = enhancedAvailableParents.filter(parent => 
+        parent.sharedStudentIds && parent.sharedStudentIds.length > 0
+      );
+
+      setAllParents(enhancedAvailableParents);
+      setParentsWhoShareStudents(parentsWithSharedStudents);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({

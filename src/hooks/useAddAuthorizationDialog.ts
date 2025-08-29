@@ -2,9 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
-import { createPickupAuthorization, getParentsWhoShareStudents } from '@/services/pickupAuthorizationService';
+import { createPickupAuthorization, getAvailableParentsForAuthorization } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
-import { getAllParents } from '@/services/parentService';
 import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
@@ -68,29 +67,11 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
 
-  // Load ALL parents from the system (excluding family and other roles)
-  const allParentsData = await getAllParents();
-  
-  // Filter out the current user and family/other roles from the list of parents
-  const filteredParents = allParentsData.filter(parent => 
-    parent.id !== currentParentId && 
-    parent.role && 
-    !['family', 'other'].includes(parent.role)
-  );
+      // Load only available parents (family/other + shared students parents)
+      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
       
-      // Convert to the expected format
-      const formattedAllParents = filteredParents.map(parent => ({
-        ...parent,
-        students: [], // We don't need student relationships for all parents
-        sharedStudentIds: [],
-        sharedStudentNames: [],
-      }));
-
-      // Load parents who share students with current user for the filter option
-      const { parents: sharedParents, sharedStudents } = await getParentsWhoShareStudents();
-      
-      // Enhance shared parents data with shared student information
-      const enhancedSharedParents = sharedParents.map(parent => {
+      // Enhance available parents data with shared student information
+      const enhancedAvailableParents = availableParents.map(parent => {
         const sharedStudentIds = sharedStudents[parent.id] || [];
         const sharedStudentNames = userChildren
           .filter(child => sharedStudentIds.includes(child.id))
@@ -104,8 +85,13 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
         };
       });
 
-      setAllParents(formattedAllParents);
-      setParentsWhoShareStudents(enhancedSharedParents);
+      // Filter to get parents who actually share students (have shared students)
+      const parentsWithSharedStudents = enhancedAvailableParents.filter(parent => 
+        parent.sharedStudentIds && parent.sharedStudentIds.length > 0
+      );
+
+      setAllParents(enhancedAvailableParents);
+      setParentsWhoShareStudents(parentsWithSharedStudents);
 
     } catch (error) {
       console.error('Error loading data:', error);

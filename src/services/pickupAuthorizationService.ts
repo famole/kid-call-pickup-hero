@@ -127,6 +127,99 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
   return authorizations;
 };
 
+// Get parents available for pickup authorization
+// Only returns family/other members created by current parent + parents sharing students
+export const getAvailableParentsForAuthorization = async (): Promise<{
+  parents: any[];
+  sharedStudents: Record<string, string[]>;
+}> => {
+  // Use the server-side helper to get current parent ID
+  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+  
+  if (parentError || !currentParentId) {
+    throw new Error('Unable to authenticate parent');
+  }
+
+  // Get all students associated with the current parent
+  const { data: currentParentStudents, error: studentsError } = await supabase
+    .from('student_parents')
+    .select('student_id')
+    .eq('parent_id', currentParentId);
+
+  if (studentsError) {
+    console.error('Error fetching current parent students:', studentsError);
+    throw new Error(studentsError.message);
+  }
+
+  if (!currentParentStudents || currentParentStudents.length === 0) {
+    return { parents: [], sharedStudents: {} };
+  }
+
+  const studentIds = currentParentStudents.map(sp => sp.student_id);
+
+  // Get parents who share students with the current parent
+  const { data: sharedParentRelations, error: sharedError } = await supabase
+    .from('student_parents')
+    .select(`
+      parent_id,
+      student_id,
+      parent:parents!parent_id (id, name, email, role)
+    `)
+    .in('student_id', studentIds)
+    .neq('parent_id', currentParentId);
+
+  if (sharedError) {
+    console.error('Error fetching shared parents:', sharedError);
+    throw new Error(sharedError.message);
+  }
+
+  // Get family/other role parents who were authorized by current parent
+  const { data: authorizedFamilyMembers, error: familyError } = await supabase
+    .from('pickup_authorizations')
+    .select(`
+      authorized_parent_id,
+      authorized_parent:parents!authorized_parent_id (id, name, email, role)
+    `)
+    .eq('authorizing_parent_id', currentParentId)
+    .in('authorized_parent:parents.role', ['family', 'other']);
+
+  if (familyError) {
+    console.error('Error fetching family members:', familyError);
+    throw new Error(familyError.message);
+  }
+
+  // Group shared parents by parent and track shared students
+  const parentMap = new Map();
+  const sharedStudents: Record<string, string[]> = {};
+
+  // Add shared parents (parents of same students)
+  for (const relation of sharedParentRelations) {
+    const parentId = relation.parent_id;
+    
+    if (!parentMap.has(parentId)) {
+      parentMap.set(parentId, relation.parent);
+      sharedStudents[parentId] = [];
+    }
+    
+    sharedStudents[parentId].push(relation.student_id);
+  }
+
+  // Add family/other role members (don't count them as shared students)
+  for (const auth of authorizedFamilyMembers || []) {
+    const parentId = auth.authorized_parent_id;
+    if (!parentMap.has(parentId)) {
+      parentMap.set(parentId, auth.authorized_parent);
+      // Family members don't have shared students in this context
+      sharedStudents[parentId] = [];
+    }
+  }
+
+  return {
+    parents: Array.from(parentMap.values()),
+    sharedStudents
+  };
+};
+
 // Get parents who share students with the current parent
 export const getParentsWhoShareStudents = async (): Promise<{
   parents: any[];
