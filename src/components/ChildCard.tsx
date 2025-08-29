@@ -121,7 +121,7 @@ const ChildCard: React.FC<ChildCardProps> = ({
             {childClass ? childClass.name : t('common.unknownClass')}
           </p>
           {isAuthorized && (
-            <p className="text-xs text-blue-600 font-medium">
+            <p className="text-xs text-blue-600 font-medium text-left">
               {t('dashboard.authorizedPickup')}
             </p>
           )}
