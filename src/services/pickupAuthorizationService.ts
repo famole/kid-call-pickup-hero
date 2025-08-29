@@ -181,7 +181,7 @@ export const getAvailableParentsForAuthorization = async (): Promise<{
       authorized_parent:parents!authorized_parent_id (id, name, email, role)
     `)
     .eq('authorizing_parent_id', currentParentId)
-    .in('authorized_parent:parents.role', ['family', 'other']);
+    .in('authorized_parent.role', ['family', 'other']);
 
   if (familyError) {
     console.error('Error fetching family members:', familyError);
