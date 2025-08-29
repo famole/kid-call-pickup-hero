@@ -159,23 +159,49 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       throw new Error(childrenError.message);
     }
 
-    // Get authorized children (excluding deleted students)
+    // Get authorized children (excluding deleted students) - handle both old student_id and new student_ids
     const { data: authorizedChildren, error: authorizedError } = await supabase
       .from('pickup_authorizations')
       .select(`
         student_id,
-        students!inner (
-          id,
-          name,
-          class_id,
-          avatar
-        )
+        student_ids
       `)
       .eq('authorized_parent_id', parentData.id)
       .eq('is_active', true)
-      .is('students.deleted_at', null)
       .lte('start_date', new Date().toISOString().split('T')[0])
       .gte('end_date', new Date().toISOString().split('T')[0]);
+
+    // Get student details for all authorized students
+    let authorizedStudentIds: string[] = [];
+    if (authorizedChildren) {
+      authorizedChildren.forEach(auth => {
+        // Handle new student_ids array field
+        if (auth.student_ids && Array.isArray(auth.student_ids)) {
+          authorizedStudentIds.push(...auth.student_ids);
+        }
+        // Handle old student_id field for backward compatibility
+        if (auth.student_id) {
+          authorizedStudentIds.push(auth.student_id);
+        }
+      });
+    }
+
+    // Remove duplicates
+    authorizedStudentIds = [...new Set(authorizedStudentIds)];
+
+    // Get student details for authorized students
+    let authorizedStudentDetails = [];
+    if (authorizedStudentIds.length > 0) {
+      const { data: studentDetails, error: studentsError } = await supabase
+        .from('students')
+        .select('id, name, class_id, avatar')
+        .in('id', authorizedStudentIds)
+        .is('deleted_at', null);
+
+      if (!studentsError && studentDetails) {
+        authorizedStudentDetails = studentDetails;
+      }
+    }
 
     if (authorizedError) {
       logger.error('Error fetching authorized children:', authorizedError);
@@ -191,12 +217,12 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       avatar: child.avatar,
     })) || [];
 
-    const authorizedChildrenFormatted: Child[] = authorizedChildren?.map(auth => ({
-      id: auth.students.id,
-      name: auth.students.name,
-      classId: auth.students.class_id || '',
+    const authorizedChildrenFormatted: Child[] = authorizedStudentDetails?.map(student => ({
+      id: student.id,
+      name: student.name,
+      classId: student.class_id || '',
       parentIds: [parentData.id],
-      avatar: auth.students.avatar,
+      avatar: student.avatar,
     })) || [];
 
     // Remove duplicates and combine
