@@ -644,6 +644,7 @@
     "passwordTooShort": "La contraseña debe tener al menos 6 caracteres.",
     "noEmailForSetup": "No se encontró email para la configuración de contraseña",
     "demoAccountSetup": "Configuración de Cuenta Demo Completa",
+    "accountResetComplete": "Restablecimiento de Cuenta Completo",
     "demoAccountReady": "Tu cuenta demo ha sido configurada. Ahora puedes iniciar sesión con tus credenciales.",
     "accountSetupComplete": "Configuración de Cuenta Completa",
     "passwordSetSuccessfully": "Tu contraseña ha sido configurada exitosamente. Serás automáticamente conectado.",
