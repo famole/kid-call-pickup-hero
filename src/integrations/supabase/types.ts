@@ -140,6 +140,7 @@ export type Database = {
           is_active: boolean
           start_date: string
           student_id: string
+          student_ids: string[]
           updated_at: string
         }
         Insert: {
@@ -151,6 +152,7 @@ export type Database = {
           is_active?: boolean
           start_date: string
           student_id: string
+          student_ids?: string[]
           updated_at?: string
         }
         Update: {
@@ -162,6 +164,7 @@ export type Database = {
           is_active?: boolean
           start_date?: string
           student_id?: string
+          student_ids?: string[]
           updated_at?: string
         }
         Relationships: [

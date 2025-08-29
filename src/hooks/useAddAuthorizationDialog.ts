@@ -11,7 +11,7 @@ import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
 
 interface FormData {
-  studentId: string;
+  studentIds: string[];
   authorizedParentId: string;
   startDate: string;
   endDate: string;
@@ -32,7 +32,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
   const [showOnlySharedParents, setShowOnlySharedParents] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    studentId: '',
+    studentIds: [],
     authorizedParentId: '',
     startDate: '',
     endDate: '',
@@ -117,7 +117,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     }
   };
 
-  const updateFormData = (field: keyof FormData, value: string) => {
+  const updateFormData = (field: keyof FormData, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -132,7 +132,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.studentId || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
+    if (formData.studentIds.length === 0 || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.fillAllFields'),
@@ -152,22 +152,33 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
 
     setLoading(true);
     try {
-      await createPickupAuthorization(formData);
+      // Create authorization for each selected student
+      for (const studentId of formData.studentIds) {
+        await createPickupAuthorization({
+          studentId,
+          authorizedParentId: formData.authorizedParentId,
+          startDate: formData.startDate,
+          endDate: formData.endDate
+        });
+      }
       
       const selectedParent = [...allParents, ...parentsWhoShareStudents].find(p => p.id === formData.authorizedParentId);
-      const selectedChild = children.find(c => c.id === formData.studentId);
+      const selectedChildrenNames = children
+        .filter(c => formData.studentIds.includes(c.id))
+        .map(c => c.name)
+        .join(', ');
       
       toast({
         title: t('common.success'),
         description: t('pickupAuthorizations.authorizationCreated')
           .replace('{parentName}', selectedParent?.name || '')
-          .replace('{studentName}', selectedChild?.name || ''),
+          .replace('{studentName}', selectedChildrenNames),
       });
       
       onAuthorizationAdded();
       onOpenChange(false);
       setFormData({
-        studentId: '',
+        studentIds: [],
         authorizedParentId: '',
         startDate: '',
         endDate: '',

@@ -5,7 +5,8 @@ export interface PickupAuthorization {
   id: string;
   authorizingParentId: string;
   authorizedParentId: string;
-  studentId: string;
+  studentId: string; // Keep for backward compatibility
+  studentIds?: string[]; // New field for multiple students
   startDate: string;
   endDate: string;
   isActive: boolean;
@@ -15,7 +16,8 @@ export interface PickupAuthorization {
 
 export interface PickupAuthorizationInput {
   authorizedParentId: string;
-  studentId: string;
+  studentId?: string; // Keep for backward compatibility
+  studentIds?: string[]; // New field for multiple students
   startDate: string;
   endDate: string;
 }
@@ -262,6 +264,7 @@ export const updatePickupAuthorization = async (
   
   if (updates.authorizedParentId) updateData.authorized_parent_id = updates.authorizedParentId;
   if (updates.studentId) updateData.student_id = updates.studentId;
+  if (updates.studentIds) updateData.student_ids = updates.studentIds;
   if (updates.startDate) updateData.start_date = updates.startDate;
   if (updates.endDate) updateData.end_date = updates.endDate;
   if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
@@ -331,6 +334,7 @@ const mapAuthorizationFromDB = (dbAuth: any): PickupAuthorization => ({
   authorizingParentId: dbAuth.authorizing_parent_id,
   authorizedParentId: dbAuth.authorized_parent_id,
   studentId: dbAuth.student_id,
+  studentIds: dbAuth.student_ids,
   startDate: dbAuth.start_date,
   endDate: dbAuth.end_date,
   isActive: dbAuth.is_active,
