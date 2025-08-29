@@ -64,74 +64,76 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
   const defaultLoadingLabel = loadingLabel || t('pickupAuthorizations.creating');
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="students">{t('pickupAuthorizations.children')}</Label>
-        <div className="border rounded-md p-2 space-y-2 max-h-40 overflow-y-auto">
-          {children.map((child) => (
-            <label key={child.id} className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.studentIds.includes(child.id)}
-                onChange={(e) => {
-                  const newStudentIds = e.target.checked
-                    ? [...formData.studentIds, child.id]
-                    : formData.studentIds.filter(id => id !== child.id);
-                  onUpdateFormData('studentIds', newStudentIds);
-                }}
-                className="rounded"
-              />
-              <span className="text-sm">{child.name}</span>
-            </label>
-          ))}
-          {children.length === 0 && (
-            <p className="text-sm text-gray-500">{t('pickupAuthorizations.noChildrenAvailable')}</p>
-          )}
-        </div>
-      </div>
-
-      <SearchOnlyParentSelector
-        parents={allParents}
-        value={formData.authorizedParentId}
-        onValueChange={(value) => onUpdateFormData('authorizedParentId', value)}
-        placeholder={t('pickupAuthorizations.searchForParent')}
-        showOnlySharedParents={showOnlySharedParents}
-        onToggleFilter={onToggleParentFilter}
-        parentsWhoShareStudents={parentsWhoShareStudents}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="startDate">{t('pickupAuthorizations.startDate')}</Label>
-          <Input
-            id="startDate"
-            type="date"
-            value={formData.startDate}
-            onChange={(e) => onUpdateFormData('startDate', e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-          />
+          <Label htmlFor="students">{t('pickupAuthorizations.children')}</Label>
+          <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto bg-background">
+            {children.map((child) => (
+              <label key={child.id} className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-muted/50 rounded">
+                <input
+                  type="checkbox"
+                  checked={formData.studentIds.includes(child.id)}
+                  onChange={(e) => {
+                    const newStudentIds = e.target.checked
+                      ? [...formData.studentIds, child.id]
+                      : formData.studentIds.filter(id => id !== child.id);
+                    onUpdateFormData('studentIds', newStudentIds);
+                  }}
+                  className="rounded"
+                />
+                <span className="text-sm">{child.name}</span>
+              </label>
+            ))}
+            {children.length === 0 && (
+              <p className="text-sm text-muted-foreground p-2">{t('pickupAuthorizations.noChildrenAvailable')}</p>
+            )}
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="endDate">{t('pickupAuthorizations.endDate')}</Label>
-          <Input
-            id="endDate"
-            type="date"
-            value={formData.endDate}
-            onChange={(e) => onUpdateFormData('endDate', e.target.value)}
-            min={formData.startDate || new Date().toISOString().split('T')[0]}
-          />
-        </div>
-      </div>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? defaultLoadingLabel : defaultSubmitLabel}
-        </Button>
-      </div>
-    </form>
+        <SearchOnlyParentSelector
+          parents={allParents}
+          value={formData.authorizedParentId}
+          onValueChange={(value) => onUpdateFormData('authorizedParentId', value)}
+          placeholder={t('pickupAuthorizations.searchForParent')}
+          showOnlySharedParents={showOnlySharedParents}
+          onToggleFilter={onToggleParentFilter}
+          parentsWhoShareStudents={parentsWhoShareStudents}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="startDate">{t('pickupAuthorizations.startDate')}</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => onUpdateFormData('startDate', e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="endDate">{t('pickupAuthorizations.endDate')}</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => onUpdateFormData('endDate', e.target.value)}
+              min={formData.startDate || new Date().toISOString().split('T')[0]}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-6 mt-6 border-t">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? defaultLoadingLabel : defaultSubmitLabel}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 

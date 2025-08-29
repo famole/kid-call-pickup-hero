@@ -69,8 +69,8 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
     <>
       <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
         <DrawerContent className="h-full w-[400px] ml-auto fixed right-0 top-0 rounded-l-lg">
-          <div className="mx-auto w-full max-w-sm p-6 h-full overflow-y-auto">
-            <DrawerHeader className="px-0">
+          <div className="flex flex-col h-full">
+            <DrawerHeader className="px-6 pb-4 flex-shrink-0">
               <DrawerTitle>
                 {selectedType === 'existing' 
                   ? t('pickupAuthorizations.addPickupAuthorization')
@@ -90,25 +90,27 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
               </DrawerDescription>
             </DrawerHeader>
 
-            {!selectedType ? (
-              <AuthorizationTypeSelector
-                onSelectType={handleTypeSelect}
-                onCancel={() => onOpenChange(false)}
-              />
-            ) : (
-              <AddAuthorizationForm
-                children={children}
-                allParents={allParents}
-                formData={formData}
-                loading={loading}
-                onSubmit={handleSubmit}
-                onUpdateFormData={updateFormData}
-                onCancel={handleGoBack}
-                showOnlySharedParents={showOnlySharedParents}
-                onToggleParentFilter={toggleParentFilter}
-                parentsWhoShareStudents={parentsWhoShareStudents}
-              />
-            )}
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              {!selectedType ? (
+                <AuthorizationTypeSelector
+                  onSelectType={handleTypeSelect}
+                  onCancel={() => onOpenChange(false)}
+                />
+              ) : (
+                <AddAuthorizationForm
+                  children={children}
+                  allParents={allParents}
+                  formData={formData}
+                  loading={loading}
+                  onSubmit={handleSubmit}
+                  onUpdateFormData={updateFormData}
+                  onCancel={handleGoBack}
+                  showOnlySharedParents={showOnlySharedParents}
+                  onToggleParentFilter={toggleParentFilter}
+                  parentsWhoShareStudents={parentsWhoShareStudents}
+                />
+              )}
+            </div>
           </div>
         </DrawerContent>
       </Drawer>
