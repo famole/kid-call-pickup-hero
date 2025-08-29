@@ -10,7 +10,6 @@ import { getInvitationByToken, updatePickupInvitation } from '@/services/pickupI
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { Separator } from '@/components/ui/separator';
-import Logo from '@/components/Logo';
 
 interface InvitationDetails {
   id: string;
@@ -259,7 +258,13 @@ const AcceptInvitation = () => {
       <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-school-primary/10">
           <CardHeader className="flex flex-col items-center space-y-4">
-            <Logo size="lg" />
+            <div className="mb-4">
+              <img
+                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                alt="Upsy"
+                className="h-24 w-auto object-contain"
+              />
+            </div>
             <div className="text-center">
               <CardTitle className="text-school-primary">Upsy</CardTitle>
               <CardDescription>Gestión escolar simplificada</CardDescription>
@@ -279,7 +284,13 @@ const AcceptInvitation = () => {
       <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-school-primary/10">
           <CardHeader className="flex flex-col items-center space-y-4">
-            <Logo size="lg" />
+            <div className="mb-4">
+              <img
+                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                alt="Upsy"
+                className="h-24 w-auto object-contain"
+              />
+            </div>
             <div className="text-center">
               <CardTitle className="text-destructive">Error</CardTitle>
               <CardDescription>Upsy - Gestión escolar simplificada</CardDescription>
@@ -309,7 +320,13 @@ const AcceptInvitation = () => {
       <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-school-primary/10">
           <CardHeader className="space-y-4 flex flex-col items-center">
-            <Logo size="lg" />
+            <div className="mb-4">
+              <img
+                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                alt="Upsy"
+                className="h-24 w-auto object-contain"
+              />
+            </div>
             <div className="text-center space-y-2">
               <CardTitle className="text-2xl text-school-primary">Iniciar Sesión</CardTitle>
               <CardDescription className="text-muted-foreground">
@@ -430,7 +447,13 @@ const AcceptInvitation = () => {
       <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-school-primary/10">
           <CardHeader className="space-y-4 flex flex-col items-center">
-            <Logo size="lg" />
+            <div className="mb-4">
+              <img
+                src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+                alt="Upsy"
+                className="h-24 w-auto object-contain"
+              />
+            </div>
             <div className="text-center space-y-2">
               <CardTitle className="text-2xl text-school-primary">Crear Cuenta</CardTitle>
               <CardDescription className="text-muted-foreground">
@@ -581,7 +604,13 @@ const AcceptInvitation = () => {
     <div className="min-h-screen bg-gradient-to-br from-school-background via-background to-school-primary/5 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-xl border-school-primary/10">
         <CardHeader className="space-y-4 flex flex-col items-center">
-          <Logo size="lg" />
+          <div className="mb-4">
+            <img
+              src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
+              alt="Upsy"
+              className="h-24 w-auto object-contain"
+            />
+          </div>
           <div className="text-center space-y-2">
             <CardTitle className="text-xl text-school-primary">Invitación de Autorización de Recogida</CardTitle>
             <CardDescription className="text-muted-foreground">
