@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { useInvitationDialog } from '@/hooks/useInvitationDialog';
 import InvitationForm from './InvitationForm';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -31,27 +31,29 @@ const InvitationDialog: React.FC<InvitationDialogProps> = ({
   } = useInvitationDialog(isOpen, onInvitationSent, onOpenChange);
 
   return (
-    <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="h-full w-[400px] ml-auto fixed right-0 top-0 rounded-l-lg">
-        <div className="mx-auto w-full max-w-sm p-6 h-full overflow-y-auto">
-          <DrawerHeader className="px-0">
-            <DrawerTitle>{t('pickupAuthorizations.inviteFamilyMember')}</DrawerTitle>
-            <DrawerDescription>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:w-[540px] sm:max-w-[540px] p-0">
+        <div className="flex flex-col h-full">
+          <SheetHeader className="px-6 py-4 border-b flex-shrink-0">
+            <SheetTitle className="text-left">{t('pickupAuthorizations.inviteFamilyMember')}</SheetTitle>
+            <SheetDescription className="text-left">
               {t('pickupAuthorizations.familyMembersDescription')}
-            </DrawerDescription>
-          </DrawerHeader>
+            </SheetDescription>
+          </SheetHeader>
 
-          <InvitationForm
-            children={children}
-            formData={formData}
-            loading={loading}
-            onSubmit={handleSubmit}
-            onUpdateFormData={updateFormData}
-            onCancel={() => onOpenChange(false)}
-          />
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <InvitationForm
+              children={children}
+              formData={formData}
+              loading={loading}
+              onSubmit={handleSubmit}
+              onUpdateFormData={updateFormData}
+              onCancel={() => onOpenChange(false)}
+            />
+          </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 };
 

@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle
-} from '@/components/ui/drawer';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle
+} from '@/components/ui/sheet';
 import { useEditAuthorizationDialog } from '@/hooks/useEditAuthorizationDialog';
 import AddAuthorizationForm from './AddAuthorizationForm';
 import { PickupAuthorizationWithDetails } from '@/services/pickupAuthorizationService';
@@ -40,30 +40,33 @@ const EditAuthorizationDialog: React.FC<EditAuthorizationDialogProps> = ({
   if (!authorization) return null;
 
   return (
-    <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="h-full w-[400px] ml-auto fixed right-0 top-0 rounded-l-lg">
-        <div className="mx-auto w-full max-w-sm p-6 h-full overflow-y-auto">
-          <DrawerHeader className="px-0">
-            <DrawerTitle>{t('pickupAuthorizations.editPickupAuthorization')}</DrawerTitle>
-            <DrawerDescription>{t('pickupAuthorizations.editPickupAuthorizationDescription')}</DrawerDescription>
-          </DrawerHeader>
-          <AddAuthorizationForm
-            children={children}
-            allParents={allParents}
-            formData={formData}
-            loading={loading}
-            onSubmit={handleSubmit}
-            onUpdateFormData={updateFormData}
-            onCancel={() => onOpenChange(false)}
-            showOnlySharedParents={showOnlySharedParents}
-            onToggleParentFilter={toggleParentFilter}
-            parentsWhoShareStudents={parentsWhoShareStudents}
-            submitLabel={t('pickupAuthorizations.updateAuthorization')}
-            loadingLabel={t('pickupAuthorizations.updating')}
-          />
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:w-[540px] sm:max-w-[540px] p-0">
+        <div className="flex flex-col h-full">
+          <SheetHeader className="px-6 py-4 border-b flex-shrink-0">
+            <SheetTitle className="text-left">{t('pickupAuthorizations.editPickupAuthorization')}</SheetTitle>
+            <SheetDescription className="text-left">{t('pickupAuthorizations.editPickupAuthorizationDescription')}</SheetDescription>
+          </SheetHeader>
+          
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <AddAuthorizationForm
+              children={children}
+              allParents={allParents}
+              formData={formData}
+              loading={loading}
+              onSubmit={handleSubmit}
+              onUpdateFormData={updateFormData}
+              onCancel={() => onOpenChange(false)}
+              showOnlySharedParents={showOnlySharedParents}
+              onToggleParentFilter={toggleParentFilter}
+              parentsWhoShareStudents={parentsWhoShareStudents}
+              submitLabel={t('pickupAuthorizations.updateAuthorization')}
+              loadingLabel={t('pickupAuthorizations.updating')}
+            />
+          </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 };
 
