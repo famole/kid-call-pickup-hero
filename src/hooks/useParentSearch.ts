@@ -1,6 +1,7 @@
 
 import { useState, useMemo } from 'react';
 import { ParentWithStudents } from '@/types/parent';
+import { matchesSearch } from '@/utils/textUtils';
 
 export const useParentSearch = (parents: ParentWithStudents[]) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,23 +11,21 @@ export const useParentSearch = (parents: ParentWithStudents[]) => {
       return parents;
     }
 
-    const term = searchTerm.toLowerCase().trim();
-
     return parents.filter(parent => {
       // Search by parent name
-      if (parent.name.toLowerCase().includes(term)) {
+      if (matchesSearch(parent.name, searchTerm)) {
         return true;
       }
 
       // Search by parent email
-      if (parent.email.toLowerCase().includes(term)) {
+      if (matchesSearch(parent.email, searchTerm)) {
         return true;
       }
 
       // Search by children names
       if (parent.students && parent.students.length > 0) {
         const hasMatchingChild = parent.students.some(student =>
-          student.name.toLowerCase().includes(term)
+          matchesSearch(student.name, searchTerm)
         );
         if (hasMatchingChild) {
           return true;

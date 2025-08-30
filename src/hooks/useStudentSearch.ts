@@ -1,6 +1,7 @@
 
 import { useState, useMemo } from 'react';
 import { Child } from '@/types';
+import { matchesSearch } from '@/utils/textUtils';
 
 export const useStudentSearch = (students: Child[]) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,7 +13,7 @@ export const useStudentSearch = (students: Child[]) => {
     // Filter by search term
     if (searchTerm.trim()) {
       filtered = filtered.filter(student =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase())
+        matchesSearch(student.name, searchTerm)
       );
     }
 

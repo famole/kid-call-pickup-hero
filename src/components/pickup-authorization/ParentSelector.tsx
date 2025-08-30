@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { matchesSearch } from '@/utils/textUtils';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -43,18 +44,16 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
   const filteredParents = parents.filter(parent => {
     if (!searchValue.trim()) return true;
     
-    const searchTerm = searchValue.toLowerCase();
-    
     // Search by parent name
-    if (parent.name.toLowerCase().includes(searchTerm)) return true;
+    if (matchesSearch(parent.name, searchValue)) return true;
     
     // Search by parent email
-    if (parent.email.toLowerCase().includes(searchTerm)) return true;
+    if (matchesSearch(parent.email, searchValue)) return true;
     
     // Search by children names
     if (parent.students && parent.students.length > 0) {
       return parent.students.some(student =>
-        student.name.toLowerCase().includes(searchTerm)
+        matchesSearch(student.name, searchValue)
       );
     }
     

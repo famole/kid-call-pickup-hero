@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Search, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from '@/hooks/useTranslation';
+import { matchesSearch } from '@/utils/textUtils';
 
 interface Parent {
   id: string;
@@ -49,7 +50,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
     }
 
     const filtered = parents.filter(parent =>
-      parent.name.toLowerCase().startsWith(searchTerm.toLowerCase())
+      matchesSearch(parent.name, searchTerm) || matchesSearch(parent.email, searchTerm)
     );
 
     setFilteredParents(filtered.slice(0, 10)); // Limit to 10 results
