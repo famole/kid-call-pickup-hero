@@ -56,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const studentNames = students?.map(s => s.name).join(', ') || '';
     const inviterName = invitation.inviting_parent?.name || 'Un padre del colegio';
-    const appUrl = Deno.env.get("APP_URL") || 'https://preview--kid-call-pickup-hero.lovable.app';
+    const appUrl = Deno.env.get("VITE_APP_URL") || 'https://preview--kid-call-pickup-hero.lovable.app';
     const acceptUrl = `${appUrl}/accept-invitation/${invitation.invitation_token}`;
 
     // Render the React Email template
