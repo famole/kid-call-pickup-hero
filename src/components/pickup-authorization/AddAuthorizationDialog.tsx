@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { useAddAuthorizationDialog } from '@/hooks/useAddAuthorizationDialog';
 import AddAuthorizationForm from './AddAuthorizationForm';
 import AuthorizationTypeSelector from './AuthorizationTypeSelector';
@@ -67,17 +67,17 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
 
   return (
     <>
-      <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
-        <DrawerContent className="h-full w-[400px] ml-auto fixed right-0 top-0 rounded-l-lg">
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="w-full sm:w-[540px] sm:max-w-[540px] p-0">
           <div className="flex flex-col h-full">
-            <DrawerHeader className="px-6 pb-4 flex-shrink-0">
-              <DrawerTitle>
+            <SheetHeader className="px-6 py-4 border-b flex-shrink-0">
+              <SheetTitle className="text-left">
                 {selectedType === 'existing' 
                   ? t('pickupAuthorizations.addPickupAuthorization')
                   : t('pickupAuthorizations.addAuthorization')
                 }
-              </DrawerTitle>
-              <DrawerDescription>
+              </SheetTitle>
+              <SheetDescription className="text-left">
                 {selectedType === 'existing' 
                   ? t('pickupAuthorizations.addPickupAuthorizationDescription')
                   : t('pickupAuthorizations.selectAuthorizationTypeDescription')
@@ -87,10 +87,10 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
                     {t('pickupAuthorizations.parentsSharingMessage', { count: parentsWhoShareStudents.length })}
                   </span>
                 )}
-              </DrawerDescription>
-            </DrawerHeader>
+              </SheetDescription>
+            </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <div className="flex-1 overflow-y-auto px-6 py-4">
               {!selectedType ? (
                 <AuthorizationTypeSelector
                   onSelectType={handleTypeSelect}
@@ -112,8 +112,8 @@ const AddAuthorizationDialog: React.FC<AddAuthorizationDialogProps> = ({
               )}
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
 
       <InvitationDialog
         isOpen={showInvitationDialog}
