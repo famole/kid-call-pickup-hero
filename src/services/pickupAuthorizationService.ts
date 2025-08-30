@@ -128,7 +128,7 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
 };
 
 // Get parents available for pickup authorization
-// Only returns family/other members created by current parent + parents sharing students
+// Returns ALL parents in the school for pickup authorization
 export const getAvailableParentsForAuthorization = async (): Promise<{
   parents: any[];
   sharedStudents: Record<string, string[]>;
@@ -151,84 +151,44 @@ export const getAvailableParentsForAuthorization = async (): Promise<{
     throw new Error(studentsError.message);
   }
 
-  if (!currentParentStudents || currentParentStudents.length === 0) {
-    return { parents: [], sharedStudents: {} };
+  const studentIds = currentParentStudents?.map(sp => sp.student_id) || [];
+
+  // Get ALL parents in the school (excluding current parent)
+  const { data: allParents, error: allParentsError } = await supabase
+    .from('parents')
+    .select('id, name, email, role')
+    .neq('id', currentParentId)
+    .is('deleted_at', null); // Only get non-deleted parents
+
+  if (allParentsError) {
+    console.error('Error fetching all parents:', allParentsError);
+    throw new Error(allParentsError.message);
   }
 
-  const studentIds = currentParentStudents.map(sp => sp.student_id);
-
-  // Get parents who share students with the current parent
-  const { data: sharedParentRelations, error: sharedError } = await supabase
-    .from('student_parents')
-    .select(`
-      parent_id,
-      student_id,
-      parent:parents!parent_id (id, name, email, role)
-    `)
-    .in('student_id', studentIds)
-    .neq('parent_id', currentParentId);
-
-  if (sharedError) {
-    console.error('Error fetching shared parents:', sharedError);
-    throw new Error(sharedError.message);
-  }
-
-  // Get family/other role parents who were authorized by current parent
-  const { data: authorizedFamilyMembers, error: familyError } = await supabase
-    .from('pickup_authorizations')
-    .select(`
-      authorized_parent_id,
-      authorized_parent:parents!authorized_parent_id (id, name, email, role)
-    `)
-    .eq('authorizing_parent_id', currentParentId)
-    .in('authorized_parent.role', ['family', 'other']);
-
-  if (familyError) {
-    console.error('Error fetching family members:', familyError);
-    throw new Error(familyError.message);
-  }
-
-  // Group shared parents by parent and track shared students
-  const parentMap = new Map();
+  // Get shared student relationships for display purposes
   const sharedStudents: Record<string, string[]> = {};
+  
+  if (studentIds.length > 0) {
+    const { data: sharedParentRelations, error: sharedError } = await supabase
+      .from('student_parents')
+      .select('parent_id, student_id')
+      .in('student_id', studentIds)
+      .neq('parent_id', currentParentId);
 
-  // Add shared parents (parents of same students)
-  for (const relation of sharedParentRelations) {
-    const parentId = relation.parent_id;
-    const parentData = relation.parent;
-    
-    // Skip if parent data is null (due to RLS restrictions)
-    if (!parentData || !parentData.id) {
-      continue;
-    }
-    
-    if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, parentData);
-      sharedStudents[parentId] = [];
-    }
-    
-    sharedStudents[parentId].push(relation.student_id);
-  }
-
-  // Add family/other role members (don't count them as shared students)
-  for (const auth of authorizedFamilyMembers || []) {
-    const parentId = auth.authorized_parent_id;
-    const parentData = auth.authorized_parent;
-    
-    // Skip if parent data is null (due to RLS restrictions)
-    if (!parentData || !parentData.id) {
-      continue;
-    }
-    
-    if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, parentData);
-      // Family members don't have shared students in this context
-      sharedStudents[parentId] = [];
+    if (!sharedError && sharedParentRelations) {
+      // Group shared students by parent
+      for (const relation of sharedParentRelations) {
+        const parentId = relation.parent_id;
+        if (!sharedStudents[parentId]) {
+          sharedStudents[parentId] = [];
+        }
+        sharedStudents[parentId].push(relation.student_id);
+      }
     }
   }
 
   return {
-    parents: Array.from(parentMap.values()),
+    parents: allParents || [],
     sharedStudents
   };
 };
