@@ -5,7 +5,8 @@ export interface PickupAuthorization {
   id: string;
   authorizingParentId: string;
   authorizedParentId: string;
-  studentId: string;
+  studentId: string; // Keep for backward compatibility
+  studentIds?: string[]; // New field for multiple students
   startDate: string;
   endDate: string;
   isActive: boolean;
@@ -15,7 +16,8 @@ export interface PickupAuthorization {
 
 export interface PickupAuthorizationInput {
   authorizedParentId: string;
-  studentId: string;
+  studentId?: string; // Keep for backward compatibility
+  studentIds?: string[]; // New field for multiple students
   startDate: string;
   endDate: string;
 }
@@ -25,17 +27,28 @@ export interface PickupAuthorizationWithDetails extends PickupAuthorization {
     id: string;
     name: string;
     email: string;
+    role?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other';
   };
   authorizedParent?: {
     id: string;
     name: string;
     email: string;
+    role?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other';
   };
   student?: {
     id: string;
     name: string;
   };
 }
+
+import { ParentWithStudents } from '@/types/parent';
+
+// Helper function to filter out family and other roles from parent searches
+export const filterSearchableParents = (parents: ParentWithStudents[]) => {
+  return parents.filter(parent => 
+    parent.role && !['family', 'other'].includes(parent.role)
+  );
+};
 
 // Create a new pickup authorization
 export const createPickupAuthorization = async (
@@ -82,8 +95,8 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
     .from('pickup_authorizations')
     .select(`
       *,
-      authorizing_parent:parents!authorizing_parent_id (id, name, email),
-      authorized_parent:parents!authorized_parent_id (id, name, email)
+      authorizing_parent:parents!authorizing_parent_id (id, name, email, role),
+      authorized_parent:parents!authorized_parent_id (id, name, email, role)
     `)
     .eq('authorizing_parent_id', currentParentId)
     .order('created_at', { ascending: false });
@@ -112,6 +125,72 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
   );
 
   return authorizations;
+};
+
+// Get parents available for pickup authorization
+// Returns ALL parents in the school for pickup authorization
+export const getAvailableParentsForAuthorization = async (): Promise<{
+  parents: any[];
+  sharedStudents: Record<string, string[]>;
+}> => {
+  // Use the server-side helper to get current parent ID
+  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+  
+  if (parentError || !currentParentId) {
+    throw new Error('Unable to authenticate parent');
+  }
+
+  // Get all students associated with the current parent
+  const { data: currentParentStudents, error: studentsError } = await supabase
+    .from('student_parents')
+    .select('student_id')
+    .eq('parent_id', currentParentId);
+
+  if (studentsError) {
+    console.error('Error fetching current parent students:', studentsError);
+    throw new Error(studentsError.message);
+  }
+
+  const studentIds = currentParentStudents?.map(sp => sp.student_id) || [];
+
+  // Get ALL parents in the school (excluding current parent)
+  const { data: allParents, error: allParentsError } = await supabase
+    .from('parents')
+    .select('id, name, email, role')
+    .neq('id', currentParentId)
+    .is('deleted_at', null); // Only get non-deleted parents
+
+  if (allParentsError) {
+    console.error('Error fetching all parents:', allParentsError);
+    throw new Error(allParentsError.message);
+  }
+
+  // Get shared student relationships for display purposes
+  const sharedStudents: Record<string, string[]> = {};
+  
+  if (studentIds.length > 0) {
+    const { data: sharedParentRelations, error: sharedError } = await supabase
+      .from('student_parents')
+      .select('parent_id, student_id')
+      .in('student_id', studentIds)
+      .neq('parent_id', currentParentId);
+
+    if (!sharedError && sharedParentRelations) {
+      // Group shared students by parent
+      for (const relation of sharedParentRelations) {
+        const parentId = relation.parent_id;
+        if (!sharedStudents[parentId]) {
+          sharedStudents[parentId] = [];
+        }
+        sharedStudents[parentId].push(relation.student_id);
+      }
+    }
+  }
+
+  return {
+    parents: allParents || [],
+    sharedStudents
+  };
 };
 
 // Get parents who share students with the current parent
@@ -165,9 +244,15 @@ export const getParentsWhoShareStudents = async (): Promise<{
 
   for (const relation of sharedParentRelations) {
     const parentId = relation.parent_id;
+    const parentData = relation.parent;
+    
+    // Skip if parent data is null (due to RLS restrictions)
+    if (!parentData || !parentData.id) {
+      continue;
+    }
     
     if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, relation.parent);
+      parentMap.set(parentId, parentData);
       sharedStudents[parentId] = [];
     }
     
@@ -251,6 +336,7 @@ export const updatePickupAuthorization = async (
   
   if (updates.authorizedParentId) updateData.authorized_parent_id = updates.authorizedParentId;
   if (updates.studentId) updateData.student_id = updates.studentId;
+  if (updates.studentIds) updateData.student_ids = updates.studentIds;
   if (updates.startDate) updateData.start_date = updates.startDate;
   if (updates.endDate) updateData.end_date = updates.endDate;
   if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
@@ -320,6 +406,7 @@ const mapAuthorizationFromDB = (dbAuth: any): PickupAuthorization => ({
   authorizingParentId: dbAuth.authorizing_parent_id,
   authorizedParentId: dbAuth.authorized_parent_id,
   studentId: dbAuth.student_id,
+  studentIds: dbAuth.student_ids,
   startDate: dbAuth.start_date,
   endDate: dbAuth.end_date,
   isActive: dbAuth.is_active,

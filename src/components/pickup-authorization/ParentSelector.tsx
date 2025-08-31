@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { matchesSearch } from '@/utils/textUtils';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { ParentWithStudents } from '@/types/parent';
+import RoleBadge from './RoleBadge';
 
 interface ParentSelectorProps {
   parents: ParentWithStudents[];
@@ -42,18 +44,16 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
   const filteredParents = parents.filter(parent => {
     if (!searchValue.trim()) return true;
     
-    const searchTerm = searchValue.toLowerCase();
-    
     // Search by parent name
-    if (parent.name.toLowerCase().includes(searchTerm)) return true;
+    if (matchesSearch(parent.name, searchValue)) return true;
     
     // Search by parent email
-    if (parent.email.toLowerCase().includes(searchTerm)) return true;
+    if (matchesSearch(parent.email, searchValue)) return true;
     
     // Search by children names
     if (parent.students && parent.students.length > 0) {
       return parent.students.some(student =>
-        student.name.toLowerCase().includes(searchTerm)
+        matchesSearch(student.name, searchValue)
       );
     }
     
@@ -78,28 +78,29 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
           >
             <div className="flex-1 text-left">
               {selectedParent ? (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm truncate">
-                      {selectedParent.name}
-                    </span>
-                    {!disabled && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 hover:bg-gray-100 ml-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          clearSelection();
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500 truncate">
-                    {selectedParent.email}
-                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm truncate">
+                        {selectedParent.name}
+                      </span>
+                      {!disabled && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-gray-100 ml-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearSelection();
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span className="truncate">{selectedParent.email}</span>
+                      {selectedParent.role && <RoleBadge role={selectedParent.role} size="sm" />}
+                    </div>
                   {selectedParent.students && selectedParent.students.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {selectedParent.students.slice(0, 2).map((student) => (
@@ -177,6 +178,7 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
                         <span className="font-medium text-sm truncate">
                           {parent.name}
                         </span>
+                        {parent.role && <RoleBadge role={parent.role} size="sm" />}
                       </div>
                       <div className="text-xs text-gray-500 truncate">
                         {parent.email}

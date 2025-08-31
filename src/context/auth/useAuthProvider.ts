@@ -81,18 +81,52 @@ export const useAuthProvider = (): AuthState & {
     try {
       logger.log('Handling user session for:', authUser.email);
       
+      // Check for invitation token in URL or user metadata
+      const urlParams = new URLSearchParams(window.location.search);
+      const invitationToken = urlParams.get('invitation_token') || authUser.user_metadata?.invitation_token;
+      
       // Check if this is an OAuth user
       const isOAuthUser =
         !!(authUser.app_metadata?.provider &&
           authUser.app_metadata.provider !== 'email');
       
       logger.log('Is OAuth user:', isOAuthUser);
+      logger.log('Invitation token found:', !!invitationToken);
       
       // Get user data from our database based on the auth user
       let parentData = await getParentData(authUser.email);
       logger.log('Parent data found:', parentData ? 'Yes' : 'No');
       
-      // If no parent data exists and this is an OAuth user, reject the authentication
+      // Handle invitation acceptance if we have a token
+      if (invitationToken && !parentData) {
+        try {
+          logger.log('Processing invitation with token:', invitationToken);
+          // Try to accept the invitation by token
+          const { getInvitationByToken, updatePickupInvitation } = await import('@/services/pickupInvitationService');
+          
+          // Get invitation details first
+          const invitationData = await getInvitationByToken(invitationToken);
+          if (invitationData && invitationData.invitedEmail === authUser.email && invitationData.invitationStatus === 'pending') {
+            // Accept the invitation only if it's still pending
+            await updatePickupInvitation(invitationData.id, { invitationStatus: 'accepted' });
+            logger.log('Invitation accepted successfully');
+            
+            // Clear the invitation token from URL
+            if (urlParams.get('invitation_token')) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            // Refresh parent data after invitation acceptance
+            parentData = await getParentData(authUser.email);
+          } else if (invitationData) {
+            logger.log('Invitation already processed or not valid for this user');
+          }
+        } catch (invitationError) {
+          logger.error('Error accepting invitation:', invitationError);
+        }
+      }
+      
+      // If no parent data exists and this is an OAuth user without invitation, reject the authentication
       if (!parentData && isOAuthUser) {
         logger.log('OAuth user not found in database, redirecting to unauthorized page');
         await supabase.auth.signOut();
@@ -113,7 +147,8 @@ export const useAuthProvider = (): AuthState & {
         if (parentData.is_preloaded && !parentData.password_set) {
           logger.log('User needs password setup');
           // Set the user so password setup page can access their info
-          setUser(createUserFromParentData(parentData));
+          const user = await createUserFromParentData(parentData);
+          setUser(user);
 
           // Only redirect if we're not already on the password setup page
           if (window.location.pathname !== '/password-setup') {
@@ -122,8 +157,32 @@ export const useAuthProvider = (): AuthState & {
           return;
         }
 
+        // Check for pending invitations for this user
+        try {
+          const { data: pendingInvitations } = await supabase
+            .from('pickup_invitations')
+            .select('invitation_token')
+            .eq('invited_email', authUser.email)
+            .eq('invitation_status', 'pending')
+            .gt('expires_at', new Date().toISOString())
+            .limit(1);
+
+          // If user has pending invitations and we're not already on an invitation page, redirect
+          if (pendingInvitations && pendingInvitations.length > 0 && 
+              !window.location.pathname.includes('accept-invitation') &&
+              !window.location.pathname.includes('password-setup')) {
+            const invitationToken = pendingInvitations[0].invitation_token;
+            logger.log('Found pending invitation, redirecting to accept invitation page');
+            window.location.href = `/accept-invitation/${invitationToken}`;
+            return;
+          }
+        } catch (invitationCheckError) {
+          logger.error('Error checking for pending invitations:', invitationCheckError);
+          // Continue with normal flow if invitation check fails
+        }
+
         // If we found or created parent data, use it to create our app user
-        const user = createUserFromParentData(parentData);
+        const user = await createUserFromParentData(parentData);
         logger.log('Created user with role:', user.role);
         setUser(user);
       } else {
@@ -201,6 +260,7 @@ export const useAuthProvider = (): AuthState & {
     loading,
     login,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    isInvitedUser: user?.isInvitedUser || false
   };
 };

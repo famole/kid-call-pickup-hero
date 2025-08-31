@@ -3,8 +3,9 @@ export type User = {
   id: string;
   email: string;
   name: string;
-  role: 'parent' | 'admin' | 'teacher' | 'superadmin';
+  role: 'parent' | 'admin' | 'teacher' | 'superadmin' | 'family' | 'other';
   avatar?: string;
+  isInvitedUser?: boolean;
 };
 
 export type Child = {

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,13 +24,23 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const invitationToken = searchParams.get('invitation_token');
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      // Let the auth provider handle all redirects including invitation checks
+      // This prevents overriding the invitation redirect logic
+      if (invitationToken) {
+        navigate(`/accept-invitation/${invitationToken}`);
+      } else {
+        // For already authenticated users without invitation token, just go home
+        // The auth provider would have already handled any pending invitations
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, invitationToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +52,9 @@ const Login = () => {
         title: t('auth.welcomeBack'),
         description: t('auth.welcomeBack'),
       });
-      navigate('/');
+      
+      // Let the auth provider handle redirects based on pending invitations
+      // No need to force navigate here as handleUserSession will handle it
     } catch (error: any) {
       console.error('Authentication error:', error);
       toast({
@@ -59,10 +71,14 @@ const Login = () => {
     setIsGoogleLoading(true);
     
     try {
+      const redirectTo = invitationToken 
+        ? `${window.location.origin}/accept-invitation/${invitationToken}`
+        : `${window.location.origin}/`;
+        
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo
         }
       });
       
@@ -105,9 +121,15 @@ const Login = () => {
         .from('parents')
         .select('email, password_set, is_preloaded')
         .eq('email', firstTimeEmail)
-        .single();
+        .maybeSingle();
 
       if (error) {
+        // If invitation token exists and user doesn't exist, redirect to invitation signup
+        if (invitationToken) {
+          navigate(`/invitation-signup/${invitationToken}?email=${encodeURIComponent(firstTimeEmail)}`);
+          return;
+        }
+
         toast({
           title: t('errors.emailNotFound'),
           description: t('errors.emailNotInSystem'),
@@ -116,10 +138,13 @@ const Login = () => {
         return;
       }
 
-      // Check if this is a preloaded account that needs password setup
-      if (parentData.is_preloaded && !parentData.password_set) {
-        // Redirect to password setup with email parameter
-        navigate(`/password-setup?email=${encodeURIComponent(firstTimeEmail)}`);
+      // Check if this account needs password setup (preloaded or password was reset)
+      if (!parentData.password_set) {
+        // Redirect to password setup with email parameter and invitation token if exists
+        const passwordSetupUrl = invitationToken 
+          ? `/password-setup?email=${encodeURIComponent(firstTimeEmail)}&invitation_token=${invitationToken}`
+          : `/password-setup?email=${encodeURIComponent(firstTimeEmail)}`;
+        navigate(passwordSetupUrl);
       } else if (parentData.password_set) {
         toast({
           title: t('errors.accountAlreadySetup'),
@@ -159,7 +184,10 @@ const Login = () => {
             </div>
             <CardTitle className="text-2xl text-center">{t('auth.firstTimeSetup')}</CardTitle>
             <CardDescription className="text-center">
-              {t('auth.enterEmailToSetup')}
+              {invitationToken 
+                ? 'Ingresá tu email para configurar tu cuenta y aceptar la invitación'
+                : t('auth.enterEmailToSetup')
+              }
             </CardDescription>
           </CardHeader>
           

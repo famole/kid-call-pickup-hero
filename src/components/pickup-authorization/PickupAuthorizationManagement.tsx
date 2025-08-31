@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, Plus, Trash2, Edit } from 'lucide-react';
+import RoleBadge from './RoleBadge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
@@ -11,6 +12,11 @@ import {
   deletePickupAuthorization,
   PickupAuthorizationWithDetails
 } from '@/services/pickupAuthorizationService';
+import {
+  getPickupInvitationsForParent,
+  deletePickupInvitation,
+  PickupInvitationWithDetails
+} from '@/services/pickupInvitationService';
 import AddAuthorizationDialog from './AddAuthorizationDialog';
 import EditAuthorizationDialog from './EditAuthorizationDialog';
 import {
@@ -27,11 +33,13 @@ import {
 
 const PickupAuthorizationManagement: React.FC = () => {
   const [authorizations, setAuthorizations] = useState<PickupAuthorizationWithDetails[]>([]);
+  const [invitations, setInvitations] = useState<PickupInvitationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingAuthorization, setEditingAuthorization] = useState<PickupAuthorizationWithDetails | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null);
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -39,11 +47,36 @@ const PickupAuthorizationManagement: React.FC = () => {
     loadAuthorizations();
   }, []);
 
+  // Refresh data when the component becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadAuthorizations();
+      }
+    };
+
+    const handleFocus = () => {
+      loadAuthorizations();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   const loadAuthorizations = async () => {
     try {
       setLoading(true);
-      const data = await getPickupAuthorizationsForParent();
-      setAuthorizations(data);
+      const [authData, invitationData] = await Promise.all([
+        getPickupAuthorizationsForParent(),
+        getPickupInvitationsForParent()
+      ]);
+      setAuthorizations(authData);
+      setInvitations(invitationData.filter(inv => inv.invitationStatus === 'pending'));
     } catch (error) {
       console.error('Error loading authorizations:', error);
       toast({
@@ -74,6 +107,27 @@ const PickupAuthorizationManagement: React.FC = () => {
       });
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleDeleteInvitation = async (id: string) => {
+    try {
+      setDeletingInvitationId(id);
+      await deletePickupInvitation(id);
+      setInvitations(prev => prev.filter(inv => inv.id !== id));
+      toast({
+        title: t('common.success'),
+        description: t('pickupAuthorizations.invitationRemoved'),
+      });
+    } catch (error) {
+      console.error('Error deleting invitation:', error);
+      toast({
+        title: t('common.error'),
+        description: t('pickupAuthorizations.failedToRemoveInvitation'),
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingInvitationId(null);
     }
   };
 
@@ -136,7 +190,7 @@ const PickupAuthorizationManagement: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
-          {authorizations.length === 0 ? (
+          {authorizations.length === 0 && invitations.length === 0 ? (
             <div className="text-center py-8 px-4">
               <Users className="h-16 w-16 sm:h-20 sm:w-20 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2">
@@ -154,102 +208,207 @@ const PickupAuthorizationManagement: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3 sm:space-y-4">
-              {authorizations.map((auth) => {
-                const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive);
-                return (
-                  <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
-                    <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
-                      <div className="space-y-2 flex-1 min-w-0">
-                        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
-                          <h4 className="font-medium text-base truncate">
-                            {auth.student?.name || t('pickupAuthorizations.unknownStudent')}
-                          </h4>
-                          <Badge 
-                            variant={statusBadge.variant}
-                            className={`w-fit ${
-                              statusBadge.variant === "default" ? "bg-school-primary hover:bg-school-primary/90" : ""
-                            }`}
-                          >
-                            {statusBadge.label}
-                          </Badge>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <p className="text-sm text-gray-600 break-words">
-                            <span className="font-medium">{t('pickupAuthorizations.createdBy')}:</span>{' '}
-                            <span className="block sm:inline mt-1 sm:mt-0">
-                              {auth.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
-                            </span>
-                          </p>
-                          <p className="text-sm text-gray-600 break-words">
-                            <span className="font-medium">{t('pickupAuthorizations.authorizedTo')}:</span>{' '}
-                            <span className="block sm:inline mt-1 sm:mt-0">
-                              {auth.authorizedParent?.name || t('pickupAuthorizations.unknownParent')}
-                            </span>
-                          </p>
-                          <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
-                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                            <span className="break-words">
-                              {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
-                            </span>
+            <div className="space-y-6">
+              {/* Pending Invitations Section */}
+              {invitations.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+                    {t('pickupAuthorizations.pendingInvitations')}
+                  </h3>
+                  <div className="space-y-3">
+                    {invitations.map((invitation) => (
+                      <div key={invitation.id} className="border rounded-lg p-4 space-y-3 bg-yellow-50 border-yellow-200">
+                        <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
+                          <div className="space-y-2 flex-1 min-w-0">
+                            <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+                              <h4 className="font-medium text-base">
+                                {invitation.students?.map(s => s.name).join(', ')}
+                              </h4>
+                              <Badge variant="outline" className="w-fit bg-yellow-100 text-yellow-800 border-yellow-300">
+                                {t('pickupAuthorizations.pendingAcceptance')}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm text-gray-600">
+                                  <span className="font-medium">{t('pickupAuthorizations.invitedPerson')}:</span>{' '}
+                                  <span>
+                                    {invitation.invitedName} ({invitation.invitedEmail})
+                                  </span>
+                                </p>
+                                <RoleBadge role={invitation.invitedRole} size="sm" />
+                              </div>
+                              
+                              <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
+                                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                                <span className="break-words">
+                                  {formatDate(invitation.startDate)} - {formatDate(invitation.endDate)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end sm:flex-shrink-0">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={deletingInvitationId === invitation.id}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="ml-2 sm:hidden">{t('common.remove')}</span>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="mx-4 max-w-md">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-lg">
+                                    {t('pickupAuthorizations.removeInvitation')}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription className="text-sm">
+                                    {t('pickupAuthorizations.removeInvitationConfirm')
+                                      .replace('{personName}', invitation.invitedName)}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                                  <AlertDialogCancel className="w-full sm:w-auto">
+                                    {t('common.cancel')}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteInvitation(invitation.id)}
+                                    className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {t('pickupAuthorizations.removeInvitationButton')}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="flex justify-end sm:flex-shrink-0 space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingAuthorization(auth);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span className="ml-2 sm:hidden">{t('common.edit')}</span>
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={deletingId === auth.id}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="ml-2 sm:hidden">{t('common.remove')}</span>
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="mx-4 max-w-md">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="text-lg">
-                                {t('pickupAuthorizations.removeAuthorization')}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription className="text-sm">
-                                {t('pickupAuthorizations.removeAuthorizationConfirm')
-                                  .replace('{studentName}', auth.student?.name || '')
-                                  .replace('{parentName}', auth.authorizedParent?.name || '')}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                              <AlertDialogCancel className="w-full sm:w-auto">
-                                {t('common.cancel')}
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteAuthorization(auth.id)}
-                                className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                {t('pickupAuthorizations.removeAuthorizationButton')}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* Active Authorizations Section */}
+              {authorizations.length > 0 && (
+                <div className="space-y-4">
+                  {invitations.length > 0 && (
+                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+                      {t('pickupAuthorizations.activeAuthorizations')}
+                    </h3>
+                  )}
+                  <div className="space-y-3 sm:space-y-4">
+                    {authorizations.map((auth) => {
+                      const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive);
+                      return (
+                        <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
+                          <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
+                            <div className="space-y-2 flex-1 min-w-0">
+                              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+                                <h4 className="font-medium text-base truncate">
+                                  {auth.student?.name || t('pickupAuthorizations.unknownStudent')}
+                                </h4>
+                                <Badge 
+                                  variant={statusBadge.variant}
+                                  className={`w-fit ${
+                                    statusBadge.variant === "default" ? "bg-school-primary hover:bg-school-primary/90" : ""
+                                  }`}
+                                >
+                                  {statusBadge.label}
+                                </Badge>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm text-gray-600">
+                                    <span className="font-medium">{t('pickupAuthorizations.createdBy')}:</span>{' '}
+                                    <span>
+                                      {auth.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
+                                    </span>
+                                  </p>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm text-gray-600">
+                                    <span className="font-medium">{t('pickupAuthorizations.authorizedTo')}:</span>{' '}
+                                    <span>
+                                      {auth.authorizedParent?.name || t('pickupAuthorizations.unknownParent')}
+                                    </span>
+                                  </p>
+                                  {auth.authorizedParent?.role && (
+                                    <RoleBadge role={auth.authorizedParent.role} size="sm" />
+                                  )}
+                                </div>
+                                
+                                <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
+                                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                                  <span className="break-words">
+                                    {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-end sm:flex-shrink-0 space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingAuthorization(auth);
+                                  setIsEditDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span className="ml-2 sm:hidden">{t('common.edit')}</span>
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={deletingId === auth.id}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="ml-2 sm:hidden">{t('common.remove')}</span>
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="mx-4 max-w-md">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-lg">
+                                      {t('pickupAuthorizations.removeAuthorization')}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription className="text-sm">
+                                      {t('pickupAuthorizations.removeAuthorizationConfirm')
+                                        .replace('{studentName}', auth.student?.name || '')
+                                        .replace('{parentName}', auth.authorizedParent?.name || '')}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                                    <AlertDialogCancel className="w-full sm:w-auto">
+                                      {t('common.cancel')}
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteAuthorization(auth.id)}
+                                      className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      {t('pickupAuthorizations.removeAuthorizationButton')}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

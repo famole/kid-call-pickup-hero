@@ -61,36 +61,17 @@ const PasswordSetupForm = () => {
         throw new Error(t('errors.noEmailForSetup'));
       }
 
-      // If user is not authenticated, we need to handle preloaded accounts specially
+      // Check if this is a password reset scenario by checking if parent exists but password_set is false
+      const { data: existingParent } = await supabase
+        .from('parents')
+        .select('password_set, is_preloaded')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      // If user is not authenticated, we need to handle different scenarios
       if (!user) {
-        // For preloaded accounts, check if the email is valid for signup
-        if (!isValidEmail(userEmail)) {
-          // For invalid emails (like example.com), create a mock auth user for demo purposes
-          // This allows the login to work with these test accounts
-          const { error: updateError } = await supabase
-            .from('parents')
-            .update({ 
-              password_set: true,
-              // Store the password hash for demo accounts (not recommended for production)
-              demo_password: password 
-            })
-            .eq('email', userEmail);
-
-          if (updateError) {
-            throw updateError;
-          }
-
-          toast({
-            title: t('errors.demoAccountSetup'),
-            description: t('errors.demoAccountReady'),
-          });
-
-          // Redirect to login page
-          navigate('/login');
-          return;
-        }
-
-        // For valid emails, proceed with normal signup
+        // Always attempt to create a proper auth account, regardless of email domain
+        // This handles both new preloaded accounts and password reset scenarios
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: userEmail,
           password: password,
@@ -100,7 +81,15 @@ const PasswordSetupForm = () => {
         });
 
         if (authError) {
-          throw authError;
+          // If signup fails because user already exists, that's expected for password reset
+          if (authError.message?.includes('already registered')) {
+            toast({
+              title: t('common.success'),
+              description: t('errors.accountResetComplete'),
+            });
+          } else {
+            throw authError;
+          }
         }
 
         // Update the parent record to mark password as set
@@ -118,8 +107,8 @@ const PasswordSetupForm = () => {
           description: t('errors.passwordSetSuccessfully'),
         });
 
-        // Don't manually redirect - let the auth state change handle it
-        // The auth provider will detect the sign up and redirect appropriately
+        // Redirect to login page so user can sign in with their new password
+        navigate('/login');
       } else {
         // User is already authenticated, just update password
         const { error: authError } = await supabase.auth.updateUser({

@@ -5,6 +5,7 @@ export type AuthState = {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isInvitedUser: boolean;
 };
 
 export type AuthContextType = AuthState & {

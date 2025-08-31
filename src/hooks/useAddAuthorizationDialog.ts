@@ -2,16 +2,15 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
-import { createPickupAuthorization, getParentsWhoShareStudents } from '@/services/pickupAuthorizationService';
+import { createPickupAuthorization, getAvailableParentsForAuthorization } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
-import { getAllParents } from '@/services/parentService';
 import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
 
 interface FormData {
-  studentId: string;
+  studentIds: string[];
   authorizedParentId: string;
   startDate: string;
   endDate: string;
@@ -32,7 +31,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
   const [showOnlySharedParents, setShowOnlySharedParents] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    studentId: '',
+    studentIds: [],
     authorizedParentId: '',
     startDate: '',
     endDate: '',
@@ -68,40 +67,33 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
 
-      // Load ALL parents from the system
-      const allParentsData = await getAllParents();
+      // Load only available parents (family/other + shared students parents)
+      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
       
-      // Filter out the current user from the list of parents
-      const filteredParents = allParentsData.filter(parent => parent.id !== currentParentId);
-      
-      // Convert to the expected format
-      const formattedAllParents = filteredParents.map(parent => ({
-        ...parent,
-        students: [], // We don't need student relationships for all parents
-        sharedStudentIds: [],
-        sharedStudentNames: [],
-      }));
+      // Enhance available parents data with shared student information
+      const enhancedAvailableParents = availableParents
+        .filter(parent => parent && parent.id) // Filter out null parents
+        .map(parent => {
+          const sharedStudentIds = sharedStudents[parent.id] || [];
+          const sharedStudentNames = userChildren
+            .filter(child => sharedStudentIds.includes(child.id))
+            .map(child => child.name);
+          
+          return {
+            ...parent,
+            students: parent.students || [],
+            sharedStudentIds,
+            sharedStudentNames,
+          };
+        });
 
-      // Load parents who share students with current user for the filter option
-      const { parents: sharedParents, sharedStudents } = await getParentsWhoShareStudents();
-      
-      // Enhance shared parents data with shared student information
-      const enhancedSharedParents = sharedParents.map(parent => {
-        const sharedStudentIds = sharedStudents[parent.id] || [];
-        const sharedStudentNames = userChildren
-          .filter(child => sharedStudentIds.includes(child.id))
-          .map(child => child.name);
-        
-        return {
-          ...parent,
-          students: parent.students || [],
-          sharedStudentIds,
-          sharedStudentNames,
-        };
-      });
+      // Filter to get parents who actually share students (have shared students)
+      const parentsWithSharedStudents = enhancedAvailableParents.filter(parent => 
+        parent.sharedStudentIds && parent.sharedStudentIds.length > 0
+      );
 
-      setAllParents(formattedAllParents);
-      setParentsWhoShareStudents(enhancedSharedParents);
+      setAllParents(enhancedAvailableParents);
+      setParentsWhoShareStudents(parentsWithSharedStudents);
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -113,7 +105,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     }
   };
 
-  const updateFormData = (field: keyof FormData, value: string) => {
+  const updateFormData = (field: keyof FormData, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -128,7 +120,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.studentId || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
+    if (formData.studentIds.length === 0 || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.fillAllFields'),
@@ -148,22 +140,33 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
 
     setLoading(true);
     try {
-      await createPickupAuthorization(formData);
+      // Create authorization for each selected student
+      for (const studentId of formData.studentIds) {
+        await createPickupAuthorization({
+          studentId,
+          authorizedParentId: formData.authorizedParentId,
+          startDate: formData.startDate,
+          endDate: formData.endDate
+        });
+      }
       
       const selectedParent = [...allParents, ...parentsWhoShareStudents].find(p => p.id === formData.authorizedParentId);
-      const selectedChild = children.find(c => c.id === formData.studentId);
+      const selectedChildrenNames = children
+        .filter(c => formData.studentIds.includes(c.id))
+        .map(c => c.name)
+        .join(', ');
       
       toast({
         title: t('common.success'),
         description: t('pickupAuthorizations.authorizationCreated')
           .replace('{parentName}', selectedParent?.name || '')
-          .replace('{studentName}', selectedChild?.name || ''),
+          .replace('{studentName}', selectedChildrenNames),
       });
       
       onAuthorizationAdded();
       onOpenChange(false);
       setFormData({
-        studentId: '',
+        studentIds: [],
         authorizedParentId: '',
         startDate: '',
         endDate: '',

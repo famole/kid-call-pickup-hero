@@ -33,11 +33,11 @@ export const usePasswordSetupLogic = () => {
       if (emailFromUrl && !user) {
         console.log('Checking for preloaded account with email:', emailFromUrl);
         try {
-          const { data: parentDataResult, error } = await supabase
-            .from('parents')
-            .select('*')
-            .eq('email', emailFromUrl)
-            .single();
+        const { data: parentDataResult, error } = await supabase
+          .from('parents')
+          .select('*')
+          .eq('email', emailFromUrl)
+          .maybeSingle();
 
           console.log('Preloaded account check result:', {
             error: error?.message,
@@ -47,20 +47,19 @@ export const usePasswordSetupLogic = () => {
           });
 
           if (!error && parentDataResult) {
-            // Check if this is specifically a preloaded account that needs password setup
-            if (parentDataResult.is_preloaded && !parentDataResult.password_set) {
-              console.log('Found preloaded account that needs password setup');
+            // Allow password setup for any account that doesn't have password set
+            // This handles both preloaded accounts and password reset scenarios
+            if (!parentDataResult.password_set) {
+              console.log('Found account that needs password setup');
               setParentData(parentDataResult);
               setHasPreloadedAccount(true);
               setIsInitialized(true);
               return;
             } else if (parentDataResult.password_set) {
-              console.log('Preloaded account already has password set');
+              console.log('Account already has password set');
               // Redirect to login since password is already set
               navigate('/login');
               return;
-            } else {
-              console.log('Account found but not a preloaded account needing setup');
             }
           } else {
             console.log('No preloaded account found or error occurred:', error?.message);
@@ -84,7 +83,7 @@ export const usePasswordSetupLogic = () => {
             .from('parents')
             .select('*')
             .eq('email', user.email)
-            .single();
+            .maybeSingle();
 
           console.log('Authenticated user parent data:', {
             error: error?.message,

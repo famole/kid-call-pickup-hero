@@ -22,6 +22,8 @@ import PickupAuthorizationPage from '@/pages/PickupAuthorizationPage';
 import SelfCheckoutPage from '@/pages/SelfCheckoutPage';
 import SelfCheckoutHistoryPage from '@/pages/SelfCheckoutHistoryPage';
 import UnauthorizedAccess from '@/pages/UnauthorizedAccess';
+import AcceptInvitation from '@/pages/AcceptInvitation';
+import InvitationSignup from '@/pages/InvitationSignup';
 import './App.css';
 
 // Import i18n configuration
@@ -40,6 +42,8 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/password-setup" element={<PasswordSetup />} />
               <Route path="/unauthorized-access" element={<UnauthorizedAccess />} />
+              <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
+              <Route path="/invitation-signup/:token" element={<InvitationSignup />} />
               <Route 
                 path="/admin-setup" 
                 element={

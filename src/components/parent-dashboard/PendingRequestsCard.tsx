@@ -18,8 +18,14 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
   currentParentId
 }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
 
-  if (pendingRequests.length === 0) {
+  // Filter requests based on user role
+  const filteredRequests = user?.role === 'family' || user?.role === 'other'
+    ? pendingRequests.filter(req => req.parentId === currentParentId)
+    : pendingRequests;
+
+  if (filteredRequests.length === 0) {
     return null;
   }
 
@@ -28,10 +34,10 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <Clock className="h-5 w-5 text-orange-600" />
-          ⏳ {t('dashboard.inQueue', { count: pendingRequests.length })}
+          ⏳ {t('dashboard.inQueue', { count: filteredRequests.length })}
         </CardTitle>
         <CardDescription>
-          {pendingRequests.some(req => currentParentId && req.parentId !== currentParentId) ? (
+          {filteredRequests.some(req => currentParentId && req.parentId !== currentParentId) ? (
             <>
               {t('dashboard.authorizedPickupRequestsBeingProcessed')}
               <br />
@@ -46,7 +52,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {pendingRequests.map((request) => {
+          {filteredRequests.map((request) => {
             const child = children.find(c => c.id === request.studentId);
             const isRequestedByOtherParent = currentParentId && request.parentId !== currentParentId;
             

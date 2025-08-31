@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -140,6 +140,7 @@ export type Database = {
           is_active: boolean
           start_date: string
           student_id: string
+          student_ids: string[]
           updated_at: string
         }
         Insert: {
@@ -151,6 +152,7 @@ export type Database = {
           is_active?: boolean
           start_date: string
           student_id: string
+          student_ids?: string[]
           updated_at?: string
         }
         Update: {
@@ -162,6 +164,7 @@ export type Database = {
           is_active?: boolean
           start_date?: string
           student_id?: string
+          student_ids?: string[]
           updated_at?: string
         }
         Relationships: [
@@ -232,6 +235,72 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pickup_invitations: {
+        Row: {
+          accepted_parent_id: string | null
+          created_at: string
+          end_date: string
+          expires_at: string
+          id: string
+          invitation_status: string
+          invitation_token: string
+          invited_email: string
+          invited_name: string
+          invited_role: Database["public"]["Enums"]["app_role"]
+          inviting_parent_id: string
+          start_date: string
+          student_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          accepted_parent_id?: string | null
+          created_at?: string
+          end_date: string
+          expires_at?: string
+          id?: string
+          invitation_status?: string
+          invitation_token?: string
+          invited_email: string
+          invited_name: string
+          invited_role?: Database["public"]["Enums"]["app_role"]
+          inviting_parent_id: string
+          start_date: string
+          student_ids: string[]
+          updated_at?: string
+        }
+        Update: {
+          accepted_parent_id?: string | null
+          created_at?: string
+          end_date?: string
+          expires_at?: string
+          id?: string
+          invitation_status?: string
+          invitation_token?: string
+          invited_email?: string
+          invited_name?: string
+          invited_role?: Database["public"]["Enums"]["app_role"]
+          inviting_parent_id?: string
+          start_date?: string
+          student_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_invitations_accepted_parent_id_fkey"
+            columns: ["accepted_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_invitations_inviting_parent_id_fkey"
+            columns: ["inviting_parent_id"]
+            isOneToOne: false
+            referencedRelation: "parents"
             referencedColumns: ["id"]
           },
         ]
@@ -455,10 +524,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           email: string
-          has_user: boolean
-          providers: string[]
           email_confirmed: boolean
+          has_user: boolean
           last_sign_in_at: string
+          providers: string[]
         }[]
       }
       get_current_parent_id: {
@@ -493,13 +562,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_invited_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_parent_of_student: {
         Args: { student_id: string }
         Returns: boolean
       }
     }
     Enums: {
-      app_role: "parent" | "admin" | "teacher" | "superadmin"
+      app_role:
+        | "parent"
+        | "admin"
+        | "teacher"
+        | "superadmin"
+        | "family"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -627,7 +706,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["parent", "admin", "teacher", "superadmin"],
+      app_role: ["parent", "admin", "teacher", "superadmin", "family", "other"],
     },
   },
 } as const

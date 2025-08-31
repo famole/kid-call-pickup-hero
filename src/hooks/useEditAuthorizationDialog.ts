@@ -4,18 +4,17 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   updatePickupAuthorization,
-  getParentsWhoShareStudents,
+  getAvailableParentsForAuthorization,
   PickupAuthorizationWithDetails
 } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
-import { getAllParents } from '@/services/parentService';
 import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
 
 interface FormData {
-  studentId: string;
+  studentIds: string[];
   authorizedParentId: string;
   startDate: string;
   endDate: string;
@@ -41,7 +40,7 @@ export const useEditAuthorizationDialog = (
   const [showOnlySharedParents, setShowOnlySharedParents] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    studentId: '',
+    studentIds: [],
     authorizedParentId: '',
     startDate: '',
     endDate: ''
@@ -52,7 +51,7 @@ export const useEditAuthorizationDialog = (
       loadData();
       if (authorization) {
         setFormData({
-          studentId: authorization.studentId,
+          studentIds: authorization.studentIds || [authorization.studentId],
           authorizedParentId: authorization.authorizedParentId,
           startDate: authorization.startDate,
           endDate: authorization.endDate
@@ -74,17 +73,11 @@ export const useEditAuthorizationDialog = (
       const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
 
-      const allParentsData = await getAllParents();
-      const filteredParents = allParentsData.filter(p => p.id !== currentParentId);
-      const formattedAllParents = filteredParents.map(parent => ({
-        ...parent,
-        students: [],
-        sharedStudentIds: [],
-        sharedStudentNames: []
-      }));
-
-      const { parents: sharedParents, sharedStudents } = await getParentsWhoShareStudents();
-      const enhancedSharedParents = sharedParents.map(parent => {
+      // Load only available parents (family/other + shared students parents)
+      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
+      const enhancedAvailableParents = availableParents
+        .filter(parent => parent && parent.id) // Filter out null parents
+        .map(parent => {
         const sharedStudentIds = sharedStudents[parent.id] || [];
         const sharedStudentNames = userChildren
           .filter(child => sharedStudentIds.includes(child.id))
@@ -97,8 +90,13 @@ export const useEditAuthorizationDialog = (
         };
       });
 
-      setAllParents(formattedAllParents);
-      setParentsWhoShareStudents(enhancedSharedParents);
+      // Filter to get parents who actually share students (have shared students)
+      const parentsWithSharedStudents = enhancedAvailableParents.filter(parent => 
+        parent.sharedStudentIds && parent.sharedStudentIds.length > 0
+      );
+
+      setAllParents(enhancedAvailableParents);
+      setParentsWhoShareStudents(parentsWithSharedStudents);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -109,7 +107,7 @@ export const useEditAuthorizationDialog = (
     }
   };
 
-  const updateFormData = (field: keyof FormData, value: string) => {
+  const updateFormData = (field: keyof FormData, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -125,7 +123,7 @@ export const useEditAuthorizationDialog = (
     e.preventDefault();
     if (!authorization) return;
 
-    if (!formData.studentId || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
+    if (formData.studentIds.length === 0 || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.fillAllFields'),
@@ -146,7 +144,7 @@ export const useEditAuthorizationDialog = (
     setLoading(true);
     try {
       await updatePickupAuthorization(authorization.id, {
-        studentId: formData.studentId,
+        studentIds: formData.studentIds,
         authorizedParentId: formData.authorizedParentId,
         startDate: formData.startDate,
         endDate: formData.endDate

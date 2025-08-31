@@ -276,9 +276,23 @@ export const useOptimizedParentDashboard = () => {
   const calledRequests = activeRequests.filter(req => req.status === 'called');
 
   // Get authorized requests (requests made by others for children you can pick up)
+  // Only show these notifications to actual parents, not to family/other roles
   const authorizedRequests = activeRequests.filter(req => {
     const child = children.find(c => c.id === req.studentId);
-    return child?.isAuthorized && req.parentId !== user?.id;
+    // Only show to users with 'parent' role, not family/other roles
+    return child?.isAuthorized && req.parentId !== user?.id && user?.role === 'parent';
+  });
+
+  // Debug logging for authorized requests
+  console.log('🔍 Authorized requests result:', {
+    userRole: user?.role,
+    totalActiveRequests: activeRequests.length,
+    authorizedRequestsCount: authorizedRequests.length,
+    authorizedRequests: authorizedRequests.map(req => ({
+      id: req.id,
+      studentId: req.studentId,
+      parentId: req.parentId
+    }))
   });
 
   return {
