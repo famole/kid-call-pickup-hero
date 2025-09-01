@@ -1,12 +1,12 @@
 import React from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useWithdrawalHistory } from '@/hooks/useWithdrawalHistory';
+import { useOptimizedWithdrawalHistory } from '@/hooks/useOptimizedWithdrawalHistory';
 import Navigation from '@/components/Navigation';
 import WithdrawalHistoryTable from '@/components/withdrawal-history/WithdrawalHistoryTable';
 
 const SelfCheckoutHistoryPage: React.FC = () => {
   const { t } = useTranslation();
-  const { withdrawalData, loading } = useWithdrawalHistory();
+  const { withdrawalData, loading } = useOptimizedWithdrawalHistory();
 
   return (
     <div className="min-h-screen w-full bg-background">
