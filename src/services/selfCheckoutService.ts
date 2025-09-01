@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getStudentById } from './studentService';
 import { getClassById } from './classService';
 import { getParentById } from './parentService';
+import { logger } from "@/utils/logger";
 
 // Export the base types
 export interface SelfCheckoutAuthorization {
@@ -85,12 +86,12 @@ export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfChec
     const { data: parentData, error: parentError } = await supabase.rpc('get_current_parent_id');
     
     if (parentError) {
-      console.error('Error getting current parent ID:', parentError);
+      logger.error('Error getting current parent ID:', parentError);
       throw new Error(parentError.message);
     }
 
     if (!parentData) {
-      console.log('No parent ID found for current user');
+      logger.info('No parent ID found for current user');
       return [];
     }
 

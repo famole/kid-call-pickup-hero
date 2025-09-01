@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createPickupRequest } from '@/services/pickupService';
 import { useToast } from '@/components/ui/use-toast';
+import { logger } from '@/utils/logger';
 
 export const usePickupActions = (refreshPickupRequests: () => Promise<void>) => {
   const { user } = useAuth();
@@ -23,7 +24,7 @@ export const usePickupActions = (refreshPickupRequests: () => Promise<void>) => 
 
     setIsSubmitting(true);
     try {
-      console.log('Creating pickup requests for:', selectedChildren);
+      logger.info('Creating pickup requests for:', selectedChildren);
       
       // Create pickup requests for all selected children
       const promises = selectedChildren.map(studentId =>
@@ -45,7 +46,7 @@ export const usePickupActions = (refreshPickupRequests: () => Promise<void>) => 
       }, 500);
       
     } catch (error) {
-      console.error('Error creating pickup requests:', error);
+      logger.error('Error creating pickup requests:', error);
       toast({
         title: "Error",
         description: "Failed to create pickup requests. Please try again.",

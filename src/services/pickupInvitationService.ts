@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export interface PickupInvitation {
   id: string;
@@ -122,7 +123,7 @@ export const updatePickupInvitation = async (
 
   // If accepting the invitation, create parent record and authorizations
   if (updates.invitationStatus === 'accepted') {
-    console.log('Starting invitation acceptance process...');
+    logger.info('Starting invitation acceptance process...');
     
     // First get the invitation details
     const { data: invitation, error: invitationError } = await supabase
@@ -132,13 +133,13 @@ export const updatePickupInvitation = async (
       .single();
 
     if (invitationError) {
-      console.error('Error fetching invitation:', invitationError);
+      logger.error('Error fetching invitation:', invitationError);
       throw invitationError;
     }
-    console.log('Invitation fetched successfully:', invitation);
+    logger.info('Invitation fetched successfully:', invitation);
 
     // Create or update the parent record
-    console.log('Checking for existing parent with email:', invitation.invited_email);
+    logger.info('Checking for existing parent with email:', invitation.invited_email);
     const { data: existingParent, error: existingParentError } = await supabase
       .from('parents')
       .select('id')
@@ -146,17 +147,17 @@ export const updatePickupInvitation = async (
       .single();
 
     if (existingParentError && existingParentError.code !== 'PGRST116') {
-      console.error('Error checking existing parent:', existingParentError);
+      logger.error('Error checking existing parent:', existingParentError);
       throw existingParentError;
     }
 
     let parentId: string;
 
     if (existingParent) {
-      console.log('Found existing parent:', existingParent.id);
+      logger.info('Found existing parent:', existingParent.id);
       parentId = existingParent.id;
     } else {
-      console.log('Creating new parent record...');
+      logger.info('Creating new parent record...');
       // Create new parent record with the invited role
       const { data: newParent, error: parentError } = await supabase
         .from('parents')
@@ -170,10 +171,10 @@ export const updatePickupInvitation = async (
         .single();
 
       if (parentError) {
-        console.error('Error creating parent:', parentError);
+        logger.error('Error creating parent:', parentError);
         throw parentError;
       }
-      console.log('Created new parent:', newParent.id);
+      logger.info('Created new parent:', newParent.id);
       parentId = newParent.id;
     }
 
@@ -257,19 +258,19 @@ export const sendInvitationEmail = async (invitationId: string): Promise<void> =
     });
     
     if (error) {
-      console.error('Supabase function error:', error);
+      logger.error('Supabase function error:', error);
       throw new Error(`Failed to send invitation email: ${error.message || error}`);
     }
     
     // Check if the function returned an error in the response body
     if (data && data.error) {
-      console.error('Edge function returned error:', data.error);
+      logger.error('Edge function returned error:', data.error);
       throw new Error(`Failed to send invitation email: ${data.error}`);
     }
     
-    console.log('Invitation email sent successfully:', data);
+    logger.info('Invitation email sent successfully:', data);
   } catch (error) {
-    console.error('Error sending invitation email:', error);
+    logger.error('Error sending invitation email:', error);
     throw new Error('Failed to send invitation email');
   }
 };

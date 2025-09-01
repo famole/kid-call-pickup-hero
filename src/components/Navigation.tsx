@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -72,10 +73,10 @@ const Navigation: React.FC = () => {
 
   // Debug logging to console
   React.useEffect(() => {
-    console.log('🔍 Navigation Debug - User:', user);
-    console.log('🔍 Navigation Debug - User Role:', user?.role);
-    console.log('🔍 Navigation Debug - Is Invited User:', isInvitedUser);
-    console.log('🔍 Navigation Debug - Visible Items:', visibleItems.map(item => item.path));
+    logger.info('🔍 Navigation Debug - User:', user);
+    logger.info('🔍 Navigation Debug - User Role:', user?.role);
+    logger.info('🔍 Navigation Debug - Is Invited User:', isInvitedUser);
+    logger.info('🔍 Navigation Debug - Visible Items:', visibleItems.map(item => item.path));
   }, [user, isInvitedUser, visibleItems]);
 
   const NavItems = ({ mobile = false }) => (
