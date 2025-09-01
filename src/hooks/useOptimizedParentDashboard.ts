@@ -284,7 +284,7 @@ export const useOptimizedParentDashboard = () => {
   });
 
   // Debug logging for authorized requests
-  console.log('🔍 Authorized requests result:', {
+  logger.info('🔍 Authorized requests result:', {
     userRole: user?.role,
     totalActiveRequests: activeRequests.length,
     authorizedRequestsCount: authorizedRequests.length,
