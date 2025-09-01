@@ -223,7 +223,8 @@
     "actions": "Acciones",
     "loadingStudents": "Cargando estudiantes...",
     "noStudentsFound": "No se encontraron estudiantes",
-    "noParentsAssigned": "No hay padres asignados"
+    "noParentsAssigned": "No hay padres asignados",
+    "totalStudents": "Total de estudiantes: {{count}}"
   },
   "studentDetails": {
     "title": "Detalles del Estudiante",
@@ -753,7 +754,15 @@
     "deleted": "Eliminado",
     "notAvailable": "N/D",
     "studentsCount": "{{count}} estudiantes",
-    "studentsCount_one": "{{count}} estudiante"
+    "studentsCount_one": "{{count}} estudiante",
+    "tableHeaders": {
+      "name": "Nombre",
+      "email": "Correo electrónico", 
+      "phone": "Teléfono",
+      "students": "Estudiantes",
+      "actions": "Acciones"
+    },
+    "totalCount": "Total {{type}}: {{count}}"
   },
   "resetPasswordDialog": {
     "title": "Restablecer Contraseña",
@@ -790,6 +799,16 @@
     "cancel": "Cancelar",
     "noAvailableStudents": "No hay estudiantes disponibles para agregar",
     "close": "Cerrar"
+  },
+  "pagination": {
+    "showing": "Mostrando",
+    "of": "de",
+    "rowsPerPage": "Filas por página:",
+    "parents": "padres",
+    "students": "estudiantes",
+    "teachers": "maestros",
+    "admins": "administradores", 
+    "superadmins": "superadministradores"
   },
   "roles": {
     "parent": "Padre",

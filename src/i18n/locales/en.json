@@ -812,6 +812,16 @@
     "secondaryParent": "Secondary Parent",
     "emergencyContact": "Emergency Contact"
   },
+  "pagination": {
+    "showing": "Showing",
+    "of": "of",
+    "rowsPerPage": "Rows per page:",
+    "parents": "parents",
+    "students": "students", 
+    "teachers": "teachers",
+    "admins": "admins",
+    "superadmins": "superadmins"
+  },
   "withdrawalHistory": {
     "title": "Withdrawal History",
     "description": "View history of student withdrawals and pickup completions",
