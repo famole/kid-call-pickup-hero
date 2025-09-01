@@ -132,22 +132,6 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route 
-                path="/viewer" 
-                element={
-                  <ProtectedRoute>
-                    <ViewerDisplay />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/stress-test" 
-                element={
-                  <ProtectedRoute>
-                    <StressTestPage />
-                  </ProtectedRoute>
-                } 
-              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
