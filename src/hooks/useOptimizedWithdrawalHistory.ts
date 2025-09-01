@@ -150,47 +150,59 @@ export const useOptimizedWithdrawalHistory = () => {
         }
       }
 
-      // Optimized query 2: Get self-checkout departures with authorization check in one query
-      const { data: selfCheckoutData, error: selfCheckoutError } = await supabase
-        .from('student_departures')
-        .select(`
-          id,
-          student_id,
-          departed_at,
-          notes,
-          students (
+      // Optimized query 2: Get self-checkout departures and authorizations separately
+      const [selfCheckoutDepartures, selfCheckoutAuthorizations] = await Promise.all([
+        supabase
+          .from('student_departures')
+          .select(`
             id,
-            name,
-            avatar,
-            classes (
+            student_id,
+            departed_at,
+            notes,
+            students (
+              id,
               name,
-              grade
+              avatar,
+              classes (
+                name,
+                grade
+              )
             )
-          ),
-          self_checkout_authorizations!inner (
-            id,
-            authorizing_parent_id
-          )
-        `)
-        .eq('self_checkout_authorizations.authorizing_parent_id', parentId)
-        .order('departed_at', { ascending: false })
-        .limit(200); // Limit to 200 most recent records for performance
+          `)
+          .order('departed_at', { ascending: false })
+          .limit(200),
+        supabase
+          .from('self_checkout_authorizations')
+          .select('student_id, id')
+          .eq('authorizing_parent_id', parentId)
+      ]);
 
-      if (selfCheckoutError) {
-        logger.error('Error fetching self-checkout departures:', selfCheckoutError);
-      } else if (selfCheckoutData) {
+      const selfCheckoutError = selfCheckoutDepartures.error;
+      const selfCheckoutData = selfCheckoutDepartures.data;
+
+      if (selfCheckoutError || selfCheckoutAuthorizations.error) {
+        logger.error('Error fetching self-checkout data:', selfCheckoutError || selfCheckoutAuthorizations.error);
+      } else if (selfCheckoutData && selfCheckoutAuthorizations.data) {
+        // Create a set of authorized student IDs for fast lookup
+        const authorizedStudentIds = new Set(
+          selfCheckoutAuthorizations.data.map(auth => auth.student_id)
+        );
+
+        // Filter departures to only include those for authorized students
         for (const departure of selfCheckoutData) {
-          allRecords.push({
-            id: departure.id,
-            studentId: departure.student_id,
-            studentName: departure.students?.name || 'Unknown Student',
-            studentAvatar: departure.students?.avatar,
-            className: departure.students?.classes ? 
-              `${departure.students.classes.name} - Grade ${departure.students.classes.grade}` : undefined,
-            date: new Date(departure.departed_at),
-            type: 'self_checkout',
-            notes: departure.notes
-          });
+          if (authorizedStudentIds.has(departure.student_id)) {
+            allRecords.push({
+              id: departure.id,
+              studentId: departure.student_id,
+              studentName: departure.students?.name || 'Unknown Student',
+              studentAvatar: departure.students?.avatar,
+              className: departure.students?.classes ? 
+                `${departure.students.classes.name} - Grade ${departure.students.classes.grade}` : undefined,
+              date: new Date(departure.departed_at),
+              type: 'self_checkout',
+              notes: departure.notes
+            });
+          }
         }
       }
 
