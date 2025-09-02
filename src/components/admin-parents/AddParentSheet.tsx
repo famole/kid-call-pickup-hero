@@ -67,7 +67,8 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
       case 'teacher':
         return ['parent', 'family', 'teacher'];
       default:
-        return ['parent', 'family'];
+        // Add "other" role for family management
+        return ['parent', 'family', 'other'];
     }
   };
 
@@ -176,7 +177,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
             </Label>
             <Select
               value={newParent.role || 'parent'}
-              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family') => 
+              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other') => 
                 onNewParentChange({...newParent, role: value})
               }
             >

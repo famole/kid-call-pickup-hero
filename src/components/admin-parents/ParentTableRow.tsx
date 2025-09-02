@@ -21,6 +21,7 @@ interface ParentTableRowProps {
   onResetPassword?: () => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   showStudentsColumn: boolean;
+  showPhoneColumn: boolean;
   authStatus?: ParentAuthStatus;
 }
 
@@ -33,6 +34,7 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
   onResetPassword,
   userRole = 'parent',
   showStudentsColumn,
+  showPhoneColumn,
   authStatus,
 }) => {
   const { t } = useTranslation();
@@ -52,11 +54,13 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          {parent.email}
+          {userRole === 'family' ? (parent.username || parent.email || t('parentsManagement.notAvailable')) : parent.email}
           <AuthStatusBadge authStatus={authStatus} />
         </div>
       </TableCell>
-      <TableCell>{parent.phone || t('parentsManagement.notAvailable')}</TableCell>
+      {showPhoneColumn && (
+        <TableCell>{parent.phone || t('parentsManagement.notAvailable')}</TableCell>
+      )}
       {showStudentsColumn && (
         <TableCell>
           {t('parentsManagement.studentsCount', { 

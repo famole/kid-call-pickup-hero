@@ -56,6 +56,10 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
   };
 
   const shouldShowStudentsColumn = userRole === 'parent' || userRole === 'family';
+  const shouldShowPhoneColumn = userRole !== 'family';
+  const getEmailColumnLabel = () => {
+    return userRole === 'family' ? 'Username' : t('parentsManagement.tableHeaders.email', { defaultValue: 'Email' });
+  };
 
   return (
     <div className="space-y-4">
@@ -68,8 +72,8 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
       <TableHeader>
         <TableRow>
           <TableHead>{t('parentsManagement.tableHeaders.name', { defaultValue: 'Name' })}</TableHead>
-          <TableHead>{t('parentsManagement.tableHeaders.email', { defaultValue: 'Email' })}</TableHead>
-          <TableHead>{t('parentsManagement.tableHeaders.phone', { defaultValue: 'Phone' })}</TableHead>
+          <TableHead>{getEmailColumnLabel()}</TableHead>
+          {shouldShowPhoneColumn && <TableHead>{t('parentsManagement.tableHeaders.phone', { defaultValue: 'Phone' })}</TableHead>}
           {shouldShowStudentsColumn && <TableHead>{t('parentsManagement.tableHeaders.students', { defaultValue: 'Students' })}</TableHead>}
           <TableHead>{t('parentsManagement.tableHeaders.actions', { defaultValue: 'Actions' })}</TableHead>
         </TableRow>
@@ -77,13 +81,13 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
       <TableBody>
         {isLoading ? (
           <TableRow>
-            <TableCell colSpan={shouldShowStudentsColumn ? 5 : 4} className="text-center">
+            <TableCell colSpan={shouldShowStudentsColumn ? (shouldShowPhoneColumn ? 5 : 4) : (shouldShowPhoneColumn ? 4 : 3)} className="text-center">
               {t(`parentsManagement.loading.${getUserTypeKey()}`)}
             </TableCell>
           </TableRow>
         ) : parents.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={shouldShowStudentsColumn ? 5 : 4} className="text-center">
+            <TableCell colSpan={shouldShowStudentsColumn ? (shouldShowPhoneColumn ? 5 : 4) : (shouldShowPhoneColumn ? 4 : 3)} className="text-center">
               {searchTerm 
                 ? t(`parentsManagement.noResultsSearch.${getUserTypeKey()}`, { searchTerm })
                 : `${t(`parentsManagement.noResults.${getUserTypeKey()}`)}. ${t(`parentsManagement.addToStart.${getUserTypeKey()}`)}`
@@ -102,6 +106,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
               onResetPassword={onResetParentPassword && parent.email ? () => onResetParentPassword(parent.email!, parent.name) : undefined}
               userRole={userRole}
               showStudentsColumn={shouldShowStudentsColumn}
+              showPhoneColumn={shouldShowPhoneColumn}
               authStatus={parent.email ? authStatuses?.get(parent.email.toLowerCase()) : undefined}
             />
           ))
