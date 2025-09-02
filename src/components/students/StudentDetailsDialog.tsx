@@ -14,6 +14,7 @@ import { Child, Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
 import { getPickupAuthorizationsForStudent } from '@/services/pickupAuthorizationService';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 interface StudentDetailsDialogProps {
   open: boolean;
@@ -65,7 +66,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
 
     const fetchStudentDetails = async () => {
       setIsLoading(true);
-      console.log('Fetching student details for student:', student.id);
+      logger.log('Fetching student details for student:', student.id);
       
       try {
         // Fetch parent relationships with parent details
@@ -85,7 +86,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
           .eq('student_id', student.id);
 
         if (error) {
-          console.error('Error fetching student relations:', error);
+          logger.error('Error fetching student relations:', error);
         } else {
           const parentData: StudentParentRelation[] = relations.map(rel => ({
             id: rel.id,
@@ -101,7 +102,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
         }
 
         // Fetch pickup authorizations using the service helper
-        console.log('Fetching pickup authorizations for student ID:', student.id);
+        logger.log('Fetching pickup authorizations for student ID:', student.id);
 
         try {
           const authorizations = await getPickupAuthorizationsForStudent(student.id);
@@ -117,14 +118,14 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
             createdAt: auth.createdAt,
           }));
 
-          console.log('Final pickup authorizations data:', authData);
+          logger.log('Final pickup authorizations data:', authData);
           setPickupAuthorizations(authData);
         } catch (authError) {
-          console.error('Error fetching pickup authorizations:', authError);
+          logger.error('Error fetching pickup authorizations:', authError);
           setPickupAuthorizations([]);
         }
       } catch (error) {
-        console.error('Error in fetchStudentDetails:', error);
+        logger.error('Error in fetchStudentDetails:', error);
       } finally {
         setIsLoading(false);
       }

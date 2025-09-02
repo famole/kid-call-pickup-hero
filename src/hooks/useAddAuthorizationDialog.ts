@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 import { createPickupAuthorization, getAvailableParentsForAuthorization } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,7 +60,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
 
       if (parentError || !currentParentId) {
-        console.error('Error getting current parent ID:', parentError);
+        logger.error('Error getting current parent ID:', parentError);
         return;
       }
 
@@ -96,7 +97,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       setParentsWhoShareStudents(parentsWithSharedStudents);
 
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.loadDataError'),
@@ -172,7 +173,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
         endDate: '',
       });
     } catch (error) {
-      console.error('Error creating authorization:', error);
+      logger.error('Error creating authorization:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.failedToCreate'),

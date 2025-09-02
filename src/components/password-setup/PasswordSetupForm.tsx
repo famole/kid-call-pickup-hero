@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 const PasswordSetupForm = () => {
   const [password, setPassword] = useState('');
@@ -138,7 +139,7 @@ const PasswordSetupForm = () => {
         navigate('/');
       }
     } catch (error: any) {
-      console.error('Error setting password:', error);
+      logger.error('Error setting password:', error);
       toast({
         title: t('common.error'),
         description: error.message || t('errors.failedSetPassword'),

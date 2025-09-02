@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 import { updateSelfCheckoutAuthorization, SelfCheckoutAuthorizationWithDetails } from '@/services/selfCheckoutService';
 
 interface EditSelfCheckoutAuthorizationDialogProps {
@@ -74,7 +75,7 @@ const EditSelfCheckoutAuthorizationDialog: React.FC<EditSelfCheckoutAuthorizatio
       onAuthorizationUpdated();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating authorization:', error);
+      logger.error('Error updating authorization:', error);
       toast({
         title: t('common.error'),
         description: t('selfCheckout.failedToUpdate'),

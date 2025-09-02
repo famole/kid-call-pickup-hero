@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Clock, User, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 import {
   getActiveSelfCheckoutAuthorizations,
   markStudentDeparture,
@@ -42,7 +43,7 @@ const SelfCheckoutManagement: React.FC = () => {
       const data = await getActiveSelfCheckoutAuthorizations();
       setAuthorizations(data);
     } catch (error) {
-      console.error('Error loading authorizations:', error);
+      logger.error('Error loading authorizations:', error);
       toast({
         title: t('common.error'),
         description: t('selfCheckout.failedToLoad'),
@@ -59,7 +60,7 @@ const SelfCheckoutManagement: React.FC = () => {
       const data = await getRecentDepartures(20);
       setDepartures(data);
     } catch (error) {
-      console.error('Error loading departures:', error);
+      logger.error('Error loading departures:', error);
       toast({
         title: t('common.error'),
         description: t('selfCheckout.failedToLoad'),

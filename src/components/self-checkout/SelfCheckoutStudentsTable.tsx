@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import MarkDepartureDialog from './MarkDepartureDialog';
 import { getTodayDepartureForStudent } from '@/services/selfCheckoutService';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 interface SelfCheckoutStudentsTableProps {
   authorizations: SelfCheckoutAuthorizationWithDetails[];
@@ -57,7 +58,7 @@ const SelfCheckoutStudentsTable: React.FC<SelfCheckoutStudentsTableProps> = ({
       
       setTodayDepartures(departures);
     } catch (error) {
-      console.error('Error loading today departures:', error);
+      logger.error('Error loading today departures:', error);
     } finally {
       setDeparturesLoading(false);
     }

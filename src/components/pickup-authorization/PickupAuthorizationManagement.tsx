@@ -7,6 +7,7 @@ import { Calendar, Users, Plus, Trash2, Edit } from 'lucide-react';
 import RoleBadge from './RoleBadge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 import {
   getPickupAuthorizationsForParent,
   deletePickupAuthorization,
@@ -78,7 +79,7 @@ const PickupAuthorizationManagement: React.FC = () => {
       setAuthorizations(authData);
       setInvitations(invitationData.filter(inv => inv.invitationStatus === 'pending'));
     } catch (error) {
-      console.error('Error loading authorizations:', error);
+      logger.error('Error loading authorizations:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.failedToLoad'),
@@ -99,7 +100,7 @@ const PickupAuthorizationManagement: React.FC = () => {
         description: t('pickupAuthorizations.authorizationRemoved'),
       });
     } catch (error) {
-      console.error('Error deleting authorization:', error);
+      logger.error('Error deleting authorization:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.failedToRemove'),
@@ -120,7 +121,7 @@ const PickupAuthorizationManagement: React.FC = () => {
         description: t('pickupAuthorizations.invitationRemoved'),
       });
     } catch (error) {
-      console.error('Error deleting invitation:', error);
+      logger.error('Error deleting invitation:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.failedToRemoveInvitation'),

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, LogOut, Plus, Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 import {
   getSelfCheckoutAuthorizationsForParent,
   deleteSelfCheckoutAuthorization,
@@ -45,7 +46,7 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
       const data = await getSelfCheckoutAuthorizationsForParent();
       setAuthorizations(data);
     } catch (error) {
-      console.error('Error loading authorizations:', error);
+      logger.error('Error loading authorizations:', error);
       toast({
         title: t('common.error'),
         description: t('selfCheckout.failedToLoad'),
@@ -66,7 +67,7 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
         description: t('selfCheckout.authorizationRemoved'),
       });
     } catch (error) {
-      console.error('Error deleting authorization:', error);
+      logger.error('Error deleting authorization:', error);
       toast({
         title: t('common.error'),
         description: t('selfCheckout.failedToRemove'),

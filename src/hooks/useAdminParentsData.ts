@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
+import { logger } from '@/utils/logger';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentsWithStudents } from '@/services/parentService';
@@ -42,7 +43,7 @@ export const useAdminParentsData = ({ userRole = 'parent' }: UseAdminParentsData
       const studentsData = await getAllStudents();
       setAllStudents(studentsData);
     } catch (error) {
-      console.error('Failed to load students:', error);
+      logger.error('Failed to load students:', error);
       toast({
         title: "Error",
         description: "Failed to load students data",

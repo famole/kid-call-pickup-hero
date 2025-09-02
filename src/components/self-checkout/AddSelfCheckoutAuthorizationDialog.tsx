@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 import { createSelfCheckoutAuthorization } from '@/services/selfCheckoutService';
 import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
@@ -100,7 +101,7 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
 
       setStudents(formattedStudents);
     } catch (error) {
-      console.error('Error loading students:', error);
+      logger.error('Error loading students:', error);
       toast({
         title: t('common.error'),
         description: t('selfCheckout.loadDataError'),
@@ -149,7 +150,7 @@ const AddSelfCheckoutAuthorizationDialog: React.FC<AddSelfCheckoutAuthorizationD
       setStartDate('');
       setEndDate('');
     } catch (error) {
-      console.error('Error creating authorization:', error);
+      logger.error('Error creating authorization:', error);
       toast({
         title: t('common.error'),
         description: t('selfCheckout.failedToCreate'),

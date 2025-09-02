@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger';
+
 // Environment configuration for Supabase
 export interface SupabaseConfig {
   url: string;
@@ -26,8 +28,8 @@ export function getSupabaseConfig(): SupabaseConfig {
   
   // Only log in non-production environments
   if (import.meta.env.VITE_NODE_ENV !== 'production') {
-    console.log(`[Environment] Using Supabase config from: ${source}`);
-    console.log(`[Environment] Using Supabase URL: ${config.url}`);
+    logger.log(`[Environment] Using Supabase config from: ${source}`);
+    logger.log(`[Environment] Using Supabase URL: ${config.url}`);
   }
   
   return config;
