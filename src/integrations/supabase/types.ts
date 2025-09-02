@@ -95,7 +95,7 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
-          email: string
+          email: string | null
           id: string
           is_preloaded: boolean | null
           name: string
@@ -108,7 +108,7 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
-          email: string
+          email?: string | null
           id?: string
           is_preloaded?: boolean | null
           name: string
@@ -121,7 +121,7 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
-          email?: string
+          email?: string | null
           id?: string
           is_preloaded?: boolean | null
           name?: string
