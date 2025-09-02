@@ -24,6 +24,7 @@ interface ParentsTableProps {
   onResetParentPassword?: (email: string, name: string) => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
   authStatuses?: Map<string, ParentAuthStatus>;
+  totalItems?: number;
 }
 
 const ParentsTable: React.FC<ParentsTableProps> = ({
@@ -37,6 +38,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
   onResetParentPassword,
   userRole = 'parent',
   authStatuses,
+  totalItems,
 }) => {
   const { t } = useTranslation();
 
@@ -56,7 +58,13 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
   const shouldShowStudentsColumn = userRole === 'parent';
 
   return (
-    <Table>
+    <div className="space-y-4">
+      {totalItems !== undefined && (
+        <div className="text-sm text-muted-foreground">
+          {t('parentsManagement.total')} {t(`parentsManagement.${getUserTypeKey()}`)}: {totalItems}
+        </div>
+      )}
+      <Table>
       <TableHeader>
         <TableRow>
           <TableHead>{t('parentsManagement.tableHeaders.name', { defaultValue: 'Name' })}</TableHead>
@@ -99,7 +107,8 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
           ))
         )}
       </TableBody>
-    </Table>
+      </Table>
+    </div>
   );
 };
 

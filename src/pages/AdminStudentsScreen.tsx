@@ -27,6 +27,8 @@ import { useStudentForm, NewStudentState } from '@/hooks/useStudentForm';
 import { useStudentActions } from '@/hooks/useStudentActions';
 import { useStudentCSV } from '@/hooks/useStudentCSV';
 import { useStudentSearch } from '@/hooks/useStudentSearch';
+import { useAdminPagination } from '@/hooks/useAdminPagination';
+import PaginationControls from '@/components/admin-parents/PaginationControls';
 
 const AdminStudentsScreen = () => {
   const [studentList, setStudentList] = useState<Child[]>([]);
@@ -50,6 +52,21 @@ const AdminStudentsScreen = () => {
     setSelectedClassId,
     filteredStudents
   } = useStudentSearch(studentList);
+
+  // Use pagination hook
+  const {
+    paginatedData: paginatedStudents,
+    totalItems,
+    totalPages,
+    currentPage,
+    pageSize,
+    startIndex,
+    endIndex,
+    goToPage,
+    changePageSize,
+    hasNextPage,
+    hasPreviousPage,
+  } = useAdminPagination({ data: filteredStudents });
 
   const { 
     handleAddStudentAction, 
@@ -182,12 +199,27 @@ const AdminStudentsScreen = () => {
               />
               
               <StudentTable 
-                studentList={filteredStudents}
+                studentList={paginatedStudents}
                 isLoading={false}
                 getClassName={getClassName}
                 onEdit={handleEditStudent}
                 onDelete={handleDeletePrompt}
                 onViewDetails={handleViewDetails}
+                totalItems={totalItems}
+              />
+
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                onPageChange={goToPage}
+                onPageSizeChange={changePageSize}
+                hasNextPage={hasNextPage}
+                hasPreviousPage={hasPreviousPage}
+                itemType="students"
               />
             </>
           )}

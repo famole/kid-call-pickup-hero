@@ -29,10 +29,10 @@ const AuthorizationTypeSelector: React.FC<AuthorizationTypeSelectorProps> = ({
       <div className="grid grid-cols-1 gap-4">
         <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-primary" />
-              {t('pickupAuthorizations.existingParents')}
-            </CardTitle>
+          <CardTitle className="flex items-center gap-3">
+            <Users className="h-5 w-5 text-muted-foreground" />
+            {t('pickupAuthorizations.existingParents')}
+          </CardTitle>
             <CardDescription>
               {t('pickupAuthorizations.existingParentsDescription')}
             </CardDescription>
@@ -50,10 +50,10 @@ const AuthorizationTypeSelector: React.FC<AuthorizationTypeSelectorProps> = ({
 
         <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-primary/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <UserPlus className="h-5 w-5 text-secondary" />
-              {t('pickupAuthorizations.familyMembers')}
-            </CardTitle>
+          <CardTitle className="flex items-center gap-3">
+            <UserPlus className="h-5 w-5 text-muted-foreground" />
+            {t('pickupAuthorizations.familyMembers')}
+          </CardTitle>
             <CardDescription>
               {t('pickupAuthorizations.familyMembersDescription')}
             </CardDescription>

@@ -21,6 +21,7 @@ interface StudentTableProps {
   onEdit: (student: Child) => void;
   onDelete: (student: Child) => void;
   onViewDetails?: (student: Child) => void;
+  totalItems?: number;
 }
 
 const StudentTable = ({ 
@@ -29,7 +30,8 @@ const StudentTable = ({
   getClassName, 
   onEdit, 
   onDelete,
-  onViewDetails
+  onViewDetails,
+  totalItems
 }: StudentTableProps) => {
   const { t } = useTranslation();
   const [studentParentData, setStudentParentData] = useState<Record<string, { parentNames: string[], relationshipCount: number }>>({});
@@ -89,7 +91,13 @@ const StudentTable = ({
   }, [studentList]);
   
   return (
-    <Table>
+    <div className="space-y-4">
+      {totalItems !== undefined && (
+        <div className="text-sm text-muted-foreground">
+          {t('studentTable.totalStudents', { count: totalItems })}
+        </div>
+      )}
+      <Table>
       <TableHeader>
         <TableRow>
           <TableHead>{t('studentTable.name')}</TableHead>
@@ -160,7 +168,8 @@ const StudentTable = ({
           })
         )}
       </TableBody>
-    </Table>
+      </Table>
+    </div>
   );
 };
 

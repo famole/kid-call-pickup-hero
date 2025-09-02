@@ -9,10 +9,12 @@ import { ParentAuthStatus } from '@/services/authStatusService';
 import ParentSearch from './ParentSearch';
 import ParentsTable from './ParentsTable';
 import DeletedItemsFilter from './DeletedItemsFilter';
+import PaginationControls from './PaginationControls';
 
 // Import hooks
 import { useParentSearch } from '@/hooks/useParentSearch';
 import { useParentClassFilter } from '@/hooks/useParentClassFilter';
+import { useAdminPagination } from '@/hooks/useAdminPagination';
 
 interface AdminParentsContentProps {
   userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
@@ -53,6 +55,21 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
   // Use the search hook with class-filtered parents
   const { searchTerm, setSearchTerm, filteredParents } = useParentSearch(filteredParentsByClass);
 
+  // Use pagination hook
+  const {
+    paginatedData: paginatedParents,
+    totalItems,
+    totalPages,
+    currentPage,
+    pageSize,
+    startIndex,
+    endIndex,
+    goToPage,
+    changePageSize,
+    hasNextPage,
+    hasPreviousPage,
+  } = useAdminPagination({ data: filteredParents });
+
   const getItemType = (): 'parents' | 'teachers' | 'students' | 'admins' | 'superadmins' => {
     switch (userRole) {
       case 'teacher': return 'teachers';
@@ -84,7 +101,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
       </div>
       
       <ParentsTable
-        parents={filteredParents}
+        parents={paginatedParents}
         isLoading={false}
         searchTerm={searchTerm}
         onEditParent={onEditParent}
@@ -94,6 +111,21 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
         onResetParentPassword={onResetParentPassword}
         userRole={userRole}
         authStatuses={authStatuses}
+        totalItems={totalItems}
+      />
+
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        onPageChange={goToPage}
+        onPageSizeChange={changePageSize}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
+        itemType={getItemType()}
       />
     </CardContent>
   );
