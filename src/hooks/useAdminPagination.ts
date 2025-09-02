@@ -7,7 +7,7 @@ interface UseAdminPaginationProps<T> {
 
 export const useAdminPagination = <T>({ 
   data, 
-  defaultPageSize = 10 
+  defaultPageSize = 25 
 }: UseAdminPaginationProps<T>) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
