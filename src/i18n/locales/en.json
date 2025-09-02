@@ -141,6 +141,8 @@
     "pickup": "Pickup",
     "addStudent": "Add Student",
     "addParent": "Add Parent",
+    "addFamilyMember": "Add Family Member",
+    "username": "Username",
     "addClass": "Add Class",
     "editStudent": "Edit Student",
     "editParent": "Edit Parent",

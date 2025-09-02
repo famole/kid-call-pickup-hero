@@ -143,6 +143,8 @@
     "pickup": "Salidas",
     "addStudent": "Agregar Estudiante",
     "addParent": "Agregar Padre",
+    "addFamilyMember": "Agregar Familiar",
+    "username": "Nombre de usuario",
     "addClass": "Agregar Clase",
     "editStudent": "Editar Estudiante",
     "editParent": "Editar Padre",

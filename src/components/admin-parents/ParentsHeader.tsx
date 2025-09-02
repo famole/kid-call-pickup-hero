@@ -41,6 +41,8 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
         return t('parentsManagement.addTeacher');
       case 'admin':
         return t('parentsManagement.addAdmin');
+      case 'family':
+        return t('admin.addFamilyMember');
       default:
         return t('admin.addParent');
     }
@@ -54,6 +56,8 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
         return t('parentsManagement.teachers.title');
       case 'admin':
         return t('parentsManagement.admins.title');
+      case 'family':
+        return t('admin.family');
       default:
         return t('admin.parents');
     }
