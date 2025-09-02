@@ -109,7 +109,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
               htmlFor={emailId}
               className={hasFieldError?.('email') ? 'text-destructive' : ''}
             >
-              {t('addParentSheet.email')}
+              {t('addParentSheet.email')} {t('common.optional')}
             </Label>
             <Input
               id={emailId}
@@ -131,7 +131,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
               htmlFor={usernameId}
               className={hasFieldError?.('username') ? 'text-destructive' : ''}
             >
-              {t('admin.username')}
+              {t('admin.username')} {t('common.optional')}
             </Label>
             <Input
               id={usernameId}
