@@ -524,7 +524,7 @@
     "minLength": "Se requieren mínimo {{count}} caracteres"
   },
   "oauthConfirmation": {
-    "welcome": "Bienvenido a la Plataforma de Recogida",
+    "welcome": "Bienvenido a Upsy",
     "confirmInfo": "Por favor confirma la información de tu cuenta para continuar",
     "accountInfo": "Información de tu Cuenta",
     "name": "Nombre",
