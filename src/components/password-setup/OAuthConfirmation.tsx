@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { UserCheck } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface OAuthConfirmationProps {
   parentData: any;
@@ -18,6 +19,7 @@ const OAuthConfirmation: React.FC<OAuthConfirmationProps> = ({ parentData }) => 
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleOAuthConfirmation = async () => {
     setIsLoading(true);
@@ -34,8 +36,8 @@ const OAuthConfirmation: React.FC<OAuthConfirmationProps> = ({ parentData }) => 
       }
 
       toast({
-        title: "Welcome to the Pickup Platform",
-        description: "Your account has been activated successfully.",
+        title: t('oauthConfirmation.welcome'),
+        description: t('common.accountActivated'),
       });
 
       // Redirect to main application
@@ -43,8 +45,8 @@ const OAuthConfirmation: React.FC<OAuthConfirmationProps> = ({ parentData }) => 
     } catch (error: any) {
       logger.error('Error confirming OAuth setup:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to activate account. Please try again.",
+        title: t('common.error'),
+        description: error.message || t('common.failedToActivate'),
         variant: "destructive",
       });
     } finally {
@@ -59,41 +61,39 @@ const OAuthConfirmation: React.FC<OAuthConfirmationProps> = ({ parentData }) => 
           <div className="bg-school-primary w-12 h-12 rounded-full flex items-center justify-center mb-2">
             <UserCheck className="h-6 w-6 text-white" />
           </div>
-          <CardTitle className="text-2xl text-center">Welcome to the Pickup Platform</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('oauthConfirmation.welcome')}</CardTitle>
           <CardDescription className="text-center">
-            Please confirm your account information to continue
+            {t('oauthConfirmation.confirmInfo')}
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-6">
           <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-            <h3 className="font-semibold text-lg">Your Account Information</h3>
+            <h3 className="font-semibold text-lg">{t('oauthConfirmation.accountInfo')}</h3>
             <div className="space-y-2">
               <div>
-                <span className="font-medium">Name:</span> {parentData.name}
+                <span className="font-medium">{t('oauthConfirmation.name')}:</span> {parentData.name}
               </div>
               <div>
-                <span className="font-medium">Email:</span> {parentData.email}
+                <span className="font-medium">{t('oauthConfirmation.email')}:</span> {parentData.email}
               </div>
               {parentData.phone && (
                 <div>
-                  <span className="font-medium">Phone:</span> {parentData.phone}
+                  <span className="font-medium">{t('oauthConfirmation.phone')}:</span> {parentData.phone}
                 </div>
               )}
               <div>
-                <span className="font-medium">Role:</span> {parentData.role || 'Parent'}
+                <span className="font-medium">{t('oauthConfirmation.role')}:</span> {parentData.role || t('roles.parent')}
               </div>
             </div>
           </div>
           
           <div className="text-sm text-gray-600 space-y-2">
             <p>
-              You have been pre-registered for our student pickup management platform. 
-              This system allows you to request student pickups and receive notifications 
-              when your child is ready to be collected.
+              {t('oauthConfirmation.description')}
             </p>
             <p>
-              By confirming below, you agree to use this platform for managing student pickup requests.
+              {t('oauthConfirmation.agreement')}
             </p>
           </div>
           
@@ -102,7 +102,7 @@ const OAuthConfirmation: React.FC<OAuthConfirmationProps> = ({ parentData }) => 
             className="w-full bg-school-primary hover:bg-school-primary/90"
             disabled={isLoading}
           >
-            {isLoading ? 'Activating Account...' : 'Confirm and Access Platform'}
+            {isLoading ? t('oauthConfirmation.activating') : t('oauthConfirmation.confirmButton')}
           </Button>
         </CardContent>
       </Card>

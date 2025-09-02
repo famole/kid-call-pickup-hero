@@ -523,6 +523,19 @@
     "passwordMismatch": "Las contraseñas no coinciden",
     "minLength": "Se requieren mínimo {{count}} caracteres"
   },
+  "oauthConfirmation": {
+    "welcome": "Bienvenido a Upsy",
+    "confirmInfo": "Por favor confirma la información de tu cuenta para continuar",
+    "accountInfo": "Información de tu Cuenta",
+    "name": "Nombre",
+    "email": "Correo Electrónico",
+    "phone": "Teléfono",
+    "role": "Rol",
+    "description": "Has sido pre-registrado en nuestra plataforma de gestión de recogida de estudiantes. Este sistema te permite solicitar recogidas de estudiantes y recibir notificaciones cuando tu hijo esté listo para ser recogido.",
+    "agreement": "Al confirmar a continuación, aceptas usar esta plataforma para gestionar las solicitudes de recogida de estudiantes.",
+    "confirmButton": "Confirmar y Acceder a la Plataforma",
+    "activating": "Activando Cuenta..."
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",
@@ -548,7 +561,9 @@
     "home": "Inicio",
     "settings": "Configuración",
     "unknownChild": "Niño Desconocido",
-    "unknownClass": "Clase Desconocida"
+    "unknownClass": "Clase Desconocida",
+    "accountActivated": "Su cuenta ha sido activada exitosamente.",
+    "failedToActivate": "Error al activar la cuenta. Inténtalo de nuevo."
   },
   "auth": {
     "login": "Iniciar Sesión",

@@ -519,6 +519,19 @@
     "minLength": "Minimum {{count}} characters required",
     "parent": "Parent"
   },
+  "oauthConfirmation": {
+    "welcome": "Welcome to the Pickup Platform",
+    "confirmInfo": "Please confirm your account information to continue",
+    "accountInfo": "Your Account Information",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone", 
+    "role": "Role",
+    "description": "You have been pre-registered for our student pickup management platform. This system allows you to request student pickups and receive notifications when your child is ready to be collected.",
+    "agreement": "By confirming below, you agree to use this platform for managing student pickup requests.",
+    "confirmButton": "Confirm and Access Platform",
+    "activating": "Activating Account..."
+  },
   "common": {
     "back": "Back",
     "loading": "Loading...",
@@ -715,7 +728,9 @@
     "adminAccess": "Admin access required",
     "parentAccess": "Parent access required",
     "teacherAccess": "Teacher access required",
-    "studentAccess": "Student access required"
+    "studentAccess": "Student access required",
+    "accountActivated": "Your account has been activated successfully.",
+    "failedToActivate": "Failed to activate account. Please try again."
   },
   "errors": {
     "generic": "An error occurred. Please try again.",
