@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Can be email or username
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -47,7 +47,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      await login(identifier, password);
       toast({
         title: t('auth.welcomeBack'),
         description: t('auth.welcomeBack'),
@@ -282,16 +282,16 @@ const Login = () => {
             </div>
           </div>
           
-          {/* Email/Password Form */}
+          {/* Username/Email/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">{t('auth.email')}</Label>
+              <Label htmlFor="identifier">{t('auth.emailOrUsername')}</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="identifier"
+                type="text"
+                placeholder="usuario@ejemplo.com o nombre_usuario"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 required
               />
             </div>

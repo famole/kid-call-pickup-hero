@@ -166,6 +166,7 @@
     "search": "Search...",
     "name": "Name",
     "email": "Email",
+    "emailOrUsername": "Email or Username",
     "phone": "Phone",
     "class": "Class",
     "grade": "Grade",

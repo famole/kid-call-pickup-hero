@@ -12,7 +12,7 @@ import {
 } from './authUtils';
 
 export const useAuthProvider = (): AuthState & {
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 } => {
   const [user, setUser] = useState<User | null>(null);
@@ -197,7 +197,7 @@ export const useAuthProvider = (): AuthState & {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     try {
       setLoading(true);
       
@@ -212,19 +212,63 @@ export const useAuthProvider = (): AuthState & {
         logger.error("Sign out before login failed:", signOutError);
       }
       
-      // Try to authenticate with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Check if this looks like a username (no @ symbol) or email
+      const isEmail = identifier.includes('@');
       
-      if (error) {
-        throw error;
-      }
-      
-      // Handle user session
-      if (data.user) {
-        await handleUserSession(data.user);
+      if (isEmail) {
+        // Try regular Supabase email/password auth first
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: identifier,
+          password,
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Handle user session
+        if (data.user) {
+          await handleUserSession(data.user);
+        }
+      } else {
+        // Use username auth edge function
+        const { data, error } = await supabase.functions.invoke('username-auth', {
+          body: { identifier, password }
+        });
+        
+        if (error) {
+          logger.error("Username auth error:", error);
+          throw new Error('Invalid credentials');
+        }
+        
+        if (data.error) {
+          if (data.requirePasswordSetup) {
+            // Redirect to password setup for username-only users
+            window.location.href = `/password-setup?parentId=${data.parentId}`;
+            return;
+          }
+          throw new Error(data.error);
+        }
+        
+        // For username auth, we might get different response structures
+        if (data.user && data.session) {
+          // Regular Supabase auth response (user has email)
+          await handleUserSession(data.user);
+        } else if (data.requireUsernameAuth) {
+          // Username-only authentication (no Supabase auth)
+          // Create a mock user session for username-only users
+          const mockUser = {
+            id: data.parentData.id,
+            email: null,
+            user_metadata: {
+              name: data.parentData.name,
+              username: data.parentData.username
+            }
+          };
+          await handleUserSession(mockUser);
+        } else {
+          throw new Error('Authentication failed');
+        }
       }
       
       return Promise.resolve();

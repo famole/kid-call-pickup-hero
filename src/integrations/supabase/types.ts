@@ -103,6 +103,7 @@ export type Database = {
           phone: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           created_at?: string
@@ -115,6 +116,7 @@ export type Database = {
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           created_at?: string
@@ -127,6 +129,7 @@ export type Database = {
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -541,6 +544,22 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_parent_by_identifier: {
+        Args: { identifier: string }
+        Returns: {
+          created_at: string
+          deleted_at: string
+          email: string
+          id: string
+          is_preloaded: boolean
+          name: string
+          password_set: boolean
+          phone: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          username: string
+        }[]
       }
       get_user_role: {
         Args: { user_email: string }

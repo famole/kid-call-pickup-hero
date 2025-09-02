@@ -55,16 +55,22 @@ export const getParentById = async (id: string): Promise<Parent | null> => {
 };
 
 export const createParent = async (parentData: ParentInput): Promise<Parent> => {
+  // Validate that either email or username is provided (but not necessarily both)
+  if (!parentData.email && !parentData.username) {
+    throw new Error('Either email or username must be provided');
+  }
+  
   const { data, error } = await supabase
     .from('parents')
     .insert([
       {
         name: parentData.name,
-        email: parentData.email,
+        email: parentData.email || null, // Allow null email for username-only users
+        username: parentData.username || null, // Add username support
         phone: parentData.phone || null,
         role: parentData.role || 'parent',
-        is_preloaded: true, // Admin-created parents need password setup
-        password_set: false // Admin-created parents must set their own passwords
+        is_preloaded: parentData.is_preloaded !== undefined ? parentData.is_preloaded : true, // Admin-created parents need password setup by default
+        password_set: parentData.password_set !== undefined ? parentData.password_set : false // Admin-created parents must set their own passwords by default
       }
     ])
     .select()
@@ -72,9 +78,13 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
 
   if (error) {
     logger.error('Error creating parent:', error);
-    // Handle duplicate email error specifically
-    if (error.code === '23505' && error.message.includes('parents_email_unique')) {
-      throw new Error('A parent with this email address already exists');
+    // Handle duplicate email/username errors specifically
+    if (error.code === '23505') {
+      if (error.message.includes('parents_email_unique')) {
+        throw new Error('A parent with this email address already exists');
+      } else if (error.message.includes('parents_username_key')) {
+        throw new Error('A parent with this username already exists');
+      }
     }
     throw new Error(error.message);
   }
@@ -83,6 +93,7 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
     id: data.id,
     name: data.name,
     email: data.email,
+    username: data.username,
     phone: data.phone,
     role: data.role || 'parent',
     createdAt: new Date(data.created_at),

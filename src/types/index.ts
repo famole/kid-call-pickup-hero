@@ -1,11 +1,12 @@
 
 export type User = {
   id: string;
-  email: string;
+  email: string | null; // Allow null for username-only users
   name: string;
   role: 'parent' | 'admin' | 'teacher' | 'superadmin' | 'family' | 'other';
   avatar?: string;
   isInvitedUser?: boolean;
+  username?: string; // Add username field
 };
 
 export type Child = {
@@ -41,7 +42,7 @@ export type PickupRequest = {
 export type AuthContextType = {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>; // Changed from email to identifier
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 };

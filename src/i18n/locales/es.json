@@ -570,6 +570,7 @@
     "signup": "Registrarse",
     "logout": "Cerrar Sesión",
     "email": "Correo Electrónico",
+    "emailOrUsername": "Correo o Usuario",
     "password": "Contraseña",
     "forgotPassword": "¿Olvidaste tu contraseña?",
     "noAccount": "¿No tienes una cuenta?",
