@@ -13,7 +13,7 @@ export const useParentAuthStatuses = () => {
       console.log('Loading auth statuses...');
       const statuses = await getParentAuthStatuses();
       console.log('Auth statuses loaded:', statuses);
-      const statusMap = new Map(statuses.map(status => [status.email.toLowerCase(), status]));
+      const statusMap = new Map(statuses.filter(status => status.email).map(status => [status.email.toLowerCase(), status]));
       setAuthStatuses(statusMap);
     } catch (error) {
       console.error('Failed to load auth statuses:', error);

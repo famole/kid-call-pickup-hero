@@ -99,10 +99,10 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
               onDelete={() => onDeleteParent(parent.id)}
               onManageStudents={() => onManageStudents(parent)}
               onReactivate={onReactivateParent ? () => onReactivateParent(parent.id, parent.name) : undefined}
-              onResetPassword={onResetParentPassword ? () => onResetParentPassword(parent.email, parent.name) : undefined}
+              onResetPassword={onResetParentPassword && parent.email ? () => onResetParentPassword(parent.email!, parent.name) : undefined}
               userRole={userRole}
               showStudentsColumn={shouldShowStudentsColumn}
-              authStatus={authStatuses?.get(parent.email.toLowerCase())}
+              authStatus={parent.email ? authStatuses?.get(parent.email.toLowerCase()) : undefined}
             />
           ))
         )}
