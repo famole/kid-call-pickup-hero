@@ -76,7 +76,7 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
               <Download className="mr-2 h-4 w-4" /> {t('admin.exportCSV')}
             </Button>
           )}
-          {userRole === 'parent' && (
+          {(userRole === 'parent' || userRole === 'family') && (
             <>
               <ImportParentsDialog
                 isOpen={isImportDialogOpen}

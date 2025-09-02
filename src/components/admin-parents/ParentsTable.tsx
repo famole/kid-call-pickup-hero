@@ -55,7 +55,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
     }
   };
 
-  const shouldShowStudentsColumn = userRole === 'parent';
+  const shouldShowStudentsColumn = userRole === 'parent' || userRole === 'family';
 
   return (
     <div className="space-y-4">
