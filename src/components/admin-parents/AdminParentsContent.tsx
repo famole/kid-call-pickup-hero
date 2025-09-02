@@ -17,7 +17,7 @@ import { useParentClassFilter } from '@/hooks/useParentClassFilter';
 import { useAdminPagination } from '@/hooks/useAdminPagination';
 
 interface AdminParentsContentProps {
-  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   filteredParentsByRole: ParentWithStudents[];
   allStudents: Child[];
   onEditParent: (parent: ParentWithStudents) => void;

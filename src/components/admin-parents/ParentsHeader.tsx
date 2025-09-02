@@ -13,7 +13,7 @@ interface ParentsHeaderProps {
   onCloseImportDialog: () => void;
   onImportFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onImportSubmit: () => Promise<void>;
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   headerTitle?: string;
   headerDescription?: string;
   onExportCSV?: () => void;

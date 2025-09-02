@@ -5,7 +5,7 @@ import { deleteParent, resetParentPassword } from '@/services/parentService';
 import { ParentWithStudents } from '@/types/parent';
 
 interface UseAdminParentsActionsProps {
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   setParents: (updateFn: (prev: ParentWithStudents[]) => ParentWithStudents[]) => void;
   onAuthStatusChange?: () => void;
 }
@@ -26,7 +26,8 @@ export const useAdminParentsActions = ({
   const handleDeleteParent = async (parentId: string): Promise<void> => {
     const userTypeLabel = userRole === 'superadmin' ? 'superadmin' :
                          userRole === 'teacher' ? 'teacher' : 
-                         userRole === 'admin' ? 'admin' : 'parent';
+                         userRole === 'admin' ? 'admin' : 
+                         userRole === 'family' ? 'family member' : 'parent';
     if (!confirm(`Are you sure you want to delete this ${userTypeLabel}? This action cannot be undone.`)) {
       return;
     }
@@ -54,6 +55,8 @@ export const useAdminParentsActions = ({
         return 'Teachers Management';
       case 'admin':
         return 'Admins Management';
+      case 'family':
+        return 'Family Members Management';
       default:
         return 'Parents Management';
     }
@@ -67,6 +70,8 @@ export const useAdminParentsActions = ({
         return 'Manage teacher accounts and permissions';
       case 'admin':
         return 'Manage admin accounts and permissions';
+      case 'family':
+        return 'Manage family member accounts and student relationships';
       default:
         return 'Manage parent accounts and student relationships';
     }
@@ -106,7 +111,8 @@ export const useAdminParentsActions = ({
   const getUserTypeLabel = () => {
     return userRole === 'superadmin' ? 'superadmin' :
            userRole === 'teacher' ? 'teacher' : 
-           userRole === 'admin' ? 'admin' : 'parent';
+           userRole === 'admin' ? 'admin' : 
+           userRole === 'family' ? 'family member' : 'parent';
   };
 
   return {

@@ -7,7 +7,7 @@ import { useAdminParentsActions } from '@/hooks/useAdminParentsActions';
 import { useReactivationActions } from '@/hooks/useReactivationActions';
 
 interface AdminParentsScreenProps {
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
 }
 
 const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'parent' }) => {

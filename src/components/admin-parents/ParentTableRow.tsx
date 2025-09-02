@@ -19,7 +19,7 @@ interface ParentTableRowProps {
   onManageStudents: () => void;
   onReactivate?: () => void;
   onResetPassword?: () => void;
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   showStudentsColumn: boolean;
   authStatus?: ParentAuthStatus;
 }

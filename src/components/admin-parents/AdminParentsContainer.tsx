@@ -5,7 +5,7 @@ import { Child } from '@/types';
 import AdminParentsLayout from './AdminParentsLayout';
 
 interface AdminParentsContainerProps {
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   filteredParentsByRole: ParentWithStudents[];
   isLoading: boolean;
   allStudents: Child[];

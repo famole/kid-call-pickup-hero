@@ -28,7 +28,7 @@ interface AddParentSheetProps {
   newParent: ParentInput;
   onNewParentChange: (parent: ParentInput) => void;
   onSubmit: (e?: React.FormEvent) => Promise<void>;
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   isSubmitting?: boolean;
   getFieldError?: (fieldName: string) => ValidationError | undefined;
   hasFieldError?: (fieldName: string) => boolean;
@@ -60,13 +60,13 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
   const getAvailableRoles = () => {
     switch (userRole) {
       case 'superadmin':
-        return ['parent', 'teacher', 'admin', 'superadmin'];
+        return ['parent', 'family', 'teacher', 'admin', 'superadmin'];
       case 'admin':
-        return ['parent', 'teacher', 'admin'];
+        return ['parent', 'family', 'teacher', 'admin'];
       case 'teacher':
-        return ['parent', 'teacher'];
+        return ['parent', 'family', 'teacher'];
       default:
-        return ['parent'];
+        return ['parent', 'family'];
     }
   };
 
@@ -154,7 +154,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
             </Label>
             <Select
               value={newParent.role || 'parent'}
-              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin') => 
+              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family') => 
                 onNewParentChange({...newParent, role: value})
               }
             >

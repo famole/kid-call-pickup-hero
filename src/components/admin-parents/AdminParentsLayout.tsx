@@ -22,7 +22,7 @@ import { useParentAuthStatuses } from '@/hooks/useParentAuthStatuses';
 import { logger } from '@/utils/logger';
 
 interface AdminParentsLayoutProps {
-  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   filteredParentsByRole: ParentWithStudents[];
   isLoading: boolean;
   allStudents: Child[];

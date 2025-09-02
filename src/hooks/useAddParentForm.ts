@@ -9,7 +9,7 @@ import { validateParentForm, getErrorTypeFromMessage, ValidationError } from '@/
 
 interface UseAddParentFormProps {
   onParentAdded: (newParent: ParentWithStudents) => void;
-  defaultRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  defaultRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
 }
 
 export const useAddParentForm = ({ onParentAdded, defaultRole = 'parent' }: UseAddParentFormProps) => {

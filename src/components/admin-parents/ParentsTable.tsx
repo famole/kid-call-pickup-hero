@@ -22,7 +22,7 @@ interface ParentsTableProps {
   onManageStudents: (parent: ParentWithStudents) => void;
   onReactivateParent?: (parentId: string, parentName: string) => void;
   onResetParentPassword?: (email: string, name: string) => void;
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   authStatuses?: Map<string, ParentAuthStatus>;
   totalItems?: number;
 }

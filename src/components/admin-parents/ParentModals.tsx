@@ -34,7 +34,7 @@ interface ParentModalsProps {
   onTogglePrimary: (studentId: string) => Promise<void>;
 
   classes: Class[];
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
 }
 
 const ParentModals: React.FC<ParentModalsProps> = ({

@@ -4,7 +4,7 @@ import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 
 interface UseAdminFilteredDataProps {
-  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
 }
 
 export const useAdminFilteredData = ({ userRole }: UseAdminFilteredDataProps) => {

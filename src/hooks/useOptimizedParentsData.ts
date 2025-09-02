@@ -7,7 +7,7 @@ import { getParentsWithStudentsOptimized } from '@/services/parent/optimizedPare
 import { getAllStudents } from '@/services/studentService';
 
 interface UseOptimizedParentsDataProps {
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   includeDeleted?: boolean;
 }
 
@@ -30,6 +30,8 @@ export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = 
       return parent.role === 'teacher';
     } else if (userRole === 'admin') {
       return parent.role === 'admin';
+    } else if (userRole === 'family') {
+      return parent.role === 'family';
     } else {
       // For 'parent' role, include those with 'parent' role or no role set
       return parent.role === 'parent' || !parent.role;
