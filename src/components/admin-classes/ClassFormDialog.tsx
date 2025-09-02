@@ -23,6 +23,7 @@ import { Class } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { getParentsWithStudents } from '@/services/parentService';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 interface ClassFormDialogProps {
   isOpen: boolean;
@@ -55,7 +56,7 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
           const teachersList = allParents.filter(parent => parent.role === 'teacher');
           setTeachers(teachersList);
         } catch (error) {
-          console.error('Failed to load teachers:', error);
+          logger.error('Failed to load teachers:', error);
         } finally {
           setLoading(false);
         }

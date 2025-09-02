@@ -12,6 +12,8 @@ import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Child } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 const ReportsTab = () => {
   const [students, setStudents] = useState<Child[]>([]);
@@ -34,7 +36,7 @@ const ReportsTab = () => {
         const studentsData = await getAllStudents();
         setStudents(studentsData);
       } catch (error) {
-        console.error('Error fetching students:', error);
+        logger.error('Error fetching students:', error);
         toast({
           title: "Error",
           description: "Failed to load students",
@@ -85,7 +87,7 @@ const ReportsTab = () => {
         description: `Generated report with ${historyData.length} pickup records (${count} total)`,
       });
     } catch (error) {
-      console.error('Error generating report:', error);
+      logger.error('Error generating report:', error);
       toast({
         title: "Error",
         description: "Failed to generate report",
