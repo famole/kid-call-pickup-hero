@@ -917,5 +917,39 @@
     "other": "Other",
     "teacher": "Teacher",
     "admin": "Admin"
+  },
+  "parentsManagement": {
+    "total": "Total",
+    "parents": "Parents",
+    "teachers": "Teachers",
+    "admins": "Admins",
+    "superadmins": "Superadmins",
+    "title": "Parent Management",
+    "description": "Manage parent accounts and student relationships",
+    "tableHeaders": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "students": "Students",
+      "actions": "Actions"
+    },
+    "loading": {
+      "parents": "Loading parents...",
+      "teachers": "Loading teachers...",
+      "admins": "Loading administrators...",
+      "superadmins": "Loading superadministrators..."
+    },
+    "noResults": {
+      "parents": "No parents found",
+      "teachers": "No teachers found",
+      "admins": "No administrators found",
+      "superadmins": "No superadministrators found"
+    },
+    "addToStart": {
+      "parents": "Add one to get started",
+      "teachers": "Add one to get started",
+      "admins": "Add one to get started",
+      "superadmins": "Add one to get started"
+    }
   }
 }

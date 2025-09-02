@@ -708,6 +708,7 @@
     "more": "más"
   },
   "parentsManagement": {
+    "total": "Total",
     "title": "Gestión de Padres",
     "description": "Gestionar cuentas de padres y relaciones con estudiantes",
     "teachers": {

@@ -61,10 +61,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
     <div className="space-y-4">
       {totalItems !== undefined && (
         <div className="text-sm text-muted-foreground">
-          {t('parentsManagement.totalCount', { 
-            count: totalItems, 
-            type: t(`parentsManagement.${getUserTypeKey()}`) 
-          })}
+          {t('parentsManagement.total')} {t(`parentsManagement.${getUserTypeKey()}`)}: {totalItems}
         </div>
       )}
       <Table>
