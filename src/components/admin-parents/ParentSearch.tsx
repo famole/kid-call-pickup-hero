@@ -44,7 +44,7 @@ const ParentSearch: React.FC<ParentSearchProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('admin.allClasses')}</SelectItem>
-            {classList.map((classItem) => (
+            {classList.filter(classItem => classItem.id && classItem.id.trim() !== '').map((classItem) => (
               <SelectItem key={classItem.id} value={classItem.id}>
                 {classItem.name}
               </SelectItem>

@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 import { markStudentDeparture, SelfCheckoutAuthorizationWithDetails } from '@/services/selfCheckoutService';
 
 interface MarkDepartureDialogProps {
@@ -46,7 +47,7 @@ const MarkDepartureDialog: React.FC<MarkDepartureDialogProps> = ({
       onOpenChange(false);
       setNotes('');
     } catch (error) {
-      console.error('Error marking departure:', error);
+      logger.error('Error marking departure:', error);
       toast({
         title: t('common.error'),
         description: t('selfCheckout.failedToMarkDeparture'),

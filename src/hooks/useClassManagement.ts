@@ -5,6 +5,8 @@ import { useToast } from '@/hooks/use-toast';
 import { getAllClasses, createClass, updateClass, deleteClass } from '@/services/classService';
 import { getAllStudents } from '@/services/studentService';
 import { addTeacherToClass, removeTeacherFromClass, getTeachersForClass } from '@/services/classTeacherService';
+import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 export const useClassManagement = () => {
   const [classList, setClassList] = useState<Class[]>([]);
@@ -27,7 +29,7 @@ export const useClassManagement = () => {
         const data = await getAllClasses();
         setClassList(data);
       } catch (error) {
-        console.error('Error loading classes:', error);
+        logger.error('Error loading classes:', error);
         toast({
           title: "Error",
           description: "Failed to load classes",
@@ -77,7 +79,7 @@ export const useClassManagement = () => {
       resetForm();
       return true;
     } catch (error) {
-      console.error('Error adding class:', error);
+      logger.error('Error adding class:', error);
       toast({
         title: "Error",
         description: "Failed to add class. Please try again.",
@@ -135,7 +137,7 @@ export const useClassManagement = () => {
       resetForm();
       return true;
     } catch (error) {
-      console.error('Error updating class:', error);
+      logger.error('Error updating class:', error);
       toast({
         title: "Error",
         description: "Failed to update class. Please try again.",
@@ -172,7 +174,7 @@ export const useClassManagement = () => {
       
       return true;
     } catch (error) {
-      console.error('Error deleting class:', error);
+      logger.error('Error deleting class:', error);
       toast({
         title: "Error",
         description: "Failed to delete class. Please try again.",
@@ -197,7 +199,7 @@ export const useClassManagement = () => {
         selectedTeachers: teacherIds
       });
     } catch (error) {
-      console.error('Error loading teachers for class:', error);
+      logger.error('Error loading teachers for class:', error);
       setClassFormData({
         name: classItem.name,
         grade: classItem.grade,

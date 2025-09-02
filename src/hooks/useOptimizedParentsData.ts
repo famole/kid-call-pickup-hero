@@ -24,8 +24,6 @@ export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = 
 
   // Filter parents by role with improved logic
   const filteredParentsByRole = parents.filter(parent => {
-    console.log(`Filtering parent ${parent.name} with role: ${parent.role} for userRole: ${userRole}`);
-    
     if (userRole === 'superadmin') {
       return parent.role === 'superadmin';
     } else if (userRole === 'teacher') {

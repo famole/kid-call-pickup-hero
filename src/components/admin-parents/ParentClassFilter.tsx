@@ -33,7 +33,7 @@ const ParentClassFilter: React.FC<ParentClassFilterProps> = ({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t('parentClassFilter.allClasses')}</SelectItem>
-          {classes.map((cls) => (
+          {classes.filter(cls => cls.id && cls.id.trim() !== '').map((cls) => (
             <SelectItem key={cls.id} value={cls.id}>
               {cls.name} - {cls.grade}
             </SelectItem>

@@ -22,6 +22,7 @@ import { Class, Child } from '@/types';
 import { Loader2 } from "lucide-react";
 import { isValidUUID } from '@/utils/validators';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 interface AddStudentDialogProps {
   open: boolean;
@@ -51,13 +52,13 @@ const AddStudentDialog = ({
     if (isValidUUID(classId)) {
       setNewStudent({...newStudent, classId});
     } else {
-      console.error("Invalid class ID format:", classId);
+      logger.error("Invalid class ID format:", classId);
       // Try to find the actual UUID for this class in the list
       const classItem = classList.find(c => c.id === classId || c.name === classId);
       if (classItem && isValidUUID(classItem.id)) {
         setNewStudent({...newStudent, classId: classItem.id});
       } else {
-        console.error("Could not find a valid UUID for class:", classId);
+        logger.error("Could not find a valid UUID for class:", classId);
       }
     }
   };

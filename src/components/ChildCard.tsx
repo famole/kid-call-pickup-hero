@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { Child } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { getClassById } from '@/services/classService';
+import { logger } from '@/utils/logger';
 import { UserRound, Check, Users } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -30,7 +32,7 @@ const ChildCard: React.FC<ChildCardProps> = ({
           const classData = await getClassById(child.classId);
           setChildClass(classData);
         } catch (error) {
-          console.error('Error loading class:', error);
+          logger.error('Error loading class:', error);
         }
       }
     };

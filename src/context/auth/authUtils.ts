@@ -119,7 +119,7 @@ export const createUserFromParentData = async (parentData: any): Promise<User> =
     const { data } = await supabase.rpc('is_invited_user');
     isInvitedUser = data || false;
   } catch (error) {
-    console.error('Error checking invited user status:', error);
+    logger.error('Error checking invited user status:', error);
   }
 
   return {

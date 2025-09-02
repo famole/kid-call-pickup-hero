@@ -13,6 +13,7 @@ import { Pencil, Trash, Eye } from "lucide-react";
 import { Child } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 interface StudentTableProps {
   studentList: Child[];
@@ -59,7 +60,7 @@ const StudentTable = ({
           .is('parents.deleted_at', null);
         
         if (error) {
-          console.error('Error fetching student-parent relationships:', error);
+          logger.error('Error fetching student-parent relationships:', error);
           return;
         }
         
@@ -83,7 +84,7 @@ const StudentTable = ({
         
         setStudentParentData(parentDataMap);
       } catch (error) {
-        console.error('Error in fetchStudentParents:', error);
+        logger.error('Error in fetchStudentParents:', error);
       }
     };
     

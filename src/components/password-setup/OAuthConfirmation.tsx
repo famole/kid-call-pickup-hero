@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 import { UserCheck } from 'lucide-react';
 
 interface OAuthConfirmationProps {
@@ -40,7 +41,7 @@ const OAuthConfirmation: React.FC<OAuthConfirmationProps> = ({ parentData }) => 
       // Redirect to main application
       navigate('/');
     } catch (error: any) {
-      console.error('Error confirming OAuth setup:', error);
+      logger.error('Error confirming OAuth setup:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to activate account. Please try again.",

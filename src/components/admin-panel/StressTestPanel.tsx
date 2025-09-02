@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, Play, Square, TrendingUp, Users, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { runStressTest, StressTestConfig, StressTestResults } from '@/utils/stressTest';
+import { logger } from '@/utils/logger';
 
 const StressTestPanel: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
@@ -39,7 +40,7 @@ const StressTestPanel: React.FC = () => {
       setProgress(100);
       setResults(testResults);
     } catch (error) {
-      console.error('Stress test failed:', error);
+      logger.error('Stress test failed:', error);
     } finally {
       setIsRunning(false);
     }
