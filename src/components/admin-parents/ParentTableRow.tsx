@@ -54,7 +54,7 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          {userRole === 'family' ? (parent.username || parent.email) : parent.email}
+          {userRole === 'family' ? (parent.username?.trim() || parent.email?.trim() || '') : parent.email}
           <AuthStatusBadge authStatus={authStatus} />
         </div>
       </TableCell>
