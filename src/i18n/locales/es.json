@@ -591,7 +591,7 @@
     "signUp": "Registrarse",
     "firstTimeSetup": "Configuración Inicial",
     "enterEmailToSetup": "Ingresa tu dirección de correo electrónico para configurar tu cuenta",
-    "emailAddress": "Dirección de Correo Electrónico",
+    "emailAddress": "Dirección de Correo o Usuario",
     "enterEmailPlaceholder": "Ingresa tu dirección de correo electrónico",
     "continueToSetup": "Continuar con la Configuración",
     "checking": "Verificando...",
@@ -658,7 +658,7 @@
     "clickToComplete": "Haz clic en el enlace para completar tu registro y configurar tu contraseña.",
     "passwordsDoNotMatch": "Las contraseñas no coinciden.",
     "passwordTooShort": "La contraseña debe tener al menos 6 caracteres.",
-    "noEmailForSetup": "No se encontró email para la configuración de contraseña",
+    "noEmailForSetup": "No se encontró identificador para la configuración de contraseña",
     "demoAccountSetup": "Configuración de Cuenta Demo Completa",
     "accountResetComplete": "Restablecimiento de Cuenta Completo",
     "demoAccountReady": "Tu cuenta demo ha sido configurada. Ahora puedes iniciar sesión con tus credenciales.",
@@ -715,7 +715,8 @@
     "loading": "Cargando...",
     "tableHeaders": {
       "name": "Nombre",
-      "email": "Correo",
+    "email": "Email",
+    "emailOrUsername": "Correo o Usuario",
       "phone": "Teléfono",
       "students": "Estudiantes",
       "actions": "Acciones"

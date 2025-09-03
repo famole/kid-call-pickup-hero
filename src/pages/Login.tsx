@@ -111,19 +111,16 @@ const Login = () => {
     setFirstTimeEmail('');
   };
 
-  const handleFirstTimeEmailSubmit = async (e: React.FormEvent) => {
+  const handleFirstTimeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCheckingEmail(true);
 
     try {
-      // Check if this email exists as a preloaded account
+      // Use the database function to search by email or username
       const { data: parentData, error } = await supabase
-        .from('parents')
-        .select('email, password_set, is_preloaded')
-        .eq('email', firstTimeEmail)
-        .maybeSingle();
+        .rpc('get_parent_by_identifier', { identifier: firstTimeEmail });
 
-      if (error) {
+      if (error || !parentData?.[0]) {
         // If invitation token exists and user doesn't exist, redirect to invitation signup
         if (invitationToken) {
           navigate(`/invitation-signup/${invitationToken}?email=${encodeURIComponent(firstTimeEmail)}`);
@@ -138,28 +135,25 @@ const Login = () => {
         return;
       }
 
+      const parent = parentData[0];
+
       // Check if this account needs password setup (preloaded or password was reset)
-      if (!parentData.password_set) {
-        // Redirect to password setup with email parameter and invitation token if exists
+      if (!parent.password_set) {
+        // Redirect to password setup with identifier parameter and invitation token if exists
         const passwordSetupUrl = invitationToken 
-          ? `/password-setup?email=${encodeURIComponent(firstTimeEmail)}&invitation_token=${invitationToken}`
-          : `/password-setup?email=${encodeURIComponent(firstTimeEmail)}`;
+          ? `/password-setup?identifier=${encodeURIComponent(firstTimeEmail)}&invitation_token=${invitationToken}`
+          : `/password-setup?identifier=${encodeURIComponent(firstTimeEmail)}`;
         navigate(passwordSetupUrl);
-      } else if (parentData.password_set) {
+      } else if (parent.password_set) {
         toast({
           title: t('errors.accountAlreadySetup'),
-          description: t('errors.accountHasPassword'),
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: t('errors.accountTypeNotSupported'),
           description: t('errors.contactAdministrator'),
           variant: 'destructive',
         });
+        return;
       }
     } catch (error: any) {
-      console.error('Error checking email:', error);
+      console.error('Error checking identifier:', error);
       toast({
         title: t('common.error'),
         description: t('errors.errorCheckingEmail'),
@@ -192,13 +186,13 @@ const Login = () => {
           </CardHeader>
           
           <CardContent className="space-y-4">
-            <form onSubmit={handleFirstTimeEmailSubmit} className="space-y-4">
+            <form onSubmit={handleFirstTimeSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="firstTimeEmail">{t('auth.emailAddress')}</Label>
+                <Label htmlFor="firstTimeEmail">{t('auth.emailOrUsername')}</Label>
                 <Input
                   id="firstTimeEmail"
-                  type="email"
-                  placeholder={t('auth.enterEmailPlaceholder')}
+                  type="text"
+                  placeholder="usuario@ejemplo.com o nombre_usuario"
                   value={firstTimeEmail}
                   onChange={(e) => setFirstTimeEmail(e.target.value)}
                   required

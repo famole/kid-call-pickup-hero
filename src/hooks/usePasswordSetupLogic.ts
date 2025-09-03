@@ -24,38 +24,37 @@ export const usePasswordSetupLogic = () => {
       
       setAuthCheckComplete(true);
       
-      // Check URL parameters for email (from signup confirmation link or direct access)
+      // Check URL parameters for identifier (email or username)
       const urlParams = new URLSearchParams(window.location.search);
-      const emailFromUrl = urlParams.get('email');
-      console.log('Email from URL:', emailFromUrl);
+      const identifierFromUrl = urlParams.get('email') || urlParams.get('identifier');
+      console.log('Identifier from URL:', identifierFromUrl);
       
-      // If we have an email from URL but no authenticated user, check for preloaded account
-      if (emailFromUrl && !user) {
-        console.log('Checking for preloaded account with email:', emailFromUrl);
+      // If we have an identifier from URL but no authenticated user, check for preloaded account
+      if (identifierFromUrl && !user) {
+        console.log('Checking for preloaded account with identifier:', identifierFromUrl);
         try {
-        const { data: parentDataResult, error } = await supabase
-          .from('parents')
-          .select('*')
-          .eq('email', emailFromUrl)
-          .maybeSingle();
+          // Use the database function to search by email or username
+          const { data: parentDataResult, error } = await supabase
+            .rpc('get_parent_by_identifier', { identifier: identifierFromUrl });
 
           console.log('Preloaded account check result:', {
             error: error?.message,
-            parentData: parentDataResult,
-            isPreloaded: parentDataResult?.is_preloaded,
-            passwordSet: parentDataResult?.password_set
+            parentData: parentDataResult?.[0],
+            isPreloaded: parentDataResult?.[0]?.is_preloaded,
+            passwordSet: parentDataResult?.[0]?.password_set
           });
 
-          if (!error && parentDataResult) {
+          if (!error && parentDataResult?.[0]) {
+            const parent = parentDataResult[0];
             // Allow password setup for any account that doesn't have password set
             // This handles both preloaded accounts and password reset scenarios
-            if (!parentDataResult.password_set) {
+            if (!parent.password_set) {
               console.log('Found account that needs password setup');
-              setParentData(parentDataResult);
+              setParentData(parent);
               setHasPreloadedAccount(true);
               setIsInitialized(true);
               return;
-            } else if (parentDataResult.password_set) {
+            } else if (parent.password_set) {
               console.log('Account already has password set');
               // Redirect to login since password is already set
               navigate('/login');

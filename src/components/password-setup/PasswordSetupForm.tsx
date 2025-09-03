@@ -23,10 +23,17 @@ const PasswordSetupForm = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  const isValidEmail = (email: string): boolean => {
-    // Check if email has a valid format and is not using example.com domain
+  const isValidIdentifier = (identifier: string): boolean => {
+    // Check if it's a valid email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email) && !email.toLowerCase().includes('example.com');
+    if (emailRegex.test(identifier) && !identifier.toLowerCase().includes('example.com')) {
+      return true;
+    }
+    // Check if it's a valid username (no @ symbol, at least 3 characters)
+    if (!identifier.includes('@') && identifier.length >= 3) {
+      return true;
+    }
+    return false;
   };
 
   const handlePasswordSetup = async (e: React.FormEvent) => {
