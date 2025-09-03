@@ -21,7 +21,7 @@ interface ParentsTableProps {
   onDeleteParent: (parentId: string) => void;
   onManageStudents: (parent: ParentWithStudents) => void;
   onReactivateParent?: (parentId: string, parentName: string) => void;
-  onResetParentPassword?: (email: string, name: string) => void;
+  onResetParentPassword?: (identifier: string, name: string) => void;
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   authStatuses?: Map<string, ParentAuthStatus>;
   totalItems?: number;
@@ -103,11 +103,11 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
               onDelete={() => onDeleteParent(parent.id)}
               onManageStudents={() => onManageStudents(parent)}
               onReactivate={onReactivateParent ? () => onReactivateParent(parent.id, parent.name) : undefined}
-              onResetPassword={onResetParentPassword && parent.email ? () => onResetParentPassword(parent.email!, parent.name) : undefined}
+              onResetPassword={onResetParentPassword && (parent.email || parent.username) ? () => onResetParentPassword(parent.email || parent.username!, parent.name) : undefined}
               userRole={userRole}
               showStudentsColumn={shouldShowStudentsColumn}
               showPhoneColumn={shouldShowPhoneColumn}
-              authStatus={parent.email ? authStatuses?.get(parent.email.toLowerCase()) : undefined}
+              authStatus={(parent.email || parent.username) ? authStatuses?.get((parent.email || parent.username)!.toLowerCase()) : undefined}
             />
           ))
         )}

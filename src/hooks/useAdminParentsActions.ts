@@ -18,9 +18,9 @@ export const useAdminParentsActions = ({
   const { toast } = useToast();
   const [resetPasswordDialog, setResetPasswordDialog] = useState<{
     isOpen: boolean;
-    email: string;
+    identifier: string;
     name: string;
-  }>({ isOpen: false, email: '', name: '' });
+  }>({ isOpen: false, identifier: '', name: '' });
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const handleDeleteParent = async (parentId: string): Promise<void> => {
@@ -77,14 +77,14 @@ export const useAdminParentsActions = ({
     }
   };
 
-  const handleResetParentPassword = (email: string, name: string): void => {
-    setResetPasswordDialog({ isOpen: true, email, name });
+  const handleResetParentPassword = (identifier: string, name: string): void => {
+    setResetPasswordDialog({ isOpen: true, identifier, name });
   };
 
   const confirmResetPassword = async (): Promise<void> => {
     setIsResettingPassword(true);
     try {
-      await resetParentPassword(resetPasswordDialog.email);
+      await resetParentPassword(resetPasswordDialog.identifier);
       toast({
         title: "Success",
         description: `${resetPasswordDialog.name}'s password has been reset. They can now set up their password again.`,
@@ -105,7 +105,7 @@ export const useAdminParentsActions = ({
   };
 
   const closeResetPasswordDialog = () => {
-    setResetPasswordDialog({ isOpen: false, email: '', name: '' });
+    setResetPasswordDialog({ isOpen: false, identifier: '', name: '' });
   };
 
   const getUserTypeLabel = () => {

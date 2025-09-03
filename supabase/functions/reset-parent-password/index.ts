@@ -18,19 +18,31 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { email } = await req.json();
+    const { identifier } = await req.json();
 
-    if (!email) {
-      throw new Error('Email is required');
+    if (!identifier) {
+      throw new Error('Email or username is required');
     }
 
-    console.log(`Starting password reset for email: ${email}`);
+    console.log(`Starting password reset for identifier: ${identifier}`);
 
-    // First, update the parent record to set password_set to false
+    // First, get the parent record to see if it's email or username based
+    const { data: parentData, error: parentError } = await supabaseAdmin
+      .from('parents')
+      .select('email, username')
+      .or(`email.eq.${identifier},username.eq.${identifier}`)
+      .single();
+
+    if (parentError) {
+      console.error('Error finding parent:', parentError);
+      throw new Error(`Parent not found with identifier: ${identifier}`);
+    }
+
+    // Update the parent record to set password_set to false
     const { error: updateError } = await supabaseAdmin
       .from('parents')
       .update({ password_set: false })
-      .eq('email', email);
+      .or(`email.eq.${identifier},username.eq.${identifier}`);
 
     if (updateError) {
       console.error('Error updating parent record:', updateError);
@@ -39,7 +51,7 @@ serve(async (req) => {
 
     console.log('Updated parent record successfully');
 
-    // Get the user by email to get their ID
+    // Get the user by email or username to get their ID
     const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (listError) {
@@ -47,7 +59,18 @@ serve(async (req) => {
       throw new Error(`Failed to list users: ${listError.message}`);
     }
 
-    const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    // Look for user by email first, then by username in user metadata
+    let user = null;
+    
+    if (parentData.email) {
+      user = users.find(u => u.email?.toLowerCase() === parentData.email?.toLowerCase());
+    } else if (parentData.username) {
+      // For username-based users, check user_metadata or email field that might contain username
+      user = users.find(u => 
+        u.email?.toLowerCase() === parentData.username?.toLowerCase() ||
+        u.user_metadata?.username === parentData.username
+      );
+    }
     
     if (user) {
       console.log(`Found user with ID: ${user.id}, deleting...`);
@@ -62,7 +85,7 @@ serve(async (req) => {
       
       console.log('User deleted successfully');
     } else {
-      console.log('No auth user found for this email');
+      console.log('No auth user found for this identifier');
     }
 
     return new Response(

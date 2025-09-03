@@ -15,7 +15,7 @@ interface AdminParentsContainerProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
   handleDeleteParent: (parentId: string) => Promise<void>;
-  handleResetParentPassword?: (email: string, name: string) => void;
+  handleResetParentPassword?: (identifier: string, name: string) => void;
   handleReactivateParent?: (parentId: string, parentName: string) => void;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;

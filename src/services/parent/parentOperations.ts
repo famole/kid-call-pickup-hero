@@ -170,9 +170,9 @@ export const reactivateParent = async (id: string): Promise<Parent> => {
   };
 };
 
-export const resetParentPassword = async (email: string): Promise<void> => {
+export const resetParentPassword = async (identifier: string): Promise<void> => {
   const { error } = await supabase.functions.invoke('reset-parent-password', {
-    body: { email }
+    body: { identifier }
   });
   
   if (error) {
