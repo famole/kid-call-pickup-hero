@@ -140,6 +140,7 @@
     "parents": "Padres",
     "classes": "Clases",
     "family": "Familiares",
+    "teachers": "Maestros",
     "pickup": "Salidas",
     "addStudent": "Agregar Estudiante",
     "addParent": "Agregar Padre",
