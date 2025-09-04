@@ -58,9 +58,9 @@ const Navigation: React.FC = () => {
 
   const navigationItems = [
     { path: '/', label: t('navigation.dashboard'), icon: Home, roles: ['parent', 'family', 'admin', 'teacher', 'superadmin'] },
-    { path: '/pickup-authorization', label: t('navigation.pickupAuthorizations'), icon: Car, roles: ['parent', 'family'] },
-    { path: '/self-checkout', label: t('navigation.selfCheckout'), icon: LogOut, roles: ['parent', 'family'] },
-    { path: '/self-checkout-history', label: t('navigation.selfCheckoutHistory'), icon: History, roles: ['parent', 'family'] },
+    { path: '/pickup-authorization', label: t('navigation.pickupAuthorizations'), icon: Car, roles: ['parent'] },
+    { path: '/self-checkout', label: t('navigation.selfCheckout'), icon: LogOut, roles: ['parent'] },
+    { path: '/self-checkout-history', label: t('navigation.selfCheckoutHistory'), icon: History, roles: ['parent'] },
     { path: '/pickup-management', label: t('navigation.pickupManagement'), icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
     { path: '/admin', label: t('navigation.adminPanel'), icon: Settings, roles: ['admin', 'superadmin'] },
   ];
