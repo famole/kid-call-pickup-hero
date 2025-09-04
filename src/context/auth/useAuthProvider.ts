@@ -79,7 +79,7 @@ export const useAuthProvider = (): AuthState & {
 
   const handleUserSession = async (authUser: any) => {
     try {
-      logger.log('Handling user session for:', authUser.email);
+      logger.log('Handling user session for:', authUser.email || authUser.user_metadata?.username);
       
       // Check for invitation token in URL or user metadata
       const urlParams = new URLSearchParams(window.location.search);
@@ -93,9 +93,26 @@ export const useAuthProvider = (): AuthState & {
       logger.log('Is OAuth user:', isOAuthUser);
       logger.log('Invitation token found:', !!invitationToken);
       
-      // Get user data from our database based on the auth user
-      let parentData = await getParentData(authUser.email);
+      // For username-only users, we already have the parent data in user_metadata
+      // Don't fetch it again from database
+      let parentData = null;
+      if (authUser.user_metadata?.role && !authUser.email) {
+        // This is a username-only user, use the data from user_metadata
+        logger.log('🔍 Using username-only user data from metadata:', authUser.user_metadata);
+        parentData = {
+          id: authUser.id,
+          name: authUser.user_metadata.name,
+          username: authUser.user_metadata.username,
+          role: authUser.user_metadata.role,
+          email: null
+        };
+      } else {
+        // Regular email user, fetch from database
+        parentData = await getParentData(authUser.email);
+      }
+      
       logger.log('Parent data found:', parentData ? 'Yes' : 'No');
+      logger.log('🔍 Parent data role:', parentData?.role);
       
       // Handle invitation acceptance if we have a token
       if (invitationToken && !parentData) {
@@ -257,6 +274,8 @@ export const useAuthProvider = (): AuthState & {
         } else if (data.isUsernameAuth && data.parentData) {
           // Username-only authentication (no Supabase auth)
           // Create a mock user session for username-only users
+          logger.log('🔍 Username auth success - parentData from edge function:', data.parentData);
+          
           const mockUser = {
             id: data.parentData.id,
             email: null,
@@ -266,6 +285,8 @@ export const useAuthProvider = (): AuthState & {
               role: data.parentData.role
             }
           };
+          
+          logger.log('🔍 Created mock user for username auth:', mockUser);
           await handleUserSession(mockUser);
         } else if (data.requireUsernameAuth) {
           // Fallback for old response format

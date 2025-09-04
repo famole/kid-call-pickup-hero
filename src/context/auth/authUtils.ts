@@ -101,14 +101,19 @@ export const createUserFromParentData = async (parentData: any): Promise<User> =
     logger.error('Error checking invited user status:', error);
   }
 
+  // Debug logging to see what data we're receiving
+  logger.log('🔍 createUserFromParentData - parentData:', parentData);
+
   const user = {
     id: parentData.id,
     email: parentData.email || null, // Username-only users may not have email
     name: parentData.name || parentData.username || parentData.email?.split('@')[0] || 'User',
-    role: parentData.role || 'parent', // This will now include 'teacher' role
+    role: parentData.role || 'parent', // This will now include all roles including 'family'
     isInvitedUser,
     username: parentData.username, // Add username field
   };
+  
+  logger.log('🔍 createUserFromParentData - created user:', user);
   
   return user;
 };
