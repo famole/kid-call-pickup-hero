@@ -557,6 +557,7 @@ export type Database = {
           id: string
           is_preloaded: boolean
           name: string
+          password_hash: string
           password_set: boolean
           phone: string
           role: Database["public"]["Enums"]["app_role"]
