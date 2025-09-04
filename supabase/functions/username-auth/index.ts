@@ -53,7 +53,7 @@ serve(async (req) => {
     }
 
     const parent = parentData[0];
-    console.log('Parent found:', parent.email, parent.username);
+    console.log('Parent found:', parent.email || 'no email', parent.username || 'no username', 'role:', parent.role);
 
     // Check if user has password set
     if (!parent.password_set) {
