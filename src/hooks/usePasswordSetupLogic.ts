@@ -24,9 +24,28 @@ export const usePasswordSetupLogic = () => {
       
       setAuthCheckComplete(true);
       
-      // Check URL parameters for identifier (email or username)
+      // Check URL parameters for identifier (email or username) or parentId
       const urlParams = new URLSearchParams(window.location.search);
-      const identifierFromUrl = urlParams.get('email') || urlParams.get('identifier');
+      let identifierFromUrl = urlParams.get('email') || urlParams.get('identifier');
+      
+      // If we have parentId, fetch the parent data to get the identifier
+      const parentId = urlParams.get('parentId');
+      if (parentId && !identifierFromUrl) {
+        try {
+          const { data: parentDataResult, error } = await supabase
+            .from('parents')
+            .select('email, username')
+            .eq('id', parentId)
+            .maybeSingle();
+          
+          if (!error && parentDataResult) {
+            identifierFromUrl = parentDataResult.email || parentDataResult.username;
+          }
+        } catch (error) {
+          console.error('Error fetching parent by ID:', error);
+        }
+      }
+      
       console.log('Identifier from URL:', identifierFromUrl);
       
       // If we have an identifier from URL but no authenticated user, check for preloaded account

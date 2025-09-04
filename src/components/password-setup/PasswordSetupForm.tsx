@@ -62,7 +62,26 @@ const PasswordSetupForm = () => {
     try {
       // Get identifier (email or username) from URL parameters if user is not authenticated
       const urlParams = new URLSearchParams(window.location.search);
-      const identifierFromUrl = urlParams.get('email') || urlParams.get('identifier');
+      let identifierFromUrl = urlParams.get('email') || urlParams.get('identifier');
+      
+      // If we have parentId, fetch the parent data to get the identifier
+      const parentId = urlParams.get('parentId');
+      if (parentId && !identifierFromUrl && !user) {
+        try {
+          const { data: parentDataResult, error } = await supabase
+            .from('parents')
+            .select('email, username')
+            .eq('id', parentId)
+            .maybeSingle();
+          
+          if (!error && parentDataResult) {
+            identifierFromUrl = parentDataResult.email || parentDataResult.username;
+          }
+        } catch (error) {
+          console.error('Error fetching parent by ID:', error);
+        }
+      }
+      
       const userIdentifier = user?.email || identifierFromUrl;
 
       if (!userIdentifier) {

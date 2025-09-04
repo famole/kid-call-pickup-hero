@@ -244,7 +244,7 @@ export const useAuthProvider = (): AuthState & {
         if (data.error) {
           if (data.requirePasswordSetup) {
             // Redirect to password setup for username-only users
-            window.location.href = `/password-setup?parentId=${data.parentId}`;
+            window.location.href = `/password-setup?identifier=${encodeURIComponent(identifier)}`;
             return;
           }
           throw new Error(data.error);
