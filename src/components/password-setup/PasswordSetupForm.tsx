@@ -60,51 +60,64 @@ const PasswordSetupForm = () => {
     setIsLoading(true);
 
     try {
-      // Get email from URL parameters if user is not authenticated (preloaded account scenario)
+      // Get identifier (email or username) from URL parameters if user is not authenticated
       const urlParams = new URLSearchParams(window.location.search);
-      const emailFromUrl = urlParams.get('email');
-      const userEmail = user?.email || emailFromUrl;
+      const identifierFromUrl = urlParams.get('email') || urlParams.get('identifier');
+      const userIdentifier = user?.email || identifierFromUrl;
 
-      if (!userEmail) {
+      if (!userIdentifier) {
         throw new Error(t('errors.noEmailForSetup'));
       }
 
       // Check if this is a password reset scenario by checking if parent exists but password_set is false
-      const { data: existingParent } = await supabase
-        .from('parents')
-        .select('password_set, is_preloaded')
-        .eq('email', userEmail)
-        .maybeSingle();
+      // Use the database function to search by email or username
+      const { data: existingParentResult } = await supabase
+        .rpc('get_parent_by_identifier', { identifier: userIdentifier });
+
+      const existingParent = existingParentResult?.[0];
 
       // If user is not authenticated, we need to handle different scenarios
       if (!user) {
-        // Always attempt to create a proper auth account, regardless of email domain
-        // This handles both new preloaded accounts and password reset scenarios
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: userEmail,
-          password: password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`
-          }
-        });
+        // For username-only users, we need to use the parent's email if available
+        const parentEmail = existingParent?.email || userIdentifier;
+        
+        // Only attempt signup if we have a valid email
+        if (isValidIdentifier(parentEmail) && parentEmail.includes('@')) {
+          // Always attempt to create a proper auth account, regardless of email domain
+          // This handles both new preloaded accounts and password reset scenarios
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: parentEmail,
+            password: password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/`
+            }
+          });
 
-        if (authError) {
-          // If signup fails because user already exists, that's expected for password reset
-          if (authError.message?.includes('already registered')) {
-            toast({
-              title: t('common.success'),
-              description: t('errors.accountResetComplete'),
-            });
-          } else {
-            throw authError;
+          if (authError) {
+            // If signup fails because user already exists, that's expected for password reset
+            if (authError.message?.includes('already registered')) {
+              toast({
+                title: t('common.success'),
+                description: t('errors.accountResetComplete'),
+              });
+            } else {
+              throw authError;
+            }
           }
+        } else {
+          // For username-only users without email, just mark password as set
+          toast({
+            title: t('common.success'),
+            description: t('errors.accountSetupComplete'),
+          });
         }
 
         // Update the parent record to mark password as set
+        // Use the identifier to find the correct parent record
         const { error: updateError } = await supabase
           .from('parents')
           .update({ password_set: true })
-          .eq('email', userEmail);
+          .or(`email.eq.${userIdentifier},username.eq.${userIdentifier}`);
 
         if (updateError) {
           throw updateError;
@@ -131,7 +144,7 @@ const PasswordSetupForm = () => {
         const { error: updateError } = await supabase
           .from('parents')
           .update({ password_set: true })
-          .eq('email', userEmail);
+          .eq('email', userIdentifier);
 
         if (updateError) {
           throw updateError;
