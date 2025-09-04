@@ -2,6 +2,20 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Password hashing utilities
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  const passwordHash = await hashPassword(password);
+  return passwordHash === hash;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -53,22 +67,33 @@ serve(async (req) => {
       });
     }
 
-    // For username-only users (no email), we need to handle authentication differently
+    // For username-only users (no email), implement custom password verification
     if (!parent.email) {
-      // This is a username-only user - we can't use Supabase auth
-      // We would need to implement our own password verification here
-      // For now, return an error indicating this needs special handling
+      console.log('Username-only user found, verifying password hash');
+      
+      // Check if password hash exists
+      if (!parent.password_hash) {
+        console.log('No password hash found for username-only user');
+        throw new Error('Invalid credentials');
+      }
+      
+      // Verify password against stored hash
+      const isPasswordValid = await verifyPassword(password, parent.password_hash);
+      
+      if (!isPasswordValid) {
+        console.log('Password verification failed for username-only user');
+        throw new Error('Invalid credentials');
+      }
+      
+      console.log('Username-only authentication successful for:', parent.username);
+      
+      // Return success without Supabase session (username-only users don't use Supabase auth)
       return new Response(JSON.stringify({
-        error: 'Username-only authentication not yet implemented',
-        requireUsernameAuth: true,
-        parentData: {
-          id: parent.id,
-          name: parent.name,
-          username: parent.username,
-          role: parent.role
-        }
+        user: null, // No Supabase auth user for username-only users
+        session: null, // No Supabase session for username-only users
+        parentData: parent,
+        isUsernameAuth: true // Flag to indicate this is username-only auth
       }), {
-        status: 501,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

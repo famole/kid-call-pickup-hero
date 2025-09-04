@@ -254,9 +254,21 @@ export const useAuthProvider = (): AuthState & {
         if (data.user && data.session) {
           // Regular Supabase auth response (user has email)
           await handleUserSession(data.user);
-        } else if (data.requireUsernameAuth) {
+        } else if (data.isUsernameAuth && data.parentData) {
           // Username-only authentication (no Supabase auth)
           // Create a mock user session for username-only users
+          const mockUser = {
+            id: data.parentData.id,
+            email: null,
+            user_metadata: {
+              name: data.parentData.name,
+              username: data.parentData.username,
+              role: data.parentData.role
+            }
+          };
+          await handleUserSession(mockUser);
+        } else if (data.requireUsernameAuth) {
+          // Fallback for old response format
           const mockUser = {
             id: data.parentData.id,
             email: null,

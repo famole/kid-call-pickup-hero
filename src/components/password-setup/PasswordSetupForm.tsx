@@ -104,23 +104,35 @@ const PasswordSetupForm = () => {
               throw authError;
             }
           }
+          
+          // Update the parent record to mark password as set
+          const { error: updateError } = await supabase
+            .from('parents')
+            .update({ password_set: true })
+            .eq('email', parentEmail);
+
+          if (updateError) {
+            throw updateError;
+          }
         } else {
-          // For username-only users without email, just mark password as set
+          // For username-only users without email, use the password setup edge function
+          const { data, error } = await supabase.functions.invoke('setup-username-password', {
+            body: { identifier: userIdentifier, password }
+          });
+
+          if (error) {
+            logger.error("Username password setup error:", error);
+            throw new Error('Failed to set password');
+          }
+
+          if (data?.error) {
+            throw new Error(data.error);
+          }
+
           toast({
             title: t('common.success'),
             description: t('errors.accountSetupComplete'),
           });
-        }
-
-        // Update the parent record to mark password as set
-        // Use the identifier to find the correct parent record
-        const { error: updateError } = await supabase
-          .from('parents')
-          .update({ password_set: true })
-          .or(`email.eq.${userIdentifier},username.eq.${userIdentifier}`);
-
-        if (updateError) {
-          throw updateError;
         }
 
         toast({
