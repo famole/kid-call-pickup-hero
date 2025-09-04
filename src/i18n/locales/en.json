@@ -119,6 +119,7 @@
     "checkoutDateTime": "Checkout Date/Time",
     "markedBy": "Marked By",
     "departed": "Departed",
+    "teacherNotes": "Teacher Notes",
     "viewAll": "View All",
     "historyTitle": "Self-Checkout History",
     "welcomeMessage": "Welcome to your authorization history. Here you can view all your self-checkout and pickup authorizations.",

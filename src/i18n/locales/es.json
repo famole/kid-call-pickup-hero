@@ -119,6 +119,7 @@
     "checkoutDateTime": "Fecha/Hora de Salida",
     "markedBy": "Marcado por",
     "departed": "Salió",
+    "teacherNotes": "Notas del Maestro",
     "viewAll": "Ver Todo",
     "historyTitle": "Historial de Auto-Salida",
     "welcomeMessage": "Bienvenido a tu historial de autorizaciones. Aquí puedes ver todas tus autorizaciones de auto-salida y recogida.",
