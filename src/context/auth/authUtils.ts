@@ -42,8 +42,12 @@ export const getParentData = async (emailOrUsername: string | null) => {
       return null;
     }
     
-    logger.log('Parent data retrieved:', parentData[0] ? 'Success' : 'No data');
-    return parentData[0];
+    const userData = parentData[0];
+    logger.log('Parent data retrieved:', userData ? 'Success' : 'No data');
+    logger.log('Parent role from database:', userData?.role);
+    logger.log('Full parent data:', userData);
+    
+    return userData;
   } catch (error) {
     logger.error("Error fetching parent data:", error);
     return null;
@@ -101,7 +105,9 @@ export const createUserFromParentData = async (parentData: any): Promise<User> =
     logger.error('Error checking invited user status:', error);
   }
 
-  return {
+  logger.log('Creating user from parent data with role:', parentData.role);
+
+  const user = {
     id: parentData.id,
     email: parentData.email || null, // Username-only users may not have email
     name: parentData.name || parentData.username || parentData.email?.split('@')[0] || 'User',
@@ -109,6 +115,9 @@ export const createUserFromParentData = async (parentData: any): Promise<User> =
     isInvitedUser,
     username: parentData.username, // Add username field
   };
+  
+  logger.log('Created user with role:', user.role);
+  return user;
 };
 
 // Create a User object from auth data
