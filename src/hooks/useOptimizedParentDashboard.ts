@@ -33,6 +33,19 @@ export const useOptimizedParentDashboard = () => {
   const subscriptionRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Use refs to maintain stable references for real-time subscription
+  const childrenRef = useRef<ChildWithType[]>([]);
+  const currentParentIdRef = useRef<string | undefined>(undefined);
+  
+  // Update refs when values change
+  useEffect(() => {
+    childrenRef.current = children;
+  }, [children]);
+  
+  useEffect(() => {
+    currentParentIdRef.current = currentParentId;
+  }, [currentParentId]);
+
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user?.id) {
       logger.log('No user ID available, skipping data load');
@@ -188,11 +201,11 @@ export const useOptimizedParentDashboard = () => {
           
           // For username-only users, check if this pickup request belongs to them
           const requestParentId = (payload.new as any)?.parent_id || (payload.old as any)?.parent_id;
-          const isUsersRequest = requestParentId === currentParentId || requestParentId === user.id;
+          const isUsersRequest = requestParentId === currentParentIdRef.current || requestParentId === user.id;
           
           // Also check if this is for their students (they might be authorized to pick up)
           const requestStudentId = (payload.new as any)?.student_id || (payload.old as any)?.student_id;
-          const isForTheirStudent = children.some(child => child.id === requestStudentId);
+          const isForTheirStudent = childrenRef.current.some(child => child.id === requestStudentId);
           
           if (!isUsersRequest && !isForTheirStudent) {
             logger.log('Ignoring pickup request change - not related to this user');
@@ -219,7 +232,7 @@ export const useOptimizedParentDashboard = () => {
             const newStatus = (payload.new as any)?.status;
             const oldStatus = (payload.old as any)?.status;
             const studentId = (payload.new as any)?.student_id;
-            const studentName = children.find(child => child.id === studentId)?.name || 'Student';
+            const studentName = childrenRef.current.find(child => child.id === studentId)?.name || 'Student';
             
             logger.log(`Status change detected for student ${studentId}: ${oldStatus} -> ${newStatus}`);
             
@@ -285,7 +298,7 @@ export const useOptimizedParentDashboard = () => {
         intervalRef.current = null;
       }
     };
-  }, [user?.id, currentParentId, children, toast, loadDashboardData]);
+  }, [user?.id, loadDashboardData]);
 
   // Toggle child selection
   const toggleChildSelection = useCallback((studentId: string) => {
