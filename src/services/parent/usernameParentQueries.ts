@@ -218,3 +218,59 @@ export const getActivePickupRequestsForParentId = async (parentId: string): Prom
     return [];
   }
 };
+
+// Function to create a pickup request using the secure database function
+export const createPickupRequestForUsernameUser = async (studentId: string, parentId: string): Promise<string> => {
+  try {
+    logger.log('Creating pickup request for username user:', { studentId, parentId });
+    
+    const { data: requestId, error } = await supabase.rpc('create_pickup_request_for_username_user', {
+      p_student_id: studentId,
+      p_parent_id: parentId
+    });
+
+    if (error) {
+      logger.error('Error creating pickup request:', error);
+      throw error;
+    }
+
+    logger.log('Successfully created pickup request with ID:', requestId);
+    return requestId;
+  } catch (error) {
+    logger.error('Error in createPickupRequestForUsernameUser:', error);
+    throw error;
+  }
+};
+
+// Function to get pickup request status updates for notifications
+export const getPickupRequestsByStudentIds = async (studentIds: string[]): Promise<PickupRequest[]> => {
+  try {
+    if (studentIds.length === 0) return [];
+    
+    logger.log('Fetching pickup requests for student IDs:', studentIds);
+    
+    const { data: requests, error } = await supabase
+      .from('pickup_requests')
+      .select('*')
+      .in('student_id', studentIds)
+      .in('status', ['pending', 'called', 'completed']);
+
+    if (error) {
+      logger.error('Error fetching pickup requests by student IDs:', error);
+      throw error;
+    }
+
+    logger.log('Found pickup requests for students:', requests?.length || 0);
+
+    return (requests || []).map(request => ({
+      id: request.id,
+      studentId: request.student_id,
+      parentId: request.parent_id,
+      requestTime: new Date(request.request_time),
+      status: request.status as 'pending' | 'called' | 'completed' | 'cancelled'
+    }));
+  } catch (error) {
+    logger.error('Error in getPickupRequestsByStudentIds:', error);
+    throw error;
+  }
+};

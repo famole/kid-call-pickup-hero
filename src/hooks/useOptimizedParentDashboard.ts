@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { getParentDashboardDataByParentId, getActivePickupRequestsForParentId } from '@/services/parent/usernameParentQueries';
+import { getParentDashboardDataByParentId, getActivePickupRequestsForParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent, createPickupRequest } from '@/services/pickup';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
@@ -153,7 +153,7 @@ export const useOptimizedParentDashboard = () => {
     }
   }, [user?.email]);
 
-  // Set up real-time subscription for pickup requests (same as admin panel)
+  // Set up real-time subscription for pickup requests with enhanced filtering for user's requests
   useEffect(() => {
     if (!user?.id) return;
 
@@ -186,19 +186,65 @@ export const useOptimizedParentDashboard = () => {
           logger.log('Parent dashboard real-time change detected:', payload.eventType, payload);
           logger.log('Payload details:', JSON.stringify(payload, null, 2));
           
-          // Handle real-time updates intelligently like admin panel
-          if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
+          // For username-only users, check if this pickup request belongs to them
+          const requestParentId = (payload.new as any)?.parent_id || (payload.old as any)?.parent_id;
+          const isUsersRequest = requestParentId === currentParentId || requestParentId === user.id;
+          
+          // Also check if this is for their students (they might be authorized to pick up)
+          const requestStudentId = (payload.new as any)?.student_id || (payload.old as any)?.student_id;
+          const isForTheirStudent = children.some(child => child.id === requestStudentId);
+          
+          if (!isUsersRequest && !isForTheirStudent) {
+            logger.log('Ignoring pickup request change - not related to this user');
+            return;
+          }
+          
+          logger.log('Processing pickup request change for this user:', {
+            isUsersRequest,
+            isForTheirStudent,
+            requestParentId,
+            currentParentId,
+            requestStudentId
+          });
+
+          // Handle real-time updates with notifications
+          if (payload.eventType === 'INSERT' && (payload.new as any)?.status === 'pending') {
             logger.log('New pickup request detected, refreshing dashboard...');
+            toast({
+              title: "Pickup Requested",
+              description: "Your pickup request has been submitted successfully.",
+            });
             loadDashboardData(true);
           } else if (payload.eventType === 'UPDATE') {
-            const newStatus = payload.new?.status;
-            const oldStatus = payload.old?.status;
-            const studentId = payload.new?.student_id;
+            const newStatus = (payload.new as any)?.status;
+            const oldStatus = (payload.old as any)?.status;
+            const studentId = (payload.new as any)?.student_id;
+            const studentName = children.find(child => child.id === studentId)?.name || 'Student';
             
             logger.log(`Status change detected for student ${studentId}: ${oldStatus} -> ${newStatus}`);
             
-            // Any status change should trigger a refresh for parent dashboard
+            // Show notifications for status changes
             if (newStatus !== oldStatus) {
+              if (newStatus === 'called') {
+                toast({
+                  title: "Pickup Called",
+                  description: `${studentName} has been called for pickup. Please proceed to pickup location.`,
+                  variant: "default",
+                });
+              } else if (newStatus === 'completed') {
+                toast({
+                  title: "Pickup Completed",
+                  description: `Pickup for ${studentName} has been completed.`,
+                  variant: "default",
+                });
+              } else if (newStatus === 'cancelled') {
+                toast({
+                  title: "Pickup Cancelled",
+                  description: `Pickup request for ${studentName} has been cancelled.`,
+                  variant: "destructive",
+                });
+              }
+              
               logger.log(`Pickup request status changed from ${oldStatus} to ${newStatus}, refreshing dashboard...`);
               // Use a longer timeout to ensure the database update is complete
               setTimeout(() => {
@@ -208,6 +254,11 @@ export const useOptimizedParentDashboard = () => {
             }
           } else if (payload.eventType === 'DELETE') {
             logger.log('Pickup request deleted, refreshing dashboard...');
+            toast({
+              title: "Pickup Request Removed",
+              description: "A pickup request has been removed.",
+              variant: "default",
+            });
             loadDashboardData(true);
           }
         }
@@ -234,7 +285,7 @@ export const useOptimizedParentDashboard = () => {
         intervalRef.current = null;
       }
     };
-  }, [user?.id, loadDashboardData]);
+  }, [user?.id, currentParentId, children, toast, loadDashboardData]);
 
   // Toggle child selection
   const toggleChildSelection = useCallback((studentId: string) => {
@@ -258,14 +309,7 @@ export const useOptimizedParentDashboard = () => {
         // Use database function for username-only users
         await Promise.all(
           selectedChildren.map(async (studentId) => {
-            const { error } = await supabase.rpc('create_pickup_request_for_username_user', {
-              p_student_id: studentId,
-              p_parent_id: user.id
-            });
-            
-            if (error) {
-              throw error;
-            }
+            await createPickupRequestForUsernameUser(studentId, user.id);
           })
         );
       } else {
