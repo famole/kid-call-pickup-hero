@@ -253,18 +253,15 @@ export const useOptimizedParentDashboard = () => {
 
     setIsSubmitting(true);
     try {
-      // For username-only users, we need to create requests directly using their parent ID
+      // For username-only users, use the secure database function
       if (!user?.email && user?.id) {
-        // Direct database insert for username-only users
+        // Use database function for username-only users
         await Promise.all(
           selectedChildren.map(async (studentId) => {
-            const { error } = await supabase
-              .from('pickup_requests')
-              .insert({
-                student_id: studentId,
-                parent_id: user.id,
-                status: 'pending'
-              });
+            const { error } = await supabase.rpc('create_pickup_request_for_username_user', {
+              p_student_id: studentId,
+              p_parent_id: user.id
+            });
             
             if (error) {
               throw error;

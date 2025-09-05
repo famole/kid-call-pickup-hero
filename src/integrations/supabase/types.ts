@@ -526,6 +526,10 @@ export type Database = {
         Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      create_pickup_request_for_username_user: {
+        Args: { p_parent_id: string; p_student_id: string }
+        Returns: string
+      }
       get_auth_status_for_parents: {
         Args: Record<PropertyKey, never>
         Returns: {
