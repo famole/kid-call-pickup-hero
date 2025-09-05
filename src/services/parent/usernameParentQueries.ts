@@ -123,15 +123,30 @@ export const getActivePickupRequestsForParentId = async (parentId: string): Prom
   try {
     logger.log('Fetching pickup requests for parent ID:', parentId);
 
-    // Get all children this parent can see (own children + authorized children)
+    // First: Get pickup requests made BY this parent (their own requests)
+    const { data: ownRequests, error: ownRequestsError } = await supabase
+      .from('pickup_requests')
+      .select('*')
+      .eq('parent_id', parentId)
+      .in('status', ['pending', 'called']);
+
+    console.log('🔍 DEBUG - Own pickup requests query result:', {
+      parentId,
+      ownRequests: ownRequests || [],
+      error: ownRequestsError?.message
+    });
+
+    if (ownRequestsError) {
+      logger.error('Error fetching own pickup requests:', ownRequestsError);
+      // Continue to try getting authorized requests even if own requests fail
+    }
+
+    // Second: Get pickup requests FOR children this parent is authorized to pick up (made by other parents)
     const [ownChildren, authorizedChildren] = await Promise.all([
-      // Own children
       supabase
         .from('student_parents')
         .select('student_id')
         .eq('parent_id', parentId),
-      
-      // Children they're authorized to pick up
       supabase
         .from('pickup_authorizations')
         .select('student_id, student_ids')
@@ -141,55 +156,65 @@ export const getActivePickupRequestsForParentId = async (parentId: string): Prom
         .gte('end_date', new Date().toISOString().split('T')[0])
     ]);
 
-    if (ownChildren.error || authorizedChildren.error) {
-      logger.error('Error fetching children:', ownChildren.error || authorizedChildren.error);
-      return [];
+    let authorizedRequests: any[] = [];
+    
+    if (!ownChildren.error && !authorizedChildren.error) {
+      // Combine all student IDs this parent can pick up
+      let allStudentIds = [
+        ...(ownChildren.data?.map(sp => sp.student_id) || [])
+      ];
+
+      // Handle authorized children - both old and new format
+      if (authorizedChildren.data) {
+        authorizedChildren.data.forEach(auth => {
+          if (auth.student_ids && Array.isArray(auth.student_ids)) {
+            allStudentIds.push(...auth.student_ids);
+          }
+          if (auth.student_id) {
+            allStudentIds.push(auth.student_id);
+          }
+        });
+      }
+
+      // Remove duplicates
+      const uniqueStudentIds = [...new Set(allStudentIds)];
+
+      if (uniqueStudentIds.length > 0) {
+        // Get requests for these children made by OTHER parents
+        const { data: authRequests, error: authError } = await supabase
+          .from('pickup_requests')
+          .select('*')
+          .in('student_id', uniqueStudentIds)
+          .in('status', ['pending', 'called'])
+          .neq('parent_id', parentId); // Exclude own requests
+
+        console.log('🔍 DEBUG - Authorized pickup requests query result:', {
+          uniqueStudentIds,
+          authRequests: authRequests || [],
+          error: authError?.message
+        });
+
+        if (!authError && authRequests) {
+          authorizedRequests = authRequests;
+        }
+      }
     }
 
-    // Combine all student IDs
-    let allStudentIds = [
-      ...(ownChildren.data?.map(sp => sp.student_id) || [])
+    // Combine own requests and authorized requests
+    const allRequests = [
+      ...(ownRequests || []),
+      ...authorizedRequests
     ];
 
-    // Handle authorized children - both old and new format
-    if (authorizedChildren.data) {
-      authorizedChildren.data.forEach(auth => {
-        // Handle new student_ids array field
-        if (auth.student_ids && Array.isArray(auth.student_ids)) {
-          allStudentIds.push(...auth.student_ids);
-        }
-        // Handle old student_id field for backward compatibility
-        if (auth.student_id) {
-          allStudentIds.push(auth.student_id);
-        }
-      });
-    }
-
-    // Remove duplicates
-    const uniqueStudentIds = [...new Set(allStudentIds)];
-
-    if (uniqueStudentIds.length === 0) {
-      logger.log('No students found for parent ID:', parentId);
-      return [];
-    }
-
-    logger.log('Found students for parent:', uniqueStudentIds.length);
-
-    // Get all active pickup requests for these children  
-    const { data: requests, error: requestsError } = await supabase
-      .from('pickup_requests')
-      .select('*')
-      .in('student_id', uniqueStudentIds)
-      .in('status', ['pending', 'called']);
-
-    if (requestsError) {
-      logger.error('Error fetching pickup requests:', requestsError);
-      return [];
-    }
+    console.log('🔍 DEBUG - Combined requests:', {
+      ownRequestsCount: ownRequests?.length || 0,
+      authorizedRequestsCount: authorizedRequests.length,
+      totalRequests: allRequests.length
+    });
 
     // Get parent information for each request
     const requestsWithParents = await Promise.all(
-      (requests || []).map(async (req) => {
+      allRequests.map(async (req) => {
         const { data: parentData } = await supabase
           .from('parents')
           .select('id, name, email')

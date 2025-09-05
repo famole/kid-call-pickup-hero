@@ -85,6 +85,10 @@ export const useOptimizedParentDashboard = () => {
           getActivePickupRequestsForParentId(parentId)
       ]);
 
+      console.log('🔍 DEBUG - Raw pickup requests from query:', pickupRequests);
+      console.log('🔍 DEBUG - Parent ID used:', parentId);
+      console.log('🔍 DEBUG - User info:', { id: user.id, email: user.email, username: user.username });
+
       logger.log('Dashboard data loaded:', {
         childrenCount: dashboardData.allChildren.length,
         pickupRequestsCount: pickupRequests.length,
@@ -103,6 +107,12 @@ export const useOptimizedParentDashboard = () => {
           .select('*')
           .in('student_id', allChildIds)
           .in('status', ['pending', 'called']);
+
+        console.log('🔍 DEBUG - Query for all child requests:', {
+          allChildIds,
+          allChildRequests: allChildRequests || [],
+          error: error?.message
+        });
 
         if (!error && allChildRequests) {
           // Fetch parent information first
