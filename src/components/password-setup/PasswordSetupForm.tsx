@@ -18,7 +18,7 @@ const PasswordSetupForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -152,6 +152,22 @@ const PasswordSetupForm = () => {
             title: t('common.success'),
             description: t('errors.accountSetupComplete'),
           });
+
+          // For username-only users, automatically log them in after password setup
+          try {
+            await login(userIdentifier, password);
+            // The login function should handle the redirect to dashboard
+            return;
+          } catch (loginError) {
+            logger.error('Auto-login after password setup failed:', loginError);
+            // If auto-login fails, redirect to login page
+            toast({
+              title: t('common.info'),
+              description: 'Password set successfully. Please log in with your credentials.',
+            });
+            navigate('/login');
+            return;
+          }
         }
 
         toast({

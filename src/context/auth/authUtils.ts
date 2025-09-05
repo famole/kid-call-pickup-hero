@@ -7,6 +7,8 @@ import { logger } from '@/utils/logger';
 export const cleanupAuthState = () => {
   // Remove standard auth tokens
   localStorage.removeItem('supabase.auth.token');
+  // Remove username session
+  localStorage.removeItem('username_session');
   // Remove all Supabase auth keys from localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {

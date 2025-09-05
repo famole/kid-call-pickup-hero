@@ -26,6 +26,8 @@ export const useAuthProvider = (): AuthState & {
         
         if (event === 'SIGNED_OUT') {
           setUser(null);
+          // Also clear custom username session
+          localStorage.removeItem('username_session');
         } else if (event === 'TOKEN_REFRESHED' && !session) {
           // Session expired during token refresh - auto sign out
           logger.log('Session expired during token refresh, signing out');
@@ -47,7 +49,7 @@ export const useAuthProvider = (): AuthState & {
     // THEN check for existing session
     const loadUser = async () => {
       try {
-        // Try to get session from Supabase
+        // Try to get session from Supabase first
         const { data: { session }, error } = await supabase.auth.getSession();
         logger.log('Initial session check:', session?.user?.email);
         
@@ -60,6 +62,37 @@ export const useAuthProvider = (): AuthState & {
         
         if (session?.user) {
           await handleUserSession(session.user);
+        } else {
+          // Check for username-only session in localStorage
+          const usernameSession = localStorage.getItem('username_session');
+          if (usernameSession) {
+            try {
+              const sessionData = JSON.parse(usernameSession);
+              // Check if session is still valid (24 hours)
+              const sessionAge = Date.now() - sessionData.timestamp;
+              const twentyFourHours = 24 * 60 * 60 * 1000;
+              
+              if (sessionAge < twentyFourHours) {
+                logger.log('Found valid username session for:', sessionData.username);
+                const mockUser = {
+                  id: sessionData.id,
+                  email: null,
+                  user_metadata: {
+                    name: sessionData.name,
+                    username: sessionData.username,
+                    role: sessionData.role
+                  }
+                };
+                await handleUserSession(mockUser);
+              } else {
+                logger.log('Username session expired, removing');
+                localStorage.removeItem('username_session');
+              }
+            } catch (parseError) {
+              logger.error('Error parsing username session:', parseError);
+              localStorage.removeItem('username_session');
+            }
+          }
         }
       } catch (error) {
         logger.error("Error loading user:", error);
@@ -273,8 +306,17 @@ export const useAuthProvider = (): AuthState & {
           await handleUserSession(data.user);
         } else if (data.isUsernameAuth && data.parentData) {
           // Username-only authentication (no Supabase auth)
-          // Create a mock user session for username-only users
-          logger.log('🔍 Username auth success - parentData from edge function:', data.parentData);
+          // Store session in localStorage for persistence
+          const sessionData = {
+            id: data.parentData.id,
+            name: data.parentData.name,
+            username: data.parentData.username,
+            role: data.parentData.role,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('username_session', JSON.stringify(sessionData));
+          
+          logger.log('🔍 Username auth success - stored session for:', data.parentData.username);
           
           const mockUser = {
             id: data.parentData.id,
@@ -288,6 +330,16 @@ export const useAuthProvider = (): AuthState & {
           
           logger.log('🔍 Created mock user for username auth:', mockUser);
           await handleUserSession(mockUser);
+          
+          // After successful username authentication, redirect to appropriate page
+          setTimeout(() => {
+            const userRole = data.parentData.role;
+            if (['admin', 'superadmin'].includes(userRole)) {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/';
+            }
+          }, 100);
         } else if (data.requireUsernameAuth) {
           // Fallback for old response format
           const mockUser = {
@@ -316,6 +368,9 @@ export const useAuthProvider = (): AuthState & {
   const logout = async () => {
     // Clean up auth state
     cleanupAuthState();
+    
+    // Clean up username session
+    localStorage.removeItem('username_session');
     
     // Try to sign out from Supabase
     try {
