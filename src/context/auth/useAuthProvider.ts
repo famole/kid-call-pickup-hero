@@ -74,13 +74,34 @@ export const useAuthProvider = (): AuthState & {
               
               if (sessionAge < twentyFourHours) {
                 logger.log('Found valid username session for:', sessionData.username);
+                
+                // Create a proper anonymous Supabase session to enable database functions
+                try {
+                  const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+                  if (!anonError && anonData.user) {
+                    // Update the anonymous user with our parent data
+                    await supabase.auth.updateUser({
+                      data: { 
+                        parent_id: sessionData.id,
+                        username: sessionData.username,
+                        role: sessionData.role,
+                        name: sessionData.name
+                      }
+                    });
+                    logger.log('Restored Supabase session for username user:', sessionData.username);
+                  }
+                } catch (sessionError) {
+                  logger.error('Error creating Supabase session on restore:', sessionError);
+                }
+                
                 const mockUser = {
                   id: sessionData.id,
                   email: null,
                   user_metadata: {
                     name: sessionData.name,
                     username: sessionData.username,
-                    role: sessionData.role
+                    role: sessionData.role,
+                    parent_id: sessionData.id
                   }
                 };
                 await handleUserSession(mockUser);
@@ -306,6 +327,25 @@ export const useAuthProvider = (): AuthState & {
           await handleUserSession(data.user);
         } else if (data.isUsernameAuth && data.parentData) {
           // Username-only authentication (no Supabase auth)
+          // Create a proper anonymous Supabase session to enable database functions
+          try {
+            const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+            if (!anonError && anonData.user) {
+              // Update the anonymous user with our parent data
+              await supabase.auth.updateUser({
+                data: { 
+                  parent_id: data.parentData.id,
+                  username: data.parentData.username,
+                  role: data.parentData.role,
+                  name: data.parentData.name
+                }
+              });
+              logger.log('Created Supabase session for username user:', data.parentData.username);
+            }
+          } catch (sessionError) {
+            logger.error('Error creating Supabase session:', sessionError);
+          }
+          
           // Store session in localStorage for persistence
           const sessionData = {
             id: data.parentData.id,
@@ -324,7 +364,8 @@ export const useAuthProvider = (): AuthState & {
             user_metadata: {
               name: data.parentData.name,
               username: data.parentData.username,
-              role: data.parentData.role
+              role: data.parentData.role,
+              parent_id: data.parentData.id
             }
           };
           
