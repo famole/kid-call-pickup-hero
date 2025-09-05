@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
+import { getParentDashboardDataByParentId, getActivePickupRequestsForParentId } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent, createPickupRequest } from '@/services/pickup';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
@@ -33,8 +34,8 @@ export const useOptimizedParentDashboard = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
-    if (!user?.email) {
-      logger.log('No user email available, skipping data load');
+    if (!user?.id) {
+      logger.log('No user ID available, skipping data load');
       return;
     }
 
@@ -48,14 +49,27 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
-      // Get current parent ID first
-      const { data: parentId } = await supabase.rpc('get_current_parent_id');
+      // Use the user ID directly for username-only users, or try to get parent ID for email users
+      let parentId = user.id;
+      if (user.email) {
+        // For email users, try to get parent ID from RPC
+        const { data: rpcParentId } = await supabase.rpc('get_current_parent_id');
+        if (rpcParentId) {
+          parentId = rpcParentId;
+        }
+      }
+      
       setCurrentParentId(parentId);
+      logger.log('Using parent ID for dashboard:', parentId);
 
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
-        getParentDashboardDataOptimized(user.email),
-        getActivePickupRequestsForParent()
+        user.email ? 
+          getParentDashboardDataOptimized(user.email) : 
+          getParentDashboardDataByParentId(parentId),
+        user.email ?
+          getActivePickupRequestsForParent() :
+          getActivePickupRequestsForParentId(parentId)
       ]);
 
       logger.log('Dashboard data loaded:', {
@@ -141,7 +155,7 @@ export const useOptimizedParentDashboard = () => {
 
   // Set up real-time subscription for pickup requests (same as admin panel)
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.id) return;
 
     // Set up periodic polling as a fallback in case realtime fails
     if (intervalRef.current) {
@@ -156,7 +170,7 @@ export const useOptimizedParentDashboard = () => {
       subscriptionRef.current = null;
     }
 
-    const channelName = `parent_dashboard_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+    const channelName = `parent_dashboard_${(user.email || user.username || user.id).replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
     logger.log('Setting up parent dashboard real-time subscription:', channelName);
 
     const channel = supabase
@@ -220,7 +234,7 @@ export const useOptimizedParentDashboard = () => {
         intervalRef.current = null;
       }
     };
-  }, [user?.email, loadDashboardData]);
+  }, [user?.id, loadDashboardData]);
 
   // Toggle child selection
   const toggleChildSelection = useCallback((studentId: string) => {
@@ -239,9 +253,30 @@ export const useOptimizedParentDashboard = () => {
 
     setIsSubmitting(true);
     try {
-      await Promise.all(
-        selectedChildren.map(studentId => createPickupRequest(studentId))
-      );
+      // For username-only users, we need to create requests directly using their parent ID
+      if (!user?.email && user?.id) {
+        // Direct database insert for username-only users
+        await Promise.all(
+          selectedChildren.map(async (studentId) => {
+            const { error } = await supabase
+              .from('pickup_requests')
+              .insert({
+                student_id: studentId,
+                parent_id: user.id,
+                status: 'pending'
+              });
+            
+            if (error) {
+              throw error;
+            }
+          })
+        );
+      } else {
+        // Use regular service for email users
+        await Promise.all(
+          selectedChildren.map(studentId => createPickupRequest(studentId))
+        );
+      }
 
       toast({
         title: "Pickup Request Submitted",
@@ -261,15 +296,15 @@ export const useOptimizedParentDashboard = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedChildren, toast, loadDashboardData]);
+  }, [selectedChildren, toast, loadDashboardData, user]);
 
   // Initial load
   useEffect(() => {
-    if (user?.email) {
-      logger.log('Setting up parent dashboard for user:', user.email);
+    if (user?.id) {
+      logger.log('Setting up parent dashboard for user:', user.email || user.username || user.id);
       loadDashboardData(true);
     }
-  }, [user?.email, loadDashboardData]);
+  }, [user?.id, loadDashboardData]);
 
   // Separate pending and called requests
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
