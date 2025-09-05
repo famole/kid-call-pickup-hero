@@ -161,8 +161,8 @@ export const useOptimizedParentDashboard = () => {
     } finally {
       if (firstLoadRef.current) {
         firstLoadRef.current = false;
-        setLoading(false);
       }
+      setLoading(false);
     }
   }, [user?.email]);
 
