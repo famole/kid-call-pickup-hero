@@ -36,7 +36,7 @@ const AdminTabs = () => {
         </TabsContent>
         
         <TabsContent value="family">
-          <AdminParentsScreen userRole="family" />
+          <AdminParentsScreen userRole="family" includedRoles={['family', 'other']} />
         </TabsContent>
         
         <TabsContent value="teachers">

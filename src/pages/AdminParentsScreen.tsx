@@ -8,9 +8,10 @@ import { useReactivationActions } from '@/hooks/useReactivationActions';
 
 interface AdminParentsScreenProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
+  includedRoles?: ('parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other')[];
 }
 
-const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'parent' }) => {
+const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'parent', includedRoles }) => {
   const {
     parents,
     setParents,
@@ -24,7 +25,7 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
     statusFilter,
     handleStatusFilterChange,
     refreshData,
-  } = useAdminFilteredData({ userRole });
+  } = useAdminFilteredData({ userRole, includedRoles });
 
   const {
     handleDeleteParent,

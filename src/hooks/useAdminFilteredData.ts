@@ -5,9 +5,10 @@ import { Child } from '@/types';
 
 interface UseAdminFilteredDataProps {
   userRole: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
+  includedRoles?: ('parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other')[];
 }
 
-export const useAdminFilteredData = ({ userRole }: UseAdminFilteredDataProps) => {
+export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilteredDataProps) => {
   const [statusFilter, setStatusFilter] = useState<'active' | 'deleted' | 'all'>('active');
   
   // Determine if we should include deleted records
@@ -24,7 +25,7 @@ export const useAdminFilteredData = ({ userRole }: UseAdminFilteredDataProps) =>
     onParentUpdated,
     onImportCompleted,
     refetch
-  } = useOptimizedParentsData({ userRole, includeDeleted });
+  } = useOptimizedParentsData({ userRole, includeDeleted, includedRoles });
 
   // Apply status filter to parents
   const statusFilteredParents = filteredParentsByRole.filter(parent => {

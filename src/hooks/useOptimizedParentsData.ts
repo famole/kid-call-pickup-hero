@@ -9,9 +9,14 @@ import { getAllStudents } from '@/services/studentService';
 interface UseOptimizedParentsDataProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   includeDeleted?: boolean;
+  includedRoles?: ('parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other')[];
 }
 
-export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = false }: UseOptimizedParentsDataProps) => {
+export const useOptimizedParentsData = ({ 
+  userRole = 'parent', 
+  includeDeleted = false,
+  includedRoles
+}: UseOptimizedParentsDataProps) => {
   const { toast } = useToast();
   const [parents, setParents] = useState<ParentWithStudents[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,8 +27,14 @@ export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = 
   const lastFetchRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
 
-  // Filter parents by role with improved logic
+  // Filter parents by role(s)
   const filteredParentsByRole = parents.filter(parent => {
+    // Use includedRoles if provided, otherwise filter by single userRole
+    if (includedRoles && includedRoles.length > 0) {
+      return includedRoles.includes(parent.role || 'parent' as any);
+    }
+    
+    // Original single role logic
     if (userRole === 'superadmin') {
       return parent.role === 'superadmin';
     } else if (userRole === 'teacher') {

@@ -71,23 +71,24 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
       <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>{t('parentsManagement.tableHeaders.name', { defaultValue: 'Name' })}</TableHead>
-          <TableHead>{getEmailColumnLabel()}</TableHead>
-          {shouldShowPhoneColumn && <TableHead>{t('parentsManagement.tableHeaders.phone', { defaultValue: 'Phone' })}</TableHead>}
-          {shouldShowStudentsColumn && <TableHead>{t('parentsManagement.tableHeaders.students', { defaultValue: 'Students' })}</TableHead>}
-          <TableHead>{t('parentsManagement.tableHeaders.actions', { defaultValue: 'Actions' })}</TableHead>
+           <TableHead>{t('parentsManagement.tableHeaders.name', { defaultValue: 'Name' })}</TableHead>
+           <TableHead>{getEmailColumnLabel()}</TableHead>
+           {shouldShowPhoneColumn && <TableHead>{t('parentsManagement.tableHeaders.phone', { defaultValue: 'Phone' })}</TableHead>}
+           <TableHead>{t('parentsManagement.tableHeaders.role', { defaultValue: 'Role' })}</TableHead>
+           {shouldShowStudentsColumn && <TableHead>{t('parentsManagement.tableHeaders.students', { defaultValue: 'Students' })}</TableHead>}
+           <TableHead>{t('parentsManagement.tableHeaders.actions', { defaultValue: 'Actions' })}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {isLoading ? (
           <TableRow>
-            <TableCell colSpan={shouldShowStudentsColumn ? (shouldShowPhoneColumn ? 5 : 4) : (shouldShowPhoneColumn ? 4 : 3)} className="text-center">
+            <TableCell colSpan={shouldShowStudentsColumn ? (shouldShowPhoneColumn ? 6 : 5) : (shouldShowPhoneColumn ? 5 : 4)} className="text-center">
               {t(`parentsManagement.loading.${getUserTypeKey()}`)}
             </TableCell>
           </TableRow>
         ) : parents.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={shouldShowStudentsColumn ? (shouldShowPhoneColumn ? 5 : 4) : (shouldShowPhoneColumn ? 4 : 3)} className="text-center">
+            <TableCell colSpan={shouldShowStudentsColumn ? (shouldShowPhoneColumn ? 6 : 5) : (shouldShowPhoneColumn ? 5 : 4)} className="text-center">
               {searchTerm 
                 ? t(`parentsManagement.noResultsSearch.${getUserTypeKey()}`, { searchTerm })
                 : `${t(`parentsManagement.noResults.${getUserTypeKey()}`)}. ${t(`parentsManagement.addToStart.${getUserTypeKey()}`)}`
