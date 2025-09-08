@@ -61,11 +61,15 @@ export const getActivePickupRequestsForParent = async (
       }
     }
 
+    console.log('🔍 DEBUG - Querying pickup requests for parent:', parentId);
+
     const { data, error } = await supabase
       .from('pickup_requests')
       .select('*')
       .eq('parent_id', parentId)
       .in('status', ['pending', 'called']);
+    
+    console.log('🔍 DEBUG - Raw supabase pickup request query result:', { data, error, parentId });
     
     if (error) {
       console.error('Supabase error fetching pickup requests for parent:', error);

@@ -106,6 +106,8 @@ export const useOptimizedParentDashboard = () => {
         children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized }))
       });
 
+      console.log('🔍 DEBUG - Raw pickup requests from database:', pickupRequests);
+
       logger.log('Using parent context:', { parentId, user: { id: user.id, email: user.email, username: user.username } });
 
       logger.log('Dashboard data loaded:', {
