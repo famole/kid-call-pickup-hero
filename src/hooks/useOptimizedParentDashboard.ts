@@ -62,30 +62,49 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
-        // Always attempt to get the actual parent ID from the database
-        let parentId = user.id;
-        const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
-        if (rpcParentId) {
-          parentId = rpcParentId;
-        } else if (rpcError) {
-          logger.error('Error fetching parent ID via RPC:', rpcError);
-        }
+      // Always attempt to get the actual parent ID from the database
+      let parentId = user.id;
+      const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
       
+      console.log('🔍 DEBUG - RPC get_current_parent_id result:', { 
+        rpcParentId, 
+        rpcError: rpcError?.message,
+        userId: user.id,
+        userEmail: user.email,
+        username: user.username 
+      });
+      
+      if (rpcParentId) {
+        parentId = rpcParentId;
+      } else if (rpcError) {
+        logger.error('Error fetching parent ID via RPC:', rpcError);
+      }
+    
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
 
       // Determine user type once for downstream branching
       const isEmailUser = Boolean(user.email);
+      
+      console.log('🔍 DEBUG - User type and loading strategy:', {
+        isEmailUser,
+        parentId,
+        strategy: isEmailUser ? 'getParentDashboardDataOptimized' : 'getParentDashboardDataByParentId'
+      });
 
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
         isEmailUser
           ? getParentDashboardDataOptimized(user.email!)
           : getParentDashboardDataByParentId(parentId),
-        isEmailUser
-          ? getActivePickupRequestsForParent(parentId)
-          : getActivePickupRequestsForParentId(parentId)
+        getActivePickupRequestsForParent(parentId)
       ]);
+
+      console.log('🔍 DEBUG - Dashboard data results:', {
+        childrenCount: dashboardData.allChildren.length,
+        pickupRequestsCount: pickupRequests.length,
+        children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized }))
+      });
 
       logger.log('Using parent context:', { parentId, user: { id: user.id, email: user.email, username: user.username } });
 

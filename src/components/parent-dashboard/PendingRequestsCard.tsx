@@ -4,7 +4,7 @@ import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Info } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth/AuthProvider';
 
 interface PendingRequestsCardProps {
   pendingRequests: PickupRequest[];
