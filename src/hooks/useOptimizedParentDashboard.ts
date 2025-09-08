@@ -359,7 +359,7 @@ export const useOptimizedParentDashboard = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedChildren, toast, loadDashboardData, user]);
+  }, [selectedChildren, toast, loadDashboardData, user, currentParentId]);
 
   // Initial load
   useEffect(() => {
