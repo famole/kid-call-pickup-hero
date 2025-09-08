@@ -62,15 +62,14 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
-      // Use the user ID directly for username-only users, or try to get parent ID for email users
-      let parentId = user.id;
-      if (user.email) {
-        // For email users, try to get parent ID from RPC
-        const { data: rpcParentId } = await supabase.rpc('get_current_parent_id');
+        // Always attempt to get the actual parent ID from the database
+        let parentId = user.id;
+        const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
         if (rpcParentId) {
           parentId = rpcParentId;
+        } else if (rpcError) {
+          logger.error('Error fetching parent ID via RPC:', rpcError);
         }
-      }
       
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
@@ -328,11 +327,11 @@ export const useOptimizedParentDashboard = () => {
     setIsSubmitting(true);
     try {
       // For username-only users, use the secure database function
-      if (!user?.email && user?.id) {
-        // Use database function for username-only users
+      if (!user?.email && currentParentId) {
+        // Use database function for username-only users with resolved parent ID
         await Promise.all(
           selectedChildren.map(async (studentId) => {
-            await createPickupRequestForUsernameUser(studentId, user.id);
+            await createPickupRequestForUsernameUser(studentId, currentParentId);
           })
         );
       } else {
