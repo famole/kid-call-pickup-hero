@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { getParentDashboardDataByParentId, getActivePickupRequestsForParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
+import { getParentDashboardDataByParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent, createPickupRequest } from '@/services/pickup';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
@@ -62,32 +62,27 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
-      // Use the user ID directly for username-only users, or try to get parent ID for email users
-      let parentId = user.id;
-      if (user.email) {
-        // For email users, try to get parent ID from RPC
-        const { data: rpcParentId } = await supabase.rpc('get_current_parent_id');
+        // Always attempt to get the actual parent ID from the database
+        let parentId = user.id;
+        const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
         if (rpcParentId) {
           parentId = rpcParentId;
+        } else if (rpcError) {
+          logger.error('Error fetching parent ID via RPC:', rpcError);
         }
-      }
       
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
 
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
-        user.email ? 
-          getParentDashboardDataOptimized(user.email) : 
-          getParentDashboardDataByParentId(parentId),
         user.email ?
-          getActivePickupRequestsForParent() :
-          getActivePickupRequestsForParentId(parentId)
+          getParentDashboardDataOptimized(user.email) :
+          getParentDashboardDataByParentId(parentId),
+        getActivePickupRequestsForParent(parentId)
       ]);
 
-      console.log('🔍 DEBUG - Raw pickup requests from query:', pickupRequests);
-      console.log('🔍 DEBUG - Parent ID used:', parentId);
-      console.log('🔍 DEBUG - User info:', { id: user.id, email: user.email, username: user.username });
+      logger.log('Using parent context:', { parentId, user: { id: user.id, email: user.email, username: user.username } });
 
       logger.log('Dashboard data loaded:', {
         childrenCount: dashboardData.allChildren.length,
@@ -108,9 +103,9 @@ export const useOptimizedParentDashboard = () => {
           .in('student_id', allChildIds)
           .in('status', ['pending', 'called']);
 
-        console.log('🔍 DEBUG - Query for all child requests:', {
+        logger.log('Fetched pickup requests for children:', {
           allChildIds,
-          allChildRequests: allChildRequests || [],
+          requests: allChildRequests?.length || 0,
           error: error?.message
         });
 
@@ -328,11 +323,11 @@ export const useOptimizedParentDashboard = () => {
     setIsSubmitting(true);
     try {
       // For username-only users, use the secure database function
-      if (!user?.email && user?.id) {
-        // Use database function for username-only users
+      if (!user?.email && currentParentId) {
+        // Use database function for username-only users with resolved parent ID
         await Promise.all(
           selectedChildren.map(async (studentId) => {
-            await createPickupRequestForUsernameUser(studentId, user.id);
+            await createPickupRequestForUsernameUser(studentId, currentParentId);
           })
         );
       } else {
@@ -360,7 +355,7 @@ export const useOptimizedParentDashboard = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedChildren, toast, loadDashboardData, user]);
+  }, [selectedChildren, toast, loadDashboardData, user, currentParentId]);
 
   // Initial load
   useEffect(() => {
