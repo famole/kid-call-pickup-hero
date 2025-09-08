@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { getParentDashboardDataByParentId, getActivePickupRequestsForParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
+import { getParentDashboardDataByParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent, createPickupRequest } from '@/services/pickup';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
@@ -76,17 +76,13 @@ export const useOptimizedParentDashboard = () => {
 
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
-        user.email ? 
-          getParentDashboardDataOptimized(user.email) : 
-          getParentDashboardDataByParentId(parentId),
         user.email ?
-          getActivePickupRequestsForParent() :
-          getActivePickupRequestsForParentId(parentId)
+          getParentDashboardDataOptimized(user.email) :
+          getParentDashboardDataByParentId(parentId),
+        getActivePickupRequestsForParent()
       ]);
 
-      console.log('🔍 DEBUG - Raw pickup requests from query:', pickupRequests);
-      console.log('🔍 DEBUG - Parent ID used:', parentId);
-      console.log('🔍 DEBUG - User info:', { id: user.id, email: user.email, username: user.username });
+      logger.log('Using parent context:', { parentId, user: { id: user.id, email: user.email, username: user.username } });
 
       logger.log('Dashboard data loaded:', {
         childrenCount: dashboardData.allChildren.length,
@@ -107,9 +103,9 @@ export const useOptimizedParentDashboard = () => {
           .in('student_id', allChildIds)
           .in('status', ['pending', 'called']);
 
-        console.log('🔍 DEBUG - Query for all child requests:', {
+        logger.log('Fetched pickup requests for children:', {
           allChildIds,
-          allChildRequests: allChildRequests || [],
+          requests: allChildRequests?.length || 0,
           error: error?.message
         });
 
