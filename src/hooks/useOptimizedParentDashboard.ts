@@ -79,7 +79,7 @@ export const useOptimizedParentDashboard = () => {
         user.email ?
           getParentDashboardDataOptimized(user.email) :
           getParentDashboardDataByParentId(parentId),
-        getActivePickupRequestsForParent()
+        getActivePickupRequestsForParent(parentId)
       ]);
 
       logger.log('Using parent context:', { parentId, user: { id: user.id, email: user.email, username: user.username } });
