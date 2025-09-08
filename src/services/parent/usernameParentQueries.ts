@@ -7,21 +7,20 @@ export const getParentDashboardDataByParentId = async (parentId: string) => {
   try {
     logger.log('Fetching parent dashboard data for parent ID:', parentId);
 
-    // Get all children this parent has access to (direct children + authorized children)
+    // Get direct children (via student_parents relationship)
     const { data: childrenData, error: childrenError } = await supabase
-      .from('students')
+      .from('student_parents')
       .select(`
-        id,
-        name,
-        class_id,
-        avatar,
-        student_parents!inner (
-          parent_id,
-          is_primary
-        )
+        students!inner (
+          id,
+          name,
+          class_id,
+          avatar
+        ),
+        is_primary
       `)
-      .eq('student_parents.parent_id', parentId)
-      .is('deleted_at', null);
+      .eq('parent_id', parentId)
+      .is('students.deleted_at', null);
 
     if (childrenError) {
       logger.error('Error fetching children:', childrenError);
@@ -78,12 +77,12 @@ export const getParentDashboardDataByParentId = async (parentId: string) => {
     }
 
     // Combine and format children data
-    const directChildren: Child[] = childrenData?.map(child => ({
-      id: child.id,
-      name: child.name,
-      classId: child.class_id || '',
+    const directChildren: Child[] = childrenData?.map(relation => ({
+      id: relation.students.id,
+      name: relation.students.name,
+      classId: relation.students.class_id || '',
       parentIds: [parentId],
-      avatar: child.avatar,
+      avatar: relation.students.avatar,
     })) || [];
 
     const authorizedChildrenFormatted: Child[] = authorizedStudentDetails?.map(student => ({
