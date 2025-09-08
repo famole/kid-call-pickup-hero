@@ -74,14 +74,17 @@ export const useOptimizedParentDashboard = () => {
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
 
+      // Determine user type once for downstream branching
+      const isEmailUser = Boolean(user.email);
+
       // Load both children and pickup requests in parallel
       const [dashboardData, pickupRequests] = await Promise.all([
-        user.email ?
-          getParentDashboardDataOptimized(user.email) :
-          getParentDashboardDataByParentId(parentId),
-        user.email ?
-          getActivePickupRequestsForParent(parentId) :
-          getActivePickupRequestsForParentId(parentId)
+        isEmailUser
+          ? getParentDashboardDataOptimized(user.email!)
+          : getParentDashboardDataByParentId(parentId),
+        isEmailUser
+          ? getActivePickupRequestsForParent(parentId)
+          : getActivePickupRequestsForParentId(parentId)
       ]);
 
       logger.log('Using parent context:', { parentId, user: { id: user.id, email: user.email, username: user.username } });
@@ -94,7 +97,7 @@ export const useOptimizedParentDashboard = () => {
 
       setChildren(dashboardData.allChildren);
 
-      if (user.email) {
+      if (isEmailUser) {
         // Get all child IDs (both own and authorized)
         const allChildIds = dashboardData.allChildren.map(child => child.id);
 
