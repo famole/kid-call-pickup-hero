@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { getParentDashboardDataByParentId, getActivePickupRequestsForParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
+import { getParentDashboardDataByParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent, createPickupRequest } from '@/services/pickup';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
