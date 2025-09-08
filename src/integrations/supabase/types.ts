@@ -573,6 +573,10 @@ export type Database = {
           username: string
         }[]
       }
+      get_parent_id_from_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_role: {
         Args: { user_email: string }
         Returns: Database["public"]["Enums"]["app_role"]
