@@ -577,6 +577,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_pickup_requests_for_parent: {
+        Args: { p_parent_id: string }
+        Returns: {
+          id: string
+          parent_id: string
+          request_time: string
+          status: string
+          student_id: string
+        }[]
+      }
       get_user_role: {
         Args: { user_email: string }
         Returns: Database["public"]["Enums"]["app_role"]
