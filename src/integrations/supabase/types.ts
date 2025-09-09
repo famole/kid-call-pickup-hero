@@ -530,6 +530,10 @@ export type Database = {
         Args: { p_parent_id: string; p_student_id: string }
         Returns: string
       }
+      create_pickup_request_secure: {
+        Args: { p_student_id: string }
+        Returns: string
+      }
       get_auth_status_for_parents: {
         Args: Record<PropertyKey, never>
         Returns: {
