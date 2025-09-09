@@ -530,6 +530,10 @@ export type Database = {
         Args: { p_parent_id: string; p_student_id: string }
         Returns: string
       }
+      debug_auth_state: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_auth_status_for_parents: {
         Args: Record<PropertyKey, never>
         Returns: {
