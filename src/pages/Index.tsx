@@ -23,6 +23,12 @@ const Index = () => {
       navigate('/admin');
       return;
     }
+
+    // Redirect teachers to pickup management
+    if (user && user.role === 'teacher') {
+      navigate('/pickup-management');
+      return;
+    }
   }, [loading, isAuthenticated, user, navigate]);
 
   // Show loading indicator while checking auth status
