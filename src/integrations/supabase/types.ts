@@ -605,6 +605,10 @@ export type Database = {
         Args: { student_id: string }
         Returns: boolean
       }
+      set_username_user_context: {
+        Args: { parent_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:

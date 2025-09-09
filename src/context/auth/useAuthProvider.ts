@@ -327,23 +327,13 @@ export const useAuthProvider = (): AuthState & {
           await handleUserSession(data.user);
         } else if (data.isUsernameAuth && data.parentData) {
           // Username-only authentication (no Supabase auth)
-          // Create a session using the parent ID as the user ID
-          try {
-            // For username users, we'll create a custom session where the auth.uid() = parent_id
-            // This allows RLS policies to work correctly without anonymous sessions
-            logger.log('Setting up username auth session for parent:', data.parentData.id);
-            
-            // Set the current parent context for this session
-            const { error: contextError } = await supabase.rpc('set_username_user_context', {
-              parent_id: data.parentData.id
-            });
-            
-            if (contextError) {
-              logger.error('Error setting username user context:', contextError);
-            }
-          } catch (sessionError) {
-            logger.error('Error setting up username session:', sessionError);
-          }
+          // Store parent context in localStorage for username users
+          logger.log('Setting up username auth session for parent:', data.parentData.id);
+          
+          // Store the parent ID in localStorage so it can be used by queries
+          localStorage.setItem('username_parent_id', data.parentData.id);
+          
+          logger.log('Stored parent ID for username user:', data.parentData.id);
           
           // Store session in localStorage for persistence
           const sessionData = {
