@@ -64,11 +64,10 @@ export const getActivePickupRequestsForParent = async (
     console.log('🔍 DEBUG - Querying pickup requests for parent:', parentId);
     console.log('🔍 DEBUG - Expected parent ID from DB:', '4a694e20-2532-4b6d-a37a-e1666fcd118b');
 
-    const { data, error } = await supabase
-      .from('pickup_requests')
-      .select('*')
-      .eq('parent_id', parentId)
-      .in('status', ['pending', 'called']);
+    // Use secure function that bypasses RLS for username users
+    const { data, error } = await supabase.rpc('get_pickup_requests_for_parent', {
+      p_parent_id: parentId
+    });
     
     console.log('🔍 DEBUG - Raw supabase pickup request query result:', { data, error, parentId });
     
