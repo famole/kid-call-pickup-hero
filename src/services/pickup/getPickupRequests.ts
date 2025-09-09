@@ -62,6 +62,7 @@ export const getActivePickupRequestsForParent = async (
     }
 
     console.log('🔍 DEBUG - Querying pickup requests for parent:', parentId);
+    console.log('🔍 DEBUG - Expected parent ID from DB:', '4a694e20-2532-4b6d-a37a-e1666fcd118b');
 
     const { data, error } = await supabase
       .from('pickup_requests')
