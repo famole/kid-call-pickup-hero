@@ -3,6 +3,7 @@ import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
 import { getParentDashboardDataByParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent } from '@/services/pickup';
+import { createPickupRequest } from '@/services/pickup/createPickupRequest';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -61,37 +62,30 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
-      // Always attempt to get the actual parent ID from the database
+      // Determine user type and parent ID
+      const isEmailUser = Boolean(user.email);
       let parentId = user.id;
-      const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
-      
-      console.log('🔍 DEBUG - RPC get_current_parent_id result:', { 
-        rpcParentId, 
-        rpcError: rpcError?.message,
-        userId: user.id,
-        userEmail: user.email,
-        username: user.username 
-      });
-      
-      if (rpcParentId) {
-        parentId = rpcParentId;
-      } else if (rpcError) {
-        logger.error('Error fetching parent ID via RPC:', rpcError);
+
+      if (isEmailUser) {
+        // Try to get parent ID from RPC for email users
+        const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
+        if (rpcParentId) {
+          parentId = rpcParentId;
+        } else if (rpcError) {
+          logger.error('Error fetching parent ID via RPC:', rpcError);
+        }
+      } else {
+        // For username users, get parent ID from localStorage
+        const storedParentId = localStorage.getItem('username_parent_id');
+        if (storedParentId) {
+          parentId = storedParentId;
+        }
       }
-    
+
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
 
-      // Determine user type once for downstream branching
-      const isEmailUser = Boolean(user.email);
-      
-      console.log('🔍 DEBUG - User type and loading strategy:', {
-        isEmailUser,
-        parentId,
-        strategy: isEmailUser ? 'getParentDashboardDataOptimized' : 'getParentDashboardDataByParentId'
-      });
-
-      // Load both children and pickup requests in parallel
+      // Load dashboard data and pickup requests
       const [dashboardData, pickupRequests] = await Promise.all([
         isEmailUser
           ? getParentDashboardDataOptimized(user.email!)
@@ -105,159 +99,31 @@ export const useOptimizedParentDashboard = () => {
         children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized }))
       });
 
-      console.log('🔍 DEBUG - Raw pickup requests from database:', pickupRequests);
-
-      logger.log('Using parent context:', { parentId, user: { id: user.id, email: user.email, username: user.username } });
-
-      logger.log('Dashboard data loaded:', {
-        childrenCount: dashboardData.allChildren.length,
-        pickupRequestsCount: pickupRequests.length,
-        currentParentId: parentId
-      });
-
       setChildren(dashboardData.allChildren);
-
-  // For username users, use direct queries that bypass RLS
-  if (isEmailUser) {
-    // Regular optimized queries for email users
-    const dashboardData = await getParentDashboardDataOptimized(userId);
-    setChildren(dashboardData.allChildren);
-    setParentInfo(dashboardData.parentInfo);
-
-    if (dashboardData.allChildren.length > 0) {
-      // Fetch all pickup requests for the children (including pending and called)
-      const { data: allChildRequests, error } = await supabase
-        .from('pickup_requests')
-        .select('*')
-        .in('student_id', dashboardData.allChildren.map(child => child.id))
-        .in('status', ['pending', 'called']);
-
-      logger.log('Fetched pickup requests for children:', {
-        allChildIds: dashboardData.allChildren.map(child => child.id),
-        requests: allChildRequests?.length || 0,
-        error: error?.message
-      });
-
-      if (!error && allChildRequests) {
-        // Fetch parent information first
-        const parentIds = [...new Set(allChildRequests.map(req => req.parent_id))];
-        const { data: parentsData } = await supabase
-          .from('parents')
-          .select('id, name, email')
-          .in('id', parentIds);
-
-        const parentsMap = new Map(parentsData?.map(p => [p.id, p]) || []);
-
-        const formattedRequests: PickupRequest[] = allChildRequests.map(req => ({
-          id: req.id,
-          studentId: req.student_id,
-          parentId: req.parent_id,
-          requestTime: new Date(req.request_time),
-          status: req.status as 'pending' | 'called' | 'completed' | 'cancelled',
-          requestingParent: parentsMap.get(req.parent_id) ? {
-            id: parentsMap.get(req.parent_id)!.id,
-            name: parentsMap.get(req.parent_id)!.name,
-            email: parentsMap.get(req.parent_id)!.email
-          } : undefined
-        }));
-
-        setActiveRequests(formattedRequests);
-        logger.log('🔍 DEBUG - Dashboard data results:', {
-          childrenCount: dashboardData.allChildren.length,
-          pickupRequestsCount: formattedRequests.length,
-          children: dashboardData.allChildren.map(child => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized }))
-        });
-
-        logger.log('🔍 DEBUG - Raw pickup requests from database:', allChildRequests);
-      }
-    }
-  } else {
-    // For username users, use direct queries with the stored parent ID
-    const storedParentId = localStorage.getItem('username_parent_id');
-    if (storedParentId) {
-      try {
-        // Fetch dashboard data using parent ID directly
-        const dashboardData = await getParentDashboardDataByParentId(storedParentId);
-        setChildren(dashboardData.allChildren);
-        
-        // Set parent info from localStorage
+      
+      // Set parent info based on user type
+      if (isEmailUser) {
+        setParentInfo([]);
+      } else {
+        // For username users, get parent info from localStorage
         const sessionData = localStorage.getItem('username_session');
         if (sessionData) {
           const parsedData = JSON.parse(sessionData);
-          setParentInfo({
+          setParentInfo([{
             id: parsedData.id,
             name: parsedData.name
-          });
-        }
-
-        // Fetch pickup requests using parent ID directly
-        const pickupRequests = await getActivePickupRequestsForParentId(storedParentId);
-        setActiveRequests(pickupRequests);
-        
-        logger.log('🔍 DEBUG - Dashboard data results:', {
-          childrenCount: dashboardData.allChildren.length,
-          pickupRequestsCount: pickupRequests.length,
-          children: dashboardData.allChildren.map(child => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized }))
-        });
-
-        logger.log('🔍 DEBUG - Raw pickup requests from database:', pickupRequests);
-      } catch (error) {
-        logger.error('Error loading username user data:', error);
-      }
-    }
-            const parentIds = [...new Set(allChildRequests.map(req => req.parent_id))];
-            let parentsMap = new Map();
-
-            if (parentIds.length > 0) {
-              const { data: parents, error: parentsError } = await supabase
-                .from('parents')
-                .select('id, name, email')
-                .in('id', parentIds);
-
-              if (!parentsError && parents) {
-                setParentInfo(parents);
-                parentsMap = new Map(parents.map(p => [p.id, p]));
-              }
-            }
-
-            // Transform requests with parent information
-            const transformedRequests = allChildRequests.map(req => ({
-              id: req.id,
-              studentId: req.student_id,
-              parentId: req.parent_id,
-              requestTime: new Date(req.request_time),
-              status: req.status as 'pending' | 'called' | 'completed' | 'cancelled',
-              requestingParent: parentsMap.get(req.parent_id) ? {
-                id: parentsMap.get(req.parent_id).id,
-                name: parentsMap.get(req.parent_id).name,
-                email: parentsMap.get(req.parent_id).email
-              } : undefined
-            }));
-
-            // Combine with parent's own requests, avoiding duplicates
-            const combinedRequests = [...pickupRequests];
-            transformedRequests.forEach(req => {
-              if (!combinedRequests.some(existing => existing.id === req.id)) {
-                combinedRequests.push(req);
-              }
-            });
-
-            setActiveRequests(combinedRequests);
-          } else {
-            setActiveRequests(pickupRequests);
-          }
+          }]);
         } else {
-          setActiveRequests(pickupRequests);
+          setParentInfo([]);
         }
-      } else {
-        // For username-only users, the service already returns all relevant requests
-        setActiveRequests(pickupRequests);
       }
       
+      setActiveRequests(pickupRequests);
+
       lastFetchRef.current = now;
       logger.log('Parent dashboard data loaded successfully', {
         childrenCount: dashboardData.allChildren.length,
-        requestsCount: activeRequests.length
+        requestsCount: pickupRequests.length
       });
     } catch (error) {
       logger.error('Error loading parent dashboard data:', error);
@@ -267,7 +133,7 @@ export const useOptimizedParentDashboard = () => {
       }
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.email, user?.id]);
 
   // Set up real-time subscription for pickup requests with enhanced filtering for user's requests
   useEffect(() => {
