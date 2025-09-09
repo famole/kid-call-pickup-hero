@@ -57,7 +57,7 @@ const Navigation: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navigationItems = [
-    { path: '/', label: t('navigation.dashboard'), icon: Home, roles: ['parent', 'family', 'teacher', 'superadmin'] },
+    { path: '/', label: t('navigation.dashboard'), icon: Home, roles: ['parent', 'family', 'superadmin'] },
     { path: '/pickup-authorization', label: t('navigation.pickupAuthorizations'), icon: Car, roles: ['parent'] },
     { path: '/self-checkout', label: t('navigation.selfCheckout'), icon: LogOut, roles: ['parent'] },
     { path: '/self-checkout-history', label: t('navigation.selfCheckoutHistory'), icon: History, roles: ['parent'] },
