@@ -848,6 +848,18 @@
     "noDataToExport": "No hay datos para exportar",
     "exportSuccess": "Reporte exportado exitosamente",
     "exportError": "Error al exportar el reporte",
-    "failedToLoadClasses": "Error al cargar las clases asignadas"
+    "failedToLoadClasses": "Error al cargar las clases asignadas",
+    "reportExported": "Reporte exportado exitosamente",
+    "failedToGenerate": "Error al generar reporte",
+    "failedToExport": "Error al exportar reporte",
+    "totalPickups": "Recogidas Totales",
+    "averageDuration": "Duración Promedio",
+    "minutes": "minutos",
+    "date": "Fecha",
+    "time": "Hora",
+    "student": "Estudiante",
+    "class": "Clase",
+    "parent": "Padre",
+    "duration": "Duración (min)"
   }
 }

@@ -12,6 +12,7 @@ import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
 import StudentStats from '@/components/admin-reports/StudentStats';
 import { format } from 'date-fns';
 import { PickupHistoryWithDetails } from '@/services/pickupHistoryService';
+import { BarChart3, Download, FileText } from 'lucide-react';
 
 interface PickupHistoryData {
   id: string;
@@ -62,7 +63,7 @@ const TeacherReportsTab: React.FC = () => {
       setTeacherClassIds(classIds);
     } catch (error) {
       console.error('Error fetching teacher classes:', error);
-      toast.error('Failed to load assigned classes');
+      toast.error(t('teacherReports.failedToLoadClasses'));
     }
   }, [user?.id]);
 
@@ -72,7 +73,7 @@ const TeacherReportsTab: React.FC = () => {
 
   const handleGenerateReport = async () => {
     if (teacherClassIds.length === 0) {
-      toast.error('No assigned classes found');
+      toast.error(t('teacherReports.noAssignedClasses'));
       return;
     }
 
@@ -128,10 +129,10 @@ const TeacherReportsTab: React.FC = () => {
         setStudentStats(null);
       }
 
-      toast.success('Report generated successfully');
+      toast.success(t('teacherReports.reportGenerated'));
     } catch (error) {
       console.error('Error generating report:', error);
-      toast.error('Failed to generate report');
+      toast.error(t('teacherReports.failedToGenerate'));
     } finally {
       setLoading(false);
     }
@@ -139,13 +140,13 @@ const TeacherReportsTab: React.FC = () => {
 
   const handleExportCSV = () => {
     if (!pickupHistory.length) {
-      toast.error('No data to export');
+      toast.error(t('teacherReports.noDataToExport'));
       return;
     }
 
     try {
       // Prepare CSV data
-      const headers = ['Date', 'Time', 'Student', 'Class', 'Parent', 'Duration (min)'];
+      const headers = [t('teacherReports.date'), t('teacherReports.time'), t('teacherReports.student'), t('teacherReports.class'), t('teacherReports.parent'), t('teacherReports.duration')];
       const csvData = pickupHistory.map(item => [
         format(new Date(item.completed_time), 'yyyy-MM-dd'),
         format(new Date(item.completed_time), 'HH:mm:ss'),
@@ -171,10 +172,10 @@ const TeacherReportsTab: React.FC = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success('Report exported successfully');
+      toast.success(t('teacherReports.reportExported'));
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      toast.error('Failed to export report');
+      toast.error(t('teacherReports.failedToExport'));
     }
   };
 
@@ -199,7 +200,10 @@ const TeacherReportsTab: React.FC = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t('teacherReports.title')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            {t('teacherReports.title')}
+          </CardTitle>
           <CardDescription>
             {t('teacherReports.description')}
           </CardDescription>
@@ -213,21 +217,25 @@ const TeacherReportsTab: React.FC = () => {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
+                className="mt-1"
               />
             </div>
             <div className="flex items-end space-x-2">
               <Button 
                 onClick={handleGenerateReport} 
                 disabled={loading || teacherClassIds.length === 0}
-                className="flex-1"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
+                <FileText className="h-4 w-4 mr-2" />
                 {loading ? t('teacherReports.generating') : t('teacherReports.generateReport')}
               </Button>
               <Button 
                 variant="outline" 
                 onClick={handleExportCSV}
                 disabled={!pickupHistory.length}
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
               >
+                <Download className="h-4 w-4 mr-2" />
                 {t('admin.exportCSV')}
               </Button>
             </div>

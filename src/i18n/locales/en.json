@@ -981,6 +981,19 @@
     "noDataToExport": "No data to export",
     "exportSuccess": "Report exported successfully",
     "exportError": "Failed to export report",
-    "failedToLoadClasses": "Failed to load assigned classes"
+    "failedToLoadClasses": "Failed to load assigned classes",
+    "reportExported": "Report exported successfully",
+    "failedToGenerate": "Failed to generate report",
+    "failedToExport": "Failed to export report",
+    "failedToLoadClasses": "Failed to load assigned classes",
+    "totalPickups": "Total Pickups",
+    "averageDuration": "Average Duration",
+    "minutes": "minutes",
+    "date": "Date",
+    "time": "Time",
+    "student": "Student",
+    "class": "Class",
+    "parent": "Parent",
+    "duration": "Duration (min)"
   }
 }
