@@ -224,7 +224,7 @@ const TeacherReportsTab: React.FC = () => {
               <Button 
                 onClick={handleGenerateReport} 
                 disabled={loading || teacherClassIds.length === 0}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="flex-1 bg-[hsl(var(--school-primary))] hover:bg-[hsl(var(--school-primary))]/90 text-white"
               >
                 <FileText className="h-4 w-4 mr-2" />
                 {loading ? t('teacherReports.generating') : t('teacherReports.generateReport')}
