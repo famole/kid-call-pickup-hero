@@ -194,7 +194,7 @@ const ReportsTab = () => {
                     onClassChange={setSelectedClassId}
                   />
                 </div>
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex items-end">
                   <ReportActions
                     onGenerateReport={() => handleGenerateReport(1)}
                     onExportCSV={handleExportCSV}
