@@ -179,7 +179,7 @@ const ReportsTab = () => {
           ) : (
             <div className="space-y-4">
               {/* Filters and Actions Row */}
-              <div className="w-full flex flex-col lg:flex-row gap-4 items-end">
+              <div className="w-full flex flex-col lg:flex-row gap-4 items-stretch">
                 <div className="flex-1">
                   <ReportFilters
                     students={students}
