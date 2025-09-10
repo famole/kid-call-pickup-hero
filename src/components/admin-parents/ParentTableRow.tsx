@@ -61,11 +61,6 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
       {showPhoneColumn && (
         <TableCell>{parent.phone || t('parentsManagement.notAvailable')}</TableCell>
       )}
-      <TableCell>
-        <Badge variant="outline" className="text-xs">
-          {t(`roles.${parent.role || 'parent'}`)}
-        </Badge>
-      </TableCell>
       {showStudentsColumn && (
         <TableCell>
           {t('parentsManagement.studentsCount', { 
