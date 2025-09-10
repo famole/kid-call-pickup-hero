@@ -17,9 +17,8 @@ const ReportActions: React.FC<ReportActionsProps> = ({
   hasData
 }) => {
   return (
-    <div className="flex gap-2 justify-end ml-auto">
+    <div className="flex gap-2">
       <Button 
-        variant="secondary"
         onClick={onGenerateReport} 
         disabled={loading}
       >
@@ -27,6 +26,7 @@ const ReportActions: React.FC<ReportActionsProps> = ({
         {loading ? 'Generating...' : 'Generate Report'}
       </Button>
       <Button 
+        variant="outline"
         onClick={onExportCSV}
         disabled={!hasData}
       >
