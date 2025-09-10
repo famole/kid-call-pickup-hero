@@ -993,5 +993,10 @@
     "parent": "Parent",
     "duration": "Duration (min)",
     "filteringBy": "Filtering by"
+  },
+  "studentStats": {
+    "title": "Student Statistics",
+    "totalPickups": "Total Pickups",
+    "averageDuration": "Average Duration"
   }
 }

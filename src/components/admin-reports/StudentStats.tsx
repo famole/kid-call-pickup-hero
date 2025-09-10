@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface StudentStatsProps {
   stats: {
@@ -10,21 +11,23 @@ interface StudentStatsProps {
 }
 
 const StudentStats: React.FC<StudentStatsProps> = ({ stats }) => {
+  const { t } = useTranslation();
+  
   if (!stats) return null;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Student Statistics</CardTitle>
+        <CardTitle className="text-lg">{t('studentStats.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Total Pickups</p>
+            <p className="text-sm text-muted-foreground">{t('studentStats.totalPickups')}</p>
             <p className="text-2xl font-bold">{stats.totalPickups}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Average Duration</p>
+            <p className="text-sm text-muted-foreground">{t('studentStats.averageDuration')}</p>
             <p className="text-2xl font-bold">{stats.averageDuration} min</p>
           </div>
         </div>

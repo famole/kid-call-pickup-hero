@@ -860,5 +860,10 @@
     "parent": "Padre",
     "duration": "Duración (min)",
     "filteringBy": "Filtrando por"
+  },
+  "studentStats": {
+    "title": "Estadísticas de Estudiantes",
+    "totalPickups": "Total de Recogidas",
+    "averageDuration": "Duración Promedio"
   }
 }
