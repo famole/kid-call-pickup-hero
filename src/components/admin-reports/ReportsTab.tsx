@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
 import { getAllStudents } from '@/services/student';
+import { getAllClasses } from '@/services/classService';
 import { getPickupHistoryByStudent, getPickupStatsByStudent, getAllPickupHistory, getRecentPickupHistory, getPickupHistoryCount } from '@/services/pickupHistoryService';
 import MobilePickupHistoryTable from './MobilePickupHistoryTable';
 import ReportFilters from './ReportFilters';
@@ -10,14 +11,17 @@ import ReportActions from './ReportActions';
 import StudentStats from './StudentStats';
 import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Child } from '@/types';
+import { Child, Class } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
 
 const ReportsTab = () => {
+  const { t } = useTranslation();
   const [students, setStudents] = useState<Child[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('all');
+  const [selectedClassId, setSelectedClassId] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [pickupHistory, setPickupHistory] = useState<any[]>([]);
@@ -30,16 +34,20 @@ const ReportsTab = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchData = async () => {
       try {
         setStudentsLoading(true);
-        const studentsData = await getAllStudents();
+        const [studentsData, classesData] = await Promise.all([
+          getAllStudents(),
+          getAllClasses()
+        ]);
         setStudents(studentsData);
+        setClasses(classesData);
       } catch (error) {
-        logger.error('Error fetching students:', error);
+        logger.error('Error fetching data:', error);
         toast({
-          title: "Error",
-          description: "Failed to load students",
+          title: t('reports.error'),
+          description: t('reports.failedToLoad'),
           variant: "destructive",
         });
       } finally {
@@ -47,7 +55,7 @@ const ReportsTab = () => {
       }
     };
 
-    fetchStudents();
+    fetchData();
   }, [toast]);
 
   const handleGenerateReport = async (page: number = 1) => {
@@ -83,14 +91,17 @@ const ReportsTab = () => {
       setCurrentPage(page);
       
       toast({
-        title: "Success",
-        description: `Generated report with ${historyData.length} pickup records (${count} total)`,
+        title: t('reports.success'),
+        description: t('reports.reportGenerated', { 
+          count: historyData.length, 
+          total: count 
+        }),
       });
     } catch (error) {
       logger.error('Error generating report:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate report",
+        title: t('reports.error'),
+        description: t('reports.failedToGenerate'),
         variant: "destructive",
       });
     } finally {
@@ -105,14 +116,14 @@ const ReportsTab = () => {
   const handleExportCSV = () => {
     if (pickupHistory.length === 0) {
       toast({
-        title: "No Data",
-        description: "Please generate a report first",
+        title: t('reports.noData'),
+        description: t('reports.pleaseGenerateFirst'),
         variant: "destructive",
       });
       return;
     }
 
-    const headers = ['Student Name', 'Parent Name', 'Request Time', 'Called Time', 'Completed Time'];
+    const headers = [t('reports.studentName'), t('reports.parentName'), t('reports.requestTime'), t('reports.calledTime'), t('reports.completedTime')];
     const csvContent = [
       headers.join(','),
       ...pickupHistory.map(record => [
@@ -135,8 +146,8 @@ const ReportsTab = () => {
     window.URL.revokeObjectURL(url);
 
     toast({
-      title: "Success",
-      description: "Report exported successfully",
+      title: t('reports.success'),
+      description: t('reports.reportExported'),
     });
   };
 
@@ -146,10 +157,10 @@ const ReportsTab = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Pickup History Reports
+            {t('reports.title')}
           </CardTitle>
           <CardDescription>
-            Generate and export historical pickup data for analysis
+            {t('reports.pickupHistory')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -175,6 +186,9 @@ const ReportsTab = () => {
                 onStartDateChange={setStartDate}
                 endDate={endDate}
                 onEndDateChange={setEndDate}
+                classes={classes}
+                selectedClassId={selectedClassId}
+                onClassChange={setSelectedClassId}
               />
 
               <ReportActions

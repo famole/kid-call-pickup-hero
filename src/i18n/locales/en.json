@@ -786,7 +786,18 @@
     "noDataFound": "No data found for the selected criteria",
     "totalRequests": "Total Requests",
     "averageDuration": "Average Duration",
-    "completionRate": "Completion Rate"
+    "completionRate": "Completion Rate",
+    "filters": {
+      "student": "Student",
+      "allStudents": "All Students",
+      "startDate": "Start Date (Optional)",
+      "endDate": "End Date (Optional)",
+      "searchStudents": "Search students...",
+      "selectStudent": "Select student",
+      "class": "Class",
+      "allClasses": "All Classes",
+      "filterByClass": "Filter by Class"
+    }
   },
   "stressTest": {
     "title": "Stress Test",
