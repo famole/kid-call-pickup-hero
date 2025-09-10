@@ -865,5 +865,28 @@
     "title": "Estadísticas de Estudiantes",
     "totalPickups": "Total de Recogidas",
     "averageDuration": "Duración Promedio"
+  },
+  "mobilePickupHistory": {
+    "title": "Historial de Recogidas",
+    "records": "registros",
+    "totalRecords": "registros totales",
+    "of": "de",
+    "total": "total",
+    "page": "Página",
+    "studentName": "Nombre del Estudiante",
+    "parentName": "Nombre del Padre",
+    "requestTime": "Hora de Solicitud",
+    "calledTime": "Hora de Llamada",
+    "completedTime": "Hora de Finalización",
+    "student": "Estudiante",
+    "parent": "Padre",
+    "requested": "Solicitado",
+    "called": "Llamado",
+    "completed": "Completado",
+    "unknown": "Desconocido",
+    "unknownStudent": "Estudiante Desconocido",
+    "unknownParent": "Padre Desconocido",
+    "previous": "Anterior",
+    "next": "Siguiente"
   }
 }

@@ -998,5 +998,28 @@
     "title": "Student Statistics",
     "totalPickups": "Total Pickups",
     "averageDuration": "Average Duration"
+  },
+  "mobilePickupHistory": {
+    "title": "Pickup History",
+    "records": "records",
+    "totalRecords": "total records",
+    "of": "of",
+    "total": "total",
+    "page": "Page",
+    "studentName": "Student Name",
+    "parentName": "Parent Name",
+    "requestTime": "Request Time",
+    "calledTime": "Called Time",
+    "completedTime": "Completed Time",
+    "student": "Student",
+    "parent": "Parent",
+    "requested": "Requested",
+    "called": "Called",
+    "completed": "Completed",
+    "unknown": "Unknown",
+    "unknownStudent": "Unknown Student",
+    "unknownParent": "Unknown Parent",
+    "previous": "Previous",
+    "next": "Next"
   }
 }

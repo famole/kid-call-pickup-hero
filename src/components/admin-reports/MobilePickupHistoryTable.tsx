@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Clock, User, Calendar, PhoneCall, CheckCircl
 import { format } from 'date-fns';
 import { PickupHistoryWithDetails } from '@/services/pickupHistoryService';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface MobilePickupHistoryTableProps {
   data: PickupHistoryWithDetails[];
@@ -23,6 +24,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
   pageSize = 500, 
   onPageChange 
 }) => {
+  const { t } = useTranslation();
   const [isMobile, setIsMobile] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 768;
   });
@@ -65,8 +67,8 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
       <Card>
         <CardHeader>
           <CardTitle>
-            Pickup History ({data.length} records)
-            {totalCount > data.length && ` of ${totalCount} total`}
+            {t('mobilePickupHistory.title')} ({data.length} {t('mobilePickupHistory.records')})
+            {totalCount > data.length && ` ${t('mobilePickupHistory.of')} ${totalCount} ${t('mobilePickupHistory.total')}`}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -75,23 +77,23 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-3 font-medium">Student Name</th>
-                    <th className="text-left p-3 font-medium">Parent Name</th>
-                    <th className="text-left p-3 font-medium">Request Time</th>
-                    <th className="text-left p-3 font-medium">Called Time</th>
-                    <th className="text-left p-3 font-medium">Completed Time</th>
+                    <th className="text-center p-3 font-medium">{t('mobilePickupHistory.studentName')}</th>
+                    <th className="text-center p-3 font-medium">{t('mobilePickupHistory.parentName')}</th>
+                    <th className="text-center p-3 font-medium">{t('mobilePickupHistory.requestTime')}</th>
+                    <th className="text-center p-3 font-medium">{t('mobilePickupHistory.calledTime')}</th>
+                    <th className="text-center p-3 font-medium">{t('mobilePickupHistory.completedTime')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.map((record) => (
                     <tr key={record.id} className="border-b">
-                      <td className="p-3">{record.studentName || 'Unknown Student'}</td>
-                      <td className="p-3">{record.parentName || 'Unknown Parent'}</td>
-                      <td className="p-3">{formatFullDate(record.requestTime)}</td>
-                      <td className="p-3">
+                      <td className="p-3 text-center">{record.studentName || t('mobilePickupHistory.unknownStudent')}</td>
+                      <td className="p-3 text-center">{record.parentName || t('mobilePickupHistory.unknownParent')}</td>
+                      <td className="p-3 text-center">{formatFullDate(record.requestTime)}</td>
+                      <td className="p-3 text-center">
                         {record.calledTime ? formatFullDate(record.calledTime) : '-'}
                       </td>
-                      <td className="p-3">{formatFullDate(record.completedTime)}</td>
+                      <td className="p-3 text-center">{formatFullDate(record.completedTime)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -101,7 +103,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
             {showPagination && (
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages} ({totalCount} total records)
+                  {t('mobilePickupHistory.page')} {currentPage} {t('mobilePickupHistory.of')} {totalPages} ({totalCount} {t('mobilePickupHistory.totalRecords')})
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -111,7 +113,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
                     disabled={currentPage <= 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    {t('mobilePickupHistory.previous')}
                   </Button>
                   <Button
                     variant="outline"
@@ -119,7 +121,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage >= totalPages}
                   >
-                    Next
+                    {t('mobilePickupHistory.next')}
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -137,10 +139,10 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
       {/* Header */}
       <div className="px-2">
         <h3 className="text-lg font-semibold">
-          Pickup History ({data.length})
+          {t('mobilePickupHistory.title')} ({data.length})
           {totalCount > data.length && (
             <span className="text-sm font-normal text-muted-foreground block">
-              of {totalCount} total
+              {t('mobilePickupHistory.of')} {totalCount} {t('mobilePickupHistory.total')}
             </span>
           )}
         </h3>
@@ -151,23 +153,23 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="text-left p-2 font-medium text-xs">Student</th>
-              <th className="text-left p-2 font-medium text-xs">Parent</th>
-              <th className="text-left p-2 font-medium text-xs">Requested</th>
-              <th className="text-left p-2 font-medium text-xs">Called</th>
-              <th className="text-left p-2 font-medium text-xs">Completed</th>
+              <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.student')}</th>
+              <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.parent')}</th>
+              <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.requested')}</th>
+              <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.called')}</th>
+              <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.completed')}</th>
             </tr>
           </thead>
           <tbody>
             {data.map((record) => (
               <tr key={record.id} className="border-b hover:bg-muted/30">
-                <td className="p-2 text-xs">{record.studentName || 'Unknown'}</td>
-                <td className="p-2 text-xs text-muted-foreground">{record.parentName || 'Unknown'}</td>
-                <td className="p-2 text-xs">{formatTime(record.requestTime)}</td>
-                <td className="p-2 text-xs">
+                <td className="p-2 text-xs text-center">{record.studentName || t('mobilePickupHistory.unknown')}</td>
+                <td className="p-2 text-xs text-muted-foreground text-center">{record.parentName || t('mobilePickupHistory.unknown')}</td>
+                <td className="p-2 text-xs text-center">{formatTime(record.requestTime)}</td>
+                <td className="p-2 text-xs text-center">
                   {record.calledTime ? formatTime(record.calledTime) : '-'}
                 </td>
-                <td className="p-2 text-xs">{formatTime(record.completedTime)}</td>
+                <td className="p-2 text-xs text-center">{formatTime(record.completedTime)}</td>
               </tr>
             ))}
           </tbody>
@@ -178,7 +180,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
         <div className="px-2">
           <div className="flex flex-col space-y-3">
             <div className="text-center text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages} • {totalCount} total records
+              {t('mobilePickupHistory.page')} {currentPage} {t('mobilePickupHistory.of')} {totalPages} • {totalCount} {t('mobilePickupHistory.totalRecords')}
             </div>
             <div className="flex justify-center gap-2">
               <Button
@@ -189,7 +191,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
                 className="flex-1 max-w-32"
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
+                {t('mobilePickupHistory.previous')}
               </Button>
               <Button
                 variant="outline"
@@ -198,7 +200,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
                 disabled={currentPage >= totalPages}
                 className="flex-1 max-w-32"
               >
-                Next
+                {t('mobilePickupHistory.next')}
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
