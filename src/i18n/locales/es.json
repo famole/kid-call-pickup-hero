@@ -3,6 +3,7 @@
     "dashboard": "Panel Principal",
     "pickupAuthorizations": "Autorizaciones de Recogida", 
     "pickupManagement": "Gestión de Salidas",
+    "reports": "Reportes",
     "adminPanel": "Panel de Administración",
     "selfCheckout": "Auto-Salida",
     "selfCheckoutHistory": "Historial de Retiros",
@@ -834,5 +835,19 @@
     "other": "Otro",
     "teacher": "Maestro",
     "admin": "Admin"
+  },
+  "teacherReports": {
+    "title": "Reportes de Maestros",
+    "description": "Ver reportes de recogida para sus clases asignadas filtrados por fecha",
+    "generateReport": "Generar Reporte",
+    "generating": "Generando...",
+    "selectDate": "Seleccionar Fecha",
+    "noAssignedClasses": "No se encontraron clases asignadas. Contacte a un administrador para asignarle clases.",
+    "reportGenerated": "Reporte generado exitosamente",
+    "failedToGenerateReport": "Error al generar el reporte",
+    "noDataToExport": "No hay datos para exportar",
+    "exportSuccess": "Reporte exportado exitosamente",
+    "exportError": "Error al exportar el reporte",
+    "failedToLoadClasses": "Error al cargar las clases asignadas"
   }
 }

@@ -24,6 +24,7 @@ import SelfCheckoutHistoryPage from '@/pages/SelfCheckoutHistoryPage';
 import UnauthorizedAccess from '@/pages/UnauthorizedAccess';
 import AcceptInvitation from '@/pages/AcceptInvitation';
 import InvitationSignup from '@/pages/InvitationSignup';
+import TeacherReportsPage from '@/pages/TeacherReportsPage';
 import './App.css';
 
 // Import i18n configuration
@@ -89,6 +90,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <PickupManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/teacher-reports" 
+                element={
+                  <ProtectedRoute>
+                    <TeacherReportsPage />
                   </ProtectedRoute>
                 } 
               />

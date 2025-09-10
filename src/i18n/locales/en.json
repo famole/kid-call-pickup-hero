@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "pickupAuthorizations": "Pickup Authorizations", 
     "pickupManagement": "Pickup Management",
+    "reports": "Reports",
     "adminPanel": "Admin Panel",
     "selfCheckout": "Self-Checkout",
     "selfCheckoutHistory": "Self-Checkout History",
@@ -967,5 +968,19 @@
       "admins": "Add one to get started",
       "superadmins": "Add one to get started"
     }
+  },
+  "teacherReports": {
+    "title": "Teacher Reports",
+    "description": "View pickup reports for your assigned classes filtered by date",
+    "generateReport": "Generate Report",
+    "generating": "Generating...",
+    "selectDate": "Select Date",
+    "noAssignedClasses": "No assigned classes found. Contact an administrator to assign you to classes.",
+    "reportGenerated": "Report generated successfully",
+    "failedToGenerateReport": "Failed to generate report",
+    "noDataToExport": "No data to export",
+    "exportSuccess": "Report exported successfully",
+    "exportError": "Failed to export report",
+    "failedToLoadClasses": "Failed to load assigned classes"
   }
 }

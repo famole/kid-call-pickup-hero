@@ -27,7 +27,8 @@ import {
   ClipboardList,
   School,
   Languages,
-  History
+  History,
+  FileText
 } from 'lucide-react';
 
 const Navigation: React.FC = () => {
@@ -62,6 +63,7 @@ const Navigation: React.FC = () => {
     { path: '/self-checkout', label: t('navigation.selfCheckout'), icon: LogOut, roles: ['parent'] },
     { path: '/self-checkout-history', label: t('navigation.selfCheckoutHistory'), icon: History, roles: ['parent'] },
     { path: '/pickup-management', label: t('navigation.pickupManagement'), icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
+    { path: '/teacher-reports', label: t('navigation.reports'), icon: FileText, roles: ['teacher'] },
     { path: '/admin', label: t('navigation.adminPanel'), icon: Settings, roles: ['admin', 'superadmin'] },
   ];
 
