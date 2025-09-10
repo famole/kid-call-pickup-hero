@@ -47,7 +47,7 @@ const ReportsTab = () => {
         logger.error('Error fetching data:', error);
         toast({
           title: t('reports.error'),
-          description: t('reports.failedToLoad'),
+          description: t('reports.failedToLoadData'),
           variant: "destructive",
         });
       } finally {
@@ -117,7 +117,7 @@ const ReportsTab = () => {
     if (pickupHistory.length === 0) {
       toast({
         title: t('reports.noData'),
-        description: t('reports.pleaseGenerateFirst'),
+        description: t('reports.generateReportFirst'),
         variant: "destructive",
       });
       return;
