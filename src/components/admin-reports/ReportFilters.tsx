@@ -91,8 +91,8 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Class Filter Row */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Class Filter */}
       <div>
         <Label htmlFor="class-select">{t('reports.filters.class')}</Label>
         <Select value={selectedClassId} onValueChange={onClassChange}>
@@ -110,64 +110,64 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
         </Select>
       </div>
 
-      {/* Student Search and Date Filters Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="student-search">{t('reports.filters.student')}</Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              id="student-search"
-              type="text"
-              placeholder={t('reports.filters.searchStudents')}
-              value={studentSearchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-10"
-            />
-            {/* Dropdown for filtered students */}
-            {studentSearchTerm && filteredStudents.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                <div 
-                  className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
-                  onClick={() => handleStudentSelect('all')}
-                >
-                  {t('reports.filters.allStudents')}
-                </div>
-                {filteredStudents.map((student) => (
-                  <div
-                    key={student.id}
-                    className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
-                    onClick={() => handleStudentSelect(student.id)}
-                  >
-                    {student.name}
-                  </div>
-                ))}
+      {/* Student Search */}
+      <div>
+        <Label htmlFor="student-search">{t('reports.filters.student')}</Label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            id="student-search"
+            type="text"
+            placeholder={t('reports.filters.searchStudents')}
+            value={studentSearchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-10"
+          />
+          {/* Dropdown for filtered students */}
+          {studentSearchTerm && filteredStudents.length > 0 && (
+            <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+              <div 
+                className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                onClick={() => handleStudentSelect('all')}
+              >
+                {t('reports.filters.allStudents')}
               </div>
-            )}
-          </div>
+              {filteredStudents.map((student) => (
+                <div
+                  key={student.id}
+                  className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                  onClick={() => handleStudentSelect(student.id)}
+                >
+                  {student.name}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
 
-        <div>
-          <Label htmlFor="start-date">{t('reports.filters.startDate')}</Label>
-          <Input
-            id="start-date"
-            type="date"
-            value={startDate}
-            onChange={(e) => onStartDateChange(e.target.value)}
-            disabled={selectedStudent !== 'all'}
-          />
-        </div>
+      {/* Start Date */}
+      <div>
+        <Label htmlFor="start-date">{t('reports.filters.startDate')}</Label>
+        <Input
+          id="start-date"
+          type="date"
+          value={startDate}
+          onChange={(e) => onStartDateChange(e.target.value)}
+          disabled={selectedStudent !== 'all'}
+        />
+      </div>
 
-        <div>
-          <Label htmlFor="end-date">{t('reports.filters.endDate')}</Label>
-          <Input
-            id="end-date"
-            type="date"
-            value={endDate}
-            onChange={(e) => onEndDateChange(e.target.value)}
-            disabled={selectedStudent !== 'all'}
-          />
-        </div>
+      {/* End Date */}
+      <div>
+        <Label htmlFor="end-date">{t('reports.filters.endDate')}</Label>
+        <Input
+          id="end-date"
+          type="date"
+          value={endDate}
+          onChange={(e) => onEndDateChange(e.target.value)}
+          disabled={selectedStudent !== 'all'}
+        />
       </div>
     </div>
   );

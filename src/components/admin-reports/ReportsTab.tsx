@@ -177,29 +177,35 @@ const ReportsTab = () => {
               </div>
             </div>
           ) : (
-            <>
-              <ReportFilters
-                students={students}
-                selectedStudent={selectedStudent}
-                onStudentChange={setSelectedStudent}
-                startDate={startDate}
-                onStartDateChange={setStartDate}
-                endDate={endDate}
-                onEndDateChange={setEndDate}
-                classes={classes}
-                selectedClassId={selectedClassId}
-                onClassChange={setSelectedClassId}
-              />
-
-              <ReportActions
-                onGenerateReport={() => handleGenerateReport(1)}
-                onExportCSV={handleExportCSV}
-                loading={loading}
-                hasData={pickupHistory.length > 0}
-              />
+            <div className="space-y-4">
+              {/* Filters and Actions Row */}
+              <div className="flex flex-col lg:flex-row gap-4 items-end">
+                <div className="flex-1">
+                  <ReportFilters
+                    students={students}
+                    selectedStudent={selectedStudent}
+                    onStudentChange={setSelectedStudent}
+                    startDate={startDate}
+                    onStartDateChange={setStartDate}
+                    endDate={endDate}
+                    onEndDateChange={setEndDate}
+                    classes={classes}
+                    selectedClassId={selectedClassId}
+                    onClassChange={setSelectedClassId}
+                  />
+                </div>
+                <div className="flex-shrink-0">
+                  <ReportActions
+                    onGenerateReport={() => handleGenerateReport(1)}
+                    onExportCSV={handleExportCSV}
+                    loading={loading}
+                    hasData={pickupHistory.length > 0}
+                  />
+                </div>
+              </div>
 
               <StudentStats stats={stats} />
-            </>
+            </div>
           )}
         </CardContent>
       </Card>
