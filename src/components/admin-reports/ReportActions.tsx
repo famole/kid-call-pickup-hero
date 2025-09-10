@@ -17,13 +17,16 @@ const ReportActions: React.FC<ReportActionsProps> = ({
   hasData
 }) => {
   return (
-    <div className="flex gap-2">
-      <Button onClick={onGenerateReport} disabled={loading}>
+    <div className="flex gap-2 justify-end ml-auto">
+      <Button 
+        variant="secondary"
+        onClick={onGenerateReport} 
+        disabled={loading}
+      >
         <FileText className="h-4 w-4 mr-2" />
         {loading ? 'Generating...' : 'Generate Report'}
       </Button>
       <Button 
-        variant="outline" 
         onClick={onExportCSV}
         disabled={!hasData}
       >
