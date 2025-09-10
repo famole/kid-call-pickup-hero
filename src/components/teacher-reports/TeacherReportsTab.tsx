@@ -149,9 +149,9 @@ const TeacherReportsTab: React.FC = () => {
       const csvData = pickupHistory.map(item => [
         format(new Date(item.completed_time), 'yyyy-MM-dd'),
         format(new Date(item.completed_time), 'HH:mm:ss'),
-        item.students.name,
-        item.students.classes?.name || 'N/A',
-        item.parents.name,
+        item.students?.name || 'N/A',
+        item.students?.classes?.name || 'N/A',
+        item.parents?.name || 'N/A',
         item.pickup_duration_minutes?.toString() || 'N/A'
       ]);
 
@@ -188,9 +188,9 @@ const TeacherReportsTab: React.FC = () => {
       calledTime: item.called_time ? new Date(item.called_time) : null,
       completedTime: new Date(item.completed_time),
       pickupDurationMinutes: item.pickup_duration_minutes,
-      studentName: item.students.name,
-      parentName: item.parents.name,
-      className: item.students.classes?.name || 'N/A',
+      studentName: item.students?.name || 'Unknown Student',
+      parentName: item.parents?.name || 'Unknown Parent',
+      className: item.students?.classes?.name || 'N/A',
       createdAt: new Date(item.completed_time)
     }));
   };
