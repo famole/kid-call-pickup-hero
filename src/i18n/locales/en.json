@@ -51,7 +51,10 @@
     "pending": "Pending",
     "calledForPickup": "Called for Pickup",
     "noteAuthorizedPickup": "These pickup requests were made by someone who is authorized to pick up your children. You don't need to take any action - this is just to keep you informed.",
-    "authorizedPickup": "Authorized pickup"
+    "authorizedPickup": "Authorized pickup",
+    "cancelRequest": "Cancel Request",
+    "pickupRequestCancelled": "Pickup request cancelled successfully",
+    "errorCancellingRequest": "Error cancelling pickup request"
   },
   "selfCheckout": {
     "title": "Self-Checkout Authorizations",

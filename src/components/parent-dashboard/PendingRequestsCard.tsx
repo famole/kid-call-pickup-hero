@@ -2,23 +2,38 @@
 import React from 'react';
 import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Clock, Info, X } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/auth/AuthProvider';
+import { cancelPickupRequest } from '@/services/pickup';
+import { toast } from 'sonner';
 
 interface PendingRequestsCardProps {
   pendingRequests: PickupRequest[];
   children: Child[];
   currentParentId?: string;
+  onRequestCancelled?: () => void;
 }
 
 const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
   pendingRequests,
   children,
-  currentParentId
+  currentParentId,
+  onRequestCancelled
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+
+  const handleCancelRequest = async (requestId: string) => {
+    try {
+      await cancelPickupRequest(requestId);
+      toast.success(t('dashboard.pickupRequestCancelled'));
+      onRequestCancelled?.();
+    } catch (error) {
+      toast.error(t('dashboard.errorCancellingRequest'));
+    }
+  };
 
   // Filter requests based on user role
   const filteredRequests = user?.role === 'family' || user?.role === 'other'
@@ -103,6 +118,15 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
                     </>
                   )}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCancelRequest(request.id)}
+                  className="ml-2 h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  title={t('dashboard.cancelRequest')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             );
           })}

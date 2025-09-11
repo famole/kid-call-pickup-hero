@@ -25,7 +25,8 @@ const ParentDashboard: React.FC = () => {
     isSubmitting,
     currentParentId,
     toggleChildSelection,
-    handleRequestPickup
+    handleRequestPickup,
+    refetch
   } = useOptimizedParentDashboard();
 
   const {
@@ -60,6 +61,7 @@ const ParentDashboard: React.FC = () => {
                 pendingRequests={pendingRequests} 
                 children={children}
                 currentParentId={currentParentId}
+                onRequestCancelled={refetch}
               />
               <CalledRequestsCard 
                 calledRequests={calledRequests} 

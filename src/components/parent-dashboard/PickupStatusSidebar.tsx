@@ -8,12 +8,14 @@ interface PickupStatusSidebarProps {
   activeRequests: PickupRequest[];
   children: Child[];
   currentParentId?: string;
+  onRequestCancelled?: () => void;
 }
 
 const PickupStatusSidebar: React.FC<PickupStatusSidebarProps> = ({
   activeRequests,
   children,
-  currentParentId
+  currentParentId,
+  onRequestCancelled
 }) => {
   // Split requests by status
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
@@ -30,6 +32,7 @@ const PickupStatusSidebar: React.FC<PickupStatusSidebarProps> = ({
         pendingRequests={pendingRequests}
         children={children}
         currentParentId={currentParentId}
+        onRequestCancelled={onRequestCancelled}
       />
       <CalledRequestsCard 
         calledRequests={calledRequests}
