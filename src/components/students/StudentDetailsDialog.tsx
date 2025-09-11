@@ -14,7 +14,9 @@ import { Child, Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
 import { getPickupAuthorizationsForStudent } from '@/services/pickupAuthorizationService';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/context/AuthContext';
 import { logger } from '@/utils/logger';
+import AdminAuthorizationForm from '../pickup-authorization/AdminAuthorizationForm';
 
 interface StudentDetailsDialogProps {
   open: boolean;
@@ -53,6 +55,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   classList,
 }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [parentRelations, setParentRelations] = useState<StudentParentRelation[]>([]);
   const [pickupAuthorizations, setPickupAuthorizations] = useState<PickupAuthorization[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -134,8 +137,34 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
     fetchStudentDetails();
   }, [student, open]);
 
+  const handleAuthorizationCreated = () => {
+    // Refresh the authorizations list
+    if (student) {
+      const fetchAuthorizations = async () => {
+        try {
+          const authorizations = await getPickupAuthorizationsForStudent(student.id);
+          const authData: PickupAuthorization[] = authorizations.map(auth => ({
+            id: auth.id,
+            authorizedParentId: auth.authorizedParentId,
+            authorizedParentName: auth.authorizedParent?.name || 'Unknown Parent',
+            authorizedParentEmail: auth.authorizedParent?.email || '',
+            startDate: auth.startDate,
+            endDate: auth.endDate,
+            isActive: auth.isActive,
+            createdAt: auth.createdAt,
+          }));
+          setPickupAuthorizations(authData);
+        } catch (error) {
+          console.error('Error refreshing authorizations:', error);
+        }
+      };
+      fetchAuthorizations();
+    }
+  };
+
   if (!student) return null;
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const classInfo = classList.find(c => c.id === student.classId);
   const initials = student.name
     .split(' ')
@@ -308,15 +337,30 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                       </div>
                     );
                   })}
+                  {isAdmin && (
+                    <AdminAuthorizationForm
+                      studentId={student.id}
+                      studentName={student.name}
+                      onAuthorizationCreated={handleAuthorizationCreated}
+                    />
+                  )}
                 </div>
               ) : (
-                <div className="text-center py-6">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">{t('studentDetails.noPickupAuth')}</h3>
-                  <p className="text-gray-500">
-                    {t('studentDetails.noPickupAuthDesc')}
-                  </p>
-                </div>
+                isAdmin ? (
+                  <AdminAuthorizationForm
+                    studentId={student.id}
+                    studentName={student.name}
+                    onAuthorizationCreated={handleAuthorizationCreated}
+                  />
+                ) : (
+                  <div className="text-center py-6">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('studentDetails.noPickupAuth')}</h3>
+                    <p className="text-gray-500">
+                      {t('studentDetails.noPickupAuthDesc')}
+                    </p>
+                  </div>
+                )
               )}
             </CardContent>
           </Card>

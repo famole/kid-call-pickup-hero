@@ -256,7 +256,8 @@
     "created": "Created",
     "loadingPickupAuth": "Loading pickup authorizations...",
     "noPickupAuth": "No Pickup Authorizations",
-    "noPickupAuthDesc": "No additional parents have been authorized to pick up this student."
+    "noPickupAuthDesc": "No additional parents have been authorized to pick up this student.",
+    "adminCanCreateAuth": "As an administrator, you can create pickup authorizations for this student."
   },
   "addParentSheet": {
     "title": "Add New User",
@@ -473,6 +474,8 @@
     "invitationRemoved": "Invitation removed successfully",
     "failedToRemoveInvitation": "Failed to remove invitation",
     "createAuthorization": "Create Authorization",
+    "createAuthorizationFor": "Create Authorization for",
+    "createAuthorizationDescription": "Authorize another parent to pick up this student during the specified date range.",
     "updateAuthorization": "Update Authorization",
     "creating": "Creating...",
     "updating": "Updating...",
@@ -485,6 +488,8 @@
     "editAuthorization": "Edit Authorization",
     "fillAllFields": "Please fill in all fields",
     "startDateBeforeEndDate": "Start date must be before or equal to end date",
+    "authorizationCreated": "Pickup authorization created successfully",
+    "failedToCreate": "Failed to create pickup authorization",
     "loadDataError": "Failed to load data for authorization form",
     "unknownStudent": "Unknown Student",
     "unknownParent": "Unknown Parent",

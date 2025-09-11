@@ -258,7 +258,8 @@
     "created": "Creado",
     "loadingPickupAuth": "Cargando autorizaciones de recogida...",
     "noPickupAuth": "Sin Autorizaciones de Recogida",
-    "noPickupAuthDesc": "Ningún padre adicional ha sido autorizado para recoger a este estudiante."
+    "noPickupAuthDesc": "Ningún padre adicional ha sido autorizado para recoger a este estudiante.",
+    "adminCanCreateAuth": "Como administrador, puedes crear autorizaciones de recogida para este estudiante."
   },
   "addParentSheet": {
     "title": "Agregar Nuevo Usuario",
@@ -477,6 +478,8 @@
     "invitationRemoved": "Invitación eliminada exitosamente",
     "failedToRemoveInvitation": "Error al eliminar la invitación",
     "createAuthorization": "Crear Autorización",
+    "createAuthorizationFor": "Crear Autorización para",
+    "createAuthorizationDescription": "Autorizar a otro padre a recoger este estudiante durante el rango de fechas especificado.",
     "updateAuthorization": "Actualizar Autorización",
     "creating": "Creando...",
     "updating": "Actualizando...",
@@ -489,6 +492,8 @@
     "editAuthorization": "Editar Autorización",
     "fillAllFields": "Por favor completa todos los campos",
     "startDateBeforeEndDate": "La fecha de inicio debe ser anterior o igual a la fecha de fin",
+    "authorizationCreated": "Autorización de recogida creada exitosamente",
+    "failedToCreate": "Error al crear la autorización de recogida",
     "loadDataError": "Error al cargar datos para el formulario de autorización",
     "unknownStudent": "Estudiante Desconocido",
     "unknownParent": "Padre Desconocido",
