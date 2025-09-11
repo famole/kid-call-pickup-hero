@@ -86,19 +86,20 @@ export const useOptimizedParentDashboard = () => {
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
 
-      // Load dashboard data and affected pickup requests (including requests by family members)
-      const [dashboardData, affectedPickupRequests] = await Promise.all([
+      // Load dashboard data and pickup requests
+      const [dashboardData, pickupRequests] = await Promise.all([
         isEmailUser
           ? getParentDashboardDataOptimized(user.email!)
           : getParentDashboardDataByParentId(parentId),
-        getParentAffectedPickupRequests()
+        // For parents, get all affected requests; for family members, get only their own
+        user?.role === 'parent' ? getParentAffectedPickupRequests() : getActivePickupRequestsForParent(parentId)
       ]);
 
       console.log('🔍 DEBUG - Dashboard data results:', {
         childrenCount: dashboardData.allChildren.length,
-        affectedPickupRequestsCount: affectedPickupRequests.length,
+        pickupRequestsCount: pickupRequests.length,
         children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized })),
-        affectedRequests: affectedPickupRequests.map(r => ({ 
+        requests: pickupRequests.map(r => ({ 
           id: r.id, 
           studentId: r.studentId, 
           parentId: r.parentId, 
@@ -125,12 +126,12 @@ export const useOptimizedParentDashboard = () => {
         }
       }
       
-      setActiveRequests(affectedPickupRequests);
+      setActiveRequests(pickupRequests);
 
       lastFetchRef.current = now;
       logger.log('Parent dashboard data loaded successfully', {
         childrenCount: dashboardData.allChildren.length,
-        requestsCount: affectedPickupRequests.length
+        requestsCount: pickupRequests.length
       });
     } catch (error) {
       logger.error('Error loading parent dashboard data:', error);

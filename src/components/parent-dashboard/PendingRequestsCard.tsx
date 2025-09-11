@@ -43,10 +43,12 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
     }
   };
 
-  // Show all pending requests that affect this parent:
-  // 1. Requests made by this parent
-  // 2. Requests made by family members for this parent's assigned children
-  const filteredRequests = pendingRequests;
+  // Filter requests based on user role:
+  // - Family members see only their own requests
+  // - Parents see all requests (including ones made by family members for their children)
+  const filteredRequests = user?.role === 'family' || user?.role === 'other'
+    ? pendingRequests.filter(req => req.parentId === currentParentId)
+    : pendingRequests;
 
   if (filteredRequests.length === 0) {
     return null;

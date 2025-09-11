@@ -20,10 +20,12 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
   const { t } = useTranslation();
   const { user } = useAuth();
 
-  // Show all called requests that affect this parent:
-  // 1. Requests made by this parent
-  // 2. Requests made by family members for this parent's assigned children
-  const filteredRequests = calledRequests;
+  // Filter requests based on user role:
+  // - Family members see only their own requests
+  // - Parents see all requests (including ones made by family members for their children)
+  const filteredRequests = user?.role === 'family' || user?.role === 'other'
+    ? calledRequests.filter(req => req.parentId === currentParentId)
+    : calledRequests;
 
   if (filteredRequests.length === 0) {
     return null;
