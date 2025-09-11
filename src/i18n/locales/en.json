@@ -257,7 +257,10 @@
     "loadingPickupAuth": "Loading pickup authorizations...",
     "noPickupAuth": "No Pickup Authorizations",
     "noPickupAuthDesc": "No additional parents have been authorized to pick up this student.",
-    "adminCanCreateAuth": "As an administrator, you can create pickup authorizations for this student."
+    "adminCanCreateAuth": "As an administrator, you can create pickup authorizations for this student.",
+    "confirmDeleteAuth": "Are you sure you want to delete this authorization?",
+    "authorizationDeleted": "Authorization deleted successfully",
+    "failedToDeleteAuth": "Failed to delete authorization"
   },
   "addParentSheet": {
     "title": "Add New User",
@@ -557,6 +560,7 @@
     "confirm": "Confirm",
     "save": "Save",
     "delete": "Delete",
+    "deleting": "Deleting...",
     "edit": "Edit",
     "view": "View",
     "add": "Add",

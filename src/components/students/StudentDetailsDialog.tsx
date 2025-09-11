@@ -9,12 +9,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Calendar, Users, Clock } from "lucide-react";
 import { Child, Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
-import { getPickupAuthorizationsForStudent } from '@/services/pickupAuthorizationService';
+import { getPickupAuthorizationsForStudent, deletePickupAuthorization } from '@/services/pickupAuthorizationService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
 import AdminAuthorizationForm from '../pickup-authorization/AdminAuthorizationForm';
 
@@ -56,9 +58,11 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [parentRelations, setParentRelations] = useState<StudentParentRelation[]>([]);
   const [pickupAuthorizations, setPickupAuthorizations] = useState<PickupAuthorization[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [deletingAuthId, setDeletingAuthId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!student || !open) {
@@ -159,6 +163,34 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
         }
       };
       fetchAuthorizations();
+    }
+  };
+
+  const handleDeleteAuthorization = async (authId: string) => {
+    if (!confirm(t('studentDetails.confirmDeleteAuth'))) {
+      return;
+    }
+
+    setDeletingAuthId(authId);
+    try {
+      await deletePickupAuthorization(authId);
+      
+      toast({
+        title: t('common.success'),
+        description: t('studentDetails.authorizationDeleted')
+      });
+
+      // Refresh the authorizations list
+      handleAuthorizationCreated();
+    } catch (error) {
+      console.error('Error deleting authorization:', error);
+      toast({
+        title: t('common.error'),
+        description: t('studentDetails.failedToDeleteAuth'),
+        variant: 'destructive'
+      });
+    } finally {
+      setDeletingAuthId(null);
     }
   };
 
@@ -305,54 +337,71 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <p className="text-muted-foreground">{t('studentDetails.loadingPickupAuth')}</p>
-              ) : pickupAuthorizations.length > 0 ? (
-                <div className="space-y-4">
-                  {pickupAuthorizations.map((auth) => {
-                    const status = getAuthorizationStatus(auth.startDate, auth.endDate);
-                    return (
-                      <div key={auth.id} className="p-4 border rounded-lg space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold">{auth.authorizedParentName}</h4>
-                            <p className="text-sm text-muted-foreground">{auth.authorizedParentEmail}</p>
-                          </div>
-                          <Badge variant={status.variant}>{status.label}</Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              {t('studentDetails.created')} {formatDate(auth.createdAt)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {isAdmin && (
-                    <AdminAuthorizationForm
-                      studentId={student.id}
-                      studentName={student.name}
-                      onAuthorizationCreated={handleAuthorizationCreated}
-                    />
-                  )}
-                </div>
-              ) : (
-                isAdmin ? (
+              <div className="space-y-4">
+                {/* Create Authorization Button (Always at top for admins) */}
+                {isAdmin && (
                   <AdminAuthorizationForm
                     studentId={student.id}
                     studentName={student.name}
                     onAuthorizationCreated={handleAuthorizationCreated}
                   />
-                ) : (
+                )}
+
+                {/* Authorization List */}
+                {isLoading ? (
+                  <p className="text-muted-foreground">{t('studentDetails.loadingPickupAuth')}</p>
+                ) : pickupAuthorizations.length > 0 ? (
+                  <div className="space-y-4">
+                    {pickupAuthorizations.map((auth) => {
+                      const status = getAuthorizationStatus(auth.startDate, auth.endDate);
+                      return (
+                        <div key={auth.id} className="p-4 border rounded-lg space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-semibold">{auth.authorizedParentName}</h4>
+                              <p className="text-sm text-muted-foreground">{auth.authorizedParentEmail}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={status.variant}>{status.label}</Badge>
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteAuthorization(auth.id)}
+                                  disabled={deletingAuthId === auth.id}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  {deletingAuthId === auth.id ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600 mr-2"></div>
+                                      {t('common.deleting')}
+                                    </>
+                                  ) : (
+                                    t('common.delete')
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                {t('studentDetails.created')} {formatDate(auth.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : !isAdmin ? (
                   <div className="text-center py-6">
                     <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{t('studentDetails.noPickupAuth')}</h3>
@@ -360,8 +409,8 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                       {t('studentDetails.noPickupAuthDesc')}
                     </p>
                   </div>
-                )
-              )}
+                ) : null}
+              </div>
             </CardContent>
           </Card>
         </div>

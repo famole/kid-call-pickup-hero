@@ -259,7 +259,10 @@
     "loadingPickupAuth": "Cargando autorizaciones de recogida...",
     "noPickupAuth": "Sin Autorizaciones de Recogida",
     "noPickupAuthDesc": "Ningún padre adicional ha sido autorizado para recoger a este estudiante.",
-    "adminCanCreateAuth": "Como administrador, puedes crear autorizaciones de recogida para este estudiante."
+    "adminCanCreateAuth": "Como administrador, puedes crear autorizaciones de recogida para este estudiante.",
+    "confirmDeleteAuth": "¿Está seguro de que desea eliminar esta autorización?",
+    "authorizationDeleted": "Autorización eliminada exitosamente",
+    "failedToDeleteAuth": "Error al eliminar la autorización"
   },
   "addParentSheet": {
     "title": "Agregar Nuevo Usuario",
@@ -558,6 +561,7 @@
     "optional": "(opcional)",
     "save": "Guardar",
     "delete": "Eliminar",
+    "deleting": "Eliminando...",
     "edit": "Editar",
     "add": "Agregar",
     "remove": "Quitar",
