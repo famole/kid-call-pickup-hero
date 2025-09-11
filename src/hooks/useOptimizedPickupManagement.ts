@@ -20,6 +20,13 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
       return;
     }
 
+    // Don't fetch if classId is null (waiting for teacher classes to load)
+    if (classId === null) {
+      logger.info('Skipping fetch - classId is null, waiting for teacher classes to load');
+      setLoading(false);
+      return;
+    }
+
     try {
       logger.info('Fetching optimized pending requests with teacherClassIds:', teacherClassIds);
       const allRequests = await getPickupRequestsWithDetailsBatch(['pending'], teacherClassIds);
