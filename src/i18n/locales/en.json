@@ -258,7 +258,8 @@
     "noPickupAuth": "No Pickup Authorizations",
     "noPickupAuthDesc": "No additional parents have been authorized to pick up this student.",
     "adminCanCreateAuth": "As an administrator, you can create pickup authorizations for this student.",
-    "confirmDeleteAuth": "Are you sure you want to delete this authorization?",
+    "confirmDeleteAuth": "Delete Authorization",
+    "deleteAuthDescription": "Are you sure you want to delete the pickup authorization for {{parentName}}? This action cannot be undone.",
     "authorizationDeleted": "Authorization deleted successfully",
     "failedToDeleteAuth": "Failed to delete authorization"
   },

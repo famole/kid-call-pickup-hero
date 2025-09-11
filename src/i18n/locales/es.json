@@ -260,7 +260,8 @@
     "noPickupAuth": "Sin Autorizaciones de Recogida",
     "noPickupAuthDesc": "Ningún padre adicional ha sido autorizado para recoger a este estudiante.",
     "adminCanCreateAuth": "Como administrador, puedes crear autorizaciones de recogida para este estudiante.",
-    "confirmDeleteAuth": "¿Está seguro de que desea eliminar esta autorización?",
+    "confirmDeleteAuth": "Eliminar Autorización",
+    "deleteAuthDescription": "¿Está seguro de que desea eliminar la autorización de recogida para {{parentName}}? Esta acción no se puede deshacer.",
     "authorizationDeleted": "Autorización eliminada exitosamente",
     "failedToDeleteAuth": "Error al eliminar la autorización"
   },

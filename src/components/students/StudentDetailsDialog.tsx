@@ -18,6 +18,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
+import DeleteConfirmationDialog from '@/components/ui/delete-confirmation-dialog';
 import AdminAuthorizationForm from '../pickup-authorization/AdminAuthorizationForm';
 
 interface StudentDetailsDialogProps {
@@ -62,7 +64,22 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   const [parentRelations, setParentRelations] = useState<StudentParentRelation[]>([]);
   const [pickupAuthorizations, setPickupAuthorizations] = useState<PickupAuthorization[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [deletingAuthId, setDeletingAuthId] = useState<string | null>(null);
+  
+  const deleteConfirmation = useDeleteConfirmation<PickupAuthorization>({
+    onDelete: async (auth) => {
+      await deletePickupAuthorization(auth.id);
+      toast({
+        title: t('common.success'),
+        description: t('studentDetails.authorizationDeleted')
+      });
+      handleAuthorizationCreated();
+    },
+    getItemName: (auth) => auth.authorizedParentName,
+    getConfirmationText: (auth) => ({
+      title: t('studentDetails.confirmDeleteAuth'),
+      description: t('studentDetails.deleteAuthDescription', { parentName: auth.authorizedParentName })
+    })
+  });
 
   useEffect(() => {
     if (!student || !open) {
@@ -163,34 +180,6 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
         }
       };
       fetchAuthorizations();
-    }
-  };
-
-  const handleDeleteAuthorization = async (authId: string) => {
-    if (!confirm(t('studentDetails.confirmDeleteAuth'))) {
-      return;
-    }
-
-    setDeletingAuthId(authId);
-    try {
-      await deletePickupAuthorization(authId);
-      
-      toast({
-        title: t('common.success'),
-        description: t('studentDetails.authorizationDeleted')
-      });
-
-      // Refresh the authorizations list
-      handleAuthorizationCreated();
-    } catch (error) {
-      console.error('Error deleting authorization:', error);
-      toast({
-        title: t('common.error'),
-        description: t('studentDetails.failedToDeleteAuth'),
-        variant: 'destructive'
-      });
-    } finally {
-      setDeletingAuthId(null);
     }
   };
 
@@ -367,11 +356,11 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleDeleteAuthorization(auth.id)}
-                                  disabled={deletingAuthId === auth.id}
+                                  onClick={() => deleteConfirmation.openDeleteConfirmation(auth)}
+                                  disabled={deleteConfirmation.isLoading}
                                   className="text-red-600 hover:text-red-700"
                                 >
-                                  {deletingAuthId === auth.id ? (
+                                  {deleteConfirmation.isLoading && deleteConfirmation.itemToDelete?.id === auth.id ? (
                                     <>
                                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600 mr-2"></div>
                                       {t('common.deleting')}
@@ -414,6 +403,16 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
             </CardContent>
           </Card>
         </div>
+
+        <DeleteConfirmationDialog
+          open={deleteConfirmation.isOpen}
+          onOpenChange={deleteConfirmation.closeDeleteConfirmation}
+          title={deleteConfirmation.getDialogTexts().title}
+          description={deleteConfirmation.getDialogTexts().description}
+          itemName={deleteConfirmation.getItemDisplayName()}
+          isLoading={deleteConfirmation.isLoading}
+          onConfirm={deleteConfirmation.handleConfirmDelete}
+        />
       </DialogContent>
     </Dialog>
   );
