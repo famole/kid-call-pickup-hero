@@ -169,10 +169,11 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
         isStudentModalOpen={hooks.studentManagement.isStudentModalOpen}
         selectedParent={hooks.studentManagement.selectedParent}
         allStudents={allStudents}
+        allParents={filteredParentsByRole}
         onStudentModalOpenChange={hooks.studentManagement.closeStudentModal}
-        onAddStudent={wrappers.handleAddStudentWrapper}
-        onRemoveStudent={wrappers.handleRemoveStudentWrapper}
-        onTogglePrimary={wrappers.handleTogglePrimaryWrapper}
+        onAddStudent={hooks.studentManagement.handleAddStudentToParent}
+        onRemoveStudent={hooks.studentManagement.handleRemoveStudent}
+        onTogglePrimary={hooks.studentManagement.handleTogglePrimary}
         classes={classes}
         userRole={userRole}
       />

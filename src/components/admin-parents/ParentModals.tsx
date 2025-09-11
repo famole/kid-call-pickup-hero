@@ -2,7 +2,7 @@
 import React from 'react';
 import AddParentSheet from './AddParentSheet';
 import EditParentSheet from './EditParentSheet';
-import StudentManagementModal from './StudentManagementModal';
+import FamilyMemberDetailScreen from './FamilyMemberDetailScreen';
 import { ParentWithStudents, ParentInput } from '@/types/parent';
 import { Child, Class } from '@/types';
 
@@ -24,14 +24,15 @@ interface ParentModalsProps {
   onEditParentSubmit: (e?: React.FormEvent) => Promise<void>;
   onEditSheetOpenChange: (isOpen: boolean) => void;
 
-  // Student Management Modal
+  // Family Member Detail Screen
   isStudentModalOpen: boolean;
   selectedParent: ParentWithStudents | null;
   allStudents: Child[];
+  allParents: ParentWithStudents[];
   onStudentModalOpenChange: (isOpen: boolean) => void;
-  onAddStudent: (studentId: string, relationship: string) => Promise<void>;
-  onRemoveStudent: (studentId: string) => Promise<void>;
-  onTogglePrimary: (studentId: string) => Promise<void>;
+  onAddStudent: (parentId: string, studentId: string, relationship: string, isPrimary: boolean) => Promise<void>;
+  onRemoveStudent: (studentRelationshipId: string, parentId: string, studentId: string) => void;
+  onTogglePrimary: (studentRelationshipId: string, parentId: string, currentIsPrimary: boolean, currentRelationship?: string) => void;
 
   classes: Class[];
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
@@ -55,10 +56,11 @@ const ParentModals: React.FC<ParentModalsProps> = ({
   onEditParentSubmit,
   onEditSheetOpenChange,
 
-  // Student Management Modal props
+  // Family Member Detail Screen props
   isStudentModalOpen,
   selectedParent,
   allStudents,
+  allParents,
   onStudentModalOpenChange,
   onAddStudent,
   onRemoveStudent,
@@ -91,24 +93,16 @@ const ParentModals: React.FC<ParentModalsProps> = ({
         userRole={userRole}
       />
 
-      <StudentManagementModal
+      <FamilyMemberDetailScreen
         isOpen={isStudentModalOpen}
         onOpenChange={onStudentModalOpenChange}
         parent={selectedParent}
         allStudents={allStudents}
+        allParents={allParents}
         classes={classes}
-        onAddStudent={async (parentId: string, studentId: string, relationship: string, isPrimary: boolean) => {
-          await onAddStudent(studentId, relationship);
-        }}
-        onRemoveStudent={async (studentRelationshipId: string, parentId: string, studentId: string) => {
-          await onRemoveStudent(studentId);
-        }}
-        onTogglePrimary={async (studentRelationshipId: string, parentId: string, currentIsPrimary: boolean, currentRelationship?: string) => {
-          const student = selectedParent?.students?.find(s => s.parentRelationshipId === studentRelationshipId);
-          if (student) {
-            await onTogglePrimary(student.id);
-          }
-        }}
+        onAddStudent={onAddStudent}
+        onRemoveStudent={onRemoveStudent}
+        onTogglePrimary={onTogglePrimary}
       />
 
     </>
