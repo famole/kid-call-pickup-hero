@@ -92,7 +92,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
     return ids;
   }, [isTeacher, teacherClasses]);
   const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass, teacherClassIds);
-  const { pendingRequests, loading: pendingLoading, markAsCalled, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass, teacherClassIds);
+  const { pendingRequests, loading: pendingLoading, markAsCalled, cancelRequest, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass, teacherClassIds);
   const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(selectedClass);
 
   // Check if user has permission to access this page - include superadmin
@@ -190,7 +190,9 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
               <PendingPickupsTable 
                 requests={pendingRequests}
                 onMarkAsCalled={handleMarkAsCalledWithRefresh}
+                onCancelRequest={cancelRequest}
                 loading={pendingLoading}
+                isAdmin={isAdmin}
               />
             </TabsContent>
 

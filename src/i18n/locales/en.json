@@ -414,7 +414,10 @@
     "noAuthorizations": "No pickup authorizations found",
     "authorizedParent": "Authorized Parent",
     "sent": "Sent",
-    "goBack": "Go Back"
+    "goBack": "Go Back",
+    "confirmCancelRequest": "Cancel Pickup Request",
+    "cancelRequestDescription": "Are you sure you want to cancel the pickup request for {{studentName}} made by {{parentName}}? This action cannot be undone.",
+    "requestCancelled": "Pickup request cancelled successfully"
   },
   "pickupAuthorizations": {
     "title": "Pickup Authorizations",

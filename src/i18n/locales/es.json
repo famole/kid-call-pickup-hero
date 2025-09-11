@@ -418,7 +418,10 @@
     "active": "Activo",
     "inactive": "Inactivo",
     "sent": "Enviado",
-    "goBack": "Volver Atrás"
+    "goBack": "Volver Atrás",
+    "confirmCancelRequest": "Cancelar Solicitud de Recogida",
+    "cancelRequestDescription": "¿Está seguro de que desea cancelar la solicitud de recogida para {{studentName}} hecha por {{parentName}}? Esta acción no se puede deshacer.",
+    "requestCancelled": "Solicitud de recogida cancelada exitosamente"
   },
   "pickupAuthorizations": {
     "title": "Autorizaciones de Recogida",
