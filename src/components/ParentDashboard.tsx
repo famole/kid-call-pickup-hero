@@ -8,7 +8,7 @@ import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboard
 import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelectionCard';
 import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCard';
 import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard';
-import AuthorizedPickupNotification from '@/components/parent-dashboard/AuthorizedPickupNotification';
+
 import SelfCheckoutStatusCard from '@/components/parent-dashboard/SelfCheckoutStatusCard';
 
 const ParentDashboard: React.FC = () => {
@@ -48,11 +48,6 @@ const ParentDashboard: React.FC = () => {
         <div className="space-y-3 sm:space-y-4">
           <ParentDashboardHeader userName={user?.name} />
           
-          <AuthorizedPickupNotification 
-            requests={authorizedRequests}
-            children={children}
-            parentInfo={parentInfo}
-          />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* Status Components First - Left side for larger screens */}
