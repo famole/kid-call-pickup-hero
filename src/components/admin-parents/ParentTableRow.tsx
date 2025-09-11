@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Users, RotateCcw, KeyRound } from "lucide-react";
+import { Edit, Trash2, Users, RotateCcw, KeyRound, Info } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { ParentAuthStatus } from '@/services/authStatusService';
 import AuthStatusBadge from './AuthStatusBadge';
@@ -93,8 +93,17 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
                 <Trash2 className="h-4 w-4" />
               </Button>
               {showStudentsColumn && (
-                <Button variant="outline" size="sm" onClick={onManageStudents}>
-                  <Users className="h-4 w-4" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onManageStudents}
+                  title={parent.role === 'family' ? 'View Family Member Details' : 'Manage Students'}
+                  className="flex items-center gap-1"
+                >
+                  {parent.role === 'family' ? <Info className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  <span className="hidden sm:inline text-xs">
+                    {parent.role === 'family' ? 'Details' : 'Students'}
+                  </span>
                 </Button>
               )}
               {onResetPassword && (
