@@ -3,6 +3,7 @@ import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
 import { getParentDashboardDataByParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent } from '@/services/pickup';
+import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { createPickupRequest } from '@/services/pickup/createPickupRequest';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
@@ -85,18 +86,24 @@ export const useOptimizedParentDashboard = () => {
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
 
-      // Load dashboard data and pickup requests
-      const [dashboardData, pickupRequests] = await Promise.all([
+      // Load dashboard data and affected pickup requests (including requests by family members)
+      const [dashboardData, affectedPickupRequests] = await Promise.all([
         isEmailUser
           ? getParentDashboardDataOptimized(user.email!)
           : getParentDashboardDataByParentId(parentId),
-        getActivePickupRequestsForParent(parentId)
+        getParentAffectedPickupRequests()
       ]);
 
       console.log('🔍 DEBUG - Dashboard data results:', {
         childrenCount: dashboardData.allChildren.length,
-        pickupRequestsCount: pickupRequests.length,
-        children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized }))
+        affectedPickupRequestsCount: affectedPickupRequests.length,
+        children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized })),
+        affectedRequests: affectedPickupRequests.map(r => ({ 
+          id: r.id, 
+          studentId: r.studentId, 
+          parentId: r.parentId, 
+          requestingParent: r.requestingParent?.name 
+        }))
       });
 
       setChildren(dashboardData.allChildren);
@@ -118,12 +125,12 @@ export const useOptimizedParentDashboard = () => {
         }
       }
       
-      setActiveRequests(pickupRequests);
+      setActiveRequests(affectedPickupRequests);
 
       lastFetchRef.current = now;
       logger.log('Parent dashboard data loaded successfully', {
         childrenCount: dashboardData.allChildren.length,
-        requestsCount: pickupRequests.length
+        requestsCount: affectedPickupRequests.length
       });
     } catch (error) {
       logger.error('Error loading parent dashboard data:', error);
@@ -333,23 +340,33 @@ export const useOptimizedParentDashboard = () => {
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
   const calledRequests = activeRequests.filter(req => req.status === 'called');
 
-  // Get authorized requests (requests made by others for children you can pick up)
-  // Only show these notifications to actual parents, not to family/other roles
+  // Get requests made by family members for this parent's assigned children
+  // Show to parents when family members request pickup for their children
   const authorizedRequests = activeRequests.filter(req => {
     const child = children.find(c => c.id === req.studentId);
-    // Only show to users with 'parent' role, not family/other roles
-    return child?.isAuthorized && req.parentId !== user?.id && user?.role === 'parent';
+    // Show requests made by others (including family members) for children this parent is directly assigned to
+    const isDirectlyAssigned = child && !child.isAuthorized; // Direct children (not just authorized)
+    const isRequestByOther = req.parentId !== currentParentId;
+    
+    return isDirectlyAssigned && isRequestByOther;
   });
 
   // Debug logging for authorized requests
   logger.info('🔍 Authorized requests result:', {
     userRole: user?.role,
+    currentParentId,
     totalActiveRequests: activeRequests.length,
     authorizedRequestsCount: authorizedRequests.length,
     authorizedRequests: authorizedRequests.map(req => ({
       id: req.id,
       studentId: req.studentId,
-      parentId: req.parentId
+      parentId: req.parentId,
+      requestingParent: req.requestingParent?.name
+    })),
+    childrenSummary: children.map(c => ({ 
+      id: c.id, 
+      name: c.name, 
+      isAuthorized: c.isAuthorized 
     }))
   });
 
