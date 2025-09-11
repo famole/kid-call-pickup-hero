@@ -72,6 +72,36 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
 
     logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
 
+    // Get pickup authorizations for family members
+    const { data: authorizationData, error: authError } = await supabase
+      .from('pickup_authorizations')
+      .select(`
+        authorized_parent_id,
+        student_id,
+        student_ids,
+        is_active,
+        start_date,
+        end_date,
+        students!inner (
+          id,
+          name,
+          class_id,
+          avatar,
+          classes (
+            id,
+            name,
+            grade
+          )
+        )
+      `)
+      .eq('is_active', true)
+      .is('students.deleted_at', null)
+      .gte('end_date', new Date().toISOString().split('T')[0]); // Only current/future authorizations
+
+    if (authError) {
+      logger.warn('Error loading pickup authorizations:', authError);
+    }
+
     // Group students by parent ID
     const studentsByParent = studentParentData?.reduce((acc, relation) => {
       if (!acc[relation.parent_id]) {
@@ -90,6 +120,35 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
       });
       return acc;
     }, {} as Record<string, any[]>) || {};
+
+    // Add authorized students for family members
+    if (authorizationData) {
+      authorizationData.forEach((auth: any) => {
+        const parentId = auth.authorized_parent_id;
+        
+        // Initialize array if doesn't exist
+        if (!studentsByParent[parentId]) {
+          studentsByParent[parentId] = [];
+        }
+
+        const student = auth.students;
+        // Check if student is not already in the list (avoid duplicates from direct assignments)
+        const existingStudent = studentsByParent[parentId].find((s: any) => s.id === student.id);
+        if (!existingStudent) {
+          studentsByParent[parentId].push({
+            id: student.id,
+            name: student.name,
+            classId: student.class_id,
+            className: student.classes?.name || 'No Class',
+            grade: student.classes?.grade || 'No Grade',
+            isPrimary: false,
+            avatar: student.avatar,
+            parentRelationshipId: undefined, // No direct relationship
+            relationship: 'authorized',
+          });
+        }
+      });
+    }
 
     // Combine parents with their students - convert dates properly
     const parentsWithStudents: ParentWithStudents[] = parentsData?.map(parent => ({
