@@ -95,8 +95,8 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     } catch (error) {
       console.error('Error loading authorizations:', error);
       toast({
-        title: "Error",
-        description: "Failed to load pickup authorizations",
+        title: t('familyMemberDetails.error'),
+        description: t('familyMemberDetails.failedToLoadAuth'),
         variant: "destructive",
       });
     } finally {
@@ -157,8 +157,8 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       });
       
       toast({
-        title: "Success",
-        description: "Pickup authorization added successfully",
+        title: t('familyMemberDetails.success'),
+        description: t('familyMemberDetails.authorizationAddedSuccess'),
       });
       
       setShowAddAuthorizationForm(false);
@@ -167,8 +167,8 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     } catch (error) {
       console.error('Error adding authorization:', error);
       toast({
-        title: "Error",
-        description: "Failed to add pickup authorization",
+        title: t('familyMemberDetails.error'),
+        description: t('familyMemberDetails.failedToAddAuth'),
         variant: "destructive",
       });
     }
@@ -178,15 +178,15 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     try {
       await deletePickupAuthorization(authId);
       toast({
-        title: "Success",
-        description: "Pickup authorization removed successfully",
+        title: t('familyMemberDetails.success'),
+        description: t('familyMemberDetails.authorizationRemovedSuccess'),
       });
       loadAuthorizations();
     } catch (error) {
       console.error('Error removing authorization:', error);
       toast({
-        title: "Error",
-        description: "Failed to remove pickup authorization",
+        title: t('familyMemberDetails.error'),
+        description: t('familyMemberDetails.failedToRemoveAuth'),
         variant: "destructive",
       });
     }
@@ -223,10 +223,10 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Family Member Details: {parent.name}
+            {t('familyMemberDetails.title', { name: parent.name })}
           </DialogTitle>
           <DialogDescription>
-            Manage assigned students and pickup authorizations for {parent.name}
+            {t('familyMemberDetails.description', { name: parent.name })}
           </DialogDescription>
         </DialogHeader>
 
@@ -234,25 +234,25 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
           {/* Parent Info Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Contact Information</CardTitle>
+              <CardTitle className="text-lg">{t('familyMemberDetails.contactInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Name</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('familyMemberDetails.name')}</p>
                   <p>{parent.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Role</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('familyMemberDetails.role')}</p>
                   <Badge variant="outline">{parent.role}</Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p>{parent.email || "Not provided"}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('familyMemberDetails.email')}</p>
+                  <p>{parent.email || t('familyMemberDetails.notProvided')}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                  <p>{parent.phone || "Not provided"}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('familyMemberDetails.phone')}</p>
+                  <p>{parent.phone || t('familyMemberDetails.notProvided')}</p>
                 </div>
               </div>
             </CardContent>
@@ -262,18 +262,18 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="assigned" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Assigned Students ({parent.students?.length || 0})
+                {t('familyMemberDetails.assignedStudents', { count: parent.students?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="authorized" className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4" />
-                Pickup Authorizations ({receivedAuthorizations.length})
+                {t('familyMemberDetails.pickupAuthorizations', { count: receivedAuthorizations.length })}
               </TabsTrigger>
             </TabsList>
 
             {/* Assigned Students Tab */}
             <TabsContent value="assigned" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium">Directly Assigned Students</h3>
+                <h3 className="font-medium">{t('familyMemberDetails.directlyAssignedStudents')}</h3>
                 <Button
                   variant="outline"
                   size="sm"
@@ -281,7 +281,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                   disabled={availableStudents.length === 0}
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Add Student
+                  {t('familyMemberDetails.addStudent')}
                 </Button>
               </div>
 
@@ -296,10 +296,10 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                           <div>
                             <p className="font-medium">{student.name}</p>
                             {student.relationship && (
-                              <p className="text-sm text-muted-foreground">Relationship: {student.relationship}</p>
+                              <p className="text-sm text-muted-foreground">{t('familyMemberDetails.relationship', { relationship: student.relationship })}</p>
                             )}
                             {student.className && (
-                              <p className="text-sm text-muted-foreground">Class: {student.className}</p>
+                              <p className="text-sm text-muted-foreground">{t('familyMemberDetails.class', { className: student.className })}</p>
                             )}
                           </div>
                         </div>
@@ -307,7 +307,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            title={student.isPrimary ? "Remove primary status" : "Set as primary"}
+                            title={student.isPrimary ? t('familyMemberDetails.removePrimaryStatus') : t('familyMemberDetails.setAsPrimary')}
                             disabled={!student.parentRelationshipId}
                             onClick={() => {
                               if (student.parentRelationshipId) {
@@ -320,7 +320,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            title="Remove student"
+                            title={t('familyMemberDetails.removeStudent')}
                             disabled={!student.parentRelationshipId}
                             onClick={() => {
                               if (student.parentRelationshipId) {
@@ -338,7 +338,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
               ) : (
                 <Card>
                   <CardContent className="p-6 text-center text-muted-foreground">
-                    No students directly assigned to this family member
+                    {t('familyMemberDetails.noStudentsAssigned')}
                   </CardContent>
                 </Card>
               )}
@@ -347,17 +347,17 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
               {showAddStudentForm && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Add Student</CardTitle>
-                    <CardDescription>Assign a student to this family member</CardDescription>
+                    <CardTitle className="text-lg">{t('familyMemberDetails.addStudentTitle')}</CardTitle>
+                    <CardDescription>{t('familyMemberDetails.addStudentDescription')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Search Students</Label>
+                        <Label>{t('familyMemberDetails.searchStudents')}</Label>
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                           <Input
-                            placeholder="Search by name..."
+                            placeholder={t('familyMemberDetails.searchByName')}
                             value={studentSearchTerm}
                             onChange={(e) => setStudentSearchTerm(e.target.value)}
                             className="pl-10"
@@ -365,13 +365,13 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Filter by Class</Label>
+                        <Label>{t('familyMemberDetails.filterByClass')}</Label>
                         <Select value={selectedClassFilter} onValueChange={setSelectedClassFilter}>
                           <SelectTrigger>
-                            <SelectValue placeholder="All classes" />
+                            <SelectValue placeholder={t('familyMemberDetails.allClasses')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Classes</SelectItem>
+                            <SelectItem value="all">{t('familyMemberDetails.allClasses')}</SelectItem>
                             {classes.map((cls) => (
                               <SelectItem key={cls.id} value={cls.id}>
                                 {cls.name} - {cls.grade}
@@ -383,14 +383,14 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Student ({availableStudents.length} available)</Label>
+                      <Label>{t('familyMemberDetails.availableStudents', { count: availableStudents.length })}</Label>
                       <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a student" />
+                          <SelectValue placeholder={t('familyMemberDetails.selectStudent')} />
                         </SelectTrigger>
                         <SelectContent>
                           {availableStudents.length === 0 ? (
-                            <SelectItem value="" disabled>No students match the criteria</SelectItem>
+                            <SelectItem value="" disabled>{t('familyMemberDetails.noStudentsMatch')}</SelectItem>
                           ) : (
                             availableStudents.map(student => {
                               const studentClass = classes.find(c => c.id === student.classId);
@@ -406,9 +406,9 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                     </div>
                     
                     <div className="space-y-2">
-                      <Label>Relationship</Label>
+                      <Label>{t('familyMemberDetails.relationshipLabel')}</Label>
                       <Input
-                        placeholder="e.g., parent, guardian, grandparent"
+                        placeholder={t('familyMemberDetails.relationshipPlaceholder')}
                         value={relationship}
                         onChange={(e) => setRelationship(e.target.value)}
                       />
@@ -422,15 +422,15 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                         checked={isPrimary}
                         onChange={(e) => setIsPrimary(e.target.checked)}
                       />
-                      <Label htmlFor="isPrimary">Set as primary contact</Label>
+                      <Label htmlFor="isPrimary">{t('familyMemberDetails.setPrimaryContact')}</Label>
                     </div>
                     
                     <div className="flex space-x-2 pt-2">
                       <Button onClick={handleAddStudent} disabled={!selectedStudentId}>
-                        Add Student
+                        {t('familyMemberDetails.addStudentButton')}
                       </Button>
                       <Button variant="outline" onClick={() => setShowAddStudentForm(false)}>
-                        Cancel
+                        {t('familyMemberDetails.cancel')}
                       </Button>
                     </div>
                   </CardContent>
@@ -441,14 +441,14 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
             {/* Pickup Authorizations Tab */}
             <TabsContent value="authorized" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium">Pickup Authorizations</h3>
+                <h3 className="font-medium">{t('familyMemberDetails.pickupAuthorizationsTitle')}</h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowAddAuthorizationForm(true)}
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Add Authorization
+                  {t('familyMemberDetails.addAuthorization')}
                 </Button>
               </div>
 
@@ -459,9 +459,9 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                     <Card key={auth.id}>
                       <CardContent className="flex items-center justify-between p-4">
                         <div>
-                          <p className="font-medium">{auth.student?.name || 'Unknown Student'}</p>
+                          <p className="font-medium">{auth.student?.name || t('familyMemberDetails.unknownStudent')}</p>
                           <p className="text-sm text-muted-foreground">
-                            Authorized by: {auth.authorizingParent?.name || 'Unknown Parent'}
+                            {t('familyMemberDetails.authorizedBy', { name: auth.authorizingParent?.name || t('familyMemberDetails.unknownParent') })}
                           </p>
                           <div className="flex items-center gap-4 mt-1">
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -469,14 +469,14 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                               {new Date(auth.startDate).toLocaleDateString()} - {new Date(auth.endDate).toLocaleDateString()}
                             </div>
                             <Badge variant={auth.isActive ? "default" : "secondary"}>
-                              {auth.isActive ? "Active" : "Inactive"}
+                              {auth.isActive ? t('familyMemberDetails.active') : t('familyMemberDetails.inactive')}
                             </Badge>
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          title="Remove authorization"
+                          title={t('familyMemberDetails.removeAuthorization')}
                           onClick={() => handleRemoveAuthorization(auth.id)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -488,7 +488,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
               ) : (
                 <Card>
                   <CardContent className="p-6 text-center text-muted-foreground">
-                    No pickup authorizations found for this family member
+                    {t('familyMemberDetails.noAuthorizationsFound')}
                   </CardContent>
                 </Card>
               )}
@@ -497,16 +497,16 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
               {showAddAuthorizationForm && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Add Pickup Authorization</CardTitle>
-                    <CardDescription>Allow this family member to pick up a student</CardDescription>
+                    <CardTitle className="text-lg">{t('familyMemberDetails.addPickupAuthTitle')}</CardTitle>
+                    <CardDescription>{t('familyMemberDetails.addPickupAuthDescription')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Student</Label>
+                        <Label>{t('familyMemberDetails.student')}</Label>
                         <Select value={selectedAuthStudentId} onValueChange={setSelectedAuthStudentId}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a student" />
+                            <SelectValue placeholder={t('familyMemberDetails.selectStudent')} />
                           </SelectTrigger>
                           <SelectContent>
                             {availableAuthStudents.map(student => {
@@ -521,10 +521,10 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>Authorizing Parent</Label>
+                        <Label>{t('familyMemberDetails.authorizingParent')}</Label>
                         <Select value={selectedAuthorizingParentId} onValueChange={setSelectedAuthorizingParentId}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select parent" />
+                            <SelectValue placeholder={t('familyMemberDetails.selectParent')} />
                           </SelectTrigger>
                           <SelectContent>
                             {allParents.filter(p => p.id !== parent.id).map(parentOption => (
@@ -539,7 +539,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Start Date</Label>
+                        <Label>{t('familyMemberDetails.startDate')}</Label>
                         <Input
                           type="date"
                           value={startDate}
@@ -547,7 +547,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>End Date</Label>
+                        <Label>{t('familyMemberDetails.endDate')}</Label>
                         <Input
                           type="date"
                           value={endDate}
@@ -561,10 +561,10 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                         onClick={handleAddAuthorization} 
                         disabled={!selectedAuthStudentId || !selectedAuthorizingParentId || !startDate || !endDate}
                       >
-                        Add Authorization
+                        {t('familyMemberDetails.addAuthorizationButton')}
                       </Button>
                       <Button variant="outline" onClick={() => setShowAddAuthorizationForm(false)}>
-                        Cancel
+                        {t('familyMemberDetails.cancel')}
                       </Button>
                     </div>
                   </CardContent>
@@ -576,7 +576,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Close
+            {t('familyMemberDetails.close')}
           </Button>
         </DialogFooter>
       </DialogContent>
