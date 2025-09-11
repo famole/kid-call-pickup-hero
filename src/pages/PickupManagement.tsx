@@ -35,6 +35,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [teacherClasses, setTeacherClasses] = useState<Class[]>([]);
+  const [classesLoaded, setClassesLoaded] = useState<boolean>(false);
   
   // Memoize role checks to prevent unnecessary re-renders
   const isAdmin = useMemo(() => user?.role === 'admin' || user?.role === 'superadmin', [user?.role]);
@@ -83,6 +84,8 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
       }
     } catch (error) {
       logger.error('Error fetching classes:', error);
+    } finally {
+      setClassesLoaded(true);
     }
   }, [user?.email, isAdmin, isTeacher]);
 
@@ -91,9 +94,21 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
     logger.info('teacherClassIds in PickupManagement:', ids);
     return ids;
   }, [isTeacher, teacherClasses]);
-  const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(selectedClass, teacherClassIds);
-  const { pendingRequests, loading: pendingLoading, markAsCalled, cancelRequest, refetch: refetchPending } = useOptimizedPickupManagement(selectedClass, teacherClassIds);
-  const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(selectedClass);
+
+  // Only call data hooks after classes are loaded to prevent showing all data before filtering
+  const shouldFetchData = isAdmin || (isTeacher && classesLoaded);
+  
+  const { childrenByClass, loading: calledLoading, refetch: refetchCalled } = useCalledStudents(
+    shouldFetchData ? selectedClass : null, 
+    shouldFetchData ? teacherClassIds : undefined
+  );
+  const { pendingRequests, loading: pendingLoading, markAsCalled, cancelRequest, refetch: refetchPending } = useOptimizedPickupManagement(
+    shouldFetchData ? selectedClass : null, 
+    shouldFetchData ? teacherClassIds : undefined
+  );
+  const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(
+    shouldFetchData ? selectedClass : null
+  );
 
   // Check if user has permission to access this page - include superadmin
   const hasPermission = useMemo(() => user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin', [user?.role]);
