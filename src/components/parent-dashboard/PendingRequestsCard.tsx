@@ -3,7 +3,7 @@ import React from 'react';
 import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, Info, X } from 'lucide-react';
+import { Clock, Info } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { cancelPickupRequest } from '@/services/pickup';
@@ -119,13 +119,12 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
                   )}
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleCancelRequest(request.id)}
-                  className="ml-2 h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                  title={t('dashboard.cancelRequest')}
+                  className="ml-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
                 >
-                  <X className="h-4 w-4" />
+                  {t('dashboard.cancel')}
                 </Button>
               </div>
             );

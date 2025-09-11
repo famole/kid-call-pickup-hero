@@ -52,6 +52,7 @@
     "calledForPickup": "Llamado para Recogida",
     "noteAuthorizedPickup": "Estas solicitudes de recogida fueron hechas por alguien que está autorizado para recoger a tus hijos. No necesitas tomar ninguna acción - esto es solo para mantenerte informado.",
     "authorizedPickup": "Recogida autorizada",
+    "cancel": "Cancelar",
     "cancelRequest": "Cancelar Solicitud",
     "pickupRequestCancelled": "Solicitud de recogida cancelada exitosamente",
     "errorCancellingRequest": "Error al cancelar la solicitud de recogida"
