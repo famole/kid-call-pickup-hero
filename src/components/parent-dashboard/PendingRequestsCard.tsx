@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, Info } from 'lucide-react';
+import { Clock, Info, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { cancelPickupRequest } from '@/services/pickup';
@@ -24,14 +24,22 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [cancellingRequests, setCancellingRequests] = useState<Set<string>>(new Set());
 
   const handleCancelRequest = async (requestId: string) => {
+    setCancellingRequests(prev => new Set(prev).add(requestId));
     try {
       await cancelPickupRequest(requestId);
       toast.success(t('dashboard.pickupRequestCancelled'));
       onRequestCancelled?.();
     } catch (error) {
       toast.error(t('dashboard.errorCancellingRequest'));
+    } finally {
+      setCancellingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
     }
   };
 
@@ -70,6 +78,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
           {filteredRequests.map((request) => {
             const child = children.find(c => c.id === request.studentId);
             const isRequestedByOtherParent = currentParentId && request.parentId !== currentParentId;
+            const isLoading = cancellingRequests.has(request.id);
             
             return (
               <div 
@@ -122,8 +131,10 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => handleCancelRequest(request.id)}
-                  className="ml-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                  disabled={isLoading}
+                  className="ml-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 disabled:opacity-50"
                 >
+                  {isLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
                   {t('dashboard.cancel')}
                 </Button>
               </div>
