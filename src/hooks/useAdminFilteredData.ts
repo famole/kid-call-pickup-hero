@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useOptimizedParentsData } from './useOptimizedParentsData';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
@@ -10,6 +10,7 @@ interface UseAdminFilteredDataProps {
 
 export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilteredDataProps) => {
   const [statusFilter, setStatusFilter] = useState<'active' | 'deleted' | 'all'>('active');
+  const [isFilterChanging, setIsFilterChanging] = useState(false);
   
   // Determine if we should include deleted records
   const includeDeleted = statusFilter === 'deleted' || statusFilter === 'all';
@@ -33,18 +34,19 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
   console.log('Total parents before filtering:', filteredParentsByRole.length);
   console.log('Parents with deletedAt:', filteredParentsByRole.filter(p => p.deletedAt).length);
 
-  // Apply status filter to parents
+  // Apply status filter to parents - but don't double filter if we already fetched the right data
   const statusFilteredParents = filteredParentsByRole.filter(parent => {
-    switch (statusFilter) {
-      case 'active':
-        return !parent.deletedAt;
-      case 'deleted':
-        return !!parent.deletedAt;
-      case 'all':
-        return true;
-      default:
-        return true;
+    // If we're showing deleted only and includeDeleted is true, 
+    // the query already filtered correctly, so just show deleted ones
+    if (statusFilter === 'deleted') {
+      return !!parent.deletedAt;
     }
+    // If we're showing active only, show non-deleted
+    if (statusFilter === 'active') {
+      return !parent.deletedAt;
+    }
+    // For 'all', show everything we fetched
+    return true;
   });
 
   // Apply status filter to students
@@ -62,11 +64,20 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
   });
 
   const handleStatusFilterChange = useCallback((newFilter: 'active' | 'deleted' | 'all') => {
-    console.log('Status filter changed to:', newFilter);
+    console.log('Status filter changing from', statusFilter, 'to', newFilter);
     setStatusFilter(newFilter);
-    // Force refetch when filter changes to ensure we get the right data
-    setTimeout(() => refetch(), 100);
-  }, [refetch]);
+    setIsFilterChanging(true);
+  }, [statusFilter]);
+
+  // Effect to handle refetch when includeDeleted changes and reset loading state
+  useEffect(() => {
+    if (isFilterChanging) {
+      refetch().finally(() => {
+        setIsFilterChanging(false);
+        console.log('Filter change completed, loading state reset');
+      });
+    }
+  }, [includeDeleted, isFilterChanging, refetch]);
 
   const refreshData = useCallback(() => {
     return refetch();
@@ -76,9 +87,9 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     parents,
     setParents,
     filteredParentsByRole: statusFilteredParents,
-    isLoading,
+    isLoading: isLoading || isFilterChanging,
     allStudents: statusFilteredStudents,
-    loadingProgress,
+    loadingProgress: isFilterChanging ? `Filtering ${statusFilter} records...` : loadingProgress,
     onParentAdded,
     onParentUpdated,
     onImportCompleted,

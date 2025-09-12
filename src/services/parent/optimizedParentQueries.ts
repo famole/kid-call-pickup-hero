@@ -34,6 +34,8 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
     }
 
     logger.log(`Fetched ${parentsData?.length || 0} parents from database`);
+    logger.log(`Include deleted was: ${includeDeleted}`);
+    logger.log(`Parents with deleted_at:`, parentsData?.filter(p => p.deleted_at).length || 0);
     
     // Log role distribution for debugging
     const roleDistribution = parentsData?.reduce((acc, parent) => {
