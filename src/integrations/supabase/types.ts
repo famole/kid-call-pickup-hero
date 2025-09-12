@@ -559,6 +559,10 @@ export type Database = {
         Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      cancel_pickup_request_for_username_user: {
+        Args: { p_parent_id: string; p_request_id: string }
+        Returns: undefined
+      }
       create_pickup_request_for_username_user: {
         Args: { p_parent_id: string; p_student_id: string }
         Returns: string

@@ -31,24 +31,42 @@ export const cancelPickupRequest = async (requestId: string): Promise<void> => {
     console.log('About to update pickup request with ID:', requestId);
     console.log('Attempting to set status to cancelled...');
     
-    const { data, error } = await supabase
-      .from('pickup_requests')
-      .update({ status: 'cancelled' })
-      .eq('id', requestId)
-      .select('*');
-    
-    console.log('Update result - data:', data);
-    console.log('Update result - error:', error);
-    
-    if (error) {
-      logger.error('Supabase error cancelling pickup request:', error);
-      console.error('Detailed error:', error);
-      throw new Error(`Database error: ${error.message}`);
-    }
-    
-    if (!data || data.length === 0) {
-      console.error('No rows were updated - this suggests RLS policy blocked the update');
-      throw new Error('Failed to cancel pickup request - access denied');
+    if (usernameParentId) {
+      // Use the secure database function for username users
+      console.log('Using secure function for username user');
+      const { error } = await supabase.rpc('cancel_pickup_request_for_username_user', {
+        p_request_id: requestId,
+        p_parent_id: usernameParentId
+      });
+      
+      if (error) {
+        logger.error('Supabase error cancelling pickup request for username user:', error);
+        console.error('Detailed error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+      
+      console.log('Successfully cancelled pickup request using secure function');
+    } else {
+      // Use regular update for authenticated users
+      const { data, error } = await supabase
+        .from('pickup_requests')
+        .update({ status: 'cancelled' })
+        .eq('id', requestId)
+        .select('*');
+      
+      console.log('Update result - data:', data);
+      console.log('Update result - error:', error);
+      
+      if (error) {
+        logger.error('Supabase error cancelling pickup request:', error);
+        console.error('Detailed error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+      
+      if (!data || data.length === 0) {
+        console.error('No rows were updated - this suggests RLS policy blocked the update');
+        throw new Error('Failed to cancel pickup request - access denied');
+      }
     }
     
     logger.info(`Pickup request ${requestId} cancelled successfully`);
