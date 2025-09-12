@@ -6,12 +6,18 @@ export const cancelPickupRequest = async (requestId: string): Promise<void> => {
   try {
     console.log('cancelPickupRequest called for requestId:', requestId);
     
-    // For username users, set the database session context first
+    // Check if user has active Supabase auth session
+    const { data: { session } } = await supabase.auth.getSession();
     const usernameParentId = localStorage.getItem('username_parent_id');
+    
+    console.log('Has auth session:', !!session);
     console.log('Username parent ID from localStorage:', usernameParentId);
     
-    if (usernameParentId) {
-      logger.info('Setting username user context for parent ID:', usernameParentId);
+    // Determine if this is a username user (no auth session but has username parent ID)
+    const isUsernameUser = !session && usernameParentId;
+    
+    if (isUsernameUser) {
+      logger.info('Username user detected, using secure function for parent ID:', usernameParentId);
       console.log('Setting context for username user:', usernameParentId);
       
       const { error: contextError } = await supabase.rpc('set_username_user_context', {
@@ -25,13 +31,13 @@ export const cancelPickupRequest = async (requestId: string): Promise<void> => {
         console.log('Context set successfully');
       }
     } else {
-      console.log('No username parent ID found, using regular auth');
+      console.log('Authenticated user, using regular RLS approach');
     }
 
     console.log('About to update pickup request with ID:', requestId);
     console.log('Attempting to set status to cancelled...');
     
-    if (usernameParentId) {
+    if (isUsernameUser) {
       // Use the secure database function for username users
       console.log('Using secure function for username user');
       const { error } = await supabase.rpc('cancel_pickup_request_for_username_user', {
