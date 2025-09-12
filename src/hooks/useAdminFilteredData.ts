@@ -27,6 +27,12 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     refetch
   } = useOptimizedParentsData({ userRole, includeDeleted, includedRoles });
 
+  // Debug logging to check deleted filtering
+  console.log('Status filter:', statusFilter);
+  console.log('Include deleted:', includeDeleted);
+  console.log('Total parents before filtering:', filteredParentsByRole.length);
+  console.log('Parents with deletedAt:', filteredParentsByRole.filter(p => p.deletedAt).length);
+
   // Apply status filter to parents
   const statusFilteredParents = filteredParentsByRole.filter(parent => {
     switch (statusFilter) {
@@ -56,8 +62,11 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
   });
 
   const handleStatusFilterChange = useCallback((newFilter: 'active' | 'deleted' | 'all') => {
+    console.log('Status filter changed to:', newFilter);
     setStatusFilter(newFilter);
-  }, []);
+    // Force refetch when filter changes to ensure we get the right data
+    setTimeout(() => refetch(), 100);
+  }, [refetch]);
 
   const refreshData = useCallback(() => {
     return refetch();

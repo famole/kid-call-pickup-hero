@@ -112,8 +112,15 @@ export const useOptimizedParentsData = ({
     }
   }, [toast, includeDeleted]);
 
-  // Only run the effect once on mount
+  // Only run the effect once on mount and when key dependencies change
   useEffect(() => {
+    if (isInitializedRef.current && lastFetchRef.current > 0) {
+      // If already initialized but includeDeleted changed, refetch
+      loadParents(true);
+      loadStudents();
+      return;
+    }
+
     if (isInitializedRef.current) {
       return;
     }
@@ -127,7 +134,7 @@ export const useOptimizedParentsData = ({
     };
     
     loadData();
-  }, []); // Empty dependency array to run only once
+  }, [includeDeleted]); // Add includeDeleted as dependency
 
   const onParentAdded = useCallback((newParent: ParentWithStudents) => {
     setParents(prev => [...prev, newParent]);
