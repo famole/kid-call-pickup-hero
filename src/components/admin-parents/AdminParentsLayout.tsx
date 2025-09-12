@@ -58,6 +58,8 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   getHeaderTitle,
   getHeaderDescription,
   loadingProgress,
+  statusFilter,
+  onStatusFilterChange,
   onAuthStatusRefresh,
 }) => {
   const [classes, setClasses] = React.useState<Class[]>([]);
@@ -148,6 +150,8 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           onResetParentPassword={handleResetParentPassword}
           onReactivateParent={handleReactivateParent}
           onManageStudents={hooks.studentManagement.openStudentModal}
+          statusFilter={statusFilter}
+          onStatusFilterChange={onStatusFilterChange}
           authStatuses={authStatuses}
         />
       </Card>
