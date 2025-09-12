@@ -4,6 +4,19 @@ import { logger } from "@/utils/logger";
 // Cancel a pickup request by setting its status to 'cancelled'
 export const cancelPickupRequest = async (requestId: string): Promise<void> => {
   try {
+    // For username users, set the database session context first
+    const usernameParentId = localStorage.getItem('username_parent_id');
+    if (usernameParentId) {
+      logger.info('Setting username user context for parent ID:', usernameParentId);
+      const { error: contextError } = await supabase.rpc('set_username_user_context', {
+        parent_id: usernameParentId
+      });
+      
+      if (contextError) {
+        logger.error('Error setting username user context:', contextError);
+      }
+    }
+
     const { error } = await supabase
       .from('pickup_requests')
       .update({ status: 'cancelled' })
