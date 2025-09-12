@@ -66,6 +66,7 @@ export const useOptimizedParentsData = ({
       console.log(`Loading parents data for userRole: ${userRole}`);
       
       // Use optimized query
+      console.log(`Fetching parents with includeDeleted: ${includeDeleted}`);
       const data = await getParentsWithStudentsOptimized(includeDeleted);
       
       const loadTime = performance.now() - startTime;
@@ -112,29 +113,29 @@ export const useOptimizedParentsData = ({
     }
   }, [toast, includeDeleted]);
 
-  // Only run the effect once on mount and when key dependencies change
+  // Initial load effect
   useEffect(() => {
-    if (isInitializedRef.current && lastFetchRef.current > 0) {
-      // If already initialized but includeDeleted changed, refetch
+    if (!isInitializedRef.current) {
+      const loadData = async () => {
+        setIsLoading(true);
+        await Promise.all([loadParents(true), loadStudents()]);
+        setIsLoading(false);
+        setLoadingProgress('Data loaded successfully');
+        isInitializedRef.current = true;
+      };
+      
+      loadData();
+    }
+  }, [loadParents, loadStudents]);
+
+  // Refetch when includeDeleted changes
+  useEffect(() => {
+    if (isInitializedRef.current) {
+      console.log('includeDeleted changed to:', includeDeleted);
       loadParents(true);
       loadStudents();
-      return;
     }
-
-    if (isInitializedRef.current) {
-      return;
-    }
-
-    const loadData = async () => {
-      setIsLoading(true);
-      await Promise.all([loadParents(true), loadStudents()]);
-      setIsLoading(false);
-      setLoadingProgress('Data loaded successfully');
-      isInitializedRef.current = true;
-    };
-    
-    loadData();
-  }, [includeDeleted]); // Add includeDeleted as dependency
+  }, [includeDeleted, loadParents, loadStudents]);
 
   const onParentAdded = useCallback((newParent: ParentWithStudents) => {
     setParents(prev => [...prev, newParent]);
