@@ -18,6 +18,13 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
       return;
     }
 
+    // Don't fetch if classId is null (waiting for teacher classes to load)
+    if (classId === null) {
+      logger.info('Skipping called students fetch - classId is null, waiting for teacher classes to load');
+      setLoading(false);
+      return;
+    }
+
     try {
       logger.info('Fetching called students with teacherClassIds:', teacherClassIds);
       const calledStudents = await getCalledStudentsOptimized(classId, teacherClassIds);

@@ -2,3 +2,9 @@ project_id = "bslcyuufvifphfzdgfcl"
 
 [functions.reset-parent-password]
 verify_jwt = false
+
+[functions.username-auth]
+verify_jwt = false
+
+[functions.setup-username-password]
+verify_jwt = false

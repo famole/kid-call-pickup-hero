@@ -17,12 +17,12 @@ import { useParentClassFilter } from '@/hooks/useParentClassFilter';
 import { useAdminPagination } from '@/hooks/useAdminPagination';
 
 interface AdminParentsContentProps {
-  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   filteredParentsByRole: ParentWithStudents[];
   allStudents: Child[];
   onEditParent: (parent: ParentWithStudents) => void;
   onDeleteParent: (parentId: string) => Promise<void>;
-  onResetParentPassword?: (email: string, name: string) => void;
+  onResetParentPassword?: (identifier: string, name: string) => void;
   onManageStudents: (parent: ParentWithStudents) => void;
   onReactivateParent?: (parentId: string, parentName: string) => void;
   statusFilter?: 'active' | 'deleted' | 'all';

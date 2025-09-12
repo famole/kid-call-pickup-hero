@@ -12,7 +12,7 @@ import {
 } from './authUtils';
 
 export const useAuthProvider = (): AuthState & {
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 } => {
   const [user, setUser] = useState<User | null>(null);
@@ -26,6 +26,8 @@ export const useAuthProvider = (): AuthState & {
         
         if (event === 'SIGNED_OUT') {
           setUser(null);
+          // Also clear custom username session
+          localStorage.removeItem('username_session');
         } else if (event === 'TOKEN_REFRESHED' && !session) {
           // Session expired during token refresh - auto sign out
           logger.log('Session expired during token refresh, signing out');
@@ -47,7 +49,7 @@ export const useAuthProvider = (): AuthState & {
     // THEN check for existing session
     const loadUser = async () => {
       try {
-        // Try to get session from Supabase
+        // Try to get session from Supabase first
         const { data: { session }, error } = await supabase.auth.getSession();
         logger.log('Initial session check:', session?.user?.email);
         
@@ -60,6 +62,58 @@ export const useAuthProvider = (): AuthState & {
         
         if (session?.user) {
           await handleUserSession(session.user);
+        } else {
+          // Check for username-only session in localStorage
+          const usernameSession = localStorage.getItem('username_session');
+          if (usernameSession) {
+            try {
+              const sessionData = JSON.parse(usernameSession);
+              // Check if session is still valid (24 hours)
+              const sessionAge = Date.now() - sessionData.timestamp;
+              const twentyFourHours = 24 * 60 * 60 * 1000;
+              
+              if (sessionAge < twentyFourHours) {
+                logger.log('Found valid username session for:', sessionData.username);
+                
+                // Create a proper anonymous Supabase session to enable database functions
+                try {
+                  const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+                  if (!anonError && anonData.user) {
+                    // Update the anonymous user with our parent data
+                    await supabase.auth.updateUser({
+                      data: { 
+                        parent_id: sessionData.id,
+                        username: sessionData.username,
+                        role: sessionData.role,
+                        name: sessionData.name
+                      }
+                    });
+                    logger.log('Restored Supabase session for username user:', sessionData.username);
+                  }
+                } catch (sessionError) {
+                  logger.error('Error creating Supabase session on restore:', sessionError);
+                }
+                
+                const mockUser = {
+                  id: sessionData.id,
+                  email: null,
+                  user_metadata: {
+                    name: sessionData.name,
+                    username: sessionData.username,
+                    role: sessionData.role,
+                    parent_id: sessionData.id
+                  }
+                };
+                await handleUserSession(mockUser);
+              } else {
+                logger.log('Username session expired, removing');
+                localStorage.removeItem('username_session');
+              }
+            } catch (parseError) {
+              logger.error('Error parsing username session:', parseError);
+              localStorage.removeItem('username_session');
+            }
+          }
         }
       } catch (error) {
         logger.error("Error loading user:", error);
@@ -79,7 +133,7 @@ export const useAuthProvider = (): AuthState & {
 
   const handleUserSession = async (authUser: any) => {
     try {
-      logger.log('Handling user session for:', authUser.email);
+      logger.log('Handling user session for:', authUser.email || authUser.user_metadata?.username);
       
       // Check for invitation token in URL or user metadata
       const urlParams = new URLSearchParams(window.location.search);
@@ -93,9 +147,26 @@ export const useAuthProvider = (): AuthState & {
       logger.log('Is OAuth user:', isOAuthUser);
       logger.log('Invitation token found:', !!invitationToken);
       
-      // Get user data from our database based on the auth user
-      let parentData = await getParentData(authUser.email);
+      // For username-only users, we already have the parent data in user_metadata
+      // Don't fetch it again from database
+      let parentData = null;
+      if (authUser.user_metadata?.role && !authUser.email) {
+        // This is a username-only user, use the data from user_metadata
+        logger.log('🔍 Using username-only user data from metadata:', authUser.user_metadata);
+        parentData = {
+          id: authUser.id,
+          name: authUser.user_metadata.name,
+          username: authUser.user_metadata.username,
+          role: authUser.user_metadata.role,
+          email: null
+        };
+      } else {
+        // Regular email user, fetch from database
+        parentData = await getParentData(authUser.email);
+      }
+      
       logger.log('Parent data found:', parentData ? 'Yes' : 'No');
+      logger.log('🔍 Parent data role:', parentData?.role);
       
       // Handle invitation acceptance if we have a token
       if (invitationToken && !parentData) {
@@ -197,7 +268,7 @@ export const useAuthProvider = (): AuthState & {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     try {
       setLoading(true);
       
@@ -212,19 +283,107 @@ export const useAuthProvider = (): AuthState & {
         logger.error("Sign out before login failed:", signOutError);
       }
       
-      // Try to authenticate with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Check if this looks like a username (no @ symbol) or email
+      const isEmail = identifier.includes('@');
       
-      if (error) {
-        throw error;
-      }
-      
-      // Handle user session
-      if (data.user) {
-        await handleUserSession(data.user);
+      if (isEmail) {
+        // Try regular Supabase email/password auth first
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: identifier,
+          password,
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Handle user session
+        if (data.user) {
+          await handleUserSession(data.user);
+        }
+      } else {
+        // Use username auth edge function
+        const { data, error } = await supabase.functions.invoke('username-auth', {
+          body: { identifier, password }
+        });
+        
+        if (error) {
+          logger.error("Username auth error:", error);
+          throw new Error('Invalid credentials');
+        }
+        
+        if (data.error) {
+          if (data.requirePasswordSetup) {
+            // Redirect to password setup for username-only users
+            window.location.href = `/password-setup?identifier=${encodeURIComponent(identifier)}`;
+            return;
+          }
+          throw new Error(data.error);
+        }
+        
+        // For username auth, we might get different response structures
+        if (data.user && data.session) {
+          // Regular Supabase auth response (user has email)
+          await handleUserSession(data.user);
+        } else if (data.isUsernameAuth && data.parentData) {
+          // Username-only authentication (no Supabase auth)
+          // Store parent context in localStorage for username users
+          logger.log('Setting up username auth session for parent:', data.parentData.id);
+          
+          // Store the parent ID in localStorage so it can be used by queries
+          localStorage.setItem('username_parent_id', data.parentData.id);
+          
+          logger.log('Stored parent ID for username user:', data.parentData.id);
+          
+          // Store session in localStorage for persistence
+          const sessionData = {
+            id: data.parentData.id,
+            name: data.parentData.name,
+            username: data.parentData.username,
+            role: data.parentData.role,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('username_session', JSON.stringify(sessionData));
+          
+          logger.log('🔍 Username auth success - stored session for:', data.parentData.username);
+          
+          const mockUser = {
+            id: data.parentData.id,
+            email: null,
+            user_metadata: {
+              name: data.parentData.name,
+              username: data.parentData.username,
+              role: data.parentData.role,
+              parent_id: data.parentData.id
+            }
+          };
+          
+          logger.log('🔍 Created mock user for username auth:', mockUser);
+          await handleUserSession(mockUser);
+          
+          // After successful username authentication, redirect to appropriate page
+          setTimeout(() => {
+            const userRole = data.parentData.role;
+            if (['admin', 'superadmin'].includes(userRole)) {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/';
+            }
+          }, 100);
+        } else if (data.requireUsernameAuth) {
+          // Fallback for old response format
+          const mockUser = {
+            id: data.parentData.id,
+            email: null,
+            user_metadata: {
+              name: data.parentData.name,
+              username: data.parentData.username
+            }
+          };
+          await handleUserSession(mockUser);
+        } else {
+          throw new Error('Authentication failed');
+        }
       }
       
       return Promise.resolve();
@@ -239,6 +398,9 @@ export const useAuthProvider = (): AuthState & {
   const logout = async () => {
     // Clean up auth state
     cleanupAuthState();
+    
+    // Clean up username session
+    localStorage.removeItem('username_session');
     
     // Try to sign out from Supabase
     try {

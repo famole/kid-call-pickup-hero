@@ -5,25 +5,51 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Clock, User, Baby } from 'lucide-react';
+import { Clock, User, Baby, X } from 'lucide-react';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from '@/hooks/use-toast';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
+import DeleteConfirmationDialog from '@/components/ui/delete-confirmation-dialog';
 
 interface PendingPickupsTableProps {
   requests: PickupRequestWithDetails[];
   onMarkAsCalled: (requestId: string) => Promise<void>;
+  onCancelRequest: (requestId: string) => Promise<void>;
   loading: boolean;
+  isAdmin: boolean;
 }
 
 const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
   requests,
   onMarkAsCalled,
-  loading
+  onCancelRequest,
+  loading,
+  isAdmin
 }) => {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [isMobile, setIsMobile] = useState(() => {
     return typeof window !== 'undefined' && window.innerWidth < 768;
+  });
+
+  const deleteConfirmation = useDeleteConfirmation<PickupRequestWithDetails>({
+    onDelete: async (request) => {
+      await onCancelRequest(request.request.id);
+      toast({
+        title: t('common.success'),
+        description: t('pickup.requestCancelled')
+      });
+    },
+    getItemName: (request) => request.child?.name || t('common.unknownChild'),
+    getConfirmationText: (request) => ({
+      title: t('pickup.confirmCancelRequest'),
+      description: t('pickup.cancelRequestDescription', { 
+        studentName: request.child?.name || t('common.unknownChild'),
+        parentName: request.parent?.name || t('forms.parentName')
+      })
+    })
   });
 
   useEffect(() => {
@@ -176,24 +202,47 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-left">
-                      <Button
-                        onClick={() => onMarkAsCalled(item.request.id)}
-                        size="sm"
-                        className="bg-school-primary hover:bg-school-primary/90"
-                      >
-                        <Baby className="h-4 w-4 mr-2" />
-                        {t('pickup.sent')}
-                      </Button>
-                    </TableCell>
+                     <TableCell className="text-left">
+                       <div className="flex items-center gap-2">
+                         <Button
+                           onClick={() => onMarkAsCalled(item.request.id)}
+                           size="sm"
+                           className="bg-school-primary hover:bg-school-primary/90"
+                         >
+                           <Baby className="h-4 w-4 mr-2" />
+                           {t('pickup.sent')}
+                         </Button>
+                         {isAdmin && (
+                           <Button
+                             onClick={() => deleteConfirmation.openDeleteConfirmation(item)}
+                             size="sm"
+                             variant="outline"
+                             className="text-red-600 hover:text-red-700"
+                           >
+                             <X className="h-4 w-4 mr-2" />
+                             {t('common.cancel')}
+                           </Button>
+                         )}
+                       </div>
+                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
-    );
+         </CardContent>
+
+         <DeleteConfirmationDialog
+           open={deleteConfirmation.isOpen}
+           onOpenChange={deleteConfirmation.closeDeleteConfirmation}
+           title={deleteConfirmation.getDialogTexts().title}
+           description={deleteConfirmation.getDialogTexts().description}
+           itemName={deleteConfirmation.getItemDisplayName()}
+           isLoading={deleteConfirmation.isLoading}
+           onConfirm={deleteConfirmation.handleConfirmDelete}
+         />
+       </Card>
+     );
   }
 
   // Mobile-optimized layout - no container card, compact design
@@ -206,39 +255,51 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
       
       <div className="space-y-3">
         {requests.map((item) => (
-          <div key={item.request.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <Avatar className="h-12 w-12 flex-shrink-0">
-                  <AvatarImage src={item.child?.avatar} alt={item.child?.name} />
-                  <AvatarFallback className="bg-school-primary text-white">
-                    {item.child?.name?.charAt(0) || '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium text-gray-900 truncate">
-                    {item.child?.name || t('common.unknownChild')}
-                  </div>
-                  <div className="text-sm text-gray-600 truncate">
-                    {item.class?.name || t('common.unknownClass')}
-                    {item.class?.grade && ` (${item.class.grade})`}
-                  </div>
-                  <div className="flex items-center justify-center gap-1 text-sm text-gray-500 mt-1">
-                    <User className="h-3 w-3" />
-                    <span className="truncate">
-                      {item.parent?.name || `${t('forms.parentName')} (ID: ${item.request.parentId?.slice(0, 8)}...)`}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Button
-                onClick={() => onMarkAsCalled(item.request.id)}
-                size="sm"
-                className="bg-school-primary hover:bg-school-primary/90 flex-shrink-0"
-              >
-                <Baby className="h-4 w-4" />
-              </Button>
-            </div>
+           <div key={item.request.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+             <div className="flex items-start justify-between gap-3">
+               <div className="flex items-center gap-3 min-w-0 flex-1">
+                 <Avatar className="h-12 w-12 flex-shrink-0">
+                   <AvatarImage src={item.child?.avatar} alt={item.child?.name} />
+                   <AvatarFallback className="bg-school-primary text-white">
+                     {item.child?.name?.charAt(0) || '?'}
+                   </AvatarFallback>
+                 </Avatar>
+                 <div className="min-w-0 flex-1">
+                   <div className="font-medium text-gray-900 truncate">
+                     {item.child?.name || t('common.unknownChild')}
+                   </div>
+                   <div className="text-sm text-gray-600 truncate">
+                     {item.class?.name || t('common.unknownClass')}
+                     {item.class?.grade && ` (${item.class.grade})`}
+                   </div>
+                   <div className="flex items-center justify-center gap-1 text-sm text-gray-500 mt-1">
+                     <User className="h-3 w-3" />
+                     <span className="truncate">
+                       {item.parent?.name || `${t('forms.parentName')} (ID: ${item.request.parentId?.slice(0, 8)}...)`}
+                     </span>
+                   </div>
+                 </div>
+               </div>
+               <div className="flex items-center gap-2">
+                 <Button
+                   onClick={() => onMarkAsCalled(item.request.id)}
+                   size="sm"
+                   className="bg-school-primary hover:bg-school-primary/90 flex-shrink-0"
+                 >
+                   <Baby className="h-4 w-4" />
+                 </Button>
+                 {isAdmin && (
+                   <Button
+                     onClick={() => deleteConfirmation.openDeleteConfirmation(item)}
+                     size="sm"
+                     variant="outline"
+                     className="text-red-600 hover:text-red-700 flex-shrink-0"
+                   >
+                     <X className="h-4 w-4" />
+                   </Button>
+                 )}
+               </div>
+             </div>
             
             <div className="flex items-center gap-2 text-xs text-gray-500 mt-3 pt-2 border-t border-gray-100">
               <Clock className="h-3 w-3" />
@@ -248,9 +309,19 @@ const PendingPickupsTable: React.FC<PendingPickupsTableProps> = ({
             </div>
           </div>
         ))}
-      </div>
-    </div>
-  );
+       </div>
+
+       <DeleteConfirmationDialog
+         open={deleteConfirmation.isOpen}
+         onOpenChange={deleteConfirmation.closeDeleteConfirmation}
+         title={deleteConfirmation.getDialogTexts().title}
+         description={deleteConfirmation.getDialogTexts().description}
+         itemName={deleteConfirmation.getItemDisplayName()}
+         isLoading={deleteConfirmation.isLoading}
+         onConfirm={deleteConfirmation.handleConfirmDelete}
+       />
+     </div>
+   );
 };
 
 export default PendingPickupsTable;

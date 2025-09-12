@@ -7,11 +7,16 @@ import { getParentsWithStudentsOptimized } from '@/services/parent/optimizedPare
 import { getAllStudents } from '@/services/studentService';
 
 interface UseOptimizedParentsDataProps {
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   includeDeleted?: boolean;
+  includedRoles?: ('parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other')[];
 }
 
-export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = false }: UseOptimizedParentsDataProps) => {
+export const useOptimizedParentsData = ({ 
+  userRole = 'parent', 
+  includeDeleted = false,
+  includedRoles
+}: UseOptimizedParentsDataProps) => {
   const { toast } = useToast();
   const [parents, setParents] = useState<ParentWithStudents[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,14 +27,22 @@ export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = 
   const lastFetchRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
 
-  // Filter parents by role with improved logic
+  // Filter parents by role(s)
   const filteredParentsByRole = parents.filter(parent => {
+    // Use includedRoles if provided, otherwise filter by single userRole
+    if (includedRoles && includedRoles.length > 0) {
+      return includedRoles.includes(parent.role || 'parent' as any);
+    }
+    
+    // Original single role logic
     if (userRole === 'superadmin') {
       return parent.role === 'superadmin';
     } else if (userRole === 'teacher') {
       return parent.role === 'teacher';
     } else if (userRole === 'admin') {
       return parent.role === 'admin';
+    } else if (userRole === 'family') {
+      return parent.role === 'family';
     } else {
       // For 'parent' role, include those with 'parent' role or no role set
       return parent.role === 'parent' || !parent.role;
@@ -53,6 +66,7 @@ export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = 
       console.log(`Loading parents data for userRole: ${userRole}`);
       
       // Use optimized query
+      console.log(`Fetching parents with includeDeleted: ${includeDeleted}`);
       const data = await getParentsWithStudentsOptimized(includeDeleted);
       
       const loadTime = performance.now() - startTime;
@@ -99,22 +113,29 @@ export const useOptimizedParentsData = ({ userRole = 'parent', includeDeleted = 
     }
   }, [toast, includeDeleted]);
 
-  // Only run the effect once on mount
+  // Initial load effect
+  useEffect(() => {
+    if (!isInitializedRef.current) {
+      const loadData = async () => {
+        setIsLoading(true);
+        await Promise.all([loadParents(true), loadStudents()]);
+        setIsLoading(false);
+        setLoadingProgress('Data loaded successfully');
+        isInitializedRef.current = true;
+      };
+      
+      loadData();
+    }
+  }, [loadParents, loadStudents]);
+
+  // Refetch when includeDeleted changes
   useEffect(() => {
     if (isInitializedRef.current) {
-      return;
+      console.log('includeDeleted changed to:', includeDeleted);
+      loadParents(true);
+      loadStudents();
     }
-
-    const loadData = async () => {
-      setIsLoading(true);
-      await Promise.all([loadParents(true), loadStudents()]);
-      setIsLoading(false);
-      setLoadingProgress('Data loaded successfully');
-      isInitializedRef.current = true;
-    };
-    
-    loadData();
-  }, []); // Empty dependency array to run only once
+  }, [includeDeleted, loadParents, loadStudents]);
 
   const onParentAdded = useCallback((newParent: ParentWithStudents) => {
     setParents(prev => [...prev, newParent]);

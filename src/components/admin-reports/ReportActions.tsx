@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ReportActionsProps {
   onGenerateReport: () => void;
@@ -16,19 +17,24 @@ const ReportActions: React.FC<ReportActionsProps> = ({
   loading,
   hasData
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="flex gap-2">
-      <Button onClick={onGenerateReport} disabled={loading}>
+      <Button 
+        onClick={onGenerateReport} 
+        disabled={loading}
+      >
         <FileText className="h-4 w-4 mr-2" />
-        {loading ? 'Generating...' : 'Generate Report'}
+        {loading ? t('reports.generating') : t('reports.generateReport')}
       </Button>
       <Button 
-        variant="outline" 
+        variant="outline"
         onClick={onExportCSV}
         disabled={!hasData}
       >
         <Download className="h-4 w-4 mr-2" />
-        Export CSV
+        {t('reports.exportReport')}
       </Button>
     </div>
   );

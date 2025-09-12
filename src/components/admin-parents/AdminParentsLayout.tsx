@@ -22,7 +22,7 @@ import { useParentAuthStatuses } from '@/hooks/useParentAuthStatuses';
 import { logger } from '@/utils/logger';
 
 interface AdminParentsLayoutProps {
-  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   filteredParentsByRole: ParentWithStudents[];
   isLoading: boolean;
   allStudents: Child[];
@@ -32,7 +32,7 @@ interface AdminParentsLayoutProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
   onImportCompleted: () => void;
   handleDeleteParent: (parentId: string) => Promise<void>;
-  handleResetParentPassword?: (email: string, name: string) => void;
+  handleResetParentPassword?: (identifier: string, name: string) => void;
   handleReactivateParent?: (parentId: string, parentName: string) => void;
   getHeaderTitle: () => string;
   getHeaderDescription: () => string;
@@ -58,6 +58,8 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   getHeaderTitle,
   getHeaderDescription,
   loadingProgress,
+  statusFilter,
+  onStatusFilterChange,
   onAuthStatusRefresh,
 }) => {
   const [classes, setClasses] = React.useState<Class[]>([]);
@@ -148,6 +150,8 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           onResetParentPassword={handleResetParentPassword}
           onReactivateParent={handleReactivateParent}
           onManageStudents={hooks.studentManagement.openStudentModal}
+          statusFilter={statusFilter}
+          onStatusFilterChange={onStatusFilterChange}
           authStatuses={authStatuses}
         />
       </Card>
@@ -169,10 +173,11 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
         isStudentModalOpen={hooks.studentManagement.isStudentModalOpen}
         selectedParent={hooks.studentManagement.selectedParent}
         allStudents={allStudents}
+        allParents={filteredParentsByRole}
         onStudentModalOpenChange={hooks.studentManagement.closeStudentModal}
-        onAddStudent={wrappers.handleAddStudentWrapper}
-        onRemoveStudent={wrappers.handleRemoveStudentWrapper}
-        onTogglePrimary={wrappers.handleTogglePrimaryWrapper}
+        onAddStudent={hooks.studentManagement.handleAddStudentToParent}
+        onRemoveStudent={hooks.studentManagement.handleRemoveStudent}
+        onTogglePrimary={hooks.studentManagement.handleTogglePrimary}
         classes={classes}
         userRole={userRole}
       />

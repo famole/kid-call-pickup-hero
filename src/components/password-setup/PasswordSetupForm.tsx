@@ -18,15 +18,22 @@ const PasswordSetupForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  const isValidEmail = (email: string): boolean => {
-    // Check if email has a valid format and is not using example.com domain
+  const isValidIdentifier = (identifier: string): boolean => {
+    // Check if it's a valid email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email) && !email.toLowerCase().includes('example.com');
+    if (emailRegex.test(identifier) && !identifier.toLowerCase().includes('example.com')) {
+      return true;
+    }
+    // Check if it's a valid username (no @ symbol, at least 3 characters)
+    if (!identifier.includes('@') && identifier.length >= 3) {
+      return true;
+    }
+    return false;
   };
 
   const handlePasswordSetup = async (e: React.FormEvent) => {
@@ -53,54 +60,114 @@ const PasswordSetupForm = () => {
     setIsLoading(true);
 
     try {
-      // Get email from URL parameters if user is not authenticated (preloaded account scenario)
+      // Get identifier (email or username) from URL parameters if user is not authenticated
       const urlParams = new URLSearchParams(window.location.search);
-      const emailFromUrl = urlParams.get('email');
-      const userEmail = user?.email || emailFromUrl;
+      let identifierFromUrl = urlParams.get('email') || urlParams.get('identifier');
+      
+      // If we have parentId, fetch the parent data to get the identifier
+      const parentId = urlParams.get('parentId');
+      if (parentId && !identifierFromUrl && !user) {
+        try {
+          const { data: parentDataResult, error } = await supabase
+            .from('parents')
+            .select('email, username')
+            .eq('id', parentId)
+            .maybeSingle();
+          
+          if (!error && parentDataResult) {
+            identifierFromUrl = parentDataResult.email || parentDataResult.username;
+          }
+        } catch (error) {
+          console.error('Error fetching parent by ID:', error);
+        }
+      }
+      
+      const userIdentifier = user?.email || identifierFromUrl;
 
-      if (!userEmail) {
+      if (!userIdentifier) {
         throw new Error(t('errors.noEmailForSetup'));
       }
 
       // Check if this is a password reset scenario by checking if parent exists but password_set is false
-      const { data: existingParent } = await supabase
-        .from('parents')
-        .select('password_set, is_preloaded')
-        .eq('email', userEmail)
-        .maybeSingle();
+      // Use the database function to search by email or username
+      const { data: existingParentResult } = await supabase
+        .rpc('get_parent_by_identifier', { identifier: userIdentifier });
+
+      const existingParent = existingParentResult?.[0];
 
       // If user is not authenticated, we need to handle different scenarios
       if (!user) {
-        // Always attempt to create a proper auth account, regardless of email domain
-        // This handles both new preloaded accounts and password reset scenarios
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: userEmail,
-          password: password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`
-          }
-        });
+        // For username-only users, we need to use the parent's email if available
+        const parentEmail = existingParent?.email || userIdentifier;
+        
+        // Only attempt signup if we have a valid email
+        if (isValidIdentifier(parentEmail) && parentEmail.includes('@')) {
+          // Always attempt to create a proper auth account, regardless of email domain
+          // This handles both new preloaded accounts and password reset scenarios
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: parentEmail,
+            password: password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/`
+            }
+          });
 
-        if (authError) {
-          // If signup fails because user already exists, that's expected for password reset
-          if (authError.message?.includes('already registered')) {
+          if (authError) {
+            // If signup fails because user already exists, that's expected for password reset
+            if (authError.message?.includes('already registered')) {
+              toast({
+                title: t('common.success'),
+                description: t('errors.accountResetComplete'),
+              });
+            } else {
+              throw authError;
+            }
+          }
+          
+          // Update the parent record to mark password as set
+          const { error: updateError } = await supabase
+            .from('parents')
+            .update({ password_set: true })
+            .eq('email', parentEmail);
+
+          if (updateError) {
+            throw updateError;
+          }
+        } else {
+          // For username-only users without email, use the password setup edge function
+          const { data, error } = await supabase.functions.invoke('setup-username-password', {
+            body: { identifier: userIdentifier, password }
+          });
+
+          if (error) {
+            logger.error("Username password setup error:", error);
+            throw new Error('Failed to set password');
+          }
+
+          if (data?.error) {
+            throw new Error(data.error);
+          }
+
+          toast({
+            title: t('common.success'),
+            description: t('errors.accountSetupComplete'),
+          });
+
+          // For username-only users, automatically log them in after password setup
+          try {
+            await login(userIdentifier, password);
+            // The login function should handle the redirect to dashboard
+            return;
+          } catch (loginError) {
+            logger.error('Auto-login after password setup failed:', loginError);
+            // If auto-login fails, redirect to login page
             toast({
-              title: t('common.success'),
-              description: t('errors.accountResetComplete'),
+              title: t('common.info'),
+              description: 'Password set successfully. Please log in with your credentials.',
             });
-          } else {
-            throw authError;
+            navigate('/login');
+            return;
           }
-        }
-
-        // Update the parent record to mark password as set
-        const { error: updateError } = await supabase
-          .from('parents')
-          .update({ password_set: true })
-          .eq('email', userEmail);
-
-        if (updateError) {
-          throw updateError;
         }
 
         toast({
@@ -124,7 +191,7 @@ const PasswordSetupForm = () => {
         const { error: updateError } = await supabase
           .from('parents')
           .update({ password_set: true })
-          .eq('email', userEmail);
+          .eq('email', userIdentifier);
 
         if (updateError) {
           throw updateError;

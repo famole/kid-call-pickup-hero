@@ -44,20 +44,32 @@ export const getActivePickupRequests = async (): Promise<PickupRequest[]> => {
 };
 
 // Get active pickup requests for a specific parent (both pending and called)
-export const getActivePickupRequestsForParent = async (): Promise<PickupRequest[]> => {
+export const getActivePickupRequestsForParent = async (
+  providedParentId?: string
+): Promise<PickupRequest[]> => {
   try {
-    const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+    let parentId = providedParentId;
 
-    if (parentError || !parentId) {
-      console.error('Unable to determine current parent ID:', parentError);
-      return [];
+    // Resolve parent ID only if not provided by caller
+    if (!parentId) {
+      const { data: rpcParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+      if (rpcParentId) {
+        parentId = rpcParentId;
+      } else {
+        console.error('Unable to determine current parent ID:', parentError);
+        return [];
+      }
     }
 
-    const { data, error } = await supabase
-      .from('pickup_requests')
-      .select('*')
-      .eq('parent_id', parentId)
-      .in('status', ['pending', 'called']);
+    console.log('🔍 DEBUG - Querying pickup requests for parent:', parentId);
+    console.log('🔍 DEBUG - Expected parent ID from DB:', '4a694e20-2532-4b6d-a37a-e1666fcd118b');
+
+    // Use secure function that bypasses RLS for username users
+    const { data, error } = await supabase.rpc('get_pickup_requests_for_parent', {
+      p_parent_id: parentId
+    });
+    
+    console.log('🔍 DEBUG - Raw supabase pickup request query result:', { data, error, parentId });
     
     if (error) {
       console.error('Supabase error fetching pickup requests for parent:', error);

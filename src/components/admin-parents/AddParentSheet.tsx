@@ -28,7 +28,7 @@ interface AddParentSheetProps {
   newParent: ParentInput;
   onNewParentChange: (parent: ParentInput) => void;
   onSubmit: (e?: React.FormEvent) => Promise<void>;
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   isSubmitting?: boolean;
   getFieldError?: (fieldName: string) => ValidationError | undefined;
   hasFieldError?: (fieldName: string) => boolean;
@@ -48,6 +48,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
   const { t } = useTranslation();
   const nameId = React.useId();
   const emailId = React.useId();
+  const usernameId = React.useId();
   const phoneId = React.useId();
   const roleId = React.useId();
 
@@ -60,13 +61,14 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
   const getAvailableRoles = () => {
     switch (userRole) {
       case 'superadmin':
-        return ['parent', 'teacher', 'admin', 'superadmin'];
+        return ['parent', 'family', 'teacher', 'admin', 'superadmin'];
       case 'admin':
-        return ['parent', 'teacher', 'admin'];
+        return ['parent', 'family', 'teacher', 'admin'];
       case 'teacher':
-        return ['parent', 'teacher'];
+        return ['parent', 'family', 'teacher'];
       default:
-        return ['parent'];
+        // Add "other" role for family management
+        return ['parent', 'family', 'other'];
     }
   };
 
@@ -108,16 +110,15 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
               htmlFor={emailId}
               className={hasFieldError?.('email') ? 'text-destructive' : ''}
             >
-              {t('addParentSheet.email')}
+              {t('addParentSheet.email')} {t('common.optional')}
             </Label>
             <Input
               id={emailId}
               type="email" 
               placeholder={t('addParentSheet.emailPlaceholder')} 
-              value={newParent.email}
+              value={newParent.email || ''}
               onChange={(e) => onNewParentChange({...newParent, email: e.target.value})}
               className={hasFieldError?.('email') ? 'border-destructive focus-visible:ring-destructive' : ''}
-              required
             />
             {getFieldError?.('email') && (
               <p className="text-sm text-destructive">
@@ -125,6 +126,28 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
               </p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <Label 
+              htmlFor={usernameId}
+              className={hasFieldError?.('username') ? 'text-destructive' : ''}
+            >
+              {t('admin.username')} {t('common.optional')}
+            </Label>
+            <Input
+              id={usernameId}
+              placeholder="Enter username" 
+              value={newParent.username || ''}
+              onChange={(e) => onNewParentChange({...newParent, username: e.target.value})}
+              className={hasFieldError?.('username') ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {getFieldError?.('username') && (
+              <p className="text-sm text-destructive">
+                {t(getFieldError('username')!.key)}
+              </p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label 
               htmlFor={phoneId}
@@ -154,7 +177,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
             </Label>
             <Select
               value={newParent.role || 'parent'}
-              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin') => 
+              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other') => 
                 onNewParentChange({...newParent, role: value})
               }
             >
@@ -191,7 +214,7 @@ const AddParentSheet: React.FC<AddParentSheetProps> = ({
             >
               {isSubmitting 
                 ? t('addParentSheet.adding', { role: newParent.role?.charAt(0).toUpperCase() + newParent.role?.slice(1) || 'User' })
-                : t('addParentSheet.addUser', { role: newParent.role?.charAt(0).toUpperCase() + newParent.role?.slice(1) || 'User' })
+                : (newParent.role === 'family' ? t('admin.addFamilyMember') : t('admin.addParent'))
               }
             </Button>
           </SheetFooter>

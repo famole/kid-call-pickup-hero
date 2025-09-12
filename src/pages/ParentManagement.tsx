@@ -79,7 +79,8 @@ const ParentManagement: React.FC = () => {
   
   const filteredParents = parents.filter(parent => 
     parent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    parent.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (parent.email && parent.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (parent.username && parent.username.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
   const handleAssignStudent = async (parentId: string, studentId: string) => {

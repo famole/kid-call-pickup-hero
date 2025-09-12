@@ -15,8 +15,21 @@ const Index = () => {
     // Redirect to login if not authenticated and not loading
     if (!loading && !isAuthenticated) {
       navigate('/login');
+      return;
     }
-  }, [loading, isAuthenticated, navigate]);
+
+    // Redirect admin and superadmin users to admin panel
+    if (user && ['admin', 'superadmin'].includes(user.role)) {
+      navigate('/admin');
+      return;
+    }
+
+    // Redirect teachers to pickup management
+    if (user && user.role === 'teacher') {
+      navigate('/pickup-management');
+      return;
+    }
+  }, [loading, isAuthenticated, user, navigate]);
 
   // Show loading indicator while checking auth status
   if (loading) {

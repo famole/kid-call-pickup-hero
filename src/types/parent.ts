@@ -2,7 +2,8 @@
 export type Parent = {
   id: string;
   name: string;
-  email: string;
+  email: string | null; // Allow null for username-only users
+  username?: string; // Add username support
   phone?: string;
   role?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other';
   createdAt: Date;
@@ -12,7 +13,8 @@ export type Parent = {
 
 export type ParentInput = {
   name: string;
-  email: string;
+  email?: string | null; // Make email optional for username-only users
+  username?: string; // Add username support
   phone?: string;
   role?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other';
   is_preloaded?: boolean;

@@ -22,6 +22,11 @@ export const useParentSearch = (parents: ParentWithStudents[]) => {
         return true;
       }
 
+      // Search by parent username
+      if (matchesSearch(parent.username, searchTerm)) {
+        return true;
+      }
+
       // Search by children names
       if (parent.students && parent.students.length > 0) {
         const hasMatchingChild = parent.students.some(student =>

@@ -4,7 +4,7 @@ import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Car, Info } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth/AuthProvider';
 
 interface CalledRequestsCardProps {
   calledRequests: PickupRequest[];
@@ -20,7 +20,9 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
   const { t } = useTranslation();
   const { user } = useAuth();
 
-  // Filter requests based on user role
+  // Filter requests based on user role:
+  // - Family members see only their own requests
+  // - Parents see all requests (including ones made by family members for their children)
   const filteredRequests = user?.role === 'family' || user?.role === 'other'
     ? calledRequests.filter(req => req.parentId === currentParentId)
     : calledRequests;

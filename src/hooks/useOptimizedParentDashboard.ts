@@ -1,8 +1,10 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { getActivePickupRequestsForParent, createPickupRequest } from '@/services/pickup';
+import { getParentDashboardDataByParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
+import { getActivePickupRequestsForParent } from '@/services/pickup';
+import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
+import { createPickupRequest } from '@/services/pickup/createPickupRequest';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -32,9 +34,22 @@ export const useOptimizedParentDashboard = () => {
   const subscriptionRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Use refs to maintain stable references for real-time subscription
+  const childrenRef = useRef<ChildWithType[]>([]);
+  const currentParentIdRef = useRef<string | undefined>(undefined);
+  
+  // Update refs when values change
+  useEffect(() => {
+    childrenRef.current = children;
+  }, [children]);
+  
+  useEffect(() => {
+    currentParentIdRef.current = currentParentId;
+  }, [currentParentId]);
+
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
-    if (!user?.email) {
-      logger.log('No user email available, skipping data load');
+    if (!user?.id) {
+      logger.log('No user ID available, skipping data load');
       return;
     }
 
@@ -48,100 +63,89 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
-      // Get current parent ID first
-      const { data: parentId } = await supabase.rpc('get_current_parent_id');
-      setCurrentParentId(parentId);
+      // Determine user type and parent ID
+      const isEmailUser = Boolean(user.email);
+      let parentId = user.id;
 
-      // Load both children and pickup requests in parallel
+      if (isEmailUser) {
+        // Try to get parent ID from RPC for email users
+        const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
+        if (rpcParentId) {
+          parentId = rpcParentId;
+        } else if (rpcError) {
+          logger.error('Error fetching parent ID via RPC:', rpcError);
+        }
+      } else {
+        // For username users, get parent ID from localStorage
+        const storedParentId = localStorage.getItem('username_parent_id');
+        if (storedParentId) {
+          parentId = storedParentId;
+        }
+      }
+
+      setCurrentParentId(parentId);
+      logger.log('Using parent ID for dashboard:', parentId);
+
+      // Load dashboard data and pickup requests
       const [dashboardData, pickupRequests] = await Promise.all([
-        getParentDashboardDataOptimized(user.email),
-        getActivePickupRequestsForParent()
+        isEmailUser
+          ? getParentDashboardDataOptimized(user.email!)
+          : getParentDashboardDataByParentId(parentId),
+        // For parents, get all affected requests; for family members, get only their own
+        user?.role === 'parent' ? getParentAffectedPickupRequests() : getActivePickupRequestsForParent(parentId)
       ]);
 
-      logger.log('Dashboard data loaded:', {
+      console.log('🔍 DEBUG - Dashboard data results:', {
         childrenCount: dashboardData.allChildren.length,
         pickupRequestsCount: pickupRequests.length,
-        currentParentId: parentId
+        children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized })),
+        requests: pickupRequests.map(r => ({ 
+          id: r.id, 
+          studentId: r.studentId, 
+          parentId: r.parentId, 
+          requestingParent: r.requestingParent?.name 
+        }))
       });
 
       setChildren(dashboardData.allChildren);
       
-      // Get all child IDs (both own and authorized)
-      const allChildIds = dashboardData.allChildren.map(child => child.id);
-      
-      if (allChildIds.length > 0) {
-        // Fetch all pickup requests for the children (including pending and called)
-        const { data: allChildRequests, error } = await supabase
-          .from('pickup_requests')
-          .select('*')
-          .in('student_id', allChildIds)
-          .in('status', ['pending', 'called']);
-
-        if (!error && allChildRequests) {
-          // Fetch parent information first
-          const parentIds = [...new Set(allChildRequests.map(req => req.parent_id))];
-          let parentsMap = new Map();
-          
-          if (parentIds.length > 0) {
-            const { data: parents, error: parentsError } = await supabase
-              .from('parents')
-              .select('id, name, email')
-              .in('id', parentIds);
-
-            if (!parentsError && parents) {
-              setParentInfo(parents);
-              parentsMap = new Map(parents.map(p => [p.id, p]));
-            }
-          }
-
-          // Transform requests with parent information
-          const transformedRequests = allChildRequests.map(req => ({
-            id: req.id,
-            studentId: req.student_id,
-            parentId: req.parent_id,
-            requestTime: new Date(req.request_time),
-            status: req.status as 'pending' | 'called' | 'completed' | 'cancelled',
-            requestingParent: parentsMap.get(req.parent_id) ? {
-              id: parentsMap.get(req.parent_id).id,
-              name: parentsMap.get(req.parent_id).name,
-              email: parentsMap.get(req.parent_id).email
-            } : undefined
-          }));
-
-          // Combine with parent's own requests, avoiding duplicates
-          const combinedRequests = [...pickupRequests];
-          transformedRequests.forEach(req => {
-            if (!combinedRequests.some(existing => existing.id === req.id)) {
-              combinedRequests.push(req);
-            }
-          });
-          
-          setActiveRequests(combinedRequests);
-        } else {
-          setActiveRequests(pickupRequests);
-        }
+      // Set parent info based on user type
+      if (isEmailUser) {
+        setParentInfo([]);
       } else {
-        setActiveRequests(pickupRequests);
+        // For username users, get parent info from localStorage
+        const sessionData = localStorage.getItem('username_session');
+        if (sessionData) {
+          const parsedData = JSON.parse(sessionData);
+          setParentInfo([{
+            id: parsedData.id,
+            name: parsedData.name
+          }]);
+        } else {
+          setParentInfo([]);
+        }
       }
       
+      setActiveRequests(pickupRequests);
+
       lastFetchRef.current = now;
       logger.log('Parent dashboard data loaded successfully', {
         childrenCount: dashboardData.allChildren.length,
-        requestsCount: activeRequests.length
+        requestsCount: pickupRequests.length
       });
     } catch (error) {
       logger.error('Error loading parent dashboard data:', error);
     } finally {
       if (firstLoadRef.current) {
         firstLoadRef.current = false;
-        setLoading(false);
       }
+      setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.email, user?.id]);
 
-  // Set up real-time subscription for pickup requests (same as admin panel)
+  // Set up real-time subscription for pickup requests with enhanced filtering for user's requests
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.id) return;
 
     // Set up periodic polling as a fallback in case realtime fails
     if (intervalRef.current) {
@@ -156,7 +160,7 @@ export const useOptimizedParentDashboard = () => {
       subscriptionRef.current = null;
     }
 
-    const channelName = `parent_dashboard_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+    const channelName = `parent_dashboard_${(user.email || user.username || user.id).replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
     logger.log('Setting up parent dashboard real-time subscription:', channelName);
 
     const channel = supabase
@@ -172,19 +176,65 @@ export const useOptimizedParentDashboard = () => {
           logger.log('Parent dashboard real-time change detected:', payload.eventType, payload);
           logger.log('Payload details:', JSON.stringify(payload, null, 2));
           
-          // Handle real-time updates intelligently like admin panel
-          if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
+          // For username-only users, check if this pickup request belongs to them
+          const requestParentId = (payload.new as any)?.parent_id || (payload.old as any)?.parent_id;
+          const isUsersRequest = requestParentId === currentParentIdRef.current || requestParentId === user.id;
+          
+          // Also check if this is for their students (they might be authorized to pick up)
+          const requestStudentId = (payload.new as any)?.student_id || (payload.old as any)?.student_id;
+          const isForTheirStudent = childrenRef.current.some(child => child.id === requestStudentId);
+          
+          if (!isUsersRequest && !isForTheirStudent) {
+            logger.log('Ignoring pickup request change - not related to this user');
+            return;
+          }
+          
+          logger.log('Processing pickup request change for this user:', {
+            isUsersRequest,
+            isForTheirStudent,
+            requestParentId,
+            currentParentId,
+            requestStudentId
+          });
+
+          // Handle real-time updates with notifications
+          if (payload.eventType === 'INSERT' && (payload.new as any)?.status === 'pending') {
             logger.log('New pickup request detected, refreshing dashboard...');
+            toast({
+              title: "Pickup Requested",
+              description: "Your pickup request has been submitted successfully.",
+            });
             loadDashboardData(true);
           } else if (payload.eventType === 'UPDATE') {
-            const newStatus = payload.new?.status;
-            const oldStatus = payload.old?.status;
-            const studentId = payload.new?.student_id;
+            const newStatus = (payload.new as any)?.status;
+            const oldStatus = (payload.old as any)?.status;
+            const studentId = (payload.new as any)?.student_id;
+            const studentName = childrenRef.current.find(child => child.id === studentId)?.name || 'Student';
             
             logger.log(`Status change detected for student ${studentId}: ${oldStatus} -> ${newStatus}`);
             
-            // Any status change should trigger a refresh for parent dashboard
+            // Show notifications for status changes
             if (newStatus !== oldStatus) {
+              if (newStatus === 'called') {
+                toast({
+                  title: "Pickup Called",
+                  description: `${studentName} has been called for pickup. Please proceed to pickup location.`,
+                  variant: "default",
+                });
+              } else if (newStatus === 'completed') {
+                toast({
+                  title: "Pickup Completed",
+                  description: `Pickup for ${studentName} has been completed.`,
+                  variant: "default",
+                });
+              } else if (newStatus === 'cancelled') {
+                toast({
+                  title: "Pickup Cancelled",
+                  description: `Pickup request for ${studentName} has been cancelled.`,
+                  variant: "destructive",
+                });
+              }
+              
               logger.log(`Pickup request status changed from ${oldStatus} to ${newStatus}, refreshing dashboard...`);
               // Use a longer timeout to ensure the database update is complete
               setTimeout(() => {
@@ -194,6 +244,11 @@ export const useOptimizedParentDashboard = () => {
             }
           } else if (payload.eventType === 'DELETE') {
             logger.log('Pickup request deleted, refreshing dashboard...');
+            toast({
+              title: "Pickup Request Removed",
+              description: "A pickup request has been removed.",
+              variant: "default",
+            });
             loadDashboardData(true);
           }
         }
@@ -220,7 +275,7 @@ export const useOptimizedParentDashboard = () => {
         intervalRef.current = null;
       }
     };
-  }, [user?.email, loadDashboardData]);
+  }, [user?.id, loadDashboardData]);
 
   // Toggle child selection
   const toggleChildSelection = useCallback((studentId: string) => {
@@ -239,9 +294,20 @@ export const useOptimizedParentDashboard = () => {
 
     setIsSubmitting(true);
     try {
-      await Promise.all(
-        selectedChildren.map(studentId => createPickupRequest(studentId))
-      );
+      // For username-only users, use the secure database function
+      if (!user?.email && currentParentId) {
+        // Use database function for username-only users with resolved parent ID
+        await Promise.all(
+          selectedChildren.map(async (studentId) => {
+            await createPickupRequestForUsernameUser(studentId, currentParentId);
+          })
+        );
+      } else {
+        // Use regular service for email users
+        await Promise.all(
+          selectedChildren.map(studentId => createPickupRequest(studentId))
+        );
+      }
 
       toast({
         title: "Pickup Request Submitted",
@@ -261,37 +327,47 @@ export const useOptimizedParentDashboard = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedChildren, toast, loadDashboardData]);
+  }, [selectedChildren, toast, loadDashboardData, user, currentParentId]);
 
   // Initial load
   useEffect(() => {
-    if (user?.email) {
-      logger.log('Setting up parent dashboard for user:', user.email);
+    if (user?.id) {
+      logger.log('Setting up parent dashboard for user:', user.email || user.username || user.id);
       loadDashboardData(true);
     }
-  }, [user?.email, loadDashboardData]);
+  }, [user?.id, loadDashboardData]);
 
   // Separate pending and called requests
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
   const calledRequests = activeRequests.filter(req => req.status === 'called');
 
-  // Get authorized requests (requests made by others for children you can pick up)
-  // Only show these notifications to actual parents, not to family/other roles
+  // Get requests made by family members for this parent's assigned children
+  // Show to parents when family members request pickup for their children
   const authorizedRequests = activeRequests.filter(req => {
     const child = children.find(c => c.id === req.studentId);
-    // Only show to users with 'parent' role, not family/other roles
-    return child?.isAuthorized && req.parentId !== user?.id && user?.role === 'parent';
+    // Show requests made by others (including family members) for children this parent is directly assigned to
+    const isDirectlyAssigned = child && !child.isAuthorized; // Direct children (not just authorized)
+    const isRequestByOther = req.parentId !== currentParentId;
+    
+    return isDirectlyAssigned && isRequestByOther;
   });
 
   // Debug logging for authorized requests
   logger.info('🔍 Authorized requests result:', {
     userRole: user?.role,
+    currentParentId,
     totalActiveRequests: activeRequests.length,
     authorizedRequestsCount: authorizedRequests.length,
     authorizedRequests: authorizedRequests.map(req => ({
       id: req.id,
       studentId: req.studentId,
-      parentId: req.parentId
+      parentId: req.parentId,
+      requestingParent: req.requestingParent?.name
+    })),
+    childrenSummary: children.map(c => ({ 
+      id: c.id, 
+      name: c.name, 
+      isAuthorized: c.isAuthorized 
     }))
   });
 

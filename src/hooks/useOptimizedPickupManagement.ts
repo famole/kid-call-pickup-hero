@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getPickupRequestsWithDetailsBatch } from '@/services/pickup/optimizedPickupQueries';
 import { updatePickupRequestStatus } from '@/services/pickup';
+import { cancelPickupRequest } from '@/services/pickup/cancelPickupRequest';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/utils/logger';
@@ -16,6 +17,13 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
   const fetchPendingRequests = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
     if (!forceRefresh && now - lastFetchRef.current < 1000) {
+      return;
+    }
+
+    // Don't fetch if classId is null (waiting for teacher classes to load)
+    if (classId === null) {
+      logger.info('Skipping fetch - classId is null, waiting for teacher classes to load');
+      setLoading(false);
       return;
     }
 
@@ -59,6 +67,29 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
       
     } catch (error) {
       logger.error("Error marking request as called:", error);
+      // Refresh on error to get correct state
+      fetchPendingRequests(true);
+      throw error;
+    }
+  };
+
+  const cancelRequest = async (requestId: string) => {
+    try {
+      logger.info(`Cancelling pickup request ${requestId}`);
+      
+      // Optimistically update the local state immediately
+      setPendingRequests(prev => {
+        const updated = prev.filter(req => req.request.id !== requestId);
+        logger.info(`Optimistically removed cancelled request ${requestId}, ${updated.length} requests remaining`);
+        return updated;
+      });
+      
+      // Cancel the request on the server
+      await cancelPickupRequest(requestId);
+      logger.info('Request cancelled successfully');
+      
+    } catch (error) {
+      logger.error("Error cancelling request:", error);
       // Refresh on error to get correct state
       fetchPendingRequests(true);
       throw error;
@@ -151,6 +182,7 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
     pendingRequests,
     loading,
     markAsCalled,
+    cancelRequest,
     refetch: () => fetchPendingRequests(true)
   };
 };

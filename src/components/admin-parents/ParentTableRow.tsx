@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Users, RotateCcw, KeyRound } from "lucide-react";
+import { Edit, Trash2, Eye, RotateCcw, KeyRound } from "lucide-react";
 import { ParentWithStudents } from '@/types/parent';
 import { ParentAuthStatus } from '@/services/authStatusService';
 import AuthStatusBadge from './AuthStatusBadge';
@@ -19,8 +19,9 @@ interface ParentTableRowProps {
   onManageStudents: () => void;
   onReactivate?: () => void;
   onResetPassword?: () => void;
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   showStudentsColumn: boolean;
+  showPhoneColumn: boolean;
   authStatus?: ParentAuthStatus;
 }
 
@@ -33,6 +34,7 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
   onResetPassword,
   userRole = 'parent',
   showStudentsColumn,
+  showPhoneColumn,
   authStatus,
 }) => {
   const { t } = useTranslation();
@@ -52,11 +54,13 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          {parent.email}
+          {userRole === 'family' ? (parent.username?.trim() || parent.email?.trim() || '') : parent.email}
           <AuthStatusBadge authStatus={authStatus} />
         </div>
       </TableCell>
-      <TableCell>{parent.phone || t('parentsManagement.notAvailable')}</TableCell>
+      {showPhoneColumn && (
+        <TableCell>{parent.phone || t('parentsManagement.notAvailable')}</TableCell>
+      )}
       {showStudentsColumn && (
         <TableCell>
           {t('parentsManagement.studentsCount', { 
@@ -89,8 +93,13 @@ const ParentTableRow: React.FC<ParentTableRowProps> = ({
                 <Trash2 className="h-4 w-4" />
               </Button>
               {showStudentsColumn && (
-                <Button variant="outline" size="sm" onClick={onManageStudents}>
-                  <Users className="h-4 w-4" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onManageStudents}
+                  title={parent.role === 'family' ? 'View Family Member Details' : 'Manage Students'}
+                >
+                  <Eye className="h-4 w-4" />
                 </Button>
               )}
               {onResetPassword && (

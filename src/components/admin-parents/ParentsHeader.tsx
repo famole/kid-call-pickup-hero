@@ -13,7 +13,7 @@ interface ParentsHeaderProps {
   onCloseImportDialog: () => void;
   onImportFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onImportSubmit: () => Promise<void>;
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   headerTitle?: string;
   headerDescription?: string;
   onExportCSV?: () => void;
@@ -41,6 +41,8 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
         return t('parentsManagement.addTeacher');
       case 'admin':
         return t('parentsManagement.addAdmin');
+      case 'family':
+        return t('admin.addFamilyMember');
       default:
         return t('admin.addParent');
     }
@@ -54,6 +56,8 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
         return t('parentsManagement.teachers.title');
       case 'admin':
         return t('parentsManagement.admins.title');
+      case 'family':
+        return t('admin.family');
       default:
         return t('admin.parents');
     }
@@ -72,7 +76,7 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
               <Download className="mr-2 h-4 w-4" /> {t('admin.exportCSV')}
             </Button>
           )}
-          {userRole === 'parent' && (
+          {(userRole === 'parent' || userRole === 'family') && (
             <>
               <ImportParentsDialog
                 isOpen={isImportDialogOpen}

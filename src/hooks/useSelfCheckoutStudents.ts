@@ -8,6 +8,12 @@ export const useSelfCheckoutStudents = (classId?: string) => {
 
   useEffect(() => {
     const fetchAuthorizations = async () => {
+      // Don't fetch if classId is null (waiting for teacher classes to load)
+      if (classId === null) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const data = await getActiveSelfCheckoutAuthorizations();
@@ -37,6 +43,12 @@ export const useSelfCheckoutStudents = (classId?: string) => {
     loading,
     refetch: () => {
       const fetchAuthorizations = async () => {
+        // Don't fetch if classId is null (waiting for teacher classes to load)
+        if (classId === null) {
+          setLoading(false);
+          return;
+        }
+
         try {
           setLoading(true);
           const data = await getActiveSelfCheckoutAuthorizations();

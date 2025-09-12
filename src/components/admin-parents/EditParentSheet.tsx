@@ -28,7 +28,7 @@ interface EditParentSheetProps {
   editingParent: ParentWithStudents | null;
   onEditingParentChange: (parent: ParentWithStudents) => void;
   onSubmit: (e?: React.FormEvent) => Promise<void>;
-  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin';
+  userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
 }
 
 const EditParentSheet: React.FC<EditParentSheetProps> = ({
@@ -55,13 +55,13 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
   const getAvailableRoles = () => {
     switch (userRole) {
       case 'superadmin':
-        return ['parent', 'teacher', 'admin', 'superadmin'];
+        return ['parent', 'family', 'teacher', 'admin', 'superadmin'];
       case 'admin':
-        return ['parent', 'teacher', 'admin'];
+        return ['parent', 'family', 'teacher', 'admin'];
       case 'teacher':
-        return ['parent', 'teacher'];
+        return ['parent', 'family', 'teacher'];
       default:
-        return ['parent'];
+        return ['parent', 'family'];
     }
   };
 
@@ -72,8 +72,8 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
     // Users can't change their own role
     if (editingParent.email === user.email) return false;
     
-    // Role hierarchy: superadmin > admin > teacher > parent
-    const roleHierarchy = { parent: 1, teacher: 2, admin: 3, superadmin: 4 };
+    // Role hierarchy: superadmin > admin > teacher > family > parent
+    const roleHierarchy = { parent: 1, family: 2, teacher: 3, admin: 4, superadmin: 5 };
     const currentUserLevel = roleHierarchy[user.role as keyof typeof roleHierarchy] || 0;
     const targetUserLevel = roleHierarchy[editingParent.role as keyof typeof roleHierarchy] || 0;
     
@@ -129,7 +129,7 @@ const EditParentSheet: React.FC<EditParentSheetProps> = ({
             <Label htmlFor={roleId}>{t('editParentSheet.role')}</Label>
             <Select
               value={editingParent.role || 'parent'}
-              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin') => 
+              onValueChange={(value: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family') => 
                 onEditingParentChange({...editingParent, role: value})
               }
               disabled={!roleEditable}

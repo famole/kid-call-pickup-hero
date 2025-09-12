@@ -95,38 +95,44 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
-          email: string
+          email: string | null
           id: string
           is_preloaded: boolean | null
           name: string
+          password_hash: string | null
           password_set: boolean | null
           phone: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           created_at?: string
           deleted_at?: string | null
-          email: string
+          email?: string | null
           id?: string
           is_preloaded?: boolean | null
           name: string
+          password_hash?: string | null
           password_set?: boolean | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           created_at?: string
           deleted_at?: string | null
-          email?: string
+          email?: string | null
           id?: string
           is_preloaded?: boolean | null
           name?: string
+          password_hash?: string | null
           password_set?: boolean | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -238,6 +244,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pickup_history_backup: {
+        Row: {
+          called_time: string | null
+          completed_time: string | null
+          created_at: string | null
+          id: string | null
+          parent_id: string | null
+          pickup_duration_minutes: number | null
+          request_time: string | null
+          student_id: string | null
+        }
+        Insert: {
+          called_time?: string | null
+          completed_time?: string | null
+          created_at?: string | null
+          id?: string | null
+          parent_id?: string | null
+          pickup_duration_minutes?: number | null
+          request_time?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          called_time?: string | null
+          completed_time?: string | null
+          created_at?: string | null
+          id?: string | null
+          parent_id?: string | null
+          pickup_duration_minutes?: number | null
+          request_time?: string | null
+          student_id?: string | null
+        }
+        Relationships: []
       }
       pickup_invitations: {
         Row: {
@@ -520,6 +559,14 @@ export type Database = {
         Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      create_pickup_request_for_username_user: {
+        Args: { p_parent_id: string; p_student_id: string }
+        Returns: string
+      }
+      create_pickup_request_secure: {
+        Args: { p_student_id: string }
+        Returns: string
+      }
       get_auth_status_for_parents: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -534,6 +581,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_parent_id_enhanced: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -541,6 +592,37 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_parent_by_identifier: {
+        Args: { identifier: string }
+        Returns: {
+          created_at: string
+          deleted_at: string
+          email: string
+          id: string
+          is_preloaded: boolean
+          name: string
+          password_hash: string
+          password_set: boolean
+          phone: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          username: string
+        }[]
+      }
+      get_parent_id_from_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_pickup_requests_for_parent: {
+        Args: { p_parent_id: string }
+        Returns: {
+          id: string
+          parent_id: string
+          request_time: string
+          status: string
+          student_id: string
+        }[]
       }
       get_user_role: {
         Args: { user_email: string }
@@ -569,6 +651,10 @@ export type Database = {
       is_parent_of_student: {
         Args: { student_id: string }
         Returns: boolean
+      }
+      set_username_user_context: {
+        Args: { parent_id: string }
+        Returns: undefined
       }
     }
     Enums: {

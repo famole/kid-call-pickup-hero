@@ -14,6 +14,7 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
         id,
         name,
         email,
+        username,
         phone,
         role,
         created_at,
@@ -33,6 +34,8 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
     }
 
     logger.log(`Fetched ${parentsData?.length || 0} parents from database`);
+    logger.log(`Include deleted was: ${includeDeleted}`);
+    logger.log(`Parents with deleted_at:`, parentsData?.filter(p => p.deleted_at).length || 0);
     
     // Log role distribution for debugging
     const roleDistribution = parentsData?.reduce((acc, parent) => {
@@ -71,6 +74,36 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
 
     logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
 
+    // Get pickup authorizations for family members
+    const { data: authorizationData, error: authError } = await supabase
+      .from('pickup_authorizations')
+      .select(`
+        authorized_parent_id,
+        student_id,
+        student_ids,
+        is_active,
+        start_date,
+        end_date,
+        students!inner (
+          id,
+          name,
+          class_id,
+          avatar,
+          classes (
+            id,
+            name,
+            grade
+          )
+        )
+      `)
+      .eq('is_active', true)
+      .is('students.deleted_at', null)
+      .gte('end_date', new Date().toISOString().split('T')[0]); // Only current/future authorizations
+
+    if (authError) {
+      logger.warn('Error loading pickup authorizations:', authError);
+    }
+
     // Group students by parent ID
     const studentsByParent = studentParentData?.reduce((acc, relation) => {
       if (!acc[relation.parent_id]) {
@@ -90,11 +123,41 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
       return acc;
     }, {} as Record<string, any[]>) || {};
 
+    // Add authorized students for family members
+    if (authorizationData) {
+      authorizationData.forEach((auth: any) => {
+        const parentId = auth.authorized_parent_id;
+        
+        // Initialize array if doesn't exist
+        if (!studentsByParent[parentId]) {
+          studentsByParent[parentId] = [];
+        }
+
+        const student = auth.students;
+        // Check if student is not already in the list (avoid duplicates from direct assignments)
+        const existingStudent = studentsByParent[parentId].find((s: any) => s.id === student.id);
+        if (!existingStudent) {
+          studentsByParent[parentId].push({
+            id: student.id,
+            name: student.name,
+            classId: student.class_id,
+            className: student.classes?.name || 'No Class',
+            grade: student.classes?.grade || 'No Grade',
+            isPrimary: false,
+            avatar: student.avatar,
+            parentRelationshipId: undefined, // No direct relationship
+            relationship: 'authorized',
+          });
+        }
+      });
+    }
+
     // Combine parents with their students - convert dates properly
     const parentsWithStudents: ParentWithStudents[] = parentsData?.map(parent => ({
       id: parent.id,
       name: parent.name,
       email: parent.email,
+      username: parent.username,
       phone: parent.phone || '',
       role: parent.role || 'parent',
       students: studentsByParent[parent.id] || [],
@@ -138,21 +201,20 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       return { allChildren: [] };
     }
 
-    // Get all children this parent has access to (direct children + authorized children)
+    // Get direct children (via student_parents relationship)
     const { data: childrenData, error: childrenError } = await supabase
-      .from('students')
+      .from('student_parents')
       .select(`
-        id,
-        name,
-        class_id,
-        avatar,
-        student_parents!inner (
-          parent_id,
-          is_primary
-        )
+        students!inner (
+          id,
+          name,
+          class_id,
+          avatar
+        ),
+        is_primary
       `)
-      .eq('student_parents.parent_id', parentData.id)
-      .is('deleted_at', null);
+      .eq('parent_id', parentData.id)
+      .is('students.deleted_at', null);
 
     if (childrenError) {
       logger.error('Error fetching children:', childrenError);
@@ -209,12 +271,12 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
     }
 
     // Combine and format children data
-    const directChildren: Child[] = childrenData?.map(child => ({
-      id: child.id,
-      name: child.name,
-      classId: child.class_id || '',
+    const directChildren: Child[] = childrenData?.map(relation => ({
+      id: relation.students.id,
+      name: relation.students.name,
+      classId: relation.students.class_id || '',
       parentIds: [parentData.id],
-      avatar: child.avatar,
+      avatar: relation.students.avatar,
     })) || [];
 
     const authorizedChildrenFormatted: Child[] = authorizedStudentDetails?.map(student => ({

@@ -1,26 +1,51 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PickupRequest, Child } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Clock, Info, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth/AuthProvider';
+import { cancelPickupRequest } from '@/services/pickup';
+import { toast } from 'sonner';
 
 interface PendingRequestsCardProps {
   pendingRequests: PickupRequest[];
   children: Child[];
   currentParentId?: string;
+  onRequestCancelled?: () => void;
 }
 
 const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
   pendingRequests,
   children,
-  currentParentId
+  currentParentId,
+  onRequestCancelled
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [cancellingRequests, setCancellingRequests] = useState<Set<string>>(new Set());
 
-  // Filter requests based on user role
+  const handleCancelRequest = async (requestId: string) => {
+    setCancellingRequests(prev => new Set(prev).add(requestId));
+    try {
+      await cancelPickupRequest(requestId);
+      toast.success(t('dashboard.pickupRequestCancelled'));
+      onRequestCancelled?.();
+    } catch (error) {
+      toast.error(t('dashboard.errorCancellingRequest'));
+    } finally {
+      setCancellingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
+    }
+  };
+
+  // Filter requests based on user role:
+  // - Family members see only their own requests
+  // - Parents see all requests (including ones made by family members for their children)
   const filteredRequests = user?.role === 'family' || user?.role === 'other'
     ? pendingRequests.filter(req => req.parentId === currentParentId)
     : pendingRequests;
@@ -55,6 +80,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
           {filteredRequests.map((request) => {
             const child = children.find(c => c.id === request.studentId);
             const isRequestedByOtherParent = currentParentId && request.parentId !== currentParentId;
+            const isLoading = cancellingRequests.has(request.id);
             
             return (
               <div 
@@ -103,6 +129,16 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
                     </>
                   )}
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCancelRequest(request.id)}
+                  disabled={isLoading}
+                  className="ml-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 disabled:opacity-50"
+                >
+                  {isLoading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                  {t('dashboard.cancel')}
+                </Button>
               </div>
             );
           })}

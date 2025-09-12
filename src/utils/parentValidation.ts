@@ -18,13 +18,29 @@ export const validateParentForm = (parent: ParentInput): ValidationError[] => {
     errors.push({ field: 'name', key: 'addParentSheet.errors.nameTooLong' });
   }
 
-  // Email validation
-  if (!parent.email || parent.email.trim().length === 0) {
-    errors.push({ field: 'email', key: 'addParentSheet.errors.emailRequired' });
+  // Email OR Username validation - at least one is required
+  const hasEmail = parent.email && parent.email.trim().length > 0;
+  const hasUsername = parent.username && parent.username.trim().length > 0;
+  
+  if (!hasEmail && !hasUsername) {
+    errors.push({ field: 'email', key: 'addParentSheet.errors.emailOrUsernameRequired' });
+    errors.push({ field: 'username', key: 'addParentSheet.errors.emailOrUsernameRequired' });
   } else {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(parent.email.trim())) {
-      errors.push({ field: 'email', key: 'addParentSheet.errors.emailFormat' });
+    // Email validation (if provided)
+    if (hasEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(parent.email!.trim())) {
+        errors.push({ field: 'email', key: 'addParentSheet.errors.emailFormat' });
+      }
+    }
+
+    // Username validation (if provided)
+    if (hasUsername) {
+      if (parent.username!.trim().length < 3) {
+        errors.push({ field: 'username', key: 'addParentSheet.errors.usernameTooShort' });
+      } else if (parent.username!.trim().length > 50) {
+        errors.push({ field: 'username', key: 'addParentSheet.errors.usernameTooLong' });
+      }
     }
   }
 

@@ -8,55 +8,40 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
   try {
     logger.info('Creating pickup request for student:', studentId);
 
-    // Get the authenticated parent's ID from the server
-    const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-
-    if (parentError || !parentId) {
-      logger.error('Unable to determine current parent ID:', parentError);
-      throw new Error('Authentication error.');
-    }
-    
-    // Use the updated server-side helper to verify parent-student relationship or authorization
-    const { data: isAuthorized, error: authError } = await supabase.rpc('is_parent_of_student', {
-      student_id: studentId
+    // Use secure function that handles all authorization and creation logic
+    const { data: requestId, error } = await supabase.rpc('create_pickup_request_secure', {
+      p_student_id: studentId
     });
-
-    if (authError) {
-      logger.error('Error checking parent authorization:', authError);
-      throw new Error('Unable to verify parent authorization.');
-    }
-
-    if (!isAuthorized) {
-      logger.error('Parent is not authorized for this student');
-      throw new Error('You are not authorized to request pickup for this student.');
-    }
-
-    logger.info('Parent authorization verified via enhanced server function (includes pickup authorizations)');
-    
-    const { data, error } = await supabase
-      .from('pickup_requests')
-      .insert({
-        student_id: studentId,
-        parent_id: parentId,
-        status: 'pending',
-        request_time: new Date().toISOString()
-      })
-      .select()
-      .single();
     
     if (error) {
       logger.error('Error creating pickup request:', error);
       throw new Error(error.message);
     }
     
-    logger.info('Pickup request created successfully:', data.id);
+    if (!requestId) {
+      throw new Error('Failed to create pickup request');
+    }
+
+    // Fetch the created request to return full data
+    const { data: requestData, error: fetchError } = await supabase
+      .from('pickup_requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+    
+    if (fetchError || !requestData) {
+      logger.error('Error fetching created pickup request:', fetchError);
+      throw new Error('Failed to retrieve created pickup request');
+    }
+    
+    logger.info('Pickup request created successfully:', requestId);
     
     return {
-      id: data.id,
-      studentId: data.student_id,
-      parentId: data.parent_id,
-      requestTime: new Date(data.request_time),
-      status: data.status as 'pending' | 'called' | 'completed' | 'cancelled'
+      id: requestData.id,
+      studentId: requestData.student_id,
+      parentId: requestData.parent_id,
+      requestTime: new Date(requestData.request_time),
+      status: requestData.status as 'pending' | 'called' | 'completed' | 'cancelled'
     };
   } catch (error) {
     logger.error('Error in createPickupRequest:', error);

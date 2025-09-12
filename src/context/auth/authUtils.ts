@@ -7,6 +7,8 @@ import { logger } from '@/utils/logger';
 export const cleanupAuthState = () => {
   // Remove standard auth tokens
   localStorage.removeItem('supabase.auth.token');
+  // Remove username session
+  localStorage.removeItem('username_session');
   // Remove all Supabase auth keys from localStorage
   Object.keys(localStorage).forEach((key) => {
     if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
@@ -21,50 +23,29 @@ export const cleanupAuthState = () => {
   });
 };
 
-// Get parent data using server-side helper
-export const getParentData = async (email: string | null) => {
-  if (!email) return null;
+// Get parent data using server-side helper - supports both email and username
+export const getParentData = async (emailOrUsername: string | null) => {
+  if (!emailOrUsername) return null;
   
   try {
-    logger.log('Fetching parent data for email:', email);
+    logger.log('Fetching parent data for identifier:', emailOrUsername);
     
-    // Use the server-side helper to get user role first
-    const { data: role, error: roleError } = await supabase.rpc('get_user_role', {
-      user_email: email
-    });
-    
-    if (roleError) {
-      logger.error('Error fetching user role:', roleError);
-      // Fallback to direct query if RPC fails
-      const { data: parentData, error } = await supabase
-        .from('parents')
-        .select('*')
-        .eq('email', email)
-        .single();
-        
-      if (error) {
-        logger.error('Error fetching parent data:', error);
-        return null;
-      }
-      
-      logger.log('Parent data retrieved via fallback:', parentData ? 'Success' : 'No data');
-      return parentData;
-    }
-    
-    // If we have a role, fetch the full parent data
+    // Use the new database function that can handle both email and username
     const { data: parentData, error } = await supabase
-      .from('parents')
-      .select('*')
-      .eq('email', email)
-      .single();
-      
+      .rpc('get_parent_by_identifier', { identifier: emailOrUsername });
+    
     if (error) {
       logger.error('Error fetching parent data:', error);
       return null;
     }
     
-    logger.log('Parent data retrieved:', parentData ? 'Success' : 'No data');
-    return parentData;
+    if (!parentData || parentData.length === 0) {
+      logger.log('No parent found for identifier:', emailOrUsername);
+      return null;
+    }
+    
+    const userData = parentData[0];
+    return userData;
   } catch (error) {
     logger.error("Error fetching parent data:", error);
     return null;
@@ -122,22 +103,31 @@ export const createUserFromParentData = async (parentData: any): Promise<User> =
     logger.error('Error checking invited user status:', error);
   }
 
-  return {
+  // Debug logging to see what data we're receiving
+  logger.log('🔍 createUserFromParentData - parentData:', parentData);
+
+  const user = {
     id: parentData.id,
-    email: parentData.email,
-    name: parentData.name || parentData.email?.split('@')[0] || 'User',
-    role: parentData.role || 'parent', // This will now include 'teacher' role
+    email: parentData.email || null, // Username-only users may not have email
+    name: parentData.name || parentData.username || parentData.email?.split('@')[0] || 'User',
+    role: parentData.role || 'parent', // This will now include all roles including 'family'
     isInvitedUser,
+    username: parentData.username, // Add username field
   };
+  
+  logger.log('🔍 createUserFromParentData - created user:', user);
+  
+  return user;
 };
 
 // Create a User object from auth data
 export const createUserFromAuthData = (authUser: any): User => {
   return {
     id: authUser.id,
-    email: authUser.email || '',
-    name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+    email: authUser.email || null,
+    name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'User',
     role: 'parent', // Default role
+    username: authUser.user_metadata?.username,
   };
 };
 

@@ -17,7 +17,7 @@ const AuthStatusBadge: React.FC<AuthStatusBadgeProps> = ({ authStatus }) => {
 
   if (!authStatus.has_user) {
     return (
-      <Badge variant="secondary" className="text-xs">
+      <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">
         <AlertCircle className="w-3 h-3 mr-1" />
         {t('authStatusBadge.noAccount')}
       </Badge>
