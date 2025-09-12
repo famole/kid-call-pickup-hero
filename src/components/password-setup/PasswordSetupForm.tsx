@@ -100,39 +100,62 @@ const PasswordSetupForm = () => {
         // For username-only users, we need to use the parent's email if available
         const parentEmail = existingParent?.email || userIdentifier;
         
-        // Only attempt signup if we have a valid email
-        if (isValidIdentifier(parentEmail) && parentEmail.includes('@')) {
-          // Always attempt to create a proper auth account, regardless of email domain
-          // This handles both new preloaded accounts and password reset scenarios
-          const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: parentEmail,
-            password: password,
-            options: {
-              emailRedirectTo: `${window.location.origin}/`
-            }
-          });
-
-          if (authError) {
-            // If signup fails because user already exists, that's expected for password reset
-            if (authError.message?.includes('already registered')) {
-              toast({
-                title: t('common.success'),
-                description: t('errors.accountResetComplete'),
+          // Only attempt signup if we have a valid email
+          if (isValidIdentifier(parentEmail) && parentEmail.includes('@')) {
+            // Check if this is a password reset scenario (user exists but password_set is false)
+            if (existingParent && !existingParent.password_set) {
+              // This is a password reset - user already exists in auth, we need to update their password
+              // First, try to sign in with a temporary password or use admin API
+              
+              // For password reset, we'll use the setup-username-password function which can handle existing users
+              const { data, error } = await supabase.functions.invoke('setup-username-password', {
+                body: { identifier: parentEmail, password }
               });
-            } else {
-              throw authError;
-            }
-          }
-          
-          // Update the parent record to mark password as set
-          const { error: updateError } = await supabase
-            .from('parents')
-            .update({ password_set: true })
-            .eq('email', parentEmail);
 
-          if (updateError) {
-            throw updateError;
-          }
+              if (error) {
+                logger.error("Password reset setup error:", error);
+                throw new Error('Failed to reset password');
+              }
+
+              if (data?.error) {
+                throw new Error(data.error);
+              }
+            } else {
+              // This is a new account setup
+              const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: parentEmail,
+                password: password,
+                options: {
+                  emailRedirectTo: `${window.location.origin}/`
+                }
+              });
+
+              if (authError) {
+                // If signup fails because user already exists, try password reset approach
+                if (authError.message?.includes('already registered')) {
+                  // Try using the password setup function as fallback
+                  const { data, error } = await supabase.functions.invoke('setup-username-password', {
+                    body: { identifier: parentEmail, password }
+                  });
+
+                  if (error || data?.error) {
+                    throw new Error('User already exists and password reset failed');
+                  }
+                } else {
+                  throw authError;
+                }
+              }
+            }
+            
+            // Update the parent record to mark password as set
+            const { error: updateError } = await supabase
+              .from('parents')
+              .update({ password_set: true })
+              .eq('email', parentEmail);
+
+            if (updateError) {
+              throw updateError;
+            }
         } else {
           // For username-only users without email, use the password setup edge function
           const { data, error } = await supabase.functions.invoke('setup-username-password', {

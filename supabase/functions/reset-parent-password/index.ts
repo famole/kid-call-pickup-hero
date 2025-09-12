@@ -73,17 +73,26 @@ serve(async (req) => {
     }
     
     if (user) {
-      console.log(`Found user with ID: ${user.id}, deleting...`);
+      console.log(`Found user with ID: ${user.id}, resetting password...`);
       
-      // Delete the user from auth
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+      // Generate a temporary random password
+      const tempPassword = crypto.randomUUID();
       
-      if (deleteError) {
-        console.error('Error deleting user:', deleteError);
-        throw new Error(`Failed to delete user: ${deleteError.message}`);
+      // Update the user's password using admin API
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        user.id, 
+        { 
+          password: tempPassword,
+          email_confirm: true // Ensure email is confirmed
+        }
+      );
+      
+      if (updateError) {
+        console.error('Error updating user password:', updateError);
+        throw new Error(`Failed to reset user password: ${updateError.message}`);
       }
       
-      console.log('User deleted successfully');
+      console.log('User password reset successfully');
     } else {
       console.log('No auth user found for this identifier');
     }
@@ -91,7 +100,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         message: 'Password reset successfully initiated',
-        userDeleted: !!user
+        userPasswordReset: !!user
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

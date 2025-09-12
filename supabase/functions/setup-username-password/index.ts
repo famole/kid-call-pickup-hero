@@ -50,21 +50,86 @@ serve(async (req) => {
     const parent = parentData[0];
     console.log('Setting password for parent:', parent.email || parent.username);
 
-    // Hash the password
-    const passwordHash = await hashPassword(password);
+    // Check if this is an email-based user (has Supabase auth account) or username-only user
+    if (parent.email) {
+      console.log('Email-based user detected, using admin API to update auth password');
+      
+      // For email-based users, find their auth user and update password via admin API
+      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('Error listing users:', listError);
+        throw new Error('Failed to find user account');
+      }
 
-    // Update parent with password hash and mark password as set
-    const { error: updateError } = await supabase
-      .from('parents')
-      .update({ 
-        password_hash: passwordHash,
-        password_set: true 
-      })
-      .eq('id', parent.id);
+      // Find the auth user by email
+      const authUser = users.find(u => u.email?.toLowerCase() === parent.email?.toLowerCase());
+      
+      if (!authUser) {
+        console.log('No auth user found, creating new auth account');
+        // Create new auth user if it doesn't exist
+        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+          email: parent.email,
+          password: password,
+          email_confirm: true
+        });
+        
+        if (createError) {
+          console.error('Error creating auth user:', createError);
+          throw new Error('Failed to create user account');
+        }
+        
+        console.log('New auth user created successfully');
+      } else {
+        console.log('Updating existing auth user password');
+        // Update existing auth user's password
+        const { error: updateAuthError } = await supabase.auth.admin.updateUserById(
+          authUser.id,
+          { 
+            password: password,
+            email_confirm: true
+          }
+        );
+        
+        if (updateAuthError) {
+          console.error('Error updating auth user password:', updateAuthError);
+          throw new Error('Failed to update user password');
+        }
+        
+        console.log('Auth user password updated successfully');
+      }
+      
+      // Update parent record to mark password as set (no need for password_hash for email users)
+      const { error: updateError } = await supabase
+        .from('parents')
+        .update({ 
+          password_set: true 
+        })
+        .eq('id', parent.id);
 
-    if (updateError) {
-      console.error('Error updating parent password:', updateError);
-      throw new Error('Failed to set password');
+      if (updateError) {
+        console.error('Error updating parent record:', updateError);
+        throw new Error('Failed to update parent record');
+      }
+    } else {
+      console.log('Username-only user detected, using password hash approach');
+      
+      // For username-only users, use password hash approach
+      const passwordHash = await hashPassword(password);
+
+      // Update parent with password hash and mark password as set
+      const { error: updateError } = await supabase
+        .from('parents')
+        .update({ 
+          password_hash: passwordHash,
+          password_set: true 
+        })
+        .eq('id', parent.id);
+
+      if (updateError) {
+        console.error('Error updating parent password:', updateError);
+        throw new Error('Failed to set password');
+      }
     }
 
     console.log('Password setup successful for:', parent.email || parent.username);
