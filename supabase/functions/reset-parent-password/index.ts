@@ -63,13 +63,21 @@ serve(async (req) => {
     let user = null;
     
     if (parentData.email) {
+      // Find user by email
       user = users.find(u => u.email?.toLowerCase() === parentData.email?.toLowerCase());
+      console.log(`Searching for email user: ${parentData.email}, found: ${!!user}`);
     } else if (parentData.username) {
-      // For username-based users, check user_metadata or email field that might contain username
-      user = users.find(u => 
-        u.email?.toLowerCase() === parentData.username?.toLowerCase() ||
-        u.user_metadata?.username === parentData.username
-      );
+      // For username-based users, they might be stored in different ways:
+      // 1. Email field contains username (most common)
+      // 2. user_metadata contains username
+      // 3. Both email and user_metadata are checked
+      user = users.find(u => {
+        const emailMatch = u.email?.toLowerCase() === parentData.username?.toLowerCase();
+        const metadataMatch = u.user_metadata?.username === parentData.username;
+        return emailMatch || metadataMatch;
+      });
+      console.log(`Searching for username user: ${parentData.username}, found: ${!!user}`);
+      console.log(`Available users emails: ${users.map(u => u.email).join(', ')}`);
     }
     
     if (user) {
