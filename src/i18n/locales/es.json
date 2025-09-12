@@ -379,8 +379,8 @@
     "superadminStatus": "Estado del Superadmin",
     "status": "Estado",
     "selectStatus": "Seleccionar estado",
-    "activeOnly": "Solo Activos",
-    "deletedOnly": "Solo Eliminados",
+    "activeOnly": "Activos",
+    "deletedOnly": "Eliminados",
     "all": "Todos"
   },
   "parentClassFilter": {
