@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { createParent } from '@/services/parentService';
 import { Separator } from '@/components/ui/separator';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -109,7 +110,7 @@ const Signup = () => {
         description: 'You will be redirected to complete the signup process.',
       });
     } catch (error: any) {
-      console.error('Google signup error:', error);
+      logger.error('Google signup error:', error);
       toast({
         title: 'Google Signup Error',
         description: error.message || 'Failed to signup with Google. Please try again.',

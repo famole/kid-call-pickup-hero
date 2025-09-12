@@ -10,6 +10,7 @@ import { getInvitationByToken } from '@/services/pickupInvitationService';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 interface InvitationDetails {
   id: string;
@@ -89,7 +90,7 @@ const InvitationSignup = () => {
         }
         setName(invitationData.invitedName);
       } catch (error) {
-        console.error('Error loading invitation:', error);
+        logger.error('Error loading invitation:', error);
         setError('Error al cargar la invitación');
       } finally {
         setLoading(false);
@@ -148,7 +149,7 @@ const InvitationSignup = () => {
         }, 1000);
       }
     } catch (error: any) {
-      console.error('Error creating account:', error);
+      logger.error('Error creating account:', error);
       toast.error(error.message || 'Error al crear la cuenta');
     } finally {
       setIsCreating(false);

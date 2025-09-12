@@ -29,6 +29,7 @@ import { useStudentCSV } from '@/hooks/useStudentCSV';
 import { useStudentSearch } from '@/hooks/useStudentSearch';
 import { useAdminPagination } from '@/hooks/useAdminPagination';
 import PaginationControls from '@/components/admin-parents/PaginationControls';
+import { logger } from '@/utils/logger';
 
 const AdminStudentsScreen = () => {
   const [studentList, setStudentList] = useState<Child[]>([]);
@@ -111,7 +112,7 @@ const AdminStudentsScreen = () => {
         });
       }
     } catch (error) {
-      console.error('Failed to load data:', error);
+      logger.error('Failed to load data:', error);
       toast({
         title: "Error",
         description: "Failed to load student or class data",

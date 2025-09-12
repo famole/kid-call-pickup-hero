@@ -28,6 +28,7 @@ import { getAllStudents as fetchAllStudentsService } from '@/services/studentSer
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 // Import new components
 import ViewParentDetailsDialog from '@/components/parent-management/ViewParentDetailsDialog';
@@ -63,7 +64,7 @@ const ParentManagement: React.FC = () => {
         const unassignedStuds = allStudentsData.filter(student => !assignedStudentIds.has(student.id));
         setUnassignedStudents(unassignedStuds);
       } catch (error) {
-        console.error("Error loading data:", error);
+        logger.error("Error loading data:", error);
         toast({
           title: t('common.error'),
           description: "Failed to load parent and student data",
@@ -124,7 +125,7 @@ const ParentManagement: React.FC = () => {
       setIsStudentAssignDialogOpen(false);
       setSelectedParent(null); // Clear selected parent after assignment
     } catch (error) {
-      console.error("Error assigning student:", error);
+      logger.error("Error assigning student:", error);
       toast({
         title: t('common.error'),
         description: "Failed to assign student to parent",

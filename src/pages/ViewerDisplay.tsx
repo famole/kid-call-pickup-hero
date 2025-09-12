@@ -9,6 +9,7 @@ import { useCalledStudents } from '@/hooks/useCalledStudents';
 import { getAllClasses } from '@/services/classService';
 import { Class } from '@/types';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 const ViewerDisplay: React.FC = () => {
   const { t } = useTranslation();
@@ -24,7 +25,7 @@ const ViewerDisplay: React.FC = () => {
         const classData = await getAllClasses();
         setClasses(classData);
       } catch (error) {
-        console.error('Error fetching classes:', error);
+        logger.error('Error fetching classes:', error);
       }
     };
     

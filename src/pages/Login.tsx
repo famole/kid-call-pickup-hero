@@ -11,6 +11,7 @@ import { School, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState(''); // Can be email or username
@@ -56,7 +57,7 @@ const Login = () => {
       // Let the auth provider handle redirects based on pending invitations
       // No need to force navigate here as handleUserSession will handle it
     } catch (error: any) {
-      console.error('Authentication error:', error);
+      logger.error('Authentication error:', error);
       toast({
         title: t('errors.authenticationError'),
         description: error.message || t('errors.invalidEmailPassword'),
@@ -92,7 +93,7 @@ const Login = () => {
         description: t('errors.redirectToCompleteLogin'),
       });
     } catch (error: any) {
-      console.error('Google authentication error:', error);
+      logger.error('Google authentication error:', error);
       toast({
         title: t('errors.googleLoginError'),
         description: error.message || t('errors.failedGoogleLogin'),
@@ -153,7 +154,7 @@ const Login = () => {
         return;
       }
     } catch (error: any) {
-      console.error('Error checking identifier:', error);
+      logger.error('Error checking identifier:', error);
       toast({
         title: t('common.error'),
         description: t('errors.errorCheckingEmail'),
