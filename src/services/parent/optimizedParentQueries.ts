@@ -74,6 +74,9 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
 
     logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
 
+    // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+    const currentDayOfWeek = new Date().getDay();
+    
     // Get pickup authorizations for family members
     const { data: authorizationData, error: authError } = await supabase
       .from('pickup_authorizations')
@@ -84,6 +87,7 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
         is_active,
         start_date,
         end_date,
+        allowed_days_of_week,
         students!inner (
           id,
           name,
@@ -98,7 +102,8 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
       `)
       .eq('is_active', true)
       .is('students.deleted_at', null)
-      .gte('end_date', new Date().toISOString().split('T')[0]); // Only current/future authorizations
+      .gte('end_date', new Date().toISOString().split('T')[0]) // Only current/future authorizations
+      .contains('allowed_days_of_week', [currentDayOfWeek]); // Only authorizations valid for today
 
     if (authError) {
       logger.warn('Error loading pickup authorizations:', authError);
@@ -221,17 +226,22 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       throw new Error(childrenError.message);
     }
 
+    // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+    const currentDayOfWeek = new Date().getDay();
+    
     // Get authorized children (excluding deleted students) - handle both old student_id and new student_ids
     const { data: authorizedChildren, error: authorizedError } = await supabase
       .from('pickup_authorizations')
       .select(`
         student_id,
-        student_ids
+        student_ids,
+        allowed_days_of_week
       `)
       .eq('authorized_parent_id', parentData.id)
       .eq('is_active', true)
       .lte('start_date', new Date().toISOString().split('T')[0])
-      .gte('end_date', new Date().toISOString().split('T')[0]);
+      .gte('end_date', new Date().toISOString().split('T')[0])
+      .contains('allowed_days_of_week', [currentDayOfWeek]);
 
     // Get student details for all authorized students
     let authorizedStudentIds: string[] = [];
