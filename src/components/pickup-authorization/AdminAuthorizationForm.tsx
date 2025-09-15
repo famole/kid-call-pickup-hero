@@ -7,6 +7,7 @@ import { Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { createPickupAuthorization, getAvailableParentsForAuthorization } from '@/services/pickupAuthorizationService';
+import DayOfWeekSelector from './DayOfWeekSelector';
 import SearchOnlyParentSelector from './SearchOnlyParentSelector';
 import { ParentWithStudents } from '@/types/parent';
 
@@ -25,6 +26,7 @@ interface FormData {
   authorizedParentId: string;
   startDate: string;
   endDate: string;
+  allowedDaysOfWeek: number[];
 }
 
 const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
@@ -42,7 +44,8 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
   const [formData, setFormData] = useState<FormData>({
     authorizedParentId: '',
     startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    allowedDaysOfWeek: [1, 2, 3, 4, 5] // Default to weekdays
   });
 
   useEffect(() => {
@@ -79,7 +82,7 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
     }
   };
 
-  const updateFormData = (field: keyof FormData, value: string) => {
+  const updateFormData = (field: keyof FormData, value: string | number[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -94,7 +97,7 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.authorizedParentId || !formData.startDate || !formData.endDate) {
+    if (!formData.authorizedParentId || !formData.startDate || !formData.endDate || formData.allowedDaysOfWeek.length === 0) {
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.fillAllFields'),
@@ -118,7 +121,8 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
         studentId,
         authorizedParentId: formData.authorizedParentId,
         startDate: formData.startDate,
-        endDate: formData.endDate
+        endDate: formData.endDate,
+        allowedDaysOfWeek: formData.allowedDaysOfWeek
       });
 
       toast({
@@ -129,7 +133,8 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
       setFormData({
         authorizedParentId: '',
         startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        allowedDaysOfWeek: [1, 2, 3, 4, 5] // Reset to weekdays
       });
       setShowForm(false);
       onAuthorizationCreated();
@@ -199,6 +204,12 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
               />
             </div>
           </div>
+
+          <DayOfWeekSelector
+            selectedDays={formData.allowedDaysOfWeek}
+            onChange={(days) => updateFormData('allowedDaysOfWeek', days)}
+            label={t('pickupAuthorizations.allowedDays')}
+          />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setShowForm(false)}>

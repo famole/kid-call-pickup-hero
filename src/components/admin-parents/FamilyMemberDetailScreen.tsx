@@ -153,7 +153,8 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
         studentId: selectedAuthStudentId,
         authorizedParentId: parent.id,
         startDate: startDate,
-        endDate: endDate
+        endDate: endDate,
+        allowedDaysOfWeek: [1, 2, 3, 4, 5] // Default to weekdays
       });
       
       toast({

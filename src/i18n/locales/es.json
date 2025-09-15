@@ -502,6 +502,11 @@
     "authorizationCreated": "Autorización de recogida creada exitosamente",
     "failedToCreate": "Error al crear la autorización de recogida",
     "loadDataError": "Error al cargar datos para el formulario de autorización",
+    "allowedDays": "Días Permitidos",
+    "selectAtLeastOneDay": "Por favor seleccione al menos un día de la semana",
+    "allDays": "Todos los Días",
+    "weekdays": "Días de Semana",
+    "weekends": "Fines de Semana",
     "unknownStudent": "Estudiante Desconocido",
     "unknownParent": "Padre Desconocido",
     "addPickupAuthorization": "Agregar Autorización de Recogida",
@@ -581,7 +586,23 @@
     "unknownChild": "Niño Desconocido",
     "unknownClass": "Clase Desconocida",
     "accountActivated": "Su cuenta ha sido activada exitosamente.",
-    "failedToActivate": "Error al activar la cuenta. Inténtalo de nuevo."
+    "failedToActivate": "Error al activar la cuenta. Inténtalo de nuevo.",
+    "days": {
+      "sunday": "Domingo",
+      "monday": "Lunes", 
+      "tuesday": "Martes",
+      "wednesday": "Miércoles",
+      "thursday": "Jueves",
+      "friday": "Viernes",
+      "saturday": "Sábado",
+      "sun": "Dom",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mié",
+      "thu": "Jue",
+      "fri": "Vie",
+      "sat": "Sáb"
+    }
   },
   "auth": {
     "login": "Iniciar Sesión",

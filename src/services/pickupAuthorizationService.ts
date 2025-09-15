@@ -9,6 +9,7 @@ export interface PickupAuthorization {
   studentIds?: string[]; // New field for multiple students
   startDate: string;
   endDate: string;
+  allowedDaysOfWeek: number[]; // Array of day numbers (0=Sunday, 1=Monday, ..., 6=Saturday)
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -20,6 +21,7 @@ export interface PickupAuthorizationInput {
   studentIds?: string[]; // New field for multiple students
   startDate: string;
   endDate: string;
+  allowedDaysOfWeek: number[]; // Array of day numbers (0=Sunday, 1=Monday, ..., 6=Saturday)
 }
 
 export interface PickupAuthorizationWithDetails extends PickupAuthorization {
@@ -69,6 +71,7 @@ export const createPickupAuthorization = async (
       student_id: authorizationData.studentId,
       start_date: authorizationData.startDate,
       end_date: authorizationData.endDate,
+      allowed_days_of_week: authorizationData.allowedDaysOfWeek,
       is_active: true
     })
     .select()
@@ -339,6 +342,7 @@ export const updatePickupAuthorization = async (
   if (updates.studentIds) updateData.student_ids = updates.studentIds;
   if (updates.startDate) updateData.start_date = updates.startDate;
   if (updates.endDate) updateData.end_date = updates.endDate;
+  if (updates.allowedDaysOfWeek) updateData.allowed_days_of_week = updates.allowedDaysOfWeek;
   if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
   
   updateData.updated_at = new Date().toISOString();
@@ -383,21 +387,19 @@ export const checkPickupAuthorization = async (
     return false;
   }
 
-  const { data, error } = await supabase
-    .from('pickup_authorizations')
-    .select('id')
-    .eq('authorized_parent_id', parentId)
-    .eq('student_id', studentId)
-    .eq('is_active', true)
-    .lte('start_date', date)
-    .gte('end_date', date);
+  // Use the new database function that checks day of week
+  const { data, error } = await supabase.rpc('check_pickup_authorization_with_days', {
+    p_student_id: studentId,
+    p_parent_id: parentId,
+    p_check_date: date
+  });
 
   if (error) {
     console.error('Error checking pickup authorization:', error);
     return false;
   }
 
-  return data.length > 0;
+  return data === true;
 };
 
 // Helper function to map database response to our interface
@@ -409,6 +411,7 @@ const mapAuthorizationFromDB = (dbAuth: any): PickupAuthorization => ({
   studentIds: dbAuth.student_ids,
   startDate: dbAuth.start_date,
   endDate: dbAuth.end_date,
+  allowedDaysOfWeek: dbAuth.allowed_days_of_week || [0,1,2,3,4,5,6],
   isActive: dbAuth.is_active,
   createdAt: dbAuth.created_at,
   updatedAt: dbAuth.updated_at

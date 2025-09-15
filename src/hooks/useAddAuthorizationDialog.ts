@@ -15,6 +15,7 @@ interface FormData {
   authorizedParentId: string;
   startDate: string;
   endDate: string;
+  allowedDaysOfWeek: number[];
 }
 
 interface ParentWithSharedStudents extends ParentWithStudents {
@@ -36,6 +37,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     authorizedParentId: '',
     startDate: '',
     endDate: '',
+    allowedDaysOfWeek: [1, 2, 3, 4, 5], // Default to weekdays
   });
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     }
   };
 
-  const updateFormData = (field: keyof FormData, value: string | string[]) => {
+  const updateFormData = (field: keyof FormData, value: string | string[] | number[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -121,7 +123,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.studentIds.length === 0 || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
+    if (formData.studentIds.length === 0 || !formData.authorizedParentId || !formData.startDate || !formData.endDate || formData.allowedDaysOfWeek.length === 0) {
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.fillAllFields'),
@@ -147,7 +149,8 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
           studentId,
           authorizedParentId: formData.authorizedParentId,
           startDate: formData.startDate,
-          endDate: formData.endDate
+          endDate: formData.endDate,
+          allowedDaysOfWeek: formData.allowedDaysOfWeek
         });
       }
       
@@ -171,6 +174,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
         authorizedParentId: '',
         startDate: '',
         endDate: '',
+        allowedDaysOfWeek: [1, 2, 3, 4, 5], // Reset to weekdays
       });
     } catch (error) {
       logger.error('Error creating authorization:', error);
