@@ -113,6 +113,7 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
               value={formData.startDate}
               onChange={(e) => onUpdateFormData('startDate', e.target.value)}
               min={new Date().toISOString().split('T')[0]}
+              max={new Date(new Date().getFullYear() + 1, 11, 31).toISOString().split('T')[0]}
             />
           </div>
           <div className="space-y-2">
@@ -123,6 +124,7 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
               value={formData.endDate}
               onChange={(e) => onUpdateFormData('endDate', e.target.value)}
               min={formData.startDate || new Date().toISOString().split('T')[0]}
+              max={new Date(new Date().getFullYear() + 1, 11, 31).toISOString().split('T')[0]}
             />
           </div>
         </div>

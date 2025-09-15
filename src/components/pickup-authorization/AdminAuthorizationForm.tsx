@@ -44,7 +44,7 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
   const [formData, setFormData] = useState<FormData>({
     authorizedParentId: '',
     startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date(new Date().getFullYear() + 1, 5, 30).toISOString().split('T')[0], // End of June next year
     allowedDaysOfWeek: [1, 2, 3, 4, 5] // Default to weekdays
   });
 
@@ -133,7 +133,7 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
       setFormData({
         authorizedParentId: '',
         startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        endDate: new Date(new Date().getFullYear() + 1, 5, 30).toISOString().split('T')[0], // End of June next year
         allowedDaysOfWeek: [1, 2, 3, 4, 5] // Reset to weekdays
       });
       setShowForm(false);
@@ -191,6 +191,7 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
                 value={formData.startDate}
                 onChange={(e) => updateFormData('startDate', e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
+                max={new Date(new Date().getFullYear() + 1, 11, 31).toISOString().split('T')[0]}
               />
             </div>
             <div className="space-y-2">
@@ -201,6 +202,7 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
                 value={formData.endDate}
                 onChange={(e) => updateFormData('endDate', e.target.value)}
                 min={formData.startDate || new Date().toISOString().split('T')[0]}
+                max={new Date(new Date().getFullYear() + 1, 11, 31).toISOString().split('T')[0]}
               />
             </div>
           </div>

@@ -43,13 +43,13 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
   useEffect(() => {
     if (isOpen) {
       loadData();
-      // Set default dates (today and one week from today)
+      // Set default dates (today and end of next school year)
       const today = new Date().toISOString().split('T')[0];
-      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const nextYear = new Date(new Date().getFullYear() + 1, 5, 30).toISOString().split('T')[0]; // End of June next year
       setFormData(prev => ({
         ...prev,
         startDate: today,
-        endDate: nextWeek,
+        endDate: nextYear,
       }));
     }
   }, [isOpen]);
