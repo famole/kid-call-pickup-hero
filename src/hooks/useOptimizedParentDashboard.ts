@@ -95,17 +95,6 @@ export const useOptimizedParentDashboard = () => {
         user?.role === 'parent' ? getParentAffectedPickupRequests() : getActivePickupRequestsForParent(parentId)
       ]);
 
-      console.log('🔍 DEBUG - Dashboard data results:', {
-        childrenCount: dashboardData.allChildren.length,
-        pickupRequestsCount: pickupRequests.length,
-        children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized })),
-        requests: pickupRequests.map(r => ({ 
-          id: r.id, 
-          studentId: r.studentId, 
-          parentId: r.parentId, 
-          requestingParent: r.requestingParent?.name 
-        }))
-      });
 
       setChildren(dashboardData.allChildren);
       
