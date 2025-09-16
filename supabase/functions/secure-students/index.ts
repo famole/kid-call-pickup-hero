@@ -135,9 +135,9 @@ serve(async (req) => {
         }
 
         // Encrypt the entire students array as one object
-        const encrypted_data = await encryptObject(studentsData || []);
+        const encryptedStudentsData = await encryptObject(studentsData || []);
 
-        return new Response(JSON.stringify({ data: { encrypted_data }, error: null }), {
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedStudentsData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -157,9 +157,9 @@ serve(async (req) => {
         }
 
         // Encrypt the entire result array as one object
-        const encrypted_data = await encryptObject(studentData || []);
+        const encryptedCreateData = await encryptObject(studentData || []);
 
-        return new Response(JSON.stringify({ data: { encrypted_data }, error: null }), {
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedCreateData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -182,9 +182,9 @@ serve(async (req) => {
         }
 
         // Encrypt the entire result array as one object
-        const encrypted_data = await encryptObject(studentData || []);
+        const encryptedUpdateData = await encryptObject(studentData || []);
 
-        return new Response(JSON.stringify({ data: { encrypted_data }, error: null }), {
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedUpdateData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
