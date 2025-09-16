@@ -25,9 +25,20 @@ const generateKey = async (passphrase: string): Promise<CryptoKey> => {
   );
 };
 
-// Get or generate encryption passphrase using the same key as server
+// Get or generate encryption passphrase using environment variable or fallback
 const getEncryptionPassphrase = (): string => {
-  return "U9.#s!_So2*"; // Use the same key as the server
+  // Try to get from environment variable first (for production deployments)
+  const envKey = import.meta.env?.VITE_ENCRYPTION_KEY || 
+                 (typeof process !== 'undefined' && process.env?.VITE_ENCRYPTION_KEY) ||
+                 (typeof globalThis !== 'undefined' && (globalThis as any).ENCRYPTION_KEY);
+  
+  // If environment variable exists, use it
+  if (envKey) {
+    return envKey;
+  }
+  
+  // Fallback to the default key
+  return "U9.#s!_So2*";
 };
 
 // Encrypt data
