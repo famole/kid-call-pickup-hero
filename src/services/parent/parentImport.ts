@@ -21,11 +21,9 @@ export const importParentsFromCSV = async (
         password_set: false
       };
 
-      const { data, error } = await supabase
-        .from('parents')
-        .insert([parentData])
-        .select()
-        .single();
+      // Use secure operations to create parent
+      const { secureOperations } = await import('@/services/encryption');
+      const { data, error } = await secureOperations.createParentSecure(parentData);
 
       if (error) {
         throw new Error(error.message);

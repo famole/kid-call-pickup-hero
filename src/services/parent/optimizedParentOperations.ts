@@ -7,49 +7,58 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
   const startTime = performance.now();
 
   try {
-    // First, get all parents with their student relationships
-    const { data: parentStudentData, error: relationError } = await supabase
-      .from('parents')
-      .select(`
-        id,
-        name,
-        email,
-        phone,
-        role,
-        created_at,
-        updated_at,
-        student_parents (
-          id,
-          student_id,
-          relationship,
-          is_primary
-        )
-      `)
-      .order('name');
+    // Use secure operations to get all parents
+    const { secureOperations } = await import('@/services/encryption');
+    const { data: allParents, error: relationError } = await secureOperations.getParentsSecure();
 
     if (relationError) {
-      console.error('Error fetching parents with student relationships:', relationError);
+      console.error('Error fetching parents:', relationError);
       throw new Error(relationError.message);
     }
 
+    // Get student-parent relationships
+    const { data: studentParentRelations, error: relationshipError } = await supabase
+      .from('student_parents')
+      .select(`
+        id,
+        parent_id,
+        student_id,
+        relationship,
+        is_primary
+      `);
+
+    if (relationshipError) {
+      console.error('Error fetching student-parent relationships:', relationshipError);
+      throw new Error(relationshipError.message);
+    }
 
     // Get all students separately to join with the relationships
     const { data: studentsData, error: studentsError } = await supabase
       .from('students')
-      .select('id, name, class_id');
+      .select('id, name, class_id')
+      .is('deleted_at', null);
 
     if (studentsError) {
       console.error('Error fetching students:', studentsError);
       throw new Error(studentsError.message);
     }
 
-
     // Create a map of students for quick lookup
-    const studentsMap = new Map(studentsData.map(student => [student.id, student]));
+    const studentsMap = new Map(studentsData?.map(student => [student.id, student]) || []);
+    
+    // Group student relationships by parent ID
+    const relationsByParent = new Map();
+    studentParentRelations?.forEach(relation => {
+      if (!relationsByParent.has(relation.parent_id)) {
+        relationsByParent.set(relation.parent_id, []);
+      }
+      relationsByParent.get(relation.parent_id).push(relation);
+    });
 
     // Transform the data to match our ParentWithStudents type
-    const result: ParentWithStudents[] = parentStudentData.map((parentData: any) => {
-      const students = parentData.student_parents?.map((relation: any) => {
+    const result: ParentWithStudents[] = (allParents || []).map((parentData: any) => {
+      const parentRelations = relationsByParent.get(parentData.id) || [];
+      const students = parentRelations.map((relation: any) => {
         const studentInfo = studentsMap.get(relation.student_id);
         return {
           id: relation.student_id,
@@ -59,7 +68,7 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
           parentRelationshipId: relation.id,
           classId: studentInfo ? studentInfo.class_id : undefined,
         };
-      }) || [];
+      });
 
       return {
         id: parentData.id,
@@ -73,7 +82,6 @@ export const getParentsWithStudentsOptimized = async (): Promise<ParentWithStude
       };
     });
 
-    
     return result;
   } catch (error) {
     console.error('Error in optimized parents fetch:', error);

@@ -156,12 +156,13 @@ export const getAvailableParentsForAuthorization = async (): Promise<{
 
   const studentIds = currentParentStudents?.map(sp => sp.student_id) || [];
 
-  // Get ALL parents in the school (excluding current parent)
-  const { data: allParents, error: allParentsError } = await supabase
-    .from('parents')
-    .select('id, name, email, role')
-    .neq('id', currentParentId)
-    .is('deleted_at', null); // Only get non-deleted parents
+  // Get ALL parents in the school using secure operations
+  const { secureOperations } = await import('@/services/encryption');
+  const { data: allParentsData, error: allParentsError } = await secureOperations.getParentsSecure(false);
+  
+  // Filter out current parent and extract needed fields
+  const allParents = allParentsData?.filter(p => p.id !== currentParentId)
+    .map(p => ({ id: p.id, name: p.name, email: p.email, role: p.role })) || [];
 
   if (allParentsError) {
     console.error('Error fetching all parents:', allParentsError);

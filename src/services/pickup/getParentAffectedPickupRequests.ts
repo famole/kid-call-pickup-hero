@@ -64,11 +64,10 @@ export const getParentAffectedPickupRequests = async (): Promise<PickupRequest[]
     // Get parent information for each request
     const requestsWithParents = await Promise.all(
       (requests || []).map(async (req) => {
-        const { data: parentData } = await supabase
-          .from('parents')
-          .select('id, name, email')
-          .eq('id', req.parent_id)
-          .single();
+        // Use secure operations to get parent data
+        const { secureOperations } = await import('@/services/encryption');
+        const { data: allParents } = await secureOperations.getParentsSecure(false);
+        const parentData = allParents?.find(p => p.id === req.parent_id);
 
         return {
           id: req.id,

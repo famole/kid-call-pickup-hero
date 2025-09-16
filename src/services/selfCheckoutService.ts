@@ -164,12 +164,10 @@ export const createSelfCheckoutAuthorization = async (
       throw new Error('User not authenticated');
     }
 
-    // Get parent ID from the parents table
-    const { data: parentData, error: parentError } = await supabase
-      .from('parents')
-      .select('id')
-      .eq('email', currentUser.user.email)
-      .single();
+    // Get parent ID using secure operations
+    const { secureOperations } = await import('@/services/encryption');
+    const { data: allParents, error: parentError } = await secureOperations.getParentsSecure(false);
+    const parentData = allParents?.find(p => p.email === currentUser.user.email);
 
     if (parentError || !parentData) {
       throw new Error('Parent not found');

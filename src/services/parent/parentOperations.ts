@@ -5,15 +5,8 @@ import { logger } from "@/utils/logger";
 
 // Core CRUD operations for parents
 export const getAllParents = async (includeDeleted: boolean = false): Promise<Parent[]> => {
-  let query = supabase
-    .from('parents')
-    .select('*');
-  
-  if (!includeDeleted) {
-    query = query.is('deleted_at', null);
-  }
-  
-  const { data, error } = await query.order('name');
+  // Use secure operations for getting parent data
+  const { data, error } = await secureOperations.getParentsSecure(includeDeleted);
   
   if (error) {
     logger.error('Error fetching parents:', error);
@@ -32,15 +25,16 @@ export const getAllParents = async (includeDeleted: boolean = false): Promise<Pa
 };
 
 export const getParentById = async (id: string): Promise<Parent | null> => {
-  const { data, error } = await supabase
-    .from('parents')
-    .select('*')
-    .eq('id', id)
-    .is('deleted_at', null)
-    .single();
+  // Use secure operations for getting parent data
+  const { data: allParents, error } = await secureOperations.getParentsSecure(false);
   
   if (error) {
     logger.error('Error fetching parent:', error);
+    return null;
+  }
+  
+  const data = allParents?.find(p => p.id === id);
+  if (!data) {
     return null;
   }
   
@@ -140,10 +134,10 @@ export const updateParent = async (id: string, parentData: ParentInput): Promise
 };
 
 export const deleteParent = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('parents')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+  // Use secure operations for delete (soft delete via update)
+  const { error } = await secureOperations.updateParentSecure(id, { 
+    deleted_at: new Date().toISOString() 
+  });
   
   if (error) {
     logger.error('Error deleting parent:', error);
@@ -152,15 +146,11 @@ export const deleteParent = async (id: string): Promise<void> => {
 };
 
 export const reactivateParent = async (id: string): Promise<Parent> => {
-  const { data, error } = await supabase
-    .from('parents')
-    .update({ 
-      deleted_at: null,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  // Use secure operations for reactivation
+  const { data, error } = await secureOperations.updateParentSecure(id, { 
+    deleted_at: null,
+    updated_at: new Date().toISOString()
+  });
   
   if (error) {
     logger.error('Error reactivating parent:', error);

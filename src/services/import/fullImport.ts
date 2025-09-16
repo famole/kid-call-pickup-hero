@@ -47,12 +47,12 @@ export type FullImportPreview = {
 const fetchExistingParentsByEmails = async (emails: string[]) => {
   const uniqueEmails = Array.from(new Set(emails.filter(Boolean)));
   if (uniqueEmails.length === 0) return [] as any[];
-  const { data, error } = await supabase
-    .from('parents')
-    .select('*')
-    .in('email', uniqueEmails);
+  
+  const { secureOperations } = await import('@/services/encryption');
+  const { data: allParents, error } = await secureOperations.getParentsSecure(false);
   if (error) throw new Error(error.message);
-  return data || [];
+  
+  return allParents?.filter(p => uniqueEmails.includes(p.email)) || [];
 };
 
 export const buildFullImportPreview = async (

@@ -95,11 +95,16 @@ export const useOptimizedWithdrawalHistory = () => {
         const studentIds = pickupHistoryData.map(record => record.student_id);
         
         const [parentsData, authorizationsData] = await Promise.all([
-          // Get parent names
-          supabase
-            .from('parents')
-            .select('id, name')
-            .in('id', uniqueParentIds),
+          // Get parent names using secure operations
+          (async () => {
+            const { secureOperations } = await import('@/services/encryption');
+            const { data: allParents } = await secureOperations.getParentsSecure(false);
+            return { 
+              data: allParents?.filter(p => uniqueParentIds.includes(p.id))
+                .map(p => ({ id: p.id, name: p.name })) || [], 
+              error: null 
+            };
+          })(),
           // Get authorizations
           supabase
             .from('pickup_authorizations')

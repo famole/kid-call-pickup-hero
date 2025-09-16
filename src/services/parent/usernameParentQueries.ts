@@ -214,11 +214,10 @@ export const getActivePickupRequestsForParentId = async (parentId: string): Prom
     // Get parent information for each request
     const requestsWithParents = await Promise.all(
       allRequests.map(async (req) => {
-        const { data: parentData } = await supabase
-          .from('parents')
-          .select('id, name, email')
-          .eq('id', req.parent_id)
-          .single();
+        // Use secure operations to get parent data
+        const { secureOperations } = await import('@/services/encryption');
+        const { data: allParentsData } = await secureOperations.getParentsSecure(false);
+        const parentData = allParentsData?.find(p => p.id === req.parent_id);
 
         return {
           id: req.id,

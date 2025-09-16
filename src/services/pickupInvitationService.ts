@@ -138,17 +138,21 @@ export const updatePickupInvitation = async (
     }
     logger.info('Invitation fetched successfully:', invitation);
 
-    // Create or update the parent record
+    // Create or update the parent record using secure operations
     logger.info('Checking for existing parent with email:', invitation.invited_email);
-    const { data: existingParent, error: existingParentError } = await supabase
-      .from('parents')
-      .select('id')
-      .eq('email', invitation.invited_email)
-      .single();
+    const { secureOperations } = await import('@/services/encryption');
+    const { data: allParents, error: parentsError } = await secureOperations.getParentsSecure(false);
+    
+    if (parentsError) {
+      logger.error('Error fetching parents:', parentsError);
+      throw parentsError;
+    }
+    
+    const existingParent = allParents?.find(p => p.email === invitation.invited_email);
 
-    if (existingParentError && existingParentError.code !== 'PGRST116') {
-      logger.error('Error checking existing parent:', existingParentError);
-      throw existingParentError;
+    if (parentsError && parentsError.code !== 'PGRST116') {
+      logger.error('Error checking existing parent:', parentsError);
+      throw parentsError;
     }
 
     let parentId: string;
@@ -158,24 +162,20 @@ export const updatePickupInvitation = async (
       parentId = existingParent.id;
     } else {
       logger.info('Creating new parent record...');
-      // Create new parent record with the invited role
-      const { data: newParent, error: parentError } = await supabase
-        .from('parents')
-        .insert({
-          name: invitation.invited_name,
-          email: invitation.invited_email,
-          role: invitation.invited_role,
-          password_set: true
-        })
-        .select('id')
-        .single();
+      // Create new parent record with the invited role using secure operations
+      const { data: newParent, error: parentError } = await secureOperations.createParentSecure({
+        name: invitation.invited_name,
+        email: invitation.invited_email,
+        role: invitation.invited_role,
+        password_set: true
+      });
 
       if (parentError) {
         logger.error('Error creating parent:', parentError);
         throw parentError;
       }
-      logger.info('Created new parent:', newParent.id);
-      parentId = newParent.id;
+      logger.info('Created new parent:', newParent[0]?.id);
+      parentId = newParent[0]?.id;
     }
 
     // Update the invitation with the accepted parent ID

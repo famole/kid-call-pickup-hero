@@ -172,13 +172,14 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
   try {
     logger.log('Fetching parent dashboard data for:', parentEmail);
 
-    // Get parent ID first (excluding deleted)
-    const { data: parentData, error: parentError } = await supabase
-      .from('parents')
-      .select('id')
-      .eq('email', parentEmail)
-      .is('deleted_at', null)
-      .single();
+    // Get parent ID using secure operations
+    const { data: parentsData, error: parentError } = await secureOperations.getParentsSecure(false);
+    const parentData = parentsData?.find(p => p.email === parentEmail);
+    
+    if (!parentData) {
+      logger.error('No parent found for email:', parentEmail);
+      return { allChildren: [] };
+    }
 
     if (parentError) {
       logger.error('Error fetching parent:', parentError);

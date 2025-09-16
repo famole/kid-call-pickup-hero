@@ -57,11 +57,11 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
   if (!email) return { isPreloaded: false, needsPasswordSetup: false };
   
   try {
-    const { data: parentData, error } = await supabase
-      .from('parents')
-      .select('is_preloaded, password_set')
-      .eq('email', email)
-      .single();
+    // Use the secure RPC function that handles encryption
+    const { data: parentDataArray, error } = await supabase
+      .rpc('get_parent_by_identifier', { identifier: email });
+    
+    const parentData = parentDataArray?.[0];
       
     if (error) {
       logger.error('Error checking preloaded status:', error);
@@ -71,10 +71,9 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
     // If this is an OAuth user and they're preloaded but password_set is false,
     // update it to true since OAuth users don't need passwords
     if (isOAuthUser && parentData?.is_preloaded && !parentData?.password_set) {
-      await supabase
-        .from('parents')
-        .update({ password_set: true })
-        .eq('email', email);
+      // Use secure operations for update
+      const { secureOperations } = await import('@/services/encryption');
+      await secureOperations.updateParentSecure(parentData.id, { password_set: true });
       
       return {
         isPreloaded: parentData?.is_preloaded || false,
@@ -145,11 +144,9 @@ export const createParentFromOAuthUser = async (authUser: any): Promise<any> => 
       password_set: true // OAuth users don't need password setup
     };
 
-    const { data, error } = await supabase
-      .from('parents')
-      .insert(parentData)
-      .select()
-      .single();
+    // Use secure operations for creating parent
+    const { secureOperations } = await import('@/services/encryption');
+    const { data, error } = await secureOperations.createParentSecure(parentData);
 
     if (error && error.code !== '23505') { // 23505 is unique violation error
       logger.error('Error creating parent from OAuth:', error);
