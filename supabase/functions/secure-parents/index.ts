@@ -136,8 +136,9 @@ serve(async (req) => {
           throw error;
         }
 
-        // Return decrypted data directly to client
-        return new Response(JSON.stringify({ data: parentsData, error: null }), {
+        // Return encrypted data to client
+        const encryptedParentsData = await encryptObject(parentsData || []);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedParentsData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -156,8 +157,9 @@ serve(async (req) => {
           throw error;
         }
 
-        // Return decrypted data directly to client
-        return new Response(JSON.stringify({ data: parentData, error: null }), {
+        // Return encrypted data to client
+        const encryptedCreateData = await encryptObject(parentData || []);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedCreateData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -179,8 +181,9 @@ serve(async (req) => {
           throw error;
         }
 
-        // Return decrypted data directly to client
-        return new Response(JSON.stringify({ data: parentData, error: null }), {
+        // Return encrypted data to client
+        const encryptedUpdateData = await encryptObject(parentData || []);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedUpdateData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }

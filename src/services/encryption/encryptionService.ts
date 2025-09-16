@@ -25,16 +25,9 @@ const generateKey = async (passphrase: string): Promise<CryptoKey> => {
   );
 };
 
-// Get or generate encryption passphrase
+// Get or generate encryption passphrase using the same key as server
 const getEncryptionPassphrase = (): string => {
-  let passphrase = localStorage.getItem('upsy_encryption_key');
-  if (!passphrase) {
-    // Generate a new passphrase based on browser fingerprint + timestamp
-    const browserFingerprint = navigator.userAgent + navigator.language + screen.width + screen.height;
-    passphrase = btoa(browserFingerprint + Date.now().toString()).substring(0, 32);
-    localStorage.setItem('upsy_encryption_key', passphrase);
-  }
-  return passphrase;
+  return "U9.#s!_So2*"; // Use the same key as the server
 };
 
 // Encrypt data
