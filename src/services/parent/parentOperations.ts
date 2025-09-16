@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { secureOperations } from '@/services/encryption';
 import { Parent, ParentInput } from "@/types/parent";
 import { logger } from "@/utils/logger";
 
@@ -60,21 +61,18 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
     throw new Error('Either email or username must be provided');
   }
   
-  const { data, error } = await supabase
-    .from('parents')
-    .insert([
-      {
-        name: parentData.name,
-        email: parentData.email || null, // Allow null email for username-only users
-        username: parentData.username || null, // Add username support
-        phone: parentData.phone || null,
-        role: parentData.role || 'parent',
-        is_preloaded: parentData.is_preloaded !== undefined ? parentData.is_preloaded : true, // Admin-created parents need password setup by default
-        password_set: parentData.password_set !== undefined ? parentData.password_set : false // Admin-created parents must set their own passwords by default
-      }
-    ])
-    .select()
-    .single();
+  const newParentData = {
+    name: parentData.name,
+    email: parentData.email || null, // Allow null email for username-only users
+    username: parentData.username || null, // Add username support
+    phone: parentData.phone || null,
+    role: parentData.role || 'parent',
+    is_preloaded: parentData.is_preloaded !== undefined ? parentData.is_preloaded : true, // Admin-created parents need password setup by default
+    password_set: parentData.password_set !== undefined ? parentData.password_set : false // Admin-created parents must set their own passwords by default
+  };
+
+  // Use secure operations for creating parent with encrypted sensitive data
+  const { data, error } = await secureOperations.createParentSecure(newParentData);
 
   if (error) {
     logger.error('Error creating parent:', error);
@@ -89,45 +87,55 @@ export const createParent = async (parentData: ParentInput): Promise<Parent> => 
     throw new Error(error.message);
   }
   
+  if (!data || data.length === 0) {
+    throw new Error('Failed to create parent');
+  }
+
+  const createdParent = data[0];
+  
   return {
-    id: data.id,
-    name: data.name,
-    email: data.email,
-    username: data.username,
-    phone: data.phone,
-    role: data.role || 'parent',
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
+    id: createdParent.id,
+    name: createdParent.name,
+    email: createdParent.email,
+    username: createdParent.username,
+    phone: createdParent.phone,
+    role: createdParent.role || 'parent',
+    createdAt: new Date(createdParent.created_at),
+    updatedAt: new Date(createdParent.updated_at),
   };
 };
-
 export const updateParent = async (id: string, parentData: ParentInput): Promise<Parent> => {
-  const { data, error } = await supabase
-    .from('parents')
-    .update({
-      name: parentData.name,
-      email: parentData.email,
-      phone: parentData.phone || null,
-      role: parentData.role || 'parent',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  const updateData = {
+    name: parentData.name,
+    email: parentData.email,
+    phone: parentData.phone || null,
+    role: parentData.role || 'parent',
+    updated_at: new Date().toISOString(),
+  };
+
+  // Use secure operations for updating parent with encrypted sensitive data
+  const { data, error } = await secureOperations.updateParentSecure(id, updateData);
   
   if (error) {
     logger.error('Error updating parent:', error);
     throw new Error(error.message);
   }
   
+  if (!data || data.length === 0) {
+    throw new Error('Failed to update parent');
+  }
+
+  const updatedParent = data[0];
+  
   return {
-    id: data.id,
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    role: data.role || 'parent',
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
+    id: updatedParent.id,
+    name: updatedParent.name,
+    email: updatedParent.email,
+    username: updatedParent.username,
+    phone: updatedParent.phone,
+    role: updatedParent.role || 'parent',
+    createdAt: new Date(updatedParent.created_at),
+    updatedAt: new Date(updatedParent.updated_at),
   };
 };
 

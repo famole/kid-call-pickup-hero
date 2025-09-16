@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { secureOperations } from '@/services/encryption';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
@@ -8,25 +9,8 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
   try {
     logger.log('Fetching optimized parents with students data...');
     
-    let query = supabase
-      .from('parents')
-      .select(`
-        id,
-        name,
-        email,
-        username,
-        phone,
-        role,
-        created_at,
-        updated_at,
-        deleted_at
-      `);
-    
-    if (!includeDeleted) {
-      query = query.is('deleted_at', null);
-    }
-    
-    const { data: parentsData, error: parentsError } = await query.order('name');
+    // Use secure operations for parent data
+    const { data: parentsData, error: parentsError } = await secureOperations.getParentsSecure(includeDeleted);
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);
