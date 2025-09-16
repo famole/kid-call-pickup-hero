@@ -136,14 +136,10 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt entire objects before sending
-        const encryptedParents = await Promise.all(
-          (parentsData || []).map(async parent => ({
-            encrypted_data: await encryptObject(parent)
-          }))
-        );
+        // Encrypt the entire parents array as one object
+        const encryptedParentsData = await encryptObject(parentsData || []);
 
-        return new Response(JSON.stringify({ data: encryptedParents, error: null }), {
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedParentsData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -162,14 +158,10 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt entire objects before sending back
-        const encryptedResult = await Promise.all(
-          (parentData || []).map(async parent => ({
-            encrypted_data: await encryptObject(parent)
-          }))
-        );
+        // Encrypt the entire result array as one object
+        const encryptedCreateData = await encryptObject(parentData || []);
 
-        return new Response(JSON.stringify({ data: encryptedResult, error: null }), {
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedCreateData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -191,14 +183,10 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt entire objects before sending back
-        const encryptedResult = await Promise.all(
-          (parentData || []).map(async parent => ({
-            encrypted_data: await encryptObject(parent)
-          }))
-        );
+        // Encrypt the entire result array as one object
+        const encryptedUpdateData = await encryptObject(parentData || []);
 
-        return new Response(JSON.stringify({ data: encryptedResult, error: null }), {
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedUpdateData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
