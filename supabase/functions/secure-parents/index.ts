@@ -136,10 +136,8 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt the entire parents array as one object
-        const encryptedParentsData = await encryptObject(parentsData || []);
-
-        return new Response(JSON.stringify({ data: { encrypted_data: encryptedParentsData }, error: null }), {
+        // Return decrypted data directly to client
+        return new Response(JSON.stringify({ data: parentsData, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -158,10 +156,8 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt the entire result array as one object
-        const encryptedCreateData = await encryptObject(parentData || []);
-
-        return new Response(JSON.stringify({ data: { encrypted_data: encryptedCreateData }, error: null }), {
+        // Return decrypted data directly to client
+        return new Response(JSON.stringify({ data: parentData, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -183,10 +179,8 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt the entire result array as one object
-        const encryptedUpdateData = await encryptObject(parentData || []);
-
-        return new Response(JSON.stringify({ data: { encrypted_data: encryptedUpdateData }, error: null }), {
+        // Return decrypted data directly to client
+        return new Response(JSON.stringify({ data: parentData, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }

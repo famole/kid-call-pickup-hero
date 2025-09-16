@@ -33,11 +33,7 @@ export class SecureOperations {
         throw error;
       }
       
-      // Decrypt the single encrypted_data field containing all parents
-      const { decryptData } = await import('./encryptionService');
-      const decryptedParents = await decryptData(data.data.encrypted_data);
-      
-      return { data: decryptedParents, error: data.error };
+      return { data: data.data, error: data.error };
     } catch (error) {
       logger.error('Secure parent fetch failed:', error);
       return { data: null, error };
@@ -63,11 +59,7 @@ export class SecureOperations {
         throw error;
       }
       
-      // Decrypt the single encrypted_data field containing the result
-      const { decryptData } = await import('./encryptionService');
-      const decryptedResult = await decryptData(data.data.encrypted_data);
-      
-      return { data: decryptedResult, error: data.error };
+      return { data: data.data, error: data.error };
     } catch (error) {
       logger.error('Secure parent creation failed:', error);
       return { data: null, error };
@@ -93,11 +85,7 @@ export class SecureOperations {
         throw error;
       }
       
-      // Decrypt the single encrypted_data field containing the result
-      const { decryptData } = await import('./encryptionService');
-      const decryptedResult = await decryptData(data.data.encrypted_data);
-      
-      return { data: decryptedResult, error: data.error };
+      return { data: data.data, error: data.error };
     } catch (error) {
       logger.error('Secure parent update failed:', error);
       return { data: null, error };
@@ -119,11 +107,7 @@ export class SecureOperations {
         throw error;
       }
       
-      // Decrypt the entire students array from the single encrypted_data field
-      const { decryptData } = await import('./encryptionService');
-      const decryptedStudents = await decryptData(data.data.encrypted_data);
-      
-      return { data: decryptedStudents, error: data.error };
+      return { data: data.data, error: data.error };
     } catch (error) {
       logger.error('Secure student fetch failed:', error);
       return { data: null, error };
@@ -149,11 +133,7 @@ export class SecureOperations {
         throw error;
       }
       
-      // Decrypt the single encrypted_data field containing the result
-      const { decryptData } = await import('./encryptionService');
-      const decryptedResult = await decryptData(data.data.encrypted_data);
-      
-      return { data: decryptedResult, error: data.error };
+      return { data: data.data, error: data.error };
     } catch (error) {
       logger.error('Secure student creation failed:', error);
       return { data: null, error };
@@ -179,11 +159,7 @@ export class SecureOperations {
         throw error;
       }
       
-      // Decrypt the single encrypted_data field containing the result
-      const { decryptData } = await import('./encryptionService');
-      const decryptedResult = await decryptData(data.data.encrypted_data);
-      
-      return { data: decryptedResult, error: data.error };
+      return { data: data.data, error: data.error };
     } catch (error) {
       logger.error('Secure student update failed:', error);
       return { data: null, error };
