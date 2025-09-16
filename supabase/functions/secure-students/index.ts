@@ -75,32 +75,28 @@ async function decryptData(encryptedData: string): Promise<string> {
   }
 }
 
-async function encryptSensitiveFields(obj: any): Promise<any> {
-  if (!obj || typeof obj !== 'object') return obj;
-  
-  const result = { ...obj };
-  
-  for (const field of SENSITIVE_STUDENT_FIELDS) {
-    if (result[field] && typeof result[field] === 'string') {
-      result[field] = await encryptData(result[field]);
-    }
+async function encryptObject(obj: any): Promise<string> {
+  try {
+    const jsonString = JSON.stringify(obj);
+    return await encryptData(jsonString);
+  } catch (error) {
+    console.error('Object encryption failed:', error);
+    return JSON.stringify(obj); // Return original if encryption fails
   }
-  
-  return result;
 }
 
-async function decryptSensitiveFields(obj: any): Promise<any> {
-  if (!obj || typeof obj !== 'object') return obj;
-  
-  const result = { ...obj };
-  
-  for (const field of SENSITIVE_STUDENT_FIELDS) {
-    if (result[field] && typeof result[field] === 'string' && result[field].length > 50) {
-      result[field] = await decryptData(result[field]);
+async function decryptObject(encryptedString: string): Promise<any> {
+  try {
+    const decryptedString = await decryptData(encryptedString);
+    return JSON.parse(decryptedString);
+  } catch (error) {
+    console.error('Object decryption failed:', error);
+    try {
+      return JSON.parse(encryptedString); // Try parsing original if decryption fails
+    } catch {
+      return encryptedString; // Return string if JSON parsing fails
     }
   }
-  
-  return result;
 }
 
 serve(async (req) => {
@@ -138,9 +134,19 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt sensitive fields before sending
+        // Encrypt entire objects before sending
         const encryptedStudents = await Promise.all(
-          (studentsData || []).map(student => encryptSensitiveFields(student))
+          (studentsData || []).map(async student => ({
+            id: student.id,
+            encrypted_data: await encryptObject({
+              name: student.name
+            }),
+            class_id: student.class_id,
+            avatar: student.avatar,
+            created_at: student.created_at,
+            updated_at: student.updated_at,
+            deleted_at: student.deleted_at
+          }))
         );
 
         return new Response(JSON.stringify({ data: encryptedStudents, error: null }), {
@@ -149,12 +155,12 @@ serve(async (req) => {
       }
 
       case 'createStudent': {
-        // Decrypt data received from client
-        const decryptedData = await decryptSensitiveFields(data);
+        // Decrypt entire object received from client
+        const decryptedData = await decryptObject(data.encrypted_data);
         
         const { data: studentData, error } = await supabase
           .from('students')
-          .insert(decryptedData)
+          .insert({ ...decryptedData, ...data.metadata })
           .select();
         
         if (error) {
@@ -162,9 +168,19 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt before sending back
+        // Encrypt entire objects before sending back
         const encryptedResult = await Promise.all(
-          (studentData || []).map(student => encryptSensitiveFields(student))
+          (studentData || []).map(async student => ({
+            id: student.id,
+            encrypted_data: await encryptObject({
+              name: student.name
+            }),
+            class_id: student.class_id,
+            avatar: student.avatar,
+            created_at: student.created_at,
+            updated_at: student.updated_at,
+            deleted_at: student.deleted_at
+          }))
         );
 
         return new Response(JSON.stringify({ data: encryptedResult, error: null }), {
@@ -173,14 +189,16 @@ serve(async (req) => {
       }
 
       case 'updateStudent': {
-        const { studentId, updateData } = data;
+        const { studentId, encrypted_data, metadata } = data;
         
-        // Decrypt data received from client
-        const decryptedData = await decryptSensitiveFields(updateData);
+        // Decrypt entire object received from client
+        const decryptedData = await decryptObject(encrypted_data);
+        
+        const updatePayload = { ...decryptedData, ...(metadata || {}) };
         
         const { data: studentData, error } = await supabase
           .from('students')
-          .update(decryptedData)
+          .update(updatePayload)
           .eq('id', studentId)
           .select();
         
@@ -189,9 +207,19 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt before sending back
+        // Encrypt entire objects before sending back
         const encryptedResult = await Promise.all(
-          (studentData || []).map(student => encryptSensitiveFields(student))
+          (studentData || []).map(async student => ({
+            id: student.id,
+            encrypted_data: await encryptObject({
+              name: student.name
+            }),
+            class_id: student.class_id,
+            avatar: student.avatar,
+            created_at: student.created_at,
+            updated_at: student.updated_at,
+            deleted_at: student.deleted_at
+          }))
         );
 
         return new Response(JSON.stringify({ data: encryptedResult, error: null }), {

@@ -75,32 +75,28 @@ async function decryptData(encryptedData: string): Promise<string> {
   }
 }
 
-async function encryptSensitiveFields(obj: any): Promise<any> {
-  if (!obj || typeof obj !== 'object') return obj;
-  
-  const result = { ...obj };
-  
-  for (const field of SENSITIVE_FIELDS) {
-    if (result[field] && typeof result[field] === 'string') {
-      result[field] = await encryptData(result[field]);
-    }
+async function encryptObject(obj: any): Promise<string> {
+  try {
+    const jsonString = JSON.stringify(obj);
+    return await encryptData(jsonString);
+  } catch (error) {
+    console.error('Object encryption failed:', error);
+    return JSON.stringify(obj); // Return original if encryption fails
   }
-  
-  return result;
 }
 
-async function decryptSensitiveFields(obj: any): Promise<any> {
-  if (!obj || typeof obj !== 'object') return obj;
-  
-  const result = { ...obj };
-  
-  for (const field of SENSITIVE_FIELDS) {
-    if (result[field] && typeof result[field] === 'string' && result[field].length > 50) {
-      result[field] = await decryptData(result[field]);
+async function decryptObject(encryptedString: string): Promise<any> {
+  try {
+    const decryptedString = await decryptData(encryptedString);
+    return JSON.parse(decryptedString);
+  } catch (error) {
+    console.error('Object decryption failed:', error);
+    try {
+      return JSON.parse(encryptedString); // Try parsing original if decryption fails
+    } catch {
+      return encryptedString; // Return string if JSON parsing fails
     }
   }
-  
-  return result;
 }
 
 serve(async (req) => {
@@ -140,9 +136,21 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt sensitive fields before sending
+        // Encrypt entire objects before sending
         const encryptedParents = await Promise.all(
-          (parentsData || []).map(parent => encryptSensitiveFields(parent))
+          (parentsData || []).map(async parent => ({
+            id: parent.id,
+            encrypted_data: await encryptObject({
+              name: parent.name,
+              email: parent.email,
+              username: parent.username,
+              phone: parent.phone
+            }),
+            role: parent.role,
+            created_at: parent.created_at,
+            updated_at: parent.updated_at,
+            deleted_at: parent.deleted_at
+          }))
         );
 
         return new Response(JSON.stringify({ data: encryptedParents, error: null }), {
@@ -151,8 +159,8 @@ serve(async (req) => {
       }
 
       case 'createParent': {
-        // Decrypt data received from client
-        const decryptedData = await decryptSensitiveFields(data);
+        // Decrypt entire object received from client
+        const decryptedData = await decryptObject(data.encrypted_data);
         
         const { data: parentData, error } = await supabase
           .from('parents')
@@ -164,9 +172,21 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt before sending back
+        // Encrypt entire objects before sending back
         const encryptedResult = await Promise.all(
-          (parentData || []).map(parent => encryptSensitiveFields(parent))
+          (parentData || []).map(async parent => ({
+            id: parent.id,
+            encrypted_data: await encryptObject({
+              name: parent.name,
+              email: parent.email,
+              username: parent.username,
+              phone: parent.phone
+            }),
+            role: parent.role,
+            created_at: parent.created_at,
+            updated_at: parent.updated_at,
+            deleted_at: parent.deleted_at
+          }))
         );
 
         return new Response(JSON.stringify({ data: encryptedResult, error: null }), {
@@ -175,10 +195,10 @@ serve(async (req) => {
       }
 
       case 'updateParent': {
-        const { parentId, updateData } = data;
+        const { parentId, encrypted_data } = data;
         
-        // Decrypt data received from client
-        const decryptedData = await decryptSensitiveFields(updateData);
+        // Decrypt entire object received from client
+        const decryptedData = await decryptObject(encrypted_data);
         
         const { data: parentData, error } = await supabase
           .from('parents')
@@ -191,9 +211,21 @@ serve(async (req) => {
           throw error;
         }
 
-        // Encrypt before sending back
+        // Encrypt entire objects before sending back
         const encryptedResult = await Promise.all(
-          (parentData || []).map(parent => encryptSensitiveFields(parent))
+          (parentData || []).map(async parent => ({
+            id: parent.id,
+            encrypted_data: await encryptObject({
+              name: parent.name,
+              email: parent.email,
+              username: parent.username,
+              phone: parent.phone
+            }),
+            role: parent.role,
+            created_at: parent.created_at,
+            updated_at: parent.updated_at,
+            deleted_at: parent.deleted_at
+          }))
         );
 
         return new Response(JSON.stringify({ data: encryptedResult, error: null }), {
