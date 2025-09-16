@@ -231,8 +231,7 @@ export const getParentsWhoShareStudents = async (): Promise<{
     .from('student_parents')
     .select(`
       parent_id,
-      student_id,
-      parent:parents!parent_id (id, name, email)
+      student_id
     `)
     .in('student_id', studentIds)
     .neq('parent_id', currentParentId);
@@ -242,21 +241,30 @@ export const getParentsWhoShareStudents = async (): Promise<{
     throw new Error(sharedError.message);
   }
 
+  // Get parent data using secure operations
+  const { secureOperations } = await import('@/services/encryption');
+  const { data: allParents, error: parentsSecureError } = await secureOperations.getParentsSecure(false);
+  
+  if (parentsSecureError) {
+    console.error('Error fetching parents:', parentsSecureError);
+    throw new Error(parentsSecureError.message);
+  }
+
   // Group by parent and track shared students
   const parentMap = new Map();
   const sharedStudents: Record<string, string[]> = {};
 
   for (const relation of sharedParentRelations) {
     const parentId = relation.parent_id;
-    const parentData = relation.parent;
+    const parentData = allParents?.find(p => p.id === parentId);
     
-    // Skip if parent data is null (due to RLS restrictions)
+    // Skip if parent data is null (due to RLS restrictions or not found)
     if (!parentData || !parentData.id) {
       continue;
     }
     
     if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, parentData);
+      parentMap.set(parentId, { id: parentData.id, name: parentData.name, email: parentData.email });
       sharedStudents[parentId] = [];
     }
     
