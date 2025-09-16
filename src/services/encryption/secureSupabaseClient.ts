@@ -37,12 +37,7 @@ export class SecureOperations {
       const { decryptData } = await import('./encryptionService');
       const decryptedParents = await Promise.all(
         (data.data || []).map(async (parent: any) => {
-          const decryptedData = await decryptData(parent.encrypted_data);
-          return {
-            ...parent,
-            ...decryptedData,
-            encrypted_data: undefined // Remove the encrypted field
-          };
+          return await decryptData(parent.encrypted_data);
         })
       );
       
@@ -56,15 +51,9 @@ export class SecureOperations {
   // Secure parent creation
   async createParentSecure(parentData: any) {
     try {
-      // Encrypt the sensitive data as a single object
+      // Encrypt the entire parent data as a single object
       const { encryptData } = await import('./encryptionService');
-      const sensitiveData = {
-        name: parentData.name,
-        email: parentData.email,
-        username: parentData.username,
-        phone: parentData.phone
-      };
-      const encrypted_data = await encryptData(sensitiveData);
+      const encrypted_data = await encryptData(parentData);
       
       const { data, error } = await supabase.functions.invoke('secure-parents', {
         body: { 
@@ -88,15 +77,9 @@ export class SecureOperations {
   // Secure parent update
   async updateParentSecure(parentId: string, updateData: any) {
     try {
-      // Encrypt the sensitive data as a single object
+      // Encrypt the entire update data as a single object
       const { encryptData } = await import('./encryptionService');
-      const sensitiveData = {
-        name: updateData.name,
-        email: updateData.email,
-        username: updateData.username,
-        phone: updateData.phone
-      };
-      const encrypted_data = await encryptData(sensitiveData);
+      const encrypted_data = await encryptData(updateData);
       
       const { data, error } = await supabase.functions.invoke('secure-parents', {
         body: { 
@@ -136,12 +119,7 @@ export class SecureOperations {
       const { decryptData } = await import('./encryptionService');
       const decryptedStudents = await Promise.all(
         (data.data || []).map(async (student: any) => {
-          const decryptedData = await decryptData(student.encrypted_data);
-          return {
-            ...student,
-            ...decryptedData,
-            encrypted_data: undefined // Remove the encrypted field
-          };
+          return await decryptData(student.encrypted_data);
         })
       );
       
@@ -155,22 +133,14 @@ export class SecureOperations {
   // Secure student creation
   async createStudentSecure(studentData: any) {
     try {
-      // Encrypt the sensitive data as a single object
+      // Encrypt the entire student data as a single object
       const { encryptData } = await import('./encryptionService');
-      const sensitiveData = {
-        name: studentData.name
-      };
-      const encrypted_data = await encryptData(sensitiveData);
-      
-      const metadata = {
-        class_id: studentData.class_id,
-        avatar: studentData.avatar
-      };
+      const encrypted_data = await encryptData(studentData);
       
       const { data, error } = await supabase.functions.invoke('secure-students', {
         body: { 
           operation: 'createStudent', 
-          data: { encrypted_data, metadata }
+          data: { encrypted_data }
         }
       });
       
@@ -189,22 +159,14 @@ export class SecureOperations {
   // Secure student update
   async updateStudentSecure(studentId: string, updateData: any) {
     try {
-      // Encrypt the sensitive data as a single object
+      // Encrypt the entire update data as a single object
       const { encryptData } = await import('./encryptionService');
-      const sensitiveData = {
-        name: updateData.name
-      };
-      const encrypted_data = await encryptData(sensitiveData);
-      
-      const metadata = {
-        class_id: updateData.class_id,
-        avatar: updateData.avatar
-      };
+      const encrypted_data = await encryptData(updateData);
       
       const { data, error } = await supabase.functions.invoke('secure-students', {
         body: { 
           operation: 'updateStudent', 
-          data: { studentId, encrypted_data, metadata }
+          data: { studentId, encrypted_data }
         }
       });
       

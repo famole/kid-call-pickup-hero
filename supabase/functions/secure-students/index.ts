@@ -137,15 +137,7 @@ serve(async (req) => {
         // Encrypt entire objects before sending
         const encryptedStudents = await Promise.all(
           (studentsData || []).map(async student => ({
-            id: student.id,
-            encrypted_data: await encryptObject({
-              name: student.name
-            }),
-            class_id: student.class_id,
-            avatar: student.avatar,
-            created_at: student.created_at,
-            updated_at: student.updated_at,
-            deleted_at: student.deleted_at
+            encrypted_data: await encryptObject(student)
           }))
         );
 
@@ -160,7 +152,7 @@ serve(async (req) => {
         
         const { data: studentData, error } = await supabase
           .from('students')
-          .insert({ ...decryptedData, ...data.metadata })
+          .insert(decryptedData)
           .select();
         
         if (error) {
@@ -171,15 +163,7 @@ serve(async (req) => {
         // Encrypt entire objects before sending back
         const encryptedResult = await Promise.all(
           (studentData || []).map(async student => ({
-            id: student.id,
-            encrypted_data: await encryptObject({
-              name: student.name
-            }),
-            class_id: student.class_id,
-            avatar: student.avatar,
-            created_at: student.created_at,
-            updated_at: student.updated_at,
-            deleted_at: student.deleted_at
+            encrypted_data: await encryptObject(student)
           }))
         );
 
@@ -189,16 +173,14 @@ serve(async (req) => {
       }
 
       case 'updateStudent': {
-        const { studentId, encrypted_data, metadata } = data;
+        const { studentId, encrypted_data } = data;
         
         // Decrypt entire object received from client
         const decryptedData = await decryptObject(encrypted_data);
         
-        const updatePayload = { ...decryptedData, ...(metadata || {}) };
-        
         const { data: studentData, error } = await supabase
           .from('students')
-          .update(updatePayload)
+          .update(decryptedData)
           .eq('id', studentId)
           .select();
         
@@ -210,15 +192,7 @@ serve(async (req) => {
         // Encrypt entire objects before sending back
         const encryptedResult = await Promise.all(
           (studentData || []).map(async student => ({
-            id: student.id,
-            encrypted_data: await encryptObject({
-              name: student.name
-            }),
-            class_id: student.class_id,
-            avatar: student.avatar,
-            created_at: student.created_at,
-            updated_at: student.updated_at,
-            deleted_at: student.deleted_at
+            encrypted_data: await encryptObject(student)
           }))
         );
 

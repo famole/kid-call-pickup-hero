@@ -139,17 +139,7 @@ serve(async (req) => {
         // Encrypt entire objects before sending
         const encryptedParents = await Promise.all(
           (parentsData || []).map(async parent => ({
-            id: parent.id,
-            encrypted_data: await encryptObject({
-              name: parent.name,
-              email: parent.email,
-              username: parent.username,
-              phone: parent.phone
-            }),
-            role: parent.role,
-            created_at: parent.created_at,
-            updated_at: parent.updated_at,
-            deleted_at: parent.deleted_at
+            encrypted_data: await encryptObject(parent)
           }))
         );
 
@@ -175,17 +165,7 @@ serve(async (req) => {
         // Encrypt entire objects before sending back
         const encryptedResult = await Promise.all(
           (parentData || []).map(async parent => ({
-            id: parent.id,
-            encrypted_data: await encryptObject({
-              name: parent.name,
-              email: parent.email,
-              username: parent.username,
-              phone: parent.phone
-            }),
-            role: parent.role,
-            created_at: parent.created_at,
-            updated_at: parent.updated_at,
-            deleted_at: parent.deleted_at
+            encrypted_data: await encryptObject(parent)
           }))
         );
 
@@ -214,17 +194,7 @@ serve(async (req) => {
         // Encrypt entire objects before sending back
         const encryptedResult = await Promise.all(
           (parentData || []).map(async parent => ({
-            id: parent.id,
-            encrypted_data: await encryptObject({
-              name: parent.name,
-              email: parent.email,
-              username: parent.username,
-              phone: parent.phone
-            }),
-            role: parent.role,
-            created_at: parent.created_at,
-            updated_at: parent.updated_at,
-            deleted_at: parent.deleted_at
+            encrypted_data: await encryptObject(parent)
           }))
         );
 
