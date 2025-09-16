@@ -11,6 +11,11 @@ const SENSITIVE_FIELDS = [
   'username'
 ];
 
+// Define sensitive student fields
+const SENSITIVE_STUDENT_FIELDS = [
+  'name'
+];
+
 // Table names from Database type
 type TableName = keyof Database['public']['Tables'];
 
@@ -183,9 +188,152 @@ export class SecureOperations {
     return result;
   }
 
-  // Get the regular supabase client for non-sensitive operations
-  get client() {
-    return supabase;
+  // Secure operations for students table
+  async getStudentsSecure(includeDeleted: boolean = false) {
+    try {
+      let query = supabase
+        .from('students')
+        .select(`
+          id,
+          name,
+          class_id,
+          avatar,
+          created_at,
+          updated_at,
+          deleted_at
+        `);
+      
+      if (!includeDeleted) {
+        query = query.is('deleted_at', null);
+      }
+      
+      const { data, error } = await query.order('name');
+      
+      if (error) throw error;
+      
+      // Decrypt sensitive data if encryption is enabled
+      if (this.encryptionEnabled && data) {
+        const decryptedData = await Promise.all(
+          data.map(async (item: any) => {
+            try {
+              return await this.decryptStudentItem(item);
+            } catch (decryptError) {
+              logger.warn('Failed to decrypt student item, returning as-is:', decryptError);
+              return item;
+            }
+          })
+        );
+        return { data: decryptedData, error: null };
+      }
+      
+      return { data, error };
+    } catch (error) {
+      logger.error('Secure student fetch failed:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Secure student creation
+  async createStudentSecure(studentData: any) {
+    try {
+      let processedData = studentData;
+      
+      if (this.encryptionEnabled) {
+        processedData = await this.encryptStudentItem(studentData);
+      }
+
+      const result = await supabase
+        .from('students')
+        .insert(processedData)
+        .select();
+      
+      if (result.error) throw result.error;
+      
+      // Decrypt returned data
+      if (this.encryptionEnabled && result.data && result.data.length > 0) {
+        const decryptedData = await Promise.all(
+          result.data.map(item => this.decryptStudentItem(item))
+        );
+        return { data: decryptedData, error: null };
+      }
+      
+      return result;
+    } catch (error) {
+      logger.error('Secure student creation failed:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Secure student update
+  async updateStudentSecure(studentId: string, updateData: any) {
+    try {
+      let processedData = updateData;
+      
+      if (this.encryptionEnabled) {
+        processedData = await this.encryptStudentItem(updateData);
+      }
+
+      const result = await supabase
+        .from('students')
+        .update(processedData)
+        .eq('id', studentId)
+        .select();
+      
+      if (result.error) throw result.error;
+      
+      // Decrypt returned data
+      if (this.encryptionEnabled && result.data && result.data.length > 0) {
+        const decryptedData = await Promise.all(
+          result.data.map(item => this.decryptStudentItem(item))
+        );
+        return { data: decryptedData, error: null };
+      }
+      
+      return result;
+    } catch (error) {
+      logger.error('Secure student update failed:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Encrypt sensitive fields in a student item
+  private async encryptStudentItem(item: any): Promise<any> {
+    if (!item || typeof item !== 'object') return item;
+    
+    const result = { ...item };
+    
+    for (const field of SENSITIVE_STUDENT_FIELDS) {
+      if (result[field] !== undefined && result[field] !== null && typeof result[field] === 'string') {
+        try {
+          result[field] = await encryptData(result[field]);
+        } catch (error) {
+          logger.warn(`Failed to encrypt student field ${field}:`, error);
+        }
+      }
+    }
+    
+    return result;
+  }
+
+  // Decrypt sensitive fields in a student item
+  private async decryptStudentItem(item: any): Promise<any> {
+    if (!item || typeof item !== 'object') return item;
+    
+    const result = { ...item };
+    
+    for (const field of SENSITIVE_STUDENT_FIELDS) {
+      if (result[field] && typeof result[field] === 'string' && result[field].length > 50) {
+        try {
+          // Check if this looks like encrypted data (base64 encoded, longer than typical field values)
+          result[field] = await decryptData(result[field]);
+        } catch (error) {
+          // If decryption fails, assume it's not encrypted data and leave as-is
+          logger.log(`Student field ${field} not encrypted or decryption failed, leaving as-is`);
+        }
+      }
+    }
+    
+    return result;
   }
 }
 

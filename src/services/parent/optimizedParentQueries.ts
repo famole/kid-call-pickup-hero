@@ -36,20 +36,34 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
         parent_id,
         student_id,
         is_primary,
-        relationship,
-        students!inner (
-          id,
-          name,
-          class_id,
-          avatar,
-          classes (
-            id,
-            name,
-            grade
-          )
-        )
+        relationship
       `)
-      .is('students.deleted_at', null);
+      .is('deleted_at', null);
+
+    if (studentParentError) {
+      logger.error('Error fetching student-parent relationships:', studentParentError);
+      throw new Error(studentParentError.message);
+    }
+
+    logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
+
+    // Get students data using secure operations
+    const { data: studentsData, error: studentsError } = await secureOperations.getStudentsSecure();
+
+    if (studentsError) {
+      logger.error('Error fetching students:', studentsError);
+      throw new Error(studentsError.message);
+    }
+
+    // Get classes data separately
+    const { data: classesData, error: classesError } = await supabase
+      .from('classes')
+      .select('id, name, grade');
+
+    if (classesError) {
+      logger.error('Error fetching classes:', classesError);
+      throw new Error(classesError.message);
+    }
 
     if (studentParentError) {
       logger.error('Error fetching student-parent relationships:', studentParentError);
@@ -98,17 +112,24 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
       if (!acc[relation.parent_id]) {
         acc[relation.parent_id] = [];
       }
-      acc[relation.parent_id].push({
-        id: relation.students.id,
-        name: relation.students.name,
-        classId: relation.students.class_id,
-        className: relation.students.classes?.name || 'No Class',
-        grade: relation.students.classes?.grade || 'No Grade',
-        isPrimary: relation.is_primary,
-        avatar: relation.students.avatar,
-        parentRelationshipId: relation.id,
-        relationship: relation.relationship,
-      });
+      
+      // Find student and class data
+      const student = studentsData?.find(s => s.id === relation.student_id);
+      const studentClass = classesData?.find(c => c.id === student?.class_id);
+      
+      if (student) {
+        acc[relation.parent_id].push({
+          id: student.id,
+          name: student.name,
+          classId: student.class_id,
+          className: studentClass?.name || 'No Class',
+          grade: studentClass?.grade || 'No Grade',
+          isPrimary: relation.is_primary,
+          avatar: student.avatar,
+          parentRelationshipId: relation.id,
+          relationship: relation.relationship,
+        });
+      }
       return acc;
     }, {} as Record<string, any[]>) || {};
 
@@ -191,20 +212,31 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       return { allChildren: [] };
     }
 
-    // Get direct children (via student_parents relationship)
-    const { data: childrenData, error: childrenError } = await supabase
+    // Get direct children (via student_parents relationship) - get IDs only
+    const { data: childrenRelations, error: childrenError } = await supabase
       .from('student_parents')
       .select(`
-        students!inner (
-          id,
-          name,
-          class_id,
-          avatar
-        ),
+        student_id,
         is_primary
       `)
-      .eq('parent_id', parentData.id)
-      .is('students.deleted_at', null);
+      .eq('parent_id', parentData.id);
+
+    if (childrenError) {
+      logger.error('Error fetching children relations:', childrenError);
+      throw new Error(childrenError.message);
+    }
+
+    // Get student details using secure operations
+    const studentIds = childrenRelations?.map(r => r.student_id) || [];
+    let studentsData = [];
+    if (studentIds.length > 0) {
+      const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
+      if (studentsError) {
+        logger.error('Error fetching students:', studentsError);
+        throw new Error(studentsError.message);
+      }
+      studentsData = allStudents?.filter(s => studentIds.includes(s.id)) || [];
+    }
 
     if (childrenError) {
       logger.error('Error fetching children:', childrenError);
@@ -246,17 +278,13 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
     // Remove duplicates
     authorizedStudentIds = [...new Set(authorizedStudentIds)];
 
-    // Get student details for authorized students
+    // Get student details for authorized students using secure operations
     let authorizedStudentDetails = [];
     if (authorizedStudentIds.length > 0) {
-      const { data: studentDetails, error: studentsError } = await supabase
-        .from('students')
-        .select('id, name, class_id, avatar')
-        .in('id', authorizedStudentIds)
-        .is('deleted_at', null);
-
-      if (!studentsError && studentDetails) {
-        authorizedStudentDetails = studentDetails;
+      const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
+      
+      if (!studentsError && allStudents) {
+        authorizedStudentDetails = allStudents.filter(s => authorizedStudentIds.includes(s.id));
       }
     }
 
@@ -266,13 +294,16 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
     }
 
     // Combine and format children data
-    const directChildren: Child[] = childrenData?.map(relation => ({
-      id: relation.students.id,
-      name: relation.students.name,
-      classId: relation.students.class_id || '',
-      parentIds: [parentData.id],
-      avatar: relation.students.avatar,
-    })) || [];
+    const directChildren: Child[] = childrenRelations?.map(relation => {
+      const student = studentsData.find(s => s.id === relation.student_id);
+      return {
+        id: relation.student_id,
+        name: student?.name || 'Unknown Student',
+        classId: student?.class_id || '',
+        parentIds: [parentData.id],
+        avatar: student?.avatar,
+      };
+    }) || [];
 
     const authorizedChildrenFormatted: Child[] = authorizedStudentDetails?.map(student => ({
       id: student.id,
