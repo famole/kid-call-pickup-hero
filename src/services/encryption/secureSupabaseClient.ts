@@ -115,13 +115,9 @@ export class SecureOperations {
         throw error;
       }
       
-      // Decrypt the encrypted_data field for each student
+      // Decrypt the entire students array from the single encrypted_data field
       const { decryptData } = await import('./encryptionService');
-      const decryptedStudents = await Promise.all(
-        (data.data || []).map(async (student: any) => {
-          return await decryptData(student.encrypted_data);
-        })
-      );
+      const decryptedStudents = await decryptData(data.data.encrypted_data);
       
       return { data: decryptedStudents, error: data.error };
     } catch (error) {
