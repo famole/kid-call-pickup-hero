@@ -33,13 +33,9 @@ export class SecureOperations {
         throw error;
       }
       
-      // Decrypt the encrypted_data field for each parent
+      // Decrypt the single encrypted_data field containing all parents
       const { decryptData } = await import('./encryptionService');
-      const decryptedParents = await Promise.all(
-        (data.data || []).map(async (parent: any) => {
-          return await decryptData(parent.encrypted_data);
-        })
-      );
+      const decryptedParents = await decryptData(data.data.encrypted_data);
       
       return { data: decryptedParents, error: data.error };
     } catch (error) {
@@ -67,7 +63,11 @@ export class SecureOperations {
         throw error;
       }
       
-      return { data: data.data, error: data.error };
+      // Decrypt the single encrypted_data field containing the result
+      const { decryptData } = await import('./encryptionService');
+      const decryptedResult = await decryptData(data.data.encrypted_data);
+      
+      return { data: decryptedResult, error: data.error };
     } catch (error) {
       logger.error('Secure parent creation failed:', error);
       return { data: null, error };
@@ -93,7 +93,11 @@ export class SecureOperations {
         throw error;
       }
       
-      return { data: data.data, error: data.error };
+      // Decrypt the single encrypted_data field containing the result
+      const { decryptData } = await import('./encryptionService');
+      const decryptedResult = await decryptData(data.data.encrypted_data);
+      
+      return { data: decryptedResult, error: data.error };
     } catch (error) {
       logger.error('Secure parent update failed:', error);
       return { data: null, error };
@@ -145,7 +149,11 @@ export class SecureOperations {
         throw error;
       }
       
-      return { data: data.data, error: data.error };
+      // Decrypt the single encrypted_data field containing the result
+      const { decryptData } = await import('./encryptionService');
+      const decryptedResult = await decryptData(data.data.encrypted_data);
+      
+      return { data: decryptedResult, error: data.error };
     } catch (error) {
       logger.error('Secure student creation failed:', error);
       return { data: null, error };
@@ -171,7 +179,11 @@ export class SecureOperations {
         throw error;
       }
       
-      return { data: data.data, error: data.error };
+      // Decrypt the single encrypted_data field containing the result
+      const { decryptData } = await import('./encryptionService');
+      const decryptedResult = await decryptData(data.data.encrypted_data);
+      
+      return { data: decryptedResult, error: data.error };
     } catch (error) {
       logger.error('Secure student update failed:', error);
       return { data: null, error };
