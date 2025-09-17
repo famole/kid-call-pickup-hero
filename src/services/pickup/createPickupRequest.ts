@@ -8,41 +8,22 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
   try {
     logger.info('Creating pickup request for student:', studentId);
 
-    // Use secure function that handles all authorization and creation logic
-    const { data: requestId, error } = await supabase.rpc('create_pickup_request_secure', {
-      p_student_id: studentId
-    });
+    // Use secure encrypted operations
+    const { securePickupOperations } = await import('@/services/encryption/securePickupClient');
+    const { data, error } = await securePickupOperations.createPickupRequestSecure(studentId);
     
     if (error) {
-      logger.error('Error creating pickup request:', error);
-      throw new Error(error.message);
+      logger.error('Secure pickup request creation failed:', error);
+      throw new Error(error.message || 'Failed to create pickup request');
     }
     
-    if (!requestId) {
+    if (!data) {
       throw new Error('Failed to create pickup request');
     }
-
-    // Fetch the created request to return full data
-    const { data: requestData, error: fetchError } = await supabase
-      .from('pickup_requests')
-      .select('*')
-      .eq('id', requestId)
-      .single();
     
-    if (fetchError || !requestData) {
-      logger.error('Error fetching created pickup request:', fetchError);
-      throw new Error('Failed to retrieve created pickup request');
-    }
+    logger.info('Pickup request created successfully:', data.id);
     
-    logger.info('Pickup request created successfully:', requestId);
-    
-    return {
-      id: requestData.id,
-      studentId: requestData.student_id,
-      parentId: requestData.parent_id,
-      requestTime: new Date(requestData.request_time),
-      status: requestData.status as 'pending' | 'called' | 'completed' | 'cancelled'
-    };
+    return data;
   } catch (error) {
     logger.error('Error in createPickupRequest:', error);
     throw error;
