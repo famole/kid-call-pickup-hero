@@ -1,21 +1,11 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { Class } from '@/types';
+import { secureClassOperations } from './encryption/secureClassClient';
 
 // Fetch all classes
 export const getAllClasses = async (): Promise<Class[]> => {
   try {
-    const { data, error } = await supabase
-      .from('classes')
-      .select('*')
-      .order('name');
-    
-    if (error) {
-      console.error('Error fetching classes:', error);
-      throw new Error(error.message);
-    }
-    
-    return data as Class[];
+    return await secureClassOperations.getAll();
   } catch (error) {
     console.error('Error in getAllClasses:', error);
     throw error;
@@ -25,18 +15,7 @@ export const getAllClasses = async (): Promise<Class[]> => {
 // Get a single class by ID
 export const getClassById = async (id: string): Promise<Class | null> => {
   try {
-    const { data, error } = await supabase
-      .from('classes')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching class:', error);
-      return null;
-    }
-    
-    return data as Class;
+    return await secureClassOperations.getById(id);
   } catch (error) {
     console.error('Error in getClassById:', error);
     return null;
@@ -46,22 +25,7 @@ export const getClassById = async (id: string): Promise<Class | null> => {
 // Create a new class
 export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> => {
   try {
-    const { data, error } = await supabase
-      .from('classes')
-      .insert({
-        name: classData.name,
-        grade: classData.grade,
-        teacher: classData.teacher
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating class:', error);
-      throw new Error(error.message);
-    }
-    
-    return data as Class;
+    return await secureClassOperations.create(classData);
   } catch (error) {
     console.error('Error in createClass:', error);
     throw error;
@@ -71,24 +35,7 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
 // Update an existing class
 export const updateClass = async (id: string, classData: Partial<Class>): Promise<Class> => {
   try {
-    const updateData: Record<string, any> = {};
-    if (classData.name !== undefined) updateData.name = classData.name;
-    if (classData.grade !== undefined) updateData.grade = classData.grade;
-    if (classData.teacher !== undefined) updateData.teacher = classData.teacher;
-
-    const { data, error } = await supabase
-      .from('classes')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating class:', error);
-      throw new Error(error.message);
-    }
-    
-    return data as Class;
+    return await secureClassOperations.update(id, classData);
   } catch (error) {
     console.error('Error in updateClass:', error);
     throw error;
@@ -98,15 +45,7 @@ export const updateClass = async (id: string, classData: Partial<Class>): Promis
 // Delete a class
 export const deleteClass = async (id: string): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('classes')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting class:', error);
-      throw new Error(error.message);
-    }
+    await secureClassOperations.delete(id);
   } catch (error) {
     console.error('Error in deleteClass:', error);
     throw error;
@@ -116,21 +55,7 @@ export const deleteClass = async (id: string): Promise<void> => {
 // Migrate class data from mock to Supabase
 export const migrateClassesToSupabase = async (classes: Class[]): Promise<void> => {
   try {
-    const classesForInsert = classes.map(cls => ({
-      id: cls.id,
-      name: cls.name,
-      grade: cls.grade,
-      teacher: cls.teacher
-    }));
-
-    const { error } = await supabase
-      .from('classes')
-      .upsert(classesForInsert);
-    
-    if (error) {
-      console.error('Error migrating classes:', error);
-      throw new Error(error.message);
-    }
+    await secureClassOperations.migrate(classes);
   } catch (error) {
     console.error('Error in migrateClassesToSupabase:', error);
     throw error;
