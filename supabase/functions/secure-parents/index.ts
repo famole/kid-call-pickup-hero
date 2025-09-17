@@ -13,8 +13,8 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-// Encryption utilities
-const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY') ?? '';
+// Encryption utilities - fallback to default key if env var not set
+const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY') ?? 'U9.#s!_So2*';
 const SENSITIVE_FIELDS = ['email', 'phone', 'name', 'username'];
 
 async function getEncryptionKey() {
