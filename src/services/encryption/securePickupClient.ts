@@ -27,9 +27,27 @@ class SecurePickupOperations {
         return { data: null, error: new Error(data?.error || 'Unknown error') };
       }
 
+      // Check if data.data exists
+      if (!data.data) {
+        logger.warn('No encrypted data received from secure pickup requests');
+        return { data: [], error: null };
+      }
+
       // Decrypt the pickup requests data
       const decryptedRequests = await decryptData(data.data);
+      
+      if (!decryptedRequests) {
+        logger.warn('Decryption returned empty data');
+        return { data: [], error: null };
+      }
+
       const parsedRequests = JSON.parse(decryptedRequests);
+      
+      // Handle empty array case
+      if (!Array.isArray(parsedRequests)) {
+        logger.warn('Parsed requests is not an array:', parsedRequests);
+        return { data: [], error: null };
+      }
       
       // Transform to PickupRequest format
       const pickupRequests: PickupRequest[] = parsedRequests.map((item: any) => ({
@@ -43,7 +61,7 @@ class SecurePickupOperations {
       return { data: pickupRequests, error: null };
     } catch (error) {
       logger.error('Error in getPickupRequestsSecure:', error);
-      return { data: null, error };
+      return { data: [], error };
     }
   }
 
@@ -109,9 +127,27 @@ class SecurePickupOperations {
         return { data: null, error: new Error(data?.error || 'Unknown error') };
       }
 
+      // Check if data.data exists
+      if (!data.data) {
+        logger.warn('No encrypted data received from secure parent affected requests');
+        return { data: [], error: null };
+      }
+
       // Decrypt the pickup requests data
       const decryptedRequests = await decryptData(data.data);
+      
+      if (!decryptedRequests) {
+        logger.warn('Decryption returned empty data for parent affected requests');
+        return { data: [], error: null };
+      }
+
       const parsedRequests = JSON.parse(decryptedRequests);
+      
+      // Handle empty array case
+      if (!Array.isArray(parsedRequests)) {
+        logger.warn('Parsed parent affected requests is not an array:', parsedRequests);
+        return { data: [], error: null };
+      }
       
       // Transform to PickupRequest format
       const pickupRequests: PickupRequest[] = parsedRequests.map((item: any) => ({
@@ -125,7 +161,7 @@ class SecurePickupOperations {
       return { data: pickupRequests, error: null };
     } catch (error) {
       logger.error('Error in getParentAffectedRequestsSecure:', error);
-      return { data: null, error };
+      return { data: [], error };
     }
   }
 }
