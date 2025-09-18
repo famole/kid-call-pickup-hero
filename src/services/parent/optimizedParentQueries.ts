@@ -188,16 +188,16 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
   }
 };
 
-export const getParentDashboardDataOptimized = async (identifier: string) => {
+export const getParentDashboardDataOptimized = async (parentId: string) => {
   try {
-    logger.log('Fetching parent dashboard data for:', identifier);
+    logger.log('Fetching parent dashboard data for parent ID:', parentId);
 
-    // Get parent ID using secure operations
+    // Get parent data using secure operations
     const { data: parentsData, error: parentError } = await secureOperations.getParentsSecure(false);
-    const parentData = parentsData?.find(p => p.email === identifier || p.username === identifier);
+    const parentData = parentsData?.find(p => p.id === parentId);
     
     if (!parentData) {
-      logger.error('No parent found for identifier:', identifier);
+      logger.error('No parent found for ID:', parentId);
       return { allChildren: [] };
     }
 
@@ -207,7 +207,7 @@ export const getParentDashboardDataOptimized = async (identifier: string) => {
     }
 
     if (!parentData) {
-      logger.error('No parent found for identifier:', identifier);
+      logger.error('No parent found for ID:', parentId);
       return { allChildren: [] };
     }
 
@@ -327,7 +327,7 @@ export const getParentDashboardDataOptimized = async (identifier: string) => {
 
     const allChildren = Array.from(allChildrenMap.values());
 
-    logger.log(`Found ${allChildren.length} children for parent ${identifier}`);
+    logger.log(`Found ${allChildren.length} children for parent ID ${parentId}`);
 
     return { allChildren };
   } catch (error) {
@@ -337,12 +337,12 @@ export const getParentDashboardDataOptimized = async (identifier: string) => {
 };
 
 // Enhanced function that gets all pickup requests affecting a parent's children
-export const getParentDashboardWithRealTimeData = async (identifier: string) => {
+export const getParentDashboardWithRealTimeData = async (parentId: string) => {
   try {
-    logger.log('Fetching complete parent dashboard data for:', identifier);
+    logger.log('Fetching complete parent dashboard data for parent ID:', parentId);
     
     // Get basic dashboard data
-    const dashboardData = await getParentDashboardDataOptimized(identifier);
+    const dashboardData = await getParentDashboardDataOptimized(parentId);
     
     // Get all pickup requests that affect this parent's children
     const affectedPickupRequests = await getParentAffectedPickupRequests();
