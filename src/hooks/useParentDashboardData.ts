@@ -24,13 +24,14 @@ export const useParentDashboardData = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      if (user?.email) {
+      if (user?.email || user?.username) {
         try {
           setLoading(true);
-          logger.log('Loading parent dashboard data for:', user.email);
+          const identifier = user.email || user.username!;
+          logger.log('Loading parent dashboard data for:', identifier);
           
           // Use the optimized query that only fetches relevant students
-          const dashboardData = await getParentDashboardDataOptimized(user.email);
+          const dashboardData = await getParentDashboardDataOptimized(identifier);
           
           // Transform to include isAuthorized flag
           const childrenWithType: ChildWithType[] = dashboardData.allChildren.map(child => ({
@@ -47,14 +48,14 @@ export const useParentDashboardData = () => {
           setLoading(false);
         }
       } else {
-        // For users without email (username-only), clear children
+        // For users without email or username, clear children
         setChildren([]);
         setLoading(false);
       }
     };
 
     loadData();
-  }, [user?.email]);
+  }, [user?.email, user?.username]);
 
   return { children, loading, isValidUUID };
 };
