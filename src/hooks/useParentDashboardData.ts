@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getStudentsForParent } from '@/services/studentService';
-import { checkPickupAuthorization } from '@/services/pickupAuthorizationService';
+import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
 import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
+import { logger } from '@/utils/logger';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -24,85 +24,37 @@ export const useParentDashboardData = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      if (user) {
+      if (user?.email) {
         try {
           setLoading(true);
-          // Use server-side helper to get current parent ID
-          const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-
-          if (parentError || !currentParentId) {
-            console.error('Error getting current parent ID:', parentError);
-            setChildren([]);
-            return;
-          }
-
-          // Get children for this parent from the database
-          const parentChildren = await getStudentsForParent(currentParentId);
+          logger.log('Loading parent dashboard data for:', user.email);
           
-          if (parentError || !currentParentId) {
-            console.error('Error getting current parent ID:', parentError);
-            // Fallback to just the parent's own children
-            const ownChildren: ChildWithType[] = parentChildren.map(child => ({
-              ...child,
-              isAuthorized: false
-            }));
-            setChildren(ownChildren);
-            return;
-          }
+          // Use the optimized query that only fetches relevant students
+          const dashboardData = await getParentDashboardDataOptimized(user.email);
           
-          // Get all students from the database to check for authorized children
-          const { data: allStudents, error } = await supabase
-            .from('students')
-            .select('*');
-          
-          if (error) {
-            console.error('Error fetching all students:', error);
-          }
-          
-          const authorizedChildren: ChildWithType[] = [];
-          
-          if (allStudents) {
-            // Check each student to see if this parent is authorized to pick them up
-            for (const student of allStudents) {
-              // Skip if this is already the parent's own child
-              if (parentChildren.some(child => child.id === student.id)) {
-                continue;
-              }
-              
-              const isAuthorized = await checkPickupAuthorization(student.id);
-              if (isAuthorized) {
-                authorizedChildren.push({
-                  id: student.id,
-                  name: student.name,
-                  classId: student.class_id || '',
-                  parentIds: [], // This will be empty for authorized children
-                  avatar: student.avatar,
-                  isAuthorized: true
-                });
-              }
-            }
-          }
-          
-          // Mark parent's own children
-          const ownChildren: ChildWithType[] = parentChildren.map(child => ({
+          // Transform to include isAuthorized flag
+          const childrenWithType: ChildWithType[] = dashboardData.allChildren.map(child => ({
             ...child,
-            isAuthorized: false
+            isAuthorized: (child as any).isAuthorized || false
           }));
           
-          // Combine own children and authorized children
-          const allChildren = [...ownChildren, ...authorizedChildren];
-          setChildren(allChildren);
+          setChildren(childrenWithType);
+          logger.log(`Loaded ${childrenWithType.length} children for parent dashboard`);
         } catch (error) {
-          console.error('Error loading parent dashboard data:', error);
-          throw error;
+          logger.error('Error loading parent dashboard data:', error);
+          setChildren([]);
         } finally {
           setLoading(false);
         }
+      } else {
+        // For users without email (username-only), clear children
+        setChildren([]);
+        setLoading(false);
       }
     };
 
     loadData();
-  }, [user]);
+  }, [user?.email]);
 
   return { children, loading, isValidUUID };
 };
