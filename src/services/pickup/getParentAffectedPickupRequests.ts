@@ -5,9 +5,17 @@ import { PickupRequest } from '@/types';
 // Get all pickup requests that affect a parent's children (both own children and authorized children)
 export const getParentAffectedPickupRequests = async (): Promise<PickupRequest[]> => {
   try {
+    // Get current parent ID first
+    const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+    
+    if (parentError || !parentId) {
+      console.error('Failed to get current parent ID:', parentError);
+      return [];
+    }
+
     // Use secure encrypted operations
     const { securePickupOperations } = await import('@/services/encryption/securePickupClient');
-    const { data, error } = await securePickupOperations.getParentAffectedRequestsSecure();
+    const { data, error } = await securePickupOperations.getParentAffectedRequestsSecure(parentId);
     
     if (error) {
       console.error('Secure parent affected requests fetch failed:', error);

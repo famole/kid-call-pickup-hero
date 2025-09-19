@@ -8,9 +8,17 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
   try {
     logger.info('Creating pickup request for student:', studentId);
 
+    // Get current parent ID first
+    const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+    
+    if (parentError || !parentId) {
+      logger.error('Failed to get current parent ID:', parentError);
+      throw new Error('Unable to identify parent for pickup request');
+    }
+
     // Use secure encrypted operations
     const { securePickupOperations } = await import('@/services/encryption/securePickupClient');
-    const { data, error } = await securePickupOperations.createPickupRequestSecure(studentId);
+    const { data, error } = await securePickupOperations.createPickupRequestSecure(studentId, parentId);
     
     if (error) {
       logger.error('Secure pickup request creation failed:', error);

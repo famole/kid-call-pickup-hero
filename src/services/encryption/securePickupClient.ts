@@ -71,10 +71,10 @@ class SecurePickupOperations {
   }
 
   // Create a new pickup request
-  async createPickupRequestSecure(studentId: string): Promise<{ data: PickupRequest | null; error: any }> {
+  async createPickupRequestSecure(studentId: string, parentId: string): Promise<{ data: PickupRequest | null; error: any }> {
     try {
-      // Encrypt the student ID
-      const encryptedData = await encryptData(JSON.stringify({ studentId }));
+      // Encrypt the data including parent ID
+      const encryptedData = await encryptData(JSON.stringify({ studentId, parentId }));
       
       const { data, error } = await supabase.functions.invoke('secure-pickup-requests', {
         body: { 
@@ -120,11 +120,15 @@ class SecurePickupOperations {
   }
 
   // Get all pickup requests that affect the current parent's children
-  async getParentAffectedRequestsSecure(): Promise<{ data: PickupRequest[] | null; error: any }> {
+  async getParentAffectedRequestsSecure(parentId: string): Promise<{ data: PickupRequest[] | null; error: any }> {
     try {
+      // Encrypt the parent ID
+      const encryptedData = await encryptData(JSON.stringify({ parentId }));
+      
       const { data, error } = await supabase.functions.invoke('secure-pickup-requests', {
         body: { 
-          operation: 'getParentAffectedRequests'
+          operation: 'getParentAffectedRequests',
+          data: encryptedData
         }
       });
 

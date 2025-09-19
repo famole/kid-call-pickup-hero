@@ -182,13 +182,10 @@ serve(async (req) => {
 
       case 'createPickupRequest': {
         const decryptedData = await decryptObject(data);
-        const { studentId } = decryptedData;
+        const { studentId, parentId } = decryptedData;
         
-        // Get current parent ID
-        const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-        
-        if (parentError || !parentId) {
-          throw new Error('Failed to get current parent ID');
+        if (!parentId) {
+          throw new Error('Parent ID is required');
         }
         
         // Create pickup request directly
@@ -220,17 +217,11 @@ serve(async (req) => {
       }
 
       case 'getParentAffectedRequests': {
-        // Get all pickup requests that affect the current parent's children
-        const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-
-        if (parentError || !parentId) {
-          return new Response(
-            JSON.stringify({ data: { encrypted_data: await encryptObject([]) }, error: null }),
-            { 
-              status: 200,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            }
-          );
+        const decryptedData = await decryptObject(data);
+        const { parentId } = decryptedData;
+        
+        if (!parentId) {
+          throw new Error('Parent ID is required');
         }
 
         // Get all children this parent can see (own children + authorized children)
