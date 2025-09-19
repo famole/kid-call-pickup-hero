@@ -144,10 +144,12 @@ serve(async (req) => {
         
         let pickupRequests;
         if (parentId) {
-          // Get pickup requests for specific parent
-          const { data: requests, error } = await supabase.rpc('get_pickup_requests_for_parent', {
-            p_parent_id: parentId
-          });
+          // Get pickup requests for specific parent - direct query instead of RPC
+          const { data: requests, error } = await supabase
+            .from('pickup_requests')
+            .select('*')
+            .eq('parent_id', parentId)
+            .in('status', ['pending', 'called']);
           
           if (error) {
             throw error;
@@ -182,24 +184,27 @@ serve(async (req) => {
         const decryptedData = await decryptObject(data);
         const { studentId } = decryptedData;
         
-        // Create pickup request using secure function
-        const { data: requestId, error } = await supabase.rpc('create_pickup_request_secure', {
-          p_student_id: studentId
-        });
+        // Get current parent ID
+        const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+        
+        if (parentError || !parentId) {
+          throw new Error('Failed to get current parent ID');
+        }
+        
+        // Create pickup request directly
+        const { data: requestData, error } = await supabase
+          .from('pickup_requests')
+          .insert({
+            student_id: studentId,
+            parent_id: parentId,
+            status: 'pending',
+            request_time: new Date().toISOString()
+          })
+          .select()
+          .single();
         
         if (error) {
           throw error;
-        }
-        
-        // Fetch the created request
-        const { data: requestData, error: fetchError } = await supabase
-          .from('pickup_requests')
-          .select('*')
-          .eq('id', requestId)
-          .single();
-        
-        if (fetchError) {
-          throw fetchError;
         }
 
         // Encrypt the response data
