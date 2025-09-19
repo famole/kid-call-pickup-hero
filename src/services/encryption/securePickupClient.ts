@@ -22,19 +22,18 @@ class SecurePickupOperations {
         return { data: null, error };
       }
 
-      if (!data?.success) {
-        logger.error('Secure pickup requests operation failed:', data?.error);
-        return { data: null, error: new Error(data?.error || 'Unknown error') };
+      if (data.error) {
+        logger.error('Secure pickup requests operation failed:', data.error);
+        return { data: null, error: new Error(data.error || 'Unknown error') };
       }
 
-      // Check if data.data exists
-      if (!data.data) {
+      if (!data?.data?.encrypted_data) {
         logger.warn('No encrypted data received from secure pickup requests');
         return { data: [], error: null };
       }
 
       // Decrypt the pickup requests data
-      const decryptedRequests = await decryptData(data.data);
+      const decryptedRequests = await decryptData(data.data.encrypted_data);
       
       if (!decryptedRequests) {
         logger.warn('Decryption returned empty data');
@@ -83,13 +82,13 @@ class SecurePickupOperations {
         return { data: null, error };
       }
 
-      if (!data?.success) {
-        logger.error('Secure pickup request creation operation failed:', data?.error);
-        return { data: null, error: new Error(data?.error || 'Unknown error') };
+      if (data.error) {
+        logger.error('Secure pickup request creation operation failed:', data.error);
+        return { data: null, error: new Error(data.error || 'Unknown error') };
       }
 
       // Decrypt the response data
-      const decryptedData = await decryptData(data.data);
+      const decryptedData = await decryptData(data.data.encrypted_data);
       const requestData = JSON.parse(decryptedData);
       
       // Transform to PickupRequest format
@@ -122,19 +121,19 @@ class SecurePickupOperations {
         return { data: null, error };
       }
 
-      if (!data?.success) {
-        logger.error('Secure parent affected requests operation failed:', data?.error);
-        return { data: null, error: new Error(data?.error || 'Unknown error') };
+      if (data.error) {
+        logger.error('Secure parent affected requests operation failed:', data.error);
+        return { data: null, error: new Error(data.error || 'Unknown error') };
       }
 
       // Check if data.data exists
-      if (!data.data) {
+      if (!data.data?.encrypted_data) {
         logger.warn('No encrypted data received from secure parent affected requests');
         return { data: [], error: null };
       }
 
       // Decrypt the pickup requests data
-      const decryptedRequests = await decryptData(data.data);
+      const decryptedRequests = await decryptData(data.data.encrypted_data);
       
       if (!decryptedRequests) {
         logger.warn('Decryption returned empty data for parent affected requests');

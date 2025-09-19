@@ -156,7 +156,7 @@ serve(async (req) => {
         const encryptedData = await encryptObject(pickupRequests);
         
         return new Response(
-          JSON.stringify({ success: true, data: encryptedData }),
+          JSON.stringify({ data: { encrypted_data: encryptedData }, error: null }),
           { 
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -192,7 +192,7 @@ serve(async (req) => {
         const encryptedResult = await encryptObject(requestData);
         
         return new Response(
-          JSON.stringify({ success: true, data: encryptedResult }),
+          JSON.stringify({ data: { encrypted_data: encryptedResult }, error: null }),
           { 
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -206,7 +206,7 @@ serve(async (req) => {
 
         if (parentError || !parentId) {
           return new Response(
-            JSON.stringify({ success: true, data: await encryptObject([]) }),
+            JSON.stringify({ data: { encrypted_data: await encryptObject([]) }, error: null }),
             { 
               status: 200,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -247,7 +247,7 @@ serve(async (req) => {
 
         if (uniqueStudentIds.length === 0) {
           return new Response(
-            JSON.stringify({ success: true, data: await encryptObject([]) }),
+            JSON.stringify({ data: { encrypted_data: await encryptObject([]) }, error: null }),
             { 
               status: 200,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -270,7 +270,7 @@ serve(async (req) => {
         const encryptedResult = await encryptObject(requests || []);
         
         return new Response(
-          JSON.stringify({ success: true, data: encryptedResult }),
+          JSON.stringify({ data: { encrypted_data: encryptedResult }, error: null }),
           { 
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -280,7 +280,7 @@ serve(async (req) => {
 
       default:
         return new Response(
-          JSON.stringify({ success: false, error: 'Invalid operation' }),
+          JSON.stringify({ data: null, error: 'Invalid operation' }),
           { 
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -291,7 +291,7 @@ serve(async (req) => {
     console.error('Error in secure pickup requests function:', error);
     return new Response(
       JSON.stringify({ 
-        success: false, 
+        data: null, 
         error: error instanceof Error ? error.message : 'Unknown error'
       }),
       { 
