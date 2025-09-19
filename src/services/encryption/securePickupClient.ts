@@ -22,6 +22,12 @@ class SecurePickupOperations {
         return { data: null, error };
       }
 
+      // Check if response is valid
+      if (!data) {
+        logger.error('No data received from secure pickup requests');
+        return { data: [], error: null };
+      }
+
       if (data.error) {
         logger.error('Secure pickup requests operation failed:', data.error);
         return { data: null, error: new Error(data.error || 'Unknown error') };
@@ -82,6 +88,12 @@ class SecurePickupOperations {
         return { data: null, error };
       }
 
+      // Check if response is valid
+      if (!data) {
+        logger.error('No data received from secure pickup request creation');
+        return { data: null, error: new Error('No response data') };
+      }
+
       if (data.error) {
         logger.error('Secure pickup request creation operation failed:', data.error);
         return { data: null, error: new Error(data.error || 'Unknown error') };
@@ -119,6 +131,12 @@ class SecurePickupOperations {
       if (error) {
         logger.error('Secure parent affected requests fetch failed:', error);
         return { data: null, error };
+      }
+
+      // Check if response is valid
+      if (!data) {
+        logger.error('No data received from secure parent affected requests');
+        return { data: [], error: null };
       }
 
       if (data.error) {

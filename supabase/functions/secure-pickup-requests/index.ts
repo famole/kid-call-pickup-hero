@@ -121,7 +121,21 @@ serve(async (req) => {
   }
 
   try {
-    const { operation, data } = await req.json();
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (e) {
+      console.error('Failed to parse request body:', e);
+      return new Response(
+        JSON.stringify({ data: null, error: 'Invalid request body' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const { operation, data } = requestBody;
     console.log('Secure pickup requests operation:', operation);
 
     switch (operation) {
