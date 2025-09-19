@@ -1,9 +1,6 @@
 
 import React from 'react';
 import { Child } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
-import { getClassById } from '@/services/classService';
-import { logger } from '@/utils/logger';
 import { UserRound, Check, Users } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -23,22 +20,6 @@ const ChildCard: React.FC<ChildCardProps> = ({
   onClick 
 }) => {
   const { t } = useTranslation();
-  const [childClass, setChildClass] = React.useState<any>(null);
-
-  React.useEffect(() => {
-    const loadClass = async () => {
-      if (child.classId) {
-        try {
-          const classData = await getClassById(child.classId);
-          setChildClass(classData);
-        } catch (error) {
-          logger.error('Error loading class:', error);
-        }
-      }
-    };
-    
-    loadClass();
-  }, [child.classId]);
 
   const getCardStyles = () => {
     if (isSelected) {
@@ -120,7 +101,7 @@ const ChildCard: React.FC<ChildCardProps> = ({
             )}
           </div>
           <p className="text-sm text-muted-foreground text-left">
-            {childClass ? childClass.name : t('common.unknownClass')}
+            {child.className || t('common.unknownClass')}
           </p>
           {isAuthorized && (
             <p className="text-xs text-blue-600 font-medium text-left">

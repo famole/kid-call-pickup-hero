@@ -242,9 +242,14 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       studentsData = allStudents?.filter(s => studentIds.includes(s.id)) || [];
     }
 
-    if (childrenError) {
-      logger.error('Error fetching children:', childrenError);
-      throw new Error(childrenError.message);
+    // Get all classes data to resolve class names
+    const { data: classesData, error: classesError } = await supabase
+      .from('classes')
+      .select('id, name, grade');
+
+    if (classesError) {
+      logger.error('Error fetching classes:', classesError);
+      // Don't throw, just log and continue with empty classes
     }
 
     // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
@@ -297,13 +302,21 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       // Don't throw here, just log and continue
     }
 
-    // Combine and format children data
+    // Helper function to get class name
+    const getClassName = (classId: string | null): string => {
+      if (!classId || !classesData) return 'Unknown Class';
+      const classData = classesData.find(c => c.id === classId);
+      return classData?.name || 'Unknown Class';
+    };
+
+    // Combine and format children data with class names
     const directChildren: Child[] = childrenRelations?.map(relation => {
       const student = studentsData.find(s => s.id === relation.student_id);
       return {
         id: relation.student_id,
         name: student?.name || 'Unknown Student',
         classId: student?.class_id || '',
+        className: getClassName(student?.class_id),
         parentIds: [parentData.id],
         avatar: student?.avatar,
       };
@@ -313,6 +326,7 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       id: student.id,
       name: student.name,
       classId: student.class_id || '',
+      className: getClassName(student.class_id),
       parentIds: [parentData.id],
       avatar: student.avatar,
     })) || [];

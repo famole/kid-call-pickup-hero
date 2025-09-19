@@ -13,6 +13,7 @@ export type Child = {
   id: string;
   name: string;
   classId: string;
+  className?: string;
   parentIds: string[];
   avatar?: string;
   isAuthorized?: boolean;
