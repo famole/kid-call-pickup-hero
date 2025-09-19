@@ -18,6 +18,28 @@ export const useAuthProvider = (): AuthState & {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const logout = async () => {
+    // Clean up auth state
+    cleanupAuthState();
+    
+    // Clean up username session
+    localStorage.removeItem('username_session');
+    
+    // Try to sign out from Supabase
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (error) {
+      logger.error("Error during sign out:", error);
+    }
+    
+    setUser(null);
+    
+    // Force page reload for a clean state
+    window.location.href = '/login';
+    
+    return Promise.resolve();
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -393,28 +415,6 @@ export const useAuthProvider = (): AuthState & {
     } finally {
       setLoading(false);
     }
-  };
-
-  const logout = async () => {
-    // Clean up auth state
-    cleanupAuthState();
-    
-    // Clean up username session
-    localStorage.removeItem('username_session');
-    
-    // Try to sign out from Supabase
-    try {
-      await supabase.auth.signOut({ scope: 'global' });
-    } catch (error) {
-      logger.error("Error during sign out:", error);
-    }
-    
-    setUser(null);
-    
-    // Force page reload for a clean state
-    window.location.href = '/login';
-    
-    return Promise.resolve();
   };
 
   return {
