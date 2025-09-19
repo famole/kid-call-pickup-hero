@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.setup-username-password]
 verify_jwt = false
+
+[functions.secure-pickup-invitations]
+verify_jwt = true
