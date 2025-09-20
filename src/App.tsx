@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -144,6 +144,7 @@ function App() {
               />
               <Route path="*" element={<NotFound />} /> */}
               <Route path="/" element={<UpsyDefaultScreen />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
           <Toaster />
