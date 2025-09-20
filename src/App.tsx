@@ -29,6 +29,7 @@ import './App.css';
 
 // Import i18n configuration
 import '@/i18n';
+import UpsyDefaultScreen from './components/UpsyDefaultScreen';
 
 const queryClient = new QueryClient();
 
@@ -39,7 +40,7 @@ function App() {
         <Router>
           <div className="App">
             <Routes>
-              <Route path="/login" element={<Login />} />
+              {/* <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/password-setup" element={<PasswordSetup />} />
               <Route path="/unauthorized-access" element={<UnauthorizedAccess />} />
@@ -141,7 +142,8 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<NotFound />} /> */}
+              <Route path="/" element={<UpsyDefaultScreen />} />
             </Routes>
           </div>
           <Toaster />
