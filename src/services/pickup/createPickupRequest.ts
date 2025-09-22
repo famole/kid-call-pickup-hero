@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequest } from '@/types';
 import { logger } from '@/utils/logger';
+import { securePickupOperations } from '@/services/encryption/securePickupClient';
 
 // Create a new pickup request - now defaults to 'pending' status
 export const createPickupRequest = async (studentId: string): Promise<PickupRequest> => {
@@ -24,7 +25,6 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
     logger.info('Retrieved parent ID:', parentId);
 
     // Use secure encrypted operations
-    const { securePickupOperations } = await import('@/services/encryption/securePickupClient');
     const { data, error } = await securePickupOperations.createPickupRequestSecure(studentId, parentId);
     
     if (error) {

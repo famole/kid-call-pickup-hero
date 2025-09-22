@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { PickupRequest } from '@/types';
+import { securePickupOperations } from '@/services/encryption/securePickupClient';
 
 // Get all pickup requests that affect a parent's children (both own children and authorized children)
 export const getParentAffectedPickupRequests = async (): Promise<PickupRequest[]> => {
@@ -14,7 +15,6 @@ export const getParentAffectedPickupRequests = async (): Promise<PickupRequest[]
     }
 
     // Use secure encrypted operations
-    const { securePickupOperations } = await import('@/services/encryption/securePickupClient');
     const { data, error } = await securePickupOperations.getParentAffectedRequestsSecure(parentId);
     
     if (error) {
