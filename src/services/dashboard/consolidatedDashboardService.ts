@@ -129,47 +129,25 @@ const fetchDashboardData = async (
   parentId?: string
 ): Promise<{ children: ChildWithType[], parentInfo: ParentInfo[] }> => {
   
-  if (isEmailUser && userEmail) {
-    // Use optimized query for email users
-    const { data, error } = await supabase.rpc('get_parent_dashboard_data_optimized', {
-      parent_email: userEmail
-    });
-
-    if (error) {
-      logger.error('Error fetching optimized dashboard data:', error);
-      throw new Error(error.message);
+  // Use the existing optimized parent queries service
+  const { getParentDashboardDataOptimized } = await import('@/services/parent/optimizedParentQueries');
+  
+  try {
+    // Determine the identifier to use
+    const identifier = isEmailUser && userEmail ? userEmail : parentId;
+    
+    if (!identifier) {
+      throw new Error('No valid identifier provided');
     }
-
+    
+    const result = await getParentDashboardDataOptimized(identifier);
     return {
-      children: (data as any)?.all_children || [],
-      parentInfo: []
+      children: result.allChildren || [],
+      parentInfo: [] // Dashboard data doesn't include parent info, can be fetched separately if needed
     };
-  } else {
-    // Use parent ID query for username users
-    const { data, error } = await supabase.rpc('get_parent_dashboard_data_by_parent_id', {
-      p_parent_id: parentId
-    });
-
-    if (error) {
-      logger.error('Error fetching dashboard data by parent ID:', error);
-      throw new Error(error.message);
-    }
-
-    // Get parent info from localStorage for username users
-    let parentInfo: ParentInfo[] = [];
-    const sessionData = localStorage.getItem('username_session');
-    if (sessionData) {
-      const updateData: Record<string, any> = JSON.parse(sessionData);
-      parentInfo = [{
-        id: updateData.id,
-        name: updateData.name
-      }];
-    }
-
-    return {
-      children: (data as any)?.all_children || [],
-      parentInfo
-    };
+  } catch (error) {
+    logger.error('Error fetching dashboard data:', error);
+    throw error;
   }
 };
 
@@ -180,21 +158,15 @@ const fetchPickupRequests = async (
 ): Promise<PickupRequest[]> => {
   
   if (userRole === 'parent') {
-    // For parents, get all affected requests
-    const { data, error } = await supabase.rpc('get_parent_affected_pickup_requests');
+    // For parents, get all affected requests using existing service
+    const { getParentAffectedPickupRequests } = await import('@/services/pickup/getParentAffectedPickupRequests');
     
-    if (error) {
+    try {
+      return await getParentAffectedPickupRequests();
+    } catch (error) {
       logger.error('Error fetching parent affected pickup requests:', error);
-      throw new Error(error.message);
+      return [];
     }
-    
-    return data?.map((item: any) => ({
-      id: item.id,
-      studentId: item.student_id,
-      parentId: item.parent_id,
-      requestTime: new Date(item.request_time),
-      status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
-    })) || [];
   } else {
     // For family members, get only their own requests
     const { data, error } = await supabase.rpc('get_pickup_requests_for_parent', {

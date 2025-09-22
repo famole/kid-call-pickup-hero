@@ -117,7 +117,7 @@ export const useConsolidatedDashboard = () => {
           
           // Only refresh if this affects the current user
           const isRelevant = activeRequests.some(req => 
-            req.id === payload.old?.id || req.id === payload.new?.id
+            req.id === (payload.old as any)?.id || req.id === (payload.new as any)?.id
           );
           
           if (isRelevant || payload.eventType === 'INSERT') {
