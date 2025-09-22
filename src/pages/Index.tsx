@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import Navigation from '@/components/Navigation';
-import ParentDashboard from '@/components/ParentDashboard';
+import EnhancedParentDashboard from '@/components/EnhancedParentDashboard';
 
 const Index = () => {
   const { user, loading, isAuthenticated } = useAuth();
@@ -48,7 +48,7 @@ const Index = () => {
       <div className="min-h-screen w-full bg-gray-50">
         <Navigation />
         <div className="w-full">
-          <ParentDashboard />
+          <EnhancedParentDashboard />
         </div>
       </div>
     );

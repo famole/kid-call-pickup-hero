@@ -73,6 +73,13 @@ class SecurePickupOperations {
   // Create a new pickup request
   async createPickupRequestSecure(studentId: string, parentId: string): Promise<{ data: PickupRequest | null; error: any }> {
     try {
+      logger.info('Creating secure pickup request:', { studentId, parentId });
+      
+      if (!parentId) {
+        logger.error('Parent ID is required for secure pickup request creation');
+        return { data: null, error: new Error('Parent ID is required') };
+      }
+      
       // Encrypt the data including parent ID
       const encryptedData = await encryptData(JSON.stringify({ studentId, parentId }));
       
