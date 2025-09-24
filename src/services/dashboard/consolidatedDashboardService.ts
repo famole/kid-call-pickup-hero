@@ -45,29 +45,39 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const getCachedParentId = async (userId: string, isEmailUser: boolean): Promise<string> => {
   const now = Date.now();
   
+  logger.log('getCachedParentId called with:', { userId, isEmailUser });
+  
   // Check cache first
   if (parentIdCache[userId] && 
       parentIdCacheTimestamp[userId] && 
       now - parentIdCacheTimestamp[userId] < CACHE_DURATION) {
-    logger.log('Using cached parent ID for user:', userId);
+    logger.log('Using cached parent ID for user:', userId, 'parentId:', parentIdCache[userId]);
     return parentIdCache[userId];
   }
 
   let parentId = userId; // Default for username users
+  logger.log('Cache miss, determining parent ID. Default userId:', userId);
 
   if (isEmailUser) {
+    logger.log('Email user detected, calling get_current_parent_id RPC');
     // Get parent ID from RPC for email users
     const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
     if (rpcParentId) {
       parentId = rpcParentId;
+      logger.log('RPC returned parent ID:', parentId);
     } else if (rpcError) {
       logger.error('Error fetching parent ID via RPC:', rpcError);
+    } else {
+      logger.warn('RPC returned null parent ID');
     }
   } else {
     // For username users, get parent ID from localStorage
     const storedParentId = localStorage.getItem('username_parent_id');
     if (storedParentId) {
       parentId = storedParentId;
+      logger.log('Using stored parent ID from localStorage:', parentId);
+    } else {
+      logger.log('No stored parent ID found in localStorage, using userId as fallback');
     }
   }
 
@@ -75,6 +85,7 @@ const getCachedParentId = async (userId: string, isEmailUser: boolean): Promise<
   parentIdCache[userId] = parentId;
   parentIdCacheTimestamp[userId] = now;
   
+  logger.log('Final resolved parent ID:', parentId);
   return parentId;
 };
 
@@ -136,11 +147,26 @@ const fetchDashboardData = async (
     // Determine the identifier to use
     const identifier = isEmailUser && userEmail ? userEmail : parentId;
     
+    logger.log('fetchDashboardData called with:', {
+      isEmailUser,
+      userEmail,
+      parentId,
+      identifier
+    });
+    
     if (!identifier) {
+      logger.error('No valid identifier provided for fetchDashboardData');
       throw new Error('No valid identifier provided');
     }
     
+    logger.log('Calling getParentDashboardDataOptimized with identifier:', identifier);
     const result = await getParentDashboardDataOptimized(identifier);
+    
+    logger.log('getParentDashboardDataOptimized returned:', {
+      childrenCount: result.allChildren?.length || 0,
+      children: result.allChildren?.map(c => ({ id: c.id, name: c.name })) || []
+    });
+    
     return {
       children: result.allChildren || [],
       parentInfo: [] // Dashboard data doesn't include parent info, can be fetched separately if needed

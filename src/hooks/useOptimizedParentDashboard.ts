@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { getParentDashboardDataByParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
+import { createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent } from '@/services/pickup';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { createPickupRequest } from '@/services/pickup/createPickupRequest';
@@ -88,9 +88,8 @@ export const useOptimizedParentDashboard = () => {
 
       // Load dashboard data and pickup requests
       const [dashboardData, pickupRequests] = await Promise.all([
-        isEmailUser
-          ? getParentDashboardDataOptimized(user.email!)
-          : getParentDashboardDataByParentId(parentId),
+        // Use the unified function that handles both email and parent ID
+        getParentDashboardDataOptimized(isEmailUser ? user.email! : parentId),
         // For parents, get all affected requests; for family members, get only their own
         user?.role === 'parent' ? getParentAffectedPickupRequests() : getActivePickupRequestsForParent(parentId)
       ]);
