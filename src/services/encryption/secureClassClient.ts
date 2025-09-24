@@ -22,8 +22,17 @@ export const secureClassOperations = {
         throw new Error('No encrypted data received');
       }
 
-      logger.log('Decrypting classes data...');
+      logger.log('Decrypting classes data...', {
+        encryptedDataLength: data.encryptedData.length,
+        encryptedDataType: typeof data.encryptedData
+      });
       const decryptedResult = await decryptData(data.encryptedData);
+      logger.log('Decryption result:', {
+        hasData: !!decryptedResult.data,
+        hasError: !!decryptedResult.error,
+        dataType: typeof decryptedResult.data,
+        dataLength: Array.isArray(decryptedResult.data) ? decryptedResult.data.length : 'not array'
+      });
       
       if (decryptedResult.error) {
         logger.error('Database error from secure classes:', decryptedResult.error);
@@ -56,8 +65,16 @@ export const secureClassOperations = {
         throw new Error('No encrypted data received');
       }
 
-      logger.log('Decrypting class data...');
+      logger.log('Decrypting class data...', {
+        encryptedDataLength: data.encryptedData.length,
+        encryptedDataType: typeof data.encryptedData
+      });
       const decryptedResult = await decryptData(data.encryptedData);
+      logger.log('Decryption result:', {
+        hasData: !!decryptedResult.data,
+        hasError: !!decryptedResult.error,
+        dataType: typeof decryptedResult.data
+      });
       
       if (decryptedResult.error) {
         logger.error('Database error from secure classes:', decryptedResult.error);

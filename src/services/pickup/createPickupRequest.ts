@@ -22,7 +22,19 @@ export const createPickupRequest = async (studentId: string): Promise<PickupRequ
       throw new Error('Unable to identify parent for pickup request - please check authentication');
     }
     
-    logger.info('Retrieved parent ID:', parentId);
+    logger.info('Retrieved parent ID from RPC:', {
+      parentId,
+      parentIdType: typeof parentId,
+      parentIdLength: parentId?.length,
+      isValidUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parentId)
+    });
+    
+    logger.info('About to call createPickupRequestSecure with:', {
+      studentId,
+      parentId,
+      studentIdType: typeof studentId,
+      parentIdType: typeof parentId
+    });
 
     // Use secure encrypted operations
     const { data, error } = await securePickupOperations.createPickupRequestSecure(studentId, parentId);

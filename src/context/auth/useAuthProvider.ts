@@ -10,6 +10,7 @@ import {
   createUserFromParentData,
   createUserFromAuthData,
 } from './authUtils';
+import { decryptPassword, isPasswordEncryptionSupported, decryptResponse } from '@/services/encryption';
 
 export const useAuthProvider = (): AuthState & {
   login: (identifier: string, password: string) => Promise<void>;
@@ -305,33 +306,37 @@ export const useAuthProvider = (): AuthState & {
         logger.error("Sign out before login failed:", signOutError);
       }
       
-      // Check if this looks like a username (no @ symbol) or email
-      const isEmail = identifier.includes('@');
+      // Check if password appears to be encrypted (length > 50 indicates encryption)
+      const isEncrypted = password.length > 50;
       
-      if (isEmail) {
-        // Try regular Supabase email/password auth first
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: identifier,
-          password,
+      if (isEncrypted) {
+        // Use secure-password-auth endpoint for encrypted passwords
+        const { data: rawData, error } = await supabase.functions.invoke('secure-password-auth', {
+          body: { 
+            identifier, 
+            encryptedPassword: password,
+            authType: identifier.includes('@') ? 'email' : 'username'
+          }
         });
         
         if (error) {
-          throw error;
+          logger.error("Secure password auth error:", error);
+          throw new Error('Authentication failed');
         }
         
-        // Handle user session
-        if (data.user) {
-          await handleUserSession(data.user);
-        }
-      } else {
-        // Use username auth edge function
-        const { data, error } = await supabase.functions.invoke('username-auth', {
-          body: { identifier, password }
-        });
-        
-        if (error) {
-          logger.error("Username auth error:", error);
-          throw new Error('Invalid credentials');
+        // Decrypt the encrypted response
+        let data;
+        try {
+          if (rawData.encryptedData) {
+            data = await decryptResponse(rawData.encryptedData);
+            logger.log('Auth response decrypted successfully');
+          } else {
+            // Fallback for unencrypted responses
+            data = rawData;
+          }
+        } catch (decryptionError) {
+          logger.error('Failed to decrypt auth response:', decryptionError);
+          throw new Error('Authentication response decryption failed');
         }
         
         if (data.error) {
@@ -343,9 +348,8 @@ export const useAuthProvider = (): AuthState & {
           throw new Error(data.error);
         }
         
-        // For username auth, we might get different response structures
-        if (data.user && data.session) {
-          // Regular Supabase auth response (user has email)
+        // Handle successful authentication
+        if (data.user) {
           await handleUserSession(data.user);
         } else if (data.isUsernameAuth && data.parentData) {
           // Username-only authentication (no Supabase auth)
@@ -392,19 +396,109 @@ export const useAuthProvider = (): AuthState & {
               window.location.href = '/';
             }
           }, 100);
-        } else if (data.requireUsernameAuth) {
-          // Fallback for old response format
-          const mockUser = {
-            id: data.parentData.id,
-            email: null,
-            user_metadata: {
-              name: data.parentData.name,
-              username: data.parentData.username
-            }
-          };
-          await handleUserSession(mockUser);
+        }
+      } else {
+        // Handle plain text passwords (fallback for compatibility)
+        const isEmail = identifier.includes('@');
+        
+        if (isEmail) {
+          // Try regular Supabase email/password auth
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: identifier,
+            password: password,
+          });
+          
+          if (error) {
+            throw error;
+          }
+          
+          // Handle user session
+          if (data.user) {
+            await handleUserSession(data.user);
+          }
         } else {
-          throw new Error('Authentication failed');
+          // Use username auth edge function
+          const { data, error } = await supabase.functions.invoke('username-auth', {
+            body: { identifier, password: password }
+          });
+          
+          if (error) {
+            logger.error("Username auth error:", error);
+            throw new Error('Invalid credentials');
+          }
+          
+          if (data.error) {
+            if (data.requirePasswordSetup) {
+              // Redirect to password setup for username-only users
+              window.location.href = `/password-setup?identifier=${encodeURIComponent(identifier)}`;
+              return;
+            }
+            throw new Error(data.error);
+          }
+          
+          // For username auth, handle different response structures
+          if (data.user && data.session) {
+            // Regular Supabase auth response (user has email)
+            await handleUserSession(data.user);
+          } else if (data.isUsernameAuth && data.parentData) {
+            // Username-only authentication (no Supabase auth)
+            // Store parent context in localStorage for username users
+            logger.log('Setting up username auth session for parent:', data.parentData.id);
+            
+            // Store the parent ID in localStorage so it can be used by queries
+            localStorage.setItem('username_parent_id', data.parentData.id);
+            
+            logger.log('Stored parent ID for username user:', data.parentData.id);
+            
+            // Store session in localStorage for persistence
+            const sessionData = {
+              id: data.parentData.id,
+              name: data.parentData.name,
+              username: data.parentData.username,
+              role: data.parentData.role,
+              timestamp: Date.now()
+            };
+            localStorage.setItem('username_session', JSON.stringify(sessionData));
+            
+            logger.log('🔍 Username auth success - stored session for:', data.parentData.username);
+            
+            const mockUser = {
+              id: data.parentData.id,
+              email: null,
+              user_metadata: {
+                name: data.parentData.name,
+                username: data.parentData.username,
+                role: data.parentData.role,
+                parent_id: data.parentData.id
+              }
+            };
+            
+            logger.log('🔍 Created mock user for username auth:', mockUser);
+            await handleUserSession(mockUser);
+            
+            // After successful username authentication, redirect to appropriate page
+            setTimeout(() => {
+              const userRole = data.parentData.role;
+              if (['admin', 'superadmin'].includes(userRole)) {
+                window.location.href = '/admin';
+              } else {
+                window.location.href = '/';
+              }
+            }, 100);
+          } else if (data.requireUsernameAuth) {
+            // Fallback for old response format
+            const mockUser = {
+              id: data.parentData.id,
+              email: null,
+              user_metadata: {
+                name: data.parentData.name,
+                username: data.parentData.username
+              }
+            };
+            await handleUserSession(mockUser);
+          } else {
+            throw new Error('Authentication failed');
+          }
         }
       }
       

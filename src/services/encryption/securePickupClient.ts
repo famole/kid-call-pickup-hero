@@ -46,7 +46,8 @@ class SecurePickupOperations {
         return { data: [], error: null };
       }
 
-      const parsedRequests = JSON.parse(decryptedRequests);
+      // decryptData already returns a parsed object, no need to JSON.parse again
+      const parsedRequests = decryptedRequests;
       
       // Handle empty array case
       if (!Array.isArray(parsedRequests)) {
@@ -80,8 +81,22 @@ class SecurePickupOperations {
         return { data: null, error: new Error('Parent ID is required') };
       }
       
+      // Log the data we're about to encrypt
+      const dataToEncrypt = { studentId, parentId };
+      logger.info('Data to encrypt before calling secure-pickup-requests:', {
+        dataToEncrypt,
+        studentIdType: typeof studentId,
+        parentIdType: typeof parentId,
+        studentIdLength: studentId?.length,
+        parentIdLength: parentId?.length,
+        isStudentIdValid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId),
+        isParentIdValid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parentId)
+      });
+      
       // Encrypt the data including parent ID
-      const encryptedData = await encryptData(JSON.stringify({ studentId, parentId }));
+      const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
+      
+      logger.info('Data encrypted successfully, calling secure-pickup-requests endpoint');
       
       const { data, error } = await supabase.functions.invoke('secure-pickup-requests', {
         body: { 
@@ -108,7 +123,8 @@ class SecurePickupOperations {
 
       // Decrypt the response data
       const decryptedData = await decryptData(data.data.encrypted_data);
-      const requestData = JSON.parse(decryptedData);
+      // decryptData already returns a parsed object, no need to JSON.parse again
+      const requestData = decryptedData;
       
       // Transform to PickupRequest format
       const pickupRequest: PickupRequest = {
@@ -129,8 +145,14 @@ class SecurePickupOperations {
   // Get all pickup requests that affect the current parent's children
   async getParentAffectedRequestsSecure(parentId: string): Promise<{ data: PickupRequest[] | null; error: any }> {
     try {
+      logger.info('getParentAffectedRequestsSecure called with parentId:', parentId);
+      
       // Encrypt the parent ID
-      const encryptedData = await encryptData(JSON.stringify({ parentId }));
+      const dataToEncrypt = { parentId };
+      logger.info('Data to encrypt for getParentAffectedRequests:', dataToEncrypt);
+      
+      const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
+      logger.info('Data encrypted successfully for getParentAffectedRequests');
       
       const { data, error } = await supabase.functions.invoke('secure-pickup-requests', {
         body: { 
@@ -138,6 +160,8 @@ class SecurePickupOperations {
           data: encryptedData
         }
       });
+      
+      logger.info('getParentAffectedRequests response:', { data, error });
 
       if (error) {
         logger.error('Secure parent affected requests fetch failed:', error);
@@ -158,22 +182,29 @@ class SecurePickupOperations {
       // Check if data.data exists
       if (!data.data?.encrypted_data) {
         logger.warn('No encrypted data received from secure parent affected requests');
+        logger.info('Full response data structure:', JSON.stringify(data, null, 2));
         return { data: [], error: null };
       }
 
+      logger.info('Encrypted data received, attempting to decrypt...');
+      
       // Decrypt the pickup requests data
       const decryptedRequests = await decryptData(data.data.encrypted_data);
+      logger.info('Decrypted requests data:', decryptedRequests);
+      logger.info('Decrypted requests type:', typeof decryptedRequests);
+      logger.info('Is array:', Array.isArray(decryptedRequests));
       
       if (!decryptedRequests) {
         logger.warn('Decryption returned empty data for parent affected requests');
         return { data: [], error: null };
       }
 
-      const parsedRequests = JSON.parse(decryptedRequests);
+      // decryptData already returns a parsed object, no need to JSON.parse again
+      const parsedRequests = decryptedRequests;
       
       // Handle empty array case
       if (!Array.isArray(parsedRequests)) {
-        logger.warn('Parsed parent affected requests is not an array:', parsedRequests);
+        logger.warn('Parent affected requests is not an array:', parsedRequests);
         return { data: [], error: null };
       }
       
@@ -185,6 +216,9 @@ class SecurePickupOperations {
         requestTime: new Date(item.request_time),
         status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
       }));
+
+      logger.info('Final transformed pickup requests for getParentAffectedRequests:', pickupRequests);
+      logger.info('Returning', pickupRequests.length, 'pickup requests from getParentAffectedRequests');
 
       return { data: pickupRequests, error: null };
     } catch (error) {

@@ -27,7 +27,7 @@ async function generateKey(passphrase: string): Promise<CryptoKey> {
   return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: encoder.encode("salt"),
+      salt: encoder.encode("upsy-secure-salt-2024"),
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -39,7 +39,7 @@ async function generateKey(passphrase: string): Promise<CryptoKey> {
 }
 
 function getEncryptionPassphrase(): string {
-  return Deno.env.get('ENCRYPTION_KEY') || 'default-encryption-key-2024';
+  return Deno.env.get('ENCRYPTION_KEY') || 'U9.#s!_So2*';
 }
 
 async function encryptData(data: any): Promise<string> {

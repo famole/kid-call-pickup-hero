@@ -27,19 +27,25 @@ export class SecureOperations {
           includeDeleted 
         }
       });
-      
+
       if (error) {
         logger.error('Edge function error:', error);
         throw error;
       }
-      
-      // Decrypt the single encrypted_data field containing all parents
+
+      if (data?.error) {
+        logger.error('Server error in getParentsSecure:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Decrypt the data
       const { decryptData } = await import('./encryptionService');
-      const decryptedParents = await decryptData(data.data.encrypted_data);
-      
-      return { data: decryptedParents, error: data.error };
+      const decryptedData = await decryptData(data.data.encrypted_data);
+      const parentsData = JSON.parse(decryptedData);
+
+      return { data: parentsData, error: null };
     } catch (error) {
-      logger.error('Secure parent fetch failed:', error);
+      logger.error('Error in getParentsSecure:', error);
       return { data: null, error };
     }
   }
@@ -118,12 +124,18 @@ export class SecureOperations {
         logger.error('Edge function error:', error);
         throw error;
       }
+
+      if (data?.error) {
+        logger.error('Server error in getStudentsSecure:', data.error);
+        throw new Error(data.error);
+      }
       
       // Decrypt the entire students array from the single encrypted_data field
       const { decryptData } = await import('./encryptionService');
-      const decryptedStudents = await decryptData(data.data.encrypted_data);
+      const decryptedData = await decryptData(data.data.encrypted_data);
+      const studentsData = JSON.parse(decryptedData);
       
-      return { data: decryptedStudents, error: data.error };
+      return { data: studentsData, error: null };
     } catch (error) {
       logger.error('Secure student fetch failed:', error);
       return { data: null, error };

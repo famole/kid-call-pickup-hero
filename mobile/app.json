@@ -1,0 +1,8 @@
+{
+  "android": {
+    "package": "com.anonymous.kidcallpickupheromobile"
+  },
+  "ios": {
+    "bundleIdentifier": "com.anonymous.kidcallpickupheromobile"
+  }
+}
