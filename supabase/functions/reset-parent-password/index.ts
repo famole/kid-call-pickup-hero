@@ -120,7 +120,7 @@ serve(async (req) => {
     console.error('Error in reset-parent-password function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message 
+        error: error instanceof Error ? error.message : 'An error occurred' 
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

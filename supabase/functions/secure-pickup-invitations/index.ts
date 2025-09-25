@@ -354,7 +354,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in secure-pickup-invitations function:', error);
-    return new Response(JSON.stringify({ data: null, error: error.message }), {
+    return new Response(JSON.stringify({ data: null, error: error instanceof Error ? error.message : 'An error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

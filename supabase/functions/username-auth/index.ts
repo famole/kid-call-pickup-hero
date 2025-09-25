@@ -185,7 +185,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in username-auth function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Authentication failed' 
+      error: error instanceof Error ? error.message : 'Authentication failed'
     }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

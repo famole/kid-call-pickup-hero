@@ -207,7 +207,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in setup-username-password function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Password setup failed' 
+      error: error instanceof Error ? error.message : 'Password setup failed'
     }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
