@@ -102,20 +102,23 @@ serve(async (req) => {
       )
     }
 
-    // Decrypt the password
+    // Try to decrypt the password, but fallback to plain text if decryption fails
     let password: string;
-    try {
-      password = await decryptPassword(encryptedPassword);
-      console.log('Password decrypted successfully for:', identifier);
-    } catch (decryptionError) {
-      console.error('Password decryption failed:', decryptionError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid encrypted password format' }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+    const isLikelyEncrypted = encryptedPassword.length > 50; // Encrypted passwords are much longer
+    
+    if (isLikelyEncrypted) {
+      try {
+        password = await decryptPassword(encryptedPassword);
+        console.log('Password decrypted successfully for:', identifier);
+      } catch (decryptionError) {
+        console.error('Password decryption failed, trying as plain text:', decryptionError);
+        // If decryption fails, try using the password as plain text
+        password = encryptedPassword;
+      }
+    } else {
+      // Short password, likely plain text
+      console.log('Using plain text password for:', identifier);
+      password = encryptedPassword;
     }
 
     // Create Supabase client

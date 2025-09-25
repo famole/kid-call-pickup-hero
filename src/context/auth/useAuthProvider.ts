@@ -343,11 +343,16 @@ export const useAuthProvider = (): AuthState & {
         logger.error("Sign out before login failed:", signOutError);
       }
       
+      // Always try secure authentication first for better security
       // Check if password appears to be encrypted (length > 50 indicates encryption)
       const isEncrypted = password.length > 50;
+      const isEmail = identifier.includes('@');
       
-      if (isEncrypted) {
-        // Use secure-password-auth endpoint for encrypted passwords
+      // Try secure authentication first for all users (encrypted and plain text)
+      try {
+        logger.log('Attempting secure authentication for:', identifier, 'encrypted:', isEncrypted);
+        
+        // Use secure-password-auth endpoint for all authentication attempts
         const { data: rawData, error } = await supabase.functions.invoke('secure-password-auth', {
           body: { 
             identifier, 
@@ -358,7 +363,8 @@ export const useAuthProvider = (): AuthState & {
         
         if (error) {
           logger.error("Secure password auth error:", error);
-          throw new Error('Authentication failed');
+          // Don't throw immediately, try fallback authentication
+          throw error;
         }
         
         // Decrypt the encrypted response
@@ -442,7 +448,14 @@ export const useAuthProvider = (): AuthState & {
             }
           }, 100);
         }
-      } else {
+        
+        logger.log('Secure authentication successful');
+        return; // Exit early on success
+        
+      } catch (secureAuthError) {
+        logger.warn('Secure authentication failed, trying fallback:', secureAuthError);
+        
+        // Fallback to standard authentication methods
         // Handle plain text passwords (fallback for compatibility)
         const isEmail = identifier.includes('@');
         
