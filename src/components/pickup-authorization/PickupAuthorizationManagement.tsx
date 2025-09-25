@@ -75,10 +75,10 @@ const PickupAuthorizationManagement: React.FC = () => {
           (async () => {
             const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
             if (!currentParentId) {
-              console.error('PickupAuthorizationManagement: No current parent ID found');
+              logger.error('PickupAuthorizationManagement: No current parent ID found');
               return [];
             }
-            console.log('PickupAuthorizationManagement: Loading authorizations for parentId:', currentParentId);
+            logger.log('PickupAuthorizationManagement: Loading authorizations for parentId:', currentParentId);
             return getPickupAuthorizationsForParent(currentParentId);
           })(),
           getPickupInvitationsForParent()

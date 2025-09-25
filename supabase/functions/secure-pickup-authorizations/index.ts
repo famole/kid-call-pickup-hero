@@ -2,6 +2,14 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.5';
 
+// Simple logger for edge functions
+const logger = {
+  log: (...args: any[]) => console.log(...args),
+  error: (...args: any[]) => console.error(...args),
+  warn: (...args: any[]) => console.warn(...args),
+  info: (...args: any[]) => console.info(...args)
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -59,7 +67,7 @@ async function encryptData(data: string): Promise<string> {
 
     return btoa(String.fromCharCode(...combined));
   } catch (error) {
-    console.error('Encryption failed:', error);
+    logger.error('Encryption failed:', error);
     return data; // Return original data if encryption fails
   }
 }
@@ -82,7 +90,7 @@ async function decryptData(encryptedData: string): Promise<string> {
 
     return new TextDecoder().decode(decryptedData);
   } catch (error) {
-    console.error('Decryption failed:', error);
+    logger.error('Decryption failed:', error);
     return encryptedData; // Return original if decryption fails
   }
 }
@@ -92,7 +100,7 @@ async function encryptObject(obj: any): Promise<string> {
     const jsonString = JSON.stringify(obj);
     return await encryptData(jsonString);
   } catch (error) {
-    console.error('Object encryption failed:', error);
+    logger.error('Object encryption failed:', error);
     return JSON.stringify(obj); // Return original if encryption fails
   }
 }
@@ -102,7 +110,7 @@ async function decryptObject(encryptedString: string): Promise<any> {
     const decryptedString = await decryptData(encryptedString);
     return JSON.parse(decryptedString);
   } catch (error) {
-    console.error('Object decryption failed:', error);
+    logger.error('Object decryption failed:', error);
     return JSON.parse(encryptedString); // Return original if decryption fails
   }
 }
@@ -112,13 +120,13 @@ async function validateAuthentication(req: Request): Promise<boolean> {
   try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      console.error('No authorization header found');
+      logger.error('No authorization header found');
       return false;
     }
 
     const token = authHeader.replace('Bearer ', '');
     if (!token) {
-      console.error('No token found in authorization header');
+      logger.error('No token found in authorization header');
       return false;
     }
 
@@ -144,14 +152,14 @@ async function validateAuthentication(req: Request): Promise<boolean> {
     const { data: { user }, error: userError } = await userSupabase.auth.getUser();
     
     if (userError || !user) {
-      console.error('Failed to authenticate user:', userError);
+      logger.error('Failed to authenticate user:', userError);
       return false;
     }
 
-    console.log('Authenticated user:', user.id);
+    logger.log('Authenticated user:', user.id);
     return true;
   } catch (error) {
-    console.error('Error in validateAuthentication:', error);
+    logger.error('Error in validateAuthentication:', error);
     return false;
   }
 }
@@ -163,16 +171,16 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Secure pickup authorizations function started - v2.1');
+    logger.log('Secure pickup authorizations function started - v2.1');
     
     const { operation, data: requestData, parentId } = await req.json();
-    console.log('Operation:', operation, 'Parent ID:', parentId);
-    console.log('Full request body:', { operation, parentId, hasData: !!requestData });
+    logger.log('Operation:', operation, 'Parent ID:', parentId);
+    logger.log('Full request body:', { operation, parentId, hasData: !!requestData });
 
     // Validate authentication
     const isAuthenticated = await validateAuthentication(req);
     if (!isAuthenticated) {
-      console.error('Authentication failed');
+      logger.error('Authentication failed');
       return new Response(JSON.stringify({ 
         data: null, 
         error: 'Authentication required' 
@@ -183,7 +191,7 @@ serve(async (req) => {
     }
 
     if (!parentId) {
-      console.error('Parent ID is required');
+      logger.error('Parent ID is required');
       return new Response(JSON.stringify({ 
         data: null, 
         error: 'Parent ID is required' 
@@ -195,7 +203,7 @@ serve(async (req) => {
 
     switch (operation) {
       case 'getPickupAuthorizationsForParent': {
-        console.log('Getting pickup authorizations for parent:', parentId);
+        logger.log('Getting pickup authorizations for parent:', parentId);
         
         const { data, error } = await supabase
           .from('pickup_authorizations')
@@ -208,7 +216,7 @@ serve(async (req) => {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('Error fetching pickup authorizations:', error);
+          logger.error('Error fetching pickup authorizations:', error);
           throw new Error(error.message);
         }
 
@@ -229,7 +237,7 @@ serve(async (req) => {
         );
 
         const encryptedData = await encryptObject(authorizations);
-        console.log('Successfully fetched and encrypted pickup authorizations');
+        logger.log('Successfully fetched and encrypted pickup authorizations');
         
         return new Response(JSON.stringify({ 
           data: { encrypted_data: encryptedData }, 
@@ -245,12 +253,12 @@ serve(async (req) => {
         try {
           decryptedData = await decryptObject(requestData);
         } catch (error) {
-          console.error('Failed to decrypt request data:', error);
+          logger.error('Failed to decrypt request data:', error);
           throw new Error('Invalid request data format');
         }
         
         const targetParentId = decryptedData.parentId || parentId;
-        console.log('Getting pickup authorizations for authorized parent:', targetParentId);
+        logger.log('Getting pickup authorizations for authorized parent:', targetParentId);
 
         const { data, error } = await supabase
           .from('pickup_authorizations')
@@ -263,12 +271,12 @@ serve(async (req) => {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('Error fetching pickup authorizations for authorized parent:', error);
+          logger.error('Error fetching pickup authorizations for authorized parent:', error);
           throw new Error(error.message);
         }
 
         const encryptedData = await encryptObject(data);
-        console.log('Successfully fetched and encrypted authorized pickup authorizations');
+        logger.log('Successfully fetched and encrypted authorized pickup authorizations');
         
         return new Response(JSON.stringify({ 
           data: { encrypted_data: encryptedData }, 
@@ -284,11 +292,11 @@ serve(async (req) => {
         try {
           decryptedData = await decryptObject(requestData);
         } catch (error) {
-          console.error('Failed to decrypt request data:', error);
+          logger.error('Failed to decrypt request data:', error);
           throw new Error('Invalid request data format');
         }
 
-        console.log('Creating pickup authorization');
+        logger.log('Creating pickup authorization');
 
         const { data, error } = await supabase
           .from('pickup_authorizations')
@@ -305,12 +313,12 @@ serve(async (req) => {
           .single();
 
         if (error) {
-          console.error('Error creating pickup authorization:', error);
+          logger.error('Error creating pickup authorization:', error);
           throw new Error(error.message);
         }
 
         const encryptedData = await encryptObject(data);
-        console.log('Successfully created and encrypted pickup authorization');
+        logger.log('Successfully created and encrypted pickup authorization');
         
         return new Response(JSON.stringify({ 
           data: { encrypted_data: encryptedData }, 
@@ -326,11 +334,11 @@ serve(async (req) => {
         try {
           decryptedData = await decryptObject(requestData);
         } catch (error) {
-          console.error('Failed to decrypt request data:', error);
+          logger.error('Failed to decrypt request data:', error);
           throw new Error('Invalid request data format');
         }
 
-        console.log('Updating pickup authorization:', decryptedData.id);
+        logger.log('Updating pickup authorization:', decryptedData.id);
 
         const updateData: any = {};
         if (decryptedData.authorizedParentId) updateData.authorized_parent_id = decryptedData.authorizedParentId;
@@ -351,12 +359,12 @@ serve(async (req) => {
           .single();
 
         if (error) {
-          console.error('Error updating pickup authorization:', error);
+          logger.error('Error updating pickup authorization:', error);
           throw new Error(error.message);
         }
 
         const encryptedData = await encryptObject(data);
-        console.log('Successfully updated and encrypted pickup authorization');
+        logger.log('Successfully updated and encrypted pickup authorization');
         
         return new Response(JSON.stringify({ 
           data: { encrypted_data: encryptedData }, 
@@ -372,11 +380,11 @@ serve(async (req) => {
         try {
           decryptedData = await decryptObject(requestData);
         } catch (error) {
-          console.error('Failed to decrypt request data:', error);
+          logger.error('Failed to decrypt request data:', error);
           throw new Error('Invalid request data format');
         }
 
-        console.log('Deleting pickup authorization:', decryptedData.id);
+        logger.log('Deleting pickup authorization:', decryptedData.id);
 
         const { error } = await supabase
           .from('pickup_authorizations')
@@ -385,11 +393,11 @@ serve(async (req) => {
           .eq('authorizing_parent_id', parentId); // Ensure only authorizing parent can delete
 
         if (error) {
-          console.error('Error deleting pickup authorization:', error);
+          logger.error('Error deleting pickup authorization:', error);
           throw new Error(error.message);
         }
 
-        console.log('Successfully deleted pickup authorization');
+        logger.log('Successfully deleted pickup authorization');
         
         return new Response(JSON.stringify({ 
           data: { success: true }, 
@@ -401,7 +409,7 @@ serve(async (req) => {
       }
 
       case 'getAvailableParentsForAuthorization': {
-        console.log('Getting available parents for authorization');
+        logger.log('Getting available parents for authorization');
 
         // Get all students associated with the current parent
         const { data: currentParentStudents, error: studentsError } = await supabase
@@ -410,7 +418,7 @@ serve(async (req) => {
           .eq('parent_id', parentId);
 
         if (studentsError) {
-          console.error('Error fetching current parent students:', studentsError);
+          logger.error('Error fetching current parent students:', studentsError);
           throw new Error(studentsError.message);
         }
 
@@ -423,7 +431,7 @@ serve(async (req) => {
           .neq('id', parentId);
 
         if (parentsError) {
-          console.error('Error fetching all parents:', parentsError);
+          logger.error('Error fetching all parents:', parentsError);
           throw new Error(parentsError.message);
         }
 
@@ -455,7 +463,7 @@ serve(async (req) => {
         };
 
         const encryptedData = await encryptObject(result);
-        console.log('Successfully fetched and encrypted available parents');
+        logger.log('Successfully fetched and encrypted available parents');
         
         return new Response(JSON.stringify({ 
           data: { encrypted_data: encryptedData }, 
@@ -471,7 +479,7 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Error in secure-pickup-authorizations function:', error);
+    logger.error('Error in secure-pickup-authorizations function:', error);
     return new Response(JSON.stringify({ data: null, error: error instanceof Error ? error.message : 'An error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

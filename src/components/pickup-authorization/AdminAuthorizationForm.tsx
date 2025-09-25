@@ -7,6 +7,7 @@ import { Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/auth/AuthProvider';
+import { logger } from '@/utils/logger';
 import { createPickupAuthorization, getAvailableParentsForAuthorization } from '@/services/pickupAuthorizationService';
 import DayOfWeekSelector from './DayOfWeekSelector';
 import SearchOnlyParentSelector from './SearchOnlyParentSelector';
@@ -66,7 +67,7 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
       return;
     }
     
-    console.log('AdminAuthorizationForm: Loading parents for userId:', user.id);
+    logger.log('AdminAuthorizationForm: Loading parents for userId:', user.id);
     
     try {
       const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization(user.id);
