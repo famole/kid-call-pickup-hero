@@ -122,18 +122,30 @@ async function getCurrentParentId(req: Request): Promise<string | null> {
       return null;
     }
 
-    // Create a new supabase client with the user's token for auth context
+    // Create a new supabase client with the service role key and user's token
     const userSupabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         global: {
           headers: {
             authorization: `Bearer ${token}`,
           },
         },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false
+        }
       }
     );
+    
+    // Verify the token is valid
+    const { data: { session }, error: sessionError } = await userSupabase.auth.getSession();
+    if (sessionError || !session) {
+      console.error('Invalid or expired token:', sessionError);
+      return null;
+    }
 
     // Get the current user
     const { data: { user }, error: userError } = await userSupabase.auth.getUser();
