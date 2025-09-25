@@ -18,6 +18,9 @@ verify_jwt = true
 [functions.secure-pickup-requests]
 verify_jwt = true
 
+[functions.secure-pickup-authorizations]
+verify_jwt = true
+
 [functions.secure-parents]
 verify_jwt = true
 
@@ -28,4 +31,4 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-pickup-invitation]
-verify_jwt = false
+verify_jwt = true

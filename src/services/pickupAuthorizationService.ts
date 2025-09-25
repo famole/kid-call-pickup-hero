@@ -56,78 +56,27 @@ export const filterSearchableParents = (parents: ParentWithStudents[]) => {
 export const createPickupAuthorization = async (
   authorizationData: PickupAuthorizationInput
 ): Promise<PickupAuthorization> => {
-  // Use the server-side helper to get current parent ID
-  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+  const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
+  const { data, error } = await securePickupAuthorizationOperations.createPickupAuthorizationSecure(authorizationData);
   
-  if (parentError || !currentParentId) {
-    throw new Error('Unable to authenticate parent');
+  if (error || !data) {
+    throw new Error(error?.message || 'Failed to create pickup authorization');
   }
 
-  const { data, error } = await supabase
-    .from('pickup_authorizations')
-    .insert({
-      authorizing_parent_id: currentParentId,
-      authorized_parent_id: authorizationData.authorizedParentId,
-      student_id: authorizationData.studentId,
-      start_date: authorizationData.startDate,
-      end_date: authorizationData.endDate,
-      allowed_days_of_week: authorizationData.allowedDaysOfWeek,
-      is_active: true
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating pickup authorization:', error);
-    throw new Error(error.message);
-  }
-
-  return mapAuthorizationFromDB(data);
+  return data;
 };
 
 // Get pickup authorizations for the current parent
 export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthorizationWithDetails[]> => {
-  // Get the current parent's ID via server-side helper
-  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-
-  if (parentError || !currentParentId) {
-    throw new Error('Unable to authenticate parent');
-  }
-
-  const { data, error } = await supabase
-    .from('pickup_authorizations')
-    .select(`
-      *,
-      authorizing_parent:parents!authorizing_parent_id (id, name, email, role),
-      authorized_parent:parents!authorized_parent_id (id, name, email, role)
-    `)
-    .eq('authorizing_parent_id', currentParentId)
-    .order('created_at', { ascending: false });
-
+  const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
+  const { data, error } = await securePickupAuthorizationOperations.getPickupAuthorizationsForParentSecure();
+  
   if (error) {
     console.error('Error fetching pickup authorizations:', error);
-    throw new Error(error.message);
+    throw new Error(error?.message || 'Failed to fetch pickup authorizations');
   }
 
-  const authorizations = await Promise.all(
-    data.map(async (auth) => {
-      // Get student details
-      const { data: studentData } = await supabase
-        .from('students')
-        .select('id, name')
-        .eq('id', auth.student_id)
-        .single();
-
-      return {
-        ...mapAuthorizationFromDB(auth),
-        authorizingParent: auth.authorizing_parent,
-        authorizedParent: auth.authorized_parent,
-        student: studentData
-      };
-    })
-  );
-
-  return authorizations;
+  return data || [];
 };
 
 // Get parents available for pickup authorization
@@ -136,65 +85,15 @@ export const getAvailableParentsForAuthorization = async (): Promise<{
   parents: any[];
   sharedStudents: Record<string, string[]>;
 }> => {
-  // Use the server-side helper to get current parent ID
-  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+  const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
+  const { data, error } = await securePickupAuthorizationOperations.getAvailableParentsForAuthorizationSecure();
   
-  if (parentError || !currentParentId) {
-    throw new Error('Unable to authenticate parent');
+  if (error) {
+    console.error('Error fetching available parents:', error);
+    throw new Error(error?.message || 'Failed to fetch available parents');
   }
 
-  // Get all students associated with the current parent
-  const { data: currentParentStudents, error: studentsError } = await supabase
-    .from('student_parents')
-    .select('student_id')
-    .eq('parent_id', currentParentId);
-
-  if (studentsError) {
-    console.error('Error fetching current parent students:', studentsError);
-    throw new Error(studentsError.message);
-  }
-
-  const studentIds = currentParentStudents?.map(sp => sp.student_id) || [];
-
-  // Get ALL parents in the school using secure operations
-  const { secureOperations } = await import('@/services/encryption');
-  const { data: allParentsData, error: allParentsError } = await secureOperations.getParentsSecure(false);
-  
-  // Filter out current parent and extract needed fields
-  const allParents = allParentsData?.filter(p => p.id !== currentParentId)
-    .map(p => ({ id: p.id, name: p.name, email: p.email, role: p.role })) || [];
-
-  if (allParentsError) {
-    console.error('Error fetching all parents:', allParentsError);
-    throw new Error(allParentsError.message);
-  }
-
-  // Get shared student relationships for display purposes
-  const sharedStudents: Record<string, string[]> = {};
-  
-  if (studentIds.length > 0) {
-    const { data: sharedParentRelations, error: sharedError } = await supabase
-      .from('student_parents')
-      .select('parent_id, student_id')
-      .in('student_id', studentIds)
-      .neq('parent_id', currentParentId);
-
-    if (!sharedError && sharedParentRelations) {
-      // Group shared students by parent
-      for (const relation of sharedParentRelations) {
-        const parentId = relation.parent_id;
-        if (!sharedStudents[parentId]) {
-          sharedStudents[parentId] = [];
-        }
-        sharedStudents[parentId].push(relation.student_id);
-      }
-    }
-  }
-
-  return {
-    parents: allParents || [],
-    sharedStudents
-  };
+  return data || { parents: [], sharedStudents: {} };
 };
 
 // Get parents who share students with the current parent
@@ -307,36 +206,15 @@ export const getPickupAuthorizationsForStudent = async (
 export const getPickupAuthorizationsForAuthorizedParent = async (
   parentId?: string
 ): Promise<PickupAuthorizationWithDetails[]> => {
-  let targetParentId = parentId;
-
-  if (!targetParentId) {
-    const { data, error } = await supabase.rpc('get_current_parent_id');
-    if (error || !data) {
-      throw new Error('Unable to authenticate parent');
-    }
-    targetParentId = data;
-  }
-
-  const { data, error } = await supabase
-    .from('pickup_authorizations')
-    .select(`
-      *,
-      authorizing_parent:parents!authorizing_parent_id (id, name, email),
-      student:students (id, name)
-    `)
-    .eq('authorized_parent_id', targetParentId)
-    .order('created_at', { ascending: false });
-
+  const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
+  const { data, error } = await securePickupAuthorizationOperations.getPickupAuthorizationsForAuthorizedParentSecure(parentId);
+  
   if (error) {
     console.error('Error fetching pickup authorizations for authorized parent:', error);
-    throw new Error(error.message);
+    throw new Error(error?.message || 'Failed to fetch authorized pickup authorizations');
   }
 
-  return data.map(auth => ({
-    ...mapAuthorizationFromDB(auth),
-    authorizingParent: auth.authorizing_parent,
-    student: auth.student
-  }));
+  return data || [];
 };
 
 // Update a pickup authorization
@@ -344,43 +222,24 @@ export const updatePickupAuthorization = async (
   id: string,
   updates: Partial<PickupAuthorizationInput & { isActive: boolean }>
 ): Promise<PickupAuthorization> => {
-  const updateData: any = {};
+  const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
+  const { data, error } = await securePickupAuthorizationOperations.updatePickupAuthorizationSecure(id, updates);
   
-  if (updates.authorizedParentId) updateData.authorized_parent_id = updates.authorizedParentId;
-  if (updates.studentId) updateData.student_id = updates.studentId;
-  if (updates.studentIds) updateData.student_ids = updates.studentIds;
-  if (updates.startDate) updateData.start_date = updates.startDate;
-  if (updates.endDate) updateData.end_date = updates.endDate;
-  if (updates.allowedDaysOfWeek) updateData.allowed_days_of_week = updates.allowedDaysOfWeek;
-  if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
-  
-  updateData.updated_at = new Date().toISOString();
-
-  const { data, error } = await supabase
-    .from('pickup_authorizations')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error updating pickup authorization:', error);
-    throw new Error(error.message);
+  if (error || !data) {
+    throw new Error(error?.message || 'Failed to update pickup authorization');
   }
 
-  return mapAuthorizationFromDB(data);
+  return data;
 };
 
 // Delete a pickup authorization
 export const deletePickupAuthorization = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('pickup_authorizations')
-    .delete()
-    .eq('id', id);
-
+  const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
+  const { data, error } = await securePickupAuthorizationOperations.deletePickupAuthorizationSecure(id);
+  
   if (error) {
     console.error('Error deleting pickup authorization:', error);
-    throw new Error(error.message);
+    throw new Error(error?.message || 'Failed to delete pickup authorization');
   }
 };
 
