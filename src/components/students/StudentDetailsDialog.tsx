@@ -67,7 +67,16 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   
   const deleteConfirmation = useDeleteConfirmation<PickupAuthorization>({
     onDelete: async (auth) => {
-      await deletePickupAuthorization(auth.id);
+      const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+      if (!currentParentId) {
+        toast({
+          title: t('common.error'),
+          description: 'Authentication required',
+          variant: 'destructive'
+        });
+        return;
+      }
+      await deletePickupAuthorization(currentParentId, auth.id);
       toast({
         title: t('common.success'),
         description: t('studentDetails.authorizationDeleted')

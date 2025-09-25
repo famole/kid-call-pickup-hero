@@ -19,6 +19,7 @@ import { ParentWithStudents } from '@/types/parent';
 import { Child, Class } from '@/types';
 import { logger } from '@/utils/logger';
 import { useTranslation } from '@/hooks/useTranslation';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   getPickupAuthorizationsForParent,
   getPickupAuthorizationsForAuthorizedParent,

@@ -72,7 +72,15 @@ const PickupAuthorizationManagement: React.FC = () => {
         setLoading(true);
         logger.info('Loading pickup authorizations and invitations');
         const [authData, invitationData] = await Promise.all([
-          getPickupAuthorizationsForParent(),
+          (async () => {
+            const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+            if (!currentParentId) {
+              console.error('PickupAuthorizationManagement: No current parent ID found');
+              return [];
+            }
+            console.log('PickupAuthorizationManagement: Loading authorizations for parentId:', currentParentId);
+            return getPickupAuthorizationsForParent(currentParentId);
+          })(),
           getPickupInvitationsForParent()
         ]);
         setAuthorizations(authData);
@@ -172,7 +180,16 @@ const PickupAuthorizationManagement: React.FC = () => {
   const handleDeleteAuthorization = async (id: string) => {
     try {
       setDeletingId(id);
-      await deletePickupAuthorization(id);
+      const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+      if (!currentParentId) {
+        toast({
+          title: t('common.error'),
+          description: 'Authentication required',
+          variant: 'destructive'
+        });
+        return;
+      }
+      await deletePickupAuthorization(currentParentId, id);
       setAuthorizations(prev => prev.filter(auth => auth.id !== id));
       toast({
         title: t('common.success'),

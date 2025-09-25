@@ -66,6 +66,8 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
       return;
     }
     
+    console.log('AdminAuthorizationForm: Loading parents for userId:', user.id);
+    
     try {
       const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization(user.id);
       const enhancedAvailableParents = availableParents

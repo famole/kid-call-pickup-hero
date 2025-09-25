@@ -163,10 +163,11 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Secure pickup authorizations function started - v2.0');
+    console.log('Secure pickup authorizations function started - v2.1');
     
     const { operation, data: requestData, parentId } = await req.json();
     console.log('Operation:', operation, 'Parent ID:', parentId);
+    console.log('Full request body:', { operation, parentId, hasData: !!requestData });
 
     // Validate authentication
     const isAuthenticated = await validateAuthentication(req);
