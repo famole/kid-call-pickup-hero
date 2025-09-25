@@ -83,8 +83,8 @@ export const getClassesWithTeachers = async (): Promise<ClassWithTeachers[]> => 
         grade: cls.grade,
         teacher: teachers.length > 0 ? teachers[0].name : '', // Keep for backward compatibility
         teachers,
-        createdAt: cls.created_at || new Date().toISOString(),
-        updatedAt: cls.updated_at || new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
     }) || [];
   } catch (error) {

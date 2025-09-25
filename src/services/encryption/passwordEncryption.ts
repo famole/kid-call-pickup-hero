@@ -27,16 +27,7 @@ const generatePasswordKey = async (passphrase: string): Promise<CryptoKey> => {
 
 // Get password encryption passphrase
 const getPasswordEncryptionPassphrase = (): string => {
-  // Try to get from environment variable first
-  const envKey = import.meta.env?.VITE_PASSWORD_ENCRYPTION_KEY || 
-                 (typeof process !== 'undefined' && process.env?.VITE_PASSWORD_ENCRYPTION_KEY) ||
-                 (typeof globalThis !== 'undefined' && (globalThis as Record<string, unknown>).PASSWORD_ENCRYPTION_KEY as string);
-  
-  if (envKey) {
-    return envKey;
-  }
-  
-  // Fallback to a dedicated password encryption key
+  // Fallback to a consistent hardcoded key for compatibility
   return "P@ssw0rd_3ncrypt!0n_K3y_2024";
 };
 
@@ -126,7 +117,7 @@ export async function decryptResponse(encryptedData: string): Promise<any> {
   }
 
   try {
-    const passphrase = import.meta.env.VITE_PASSWORD_ENCRYPTION_KEY || "P@ssw0rd_3ncrypt!0n_K3y_2024";
+    const passphrase = getPasswordEncryptionPassphrase();
     const key = await generatePasswordKey(passphrase);
     const decoder = new TextDecoder();
     
