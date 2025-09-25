@@ -134,7 +134,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Secure pickup authorizations request received');
+    console.log('Secure pickup authorizations function started - v1.0');
     
     const { operation, data: requestData } = await req.json();
     console.log('Operation:', operation);
