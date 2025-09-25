@@ -349,7 +349,15 @@ export const useAuthProvider = (): AuthState & {
         }
         
         // Handle successful authentication
-        if (data.user) {
+        if (data.user && data.session) {
+          // For email authentication, set the session in Supabase auth context
+          logger.log('Setting Supabase session from secure auth response');
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token
+          });
+          await handleUserSession(data.user);
+        } else if (data.user) {
           await handleUserSession(data.user);
         } else if (data.isUsernameAuth && data.parentData) {
           // Username-only authentication (no Supabase auth)
