@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/context/auth/AuthProvider';
 import { createPickupAuthorization, getAvailableParentsForAuthorization } from '@/services/pickupAuthorizationService';
 import DayOfWeekSelector from './DayOfWeekSelector';
 import SearchOnlyParentSelector from './SearchOnlyParentSelector';
@@ -36,6 +37,7 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
 }) => {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [allParents, setAllParents] = useState<ParentWithSharedStudents[]>([]);
@@ -55,8 +57,17 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
   }, [showForm]);
 
   const loadParents = async () => {
+    if (!user?.id) {
+      toast({
+        title: t('common.error'),
+        description: 'User not authenticated',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     try {
-      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
+      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization(user.id);
       const enhancedAvailableParents = availableParents
         .filter(parent => parent && parent.id)
         .map(parent => ({
@@ -117,7 +128,16 @@ const AdminAuthorizationForm: React.FC<AdminAuthorizationFormProps> = ({
 
     setLoading(true);
     try {
-      await createPickupAuthorization({
+      if (!user?.id) {
+        toast({
+          title: t('common.error'),
+          description: 'User not authenticated',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      await createPickupAuthorization(user.id, {
         studentId,
         authorizedParentId: formData.authorizedParentId,
         startDate: formData.startDate,

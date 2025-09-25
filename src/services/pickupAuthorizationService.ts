@@ -54,10 +54,11 @@ export const filterSearchableParents = (parents: ParentWithStudents[]) => {
 
 // Create a new pickup authorization
 export const createPickupAuthorization = async (
+  parentId: string,
   authorizationData: PickupAuthorizationInput
 ): Promise<PickupAuthorization> => {
   const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
-  const { data, error } = await securePickupAuthorizationOperations.createPickupAuthorizationSecure(authorizationData);
+  const { data, error } = await securePickupAuthorizationOperations.createPickupAuthorizationSecure(parentId, authorizationData);
   
   if (error || !data) {
     throw new Error(error?.message || 'Failed to create pickup authorization');
@@ -67,9 +68,9 @@ export const createPickupAuthorization = async (
 };
 
 // Get pickup authorizations for the current parent
-export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthorizationWithDetails[]> => {
+export const getPickupAuthorizationsForParent = async (parentId: string): Promise<PickupAuthorizationWithDetails[]> => {
   const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
-  const { data, error } = await securePickupAuthorizationOperations.getPickupAuthorizationsForParentSecure();
+  const { data, error } = await securePickupAuthorizationOperations.getPickupAuthorizationsForParentSecure(parentId);
   
   if (error) {
     console.error('Error fetching pickup authorizations:', error);
@@ -81,12 +82,12 @@ export const getPickupAuthorizationsForParent = async (): Promise<PickupAuthoriz
 
 // Get parents available for pickup authorization
 // Returns ALL parents in the school for pickup authorization
-export const getAvailableParentsForAuthorization = async (): Promise<{
+export const getAvailableParentsForAuthorization = async (parentId: string): Promise<{
   parents: any[];
   sharedStudents: Record<string, string[]>;
 }> => {
   const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
-  const { data, error } = await securePickupAuthorizationOperations.getAvailableParentsForAuthorizationSecure();
+  const { data, error } = await securePickupAuthorizationOperations.getAvailableParentsForAuthorizationSecure(parentId);
   
   if (error) {
     console.error('Error fetching available parents:', error);
@@ -204,10 +205,11 @@ export const getPickupAuthorizationsForStudent = async (
 
 // Get pickup authorizations where the given parent is authorized
 export const getPickupAuthorizationsForAuthorizedParent = async (
-  parentId?: string
+  currentParentId: string,
+  targetParentId?: string
 ): Promise<PickupAuthorizationWithDetails[]> => {
   const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
-  const { data, error } = await securePickupAuthorizationOperations.getPickupAuthorizationsForAuthorizedParentSecure(parentId);
+  const { data, error } = await securePickupAuthorizationOperations.getPickupAuthorizationsForAuthorizedParentSecure(currentParentId, targetParentId);
   
   if (error) {
     console.error('Error fetching pickup authorizations for authorized parent:', error);
@@ -219,11 +221,12 @@ export const getPickupAuthorizationsForAuthorizedParent = async (
 
 // Update a pickup authorization
 export const updatePickupAuthorization = async (
+  parentId: string,
   id: string,
   updates: Partial<PickupAuthorizationInput & { isActive: boolean }>
 ): Promise<PickupAuthorization> => {
   const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
-  const { data, error } = await securePickupAuthorizationOperations.updatePickupAuthorizationSecure(id, updates);
+  const { data, error } = await securePickupAuthorizationOperations.updatePickupAuthorizationSecure(parentId, id, updates);
   
   if (error || !data) {
     throw new Error(error?.message || 'Failed to update pickup authorization');
@@ -233,9 +236,9 @@ export const updatePickupAuthorization = async (
 };
 
 // Delete a pickup authorization
-export const deletePickupAuthorization = async (id: string): Promise<void> => {
+export const deletePickupAuthorization = async (parentId: string, id: string): Promise<void> => {
   const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
-  const { data, error } = await securePickupAuthorizationOperations.deletePickupAuthorizationSecure(id);
+  const { data, error } = await securePickupAuthorizationOperations.deletePickupAuthorizationSecure(parentId, id);
   
   if (error) {
     console.error('Error deleting pickup authorization:', error);

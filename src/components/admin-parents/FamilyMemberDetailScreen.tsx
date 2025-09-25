@@ -85,10 +85,22 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     
     setLoadingAuthorizations(true);
     try {
+      // For admin functionality, we need to get the admin's parentId
+      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+      if (parentError || !currentParentId) {
+        console.error('Error getting current parent ID:', parentError);
+        toast({
+          title: t('familyMemberDetails.error'),
+          description: 'Failed to authenticate admin',
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Get authorizations this parent has created
-      const parentAuthorizations = await getPickupAuthorizationsForParent();
+      const parentAuthorizations = await getPickupAuthorizationsForParent(parent.id);
       // Get authorizations where this parent is authorized
-      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(parent.id);
+      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(currentParentId, parent.id);
       
       setAuthorizations(parentAuthorizations);
       setReceivedAuthorizations(receivedAuths);
@@ -149,7 +161,19 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     if (!parent || !selectedAuthStudentId || !selectedAuthorizingParentId || !startDate || !endDate) return;
     
     try {
-      await createPickupAuthorization({
+      // Get the authorizing parent ID (admin creating the authorization)
+      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+      if (parentError || !currentParentId) {
+        console.error('Error getting current parent ID:', parentError);
+        toast({
+          title: t('familyMemberDetails.error'),
+          description: 'Failed to authenticate admin',
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      await createPickupAuthorization(selectedAuthorizingParentId, {
         studentId: selectedAuthStudentId,
         authorizedParentId: parent.id,
         startDate: startDate,
@@ -177,7 +201,10 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
 
   const handleRemoveAuthorization = async (authId: string) => {
     try {
-      await deletePickupAuthorization(authId);
+      const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+      if (!currentParentId) return;
+      
+      await deletePickupAuthorization(currentParentId, authId);
       toast({
         title: t('familyMemberDetails.success'),
         description: t('familyMemberDetails.authorizationRemovedSuccess'),

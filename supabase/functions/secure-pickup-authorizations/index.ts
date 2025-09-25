@@ -107,19 +107,19 @@ async function decryptObject(encryptedString: string): Promise<any> {
   }
 }
 
-// Get current user's parent ID
-async function getCurrentParentId(req: Request): Promise<string | null> {
+// Validate user authentication
+async function validateAuthentication(req: Request): Promise<boolean> {
   try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       console.error('No authorization header found');
-      return null;
+      return false;
     }
 
     const token = authHeader.replace('Bearer ', '');
     if (!token) {
       console.error('No token found in authorization header');
-      return null;
+      return false;
     }
 
     // Create a new supabase client with the service role key and user's token
@@ -141,40 +141,18 @@ async function getCurrentParentId(req: Request): Promise<string | null> {
     );
     
     // Verify the token is valid
-    const { data: { session }, error: sessionError } = await userSupabase.auth.getSession();
-    if (sessionError || !session) {
-      console.error('Invalid or expired token:', sessionError);
-      return null;
-    }
-
-    // Get the current user
     const { data: { user }, error: userError } = await userSupabase.auth.getUser();
     
     if (userError || !user) {
-      console.error('Failed to get user from token:', userError);
-      return null;
+      console.error('Failed to authenticate user:', userError);
+      return false;
     }
 
     console.log('Authenticated user:', user.id);
-
-    // Use the database function to get parent ID
-    const { data: parentId, error: parentError } = await userSupabase.rpc('get_current_parent_id');
-    
-    if (parentError) {
-      console.error('Error getting parent ID:', parentError);
-      return null;
-    }
-
-    if (!parentId) {
-      console.error('No parent ID found for user:', user.id);
-      return null;
-    }
-
-    console.log('Found parent ID:', parentId);
-    return parentId;
+    return true;
   } catch (error) {
-    console.error('Error in getCurrentParentId:', error);
-    return null;
+    console.error('Error in validateAuthentication:', error);
+    return false;
   }
 }
 
@@ -185,14 +163,15 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Secure pickup authorizations function started - v1.0');
+    console.log('Secure pickup authorizations function started - v2.0');
     
-    const { operation, data: requestData } = await req.json();
-    console.log('Operation:', operation);
+    const { operation, data: requestData, parentId } = await req.json();
+    console.log('Operation:', operation, 'Parent ID:', parentId);
 
-    const currentParentId = await getCurrentParentId(req);
-    if (!currentParentId) {
-      console.error('Unable to authenticate parent');
+    // Validate authentication
+    const isAuthenticated = await validateAuthentication(req);
+    if (!isAuthenticated) {
+      console.error('Authentication failed');
       return new Response(JSON.stringify({ 
         data: null, 
         error: 'Authentication required' 
@@ -202,9 +181,20 @@ serve(async (req) => {
       });
     }
 
+    if (!parentId) {
+      console.error('Parent ID is required');
+      return new Response(JSON.stringify({ 
+        data: null, 
+        error: 'Parent ID is required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     switch (operation) {
       case 'getPickupAuthorizationsForParent': {
-        console.log('Getting pickup authorizations for parent:', currentParentId);
+        console.log('Getting pickup authorizations for parent:', parentId);
         
         const { data, error } = await supabase
           .from('pickup_authorizations')
@@ -213,7 +203,7 @@ serve(async (req) => {
             authorizing_parent:parents!authorizing_parent_id (id, name, email, role),
             authorized_parent:parents!authorized_parent_id (id, name, email, role)
           `)
-          .eq('authorizing_parent_id', currentParentId)
+          .eq('authorizing_parent_id', parentId)
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -258,7 +248,7 @@ serve(async (req) => {
           throw new Error('Invalid request data format');
         }
         
-        const targetParentId = decryptedData.parentId || currentParentId;
+        const targetParentId = decryptedData.parentId || parentId;
         console.log('Getting pickup authorizations for authorized parent:', targetParentId);
 
         const { data, error } = await supabase
@@ -302,7 +292,7 @@ serve(async (req) => {
         const { data, error } = await supabase
           .from('pickup_authorizations')
           .insert({
-            authorizing_parent_id: currentParentId,
+            authorizing_parent_id: parentId,
             authorized_parent_id: decryptedData.authorizedParentId,
             student_id: decryptedData.studentId,
             start_date: decryptedData.startDate,
@@ -355,7 +345,7 @@ serve(async (req) => {
           .from('pickup_authorizations')
           .update(updateData)
           .eq('id', decryptedData.id)
-          .eq('authorizing_parent_id', currentParentId) // Ensure only authorizing parent can update
+          .eq('authorizing_parent_id', parentId) // Ensure only authorizing parent can update
           .select()
           .single();
 
@@ -391,7 +381,7 @@ serve(async (req) => {
           .from('pickup_authorizations')
           .delete()
           .eq('id', decryptedData.id)
-          .eq('authorizing_parent_id', currentParentId); // Ensure only authorizing parent can delete
+          .eq('authorizing_parent_id', parentId); // Ensure only authorizing parent can delete
 
         if (error) {
           console.error('Error deleting pickup authorization:', error);
@@ -416,7 +406,7 @@ serve(async (req) => {
         const { data: currentParentStudents, error: studentsError } = await supabase
           .from('student_parents')
           .select('student_id')
-          .eq('parent_id', currentParentId);
+          .eq('parent_id', parentId);
 
         if (studentsError) {
           console.error('Error fetching current parent students:', studentsError);
@@ -429,7 +419,7 @@ serve(async (req) => {
         const { data: allParents, error: parentsError } = await supabase
           .from('parents')
           .select('id, name, email, role')
-          .neq('id', currentParentId);
+          .neq('id', parentId);
 
         if (parentsError) {
           console.error('Error fetching all parents:', parentsError);
@@ -444,7 +434,7 @@ serve(async (req) => {
             .from('student_parents')
             .select('parent_id, student_id')
             .in('student_id', studentIds)
-            .neq('parent_id', currentParentId);
+            .neq('parent_id', parentId);
 
           if (!sharedError && sharedParentRelations) {
             // Group shared students by parent

@@ -70,8 +70,8 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
 
-      // Load only available parents (family/other + shared students parents)
-      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
+      // Load only available parents (family/other + shared students parents)      
+      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization(currentParentId);
       
       // Enhance available parents data with shared student information
       const enhancedAvailableParents = availableParents
@@ -144,8 +144,11 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     setLoading(true);
     try {
       // Create authorization for each selected student
+      const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+      if (!currentParentId) return;
+      
       for (const studentId of formData.studentIds) {
-        await createPickupAuthorization({
+        await createPickupAuthorization(currentParentId, {
           studentId,
           authorizedParentId: formData.authorizedParentId,
           startDate: formData.startDate,

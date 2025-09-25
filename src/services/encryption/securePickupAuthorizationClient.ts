@@ -47,13 +47,14 @@ export interface PickupAuthorizationInput {
 class SecurePickupAuthorizationOperations {
   
   // Get pickup authorizations for the current parent
-  async getPickupAuthorizationsForParentSecure(): Promise<{ data: PickupAuthorizationWithDetails[] | null; error: any }> {
+  async getPickupAuthorizationsForParentSecure(parentId: string): Promise<{ data: PickupAuthorizationWithDetails[] | null; error: any }> {
     try {
       logger.info('Getting secure pickup authorizations for parent');
       
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
-          operation: 'getPickupAuthorizationsForParent'
+          operation: 'getPickupAuthorizationsForParent',
+          parentId
         }
       });
 
@@ -116,16 +117,17 @@ class SecurePickupAuthorizationOperations {
   }
 
   // Get pickup authorizations where the given parent is authorized
-  async getPickupAuthorizationsForAuthorizedParentSecure(parentId?: string): Promise<{ data: PickupAuthorizationWithDetails[] | null; error: any }> {
+  async getPickupAuthorizationsForAuthorizedParentSecure(parentId: string, targetParentId?: string): Promise<{ data: PickupAuthorizationWithDetails[] | null; error: any }> {
     try {
       logger.info('Getting secure pickup authorizations for authorized parent');
       
-      const dataToEncrypt = { parentId };
+      const dataToEncrypt = { parentId: targetParentId };
       const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
 
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
           operation: 'getPickupAuthorizationsForAuthorizedParent',
+          parentId,
           data: encryptedData
         }
       });
@@ -188,7 +190,7 @@ class SecurePickupAuthorizationOperations {
   }
 
   // Create a new pickup authorization
-  async createPickupAuthorizationSecure(authorizationData: PickupAuthorizationInput): Promise<{ data: PickupAuthorization | null; error: any }> {
+  async createPickupAuthorizationSecure(parentId: string, authorizationData: PickupAuthorizationInput): Promise<{ data: PickupAuthorization | null; error: any }> {
     try {
       logger.info('Creating secure pickup authorization');
       
@@ -197,6 +199,7 @@ class SecurePickupAuthorizationOperations {
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
           operation: 'createPickupAuthorization',
+          parentId,
           data: encryptedData
         }
       });
@@ -243,6 +246,7 @@ class SecurePickupAuthorizationOperations {
 
   // Update a pickup authorization
   async updatePickupAuthorizationSecure(
+    parentId: string,
     id: string, 
     updates: Partial<PickupAuthorizationInput & { isActive: boolean }>
   ): Promise<{ data: PickupAuthorization | null; error: any }> {
@@ -255,6 +259,7 @@ class SecurePickupAuthorizationOperations {
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
           operation: 'updatePickupAuthorization',
+          parentId,
           data: encryptedData
         }
       });
@@ -300,7 +305,7 @@ class SecurePickupAuthorizationOperations {
   }
 
   // Delete a pickup authorization
-  async deletePickupAuthorizationSecure(id: string): Promise<{ data: boolean | null; error: any }> {
+  async deletePickupAuthorizationSecure(parentId: string, id: string): Promise<{ data: boolean | null; error: any }> {
     try {
       logger.info('Deleting secure pickup authorization');
       
@@ -310,6 +315,7 @@ class SecurePickupAuthorizationOperations {
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
           operation: 'deletePickupAuthorization',
+          parentId,
           data: encryptedData
         }
       });
@@ -337,7 +343,7 @@ class SecurePickupAuthorizationOperations {
   }
 
   // Get parents available for pickup authorization
-  async getAvailableParentsForAuthorizationSecure(): Promise<{ 
+  async getAvailableParentsForAuthorizationSecure(parentId: string): Promise<{ 
     data: { parents: any[]; sharedStudents: Record<string, string[]> } | null; 
     error: any 
   }> {
@@ -346,7 +352,8 @@ class SecurePickupAuthorizationOperations {
 
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
-          operation: 'getAvailableParentsForAuthorization'
+          operation: 'getAvailableParentsForAuthorization',
+          parentId
         }
       });
 
