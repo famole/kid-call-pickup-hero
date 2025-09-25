@@ -109,22 +109,61 @@ async function decryptObject(encryptedString: string): Promise<any> {
 
 // Get current user's parent ID
 async function getCurrentParentId(req: Request): Promise<string | null> {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) return null;
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.error('No authorization header found');
+      return null;
+    }
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  
-  if (error || !user) return null;
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+      console.error('No token found in authorization header');
+      return null;
+    }
 
-  // Get parent record
-  const { data: parentData, error: parentError } = await supabase
-    .from('parents')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
+    // Create a new supabase client with the user's token for auth context
+    const userSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
 
-  return parentError ? null : parentData?.id;
+    // Get the current user
+    const { data: { user }, error: userError } = await userSupabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('Failed to get user from token:', userError);
+      return null;
+    }
+
+    console.log('Authenticated user:', user.id);
+
+    // Use the database function to get parent ID
+    const { data: parentId, error: parentError } = await userSupabase.rpc('get_current_parent_id');
+    
+    if (parentError) {
+      console.error('Error getting parent ID:', parentError);
+      return null;
+    }
+
+    if (!parentId) {
+      console.error('No parent ID found for user:', user.id);
+      return null;
+    }
+
+    console.log('Found parent ID:', parentId);
+    return parentId;
+  } catch (error) {
+    console.error('Error in getCurrentParentId:', error);
+    return null;
+  }
 }
 
 serve(async (req) => {
