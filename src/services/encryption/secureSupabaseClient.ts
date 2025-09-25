@@ -40,8 +40,7 @@ export class SecureOperations {
 
       // Decrypt the data
       const { decryptData } = await import('./encryptionService');
-      const decryptedData = await decryptData(data.data.encrypted_data);
-      const parentsData = JSON.parse(decryptedData);
+      const parentsData = await decryptData(data.data.encrypted_data);
 
       return { data: parentsData, error: null };
     } catch (error) {
@@ -132,8 +131,7 @@ export class SecureOperations {
       
       // Decrypt the entire students array from the single encrypted_data field
       const { decryptData } = await import('./encryptionService');
-      const decryptedData = await decryptData(data.data.encrypted_data);
-      const studentsData = JSON.parse(decryptedData);
+      const studentsData = await decryptData(data.data.encrypted_data);
       
       return { data: studentsData, error: null };
     } catch (error) {

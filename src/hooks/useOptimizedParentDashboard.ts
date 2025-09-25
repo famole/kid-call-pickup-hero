@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
+import { getCurrentParentId, getParentIdentifierForDashboard } from '@/services/auth/parentIdResolver';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -63,28 +64,27 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
-      // Determine user type and parent ID
-      const isEmailUser = Boolean(user.email);
-      let parentId = user.id;
-
-      if (isEmailUser) {
-        // Try to get parent ID from RPC for email users
-        const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
-        if (rpcParentId) {
-          parentId = rpcParentId;
-        } else if (rpcError) {
-          logger.error('Error fetching parent ID via RPC:', rpcError);
-        }
-      } else {
-        // For username users, get parent ID from localStorage
-        const storedParentId = localStorage.getItem('username_parent_id');
-        if (storedParentId) {
-          parentId = storedParentId;
-        }
+      // Get parent ID using centralized resolver with fallback methods
+      const parentId = await getCurrentParentId();
+      if (!parentId) {
+        logger.error('Failed to get parent ID with all fallback methods');
+        setLoading(false);
+        return;
       }
 
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
+
+      // Get parent identifier for dashboard queries (email for email users, parent ID for username users)
+      const parentIdentifier = await getParentIdentifierForDashboard();
+      if (!parentIdentifier) {
+        logger.error('Failed to get parent identifier for dashboard');
+        setLoading(false);
+        return;
+      }
+
+      // Determine user type
+      const isEmailUser = Boolean(user.email);
 
       // Load dashboard data and pickup requests
       const [dashboardData, pickupRequests] = await Promise.all([
