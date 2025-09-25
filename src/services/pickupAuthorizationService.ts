@@ -237,12 +237,26 @@ export const updatePickupAuthorization = async (
 
 // Delete a pickup authorization
 export const deletePickupAuthorization = async (parentId: string, id: string): Promise<void> => {
-  const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
-  const { data, error } = await securePickupAuthorizationOperations.deletePickupAuthorizationSecure(parentId, id);
-  
-  if (error) {
-    console.error('Error deleting pickup authorization:', error);
-    throw new Error(error?.message || 'Failed to delete pickup authorization');
+  try {
+    // Validate inputs
+    if (!parentId || typeof parentId !== 'string') {
+      throw new Error('Invalid parent ID provided');
+    }
+    
+    if (!id || typeof id !== 'string') {
+      throw new Error('Invalid authorization ID provided');
+    }
+    
+    const { securePickupAuthorizationOperations } = await import('@/services/encryption/securePickupAuthorizationClient');
+    const { error } = await securePickupAuthorizationOperations.deletePickupAuthorizationSecure(parentId, id);
+    
+    if (error) {
+      console.error('Error deleting pickup authorization:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Failed to delete pickup authorization:', error);
+    throw error;
   }
 };
 

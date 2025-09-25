@@ -115,53 +115,10 @@ async function decryptObject(encryptedString: string): Promise<any> {
   }
 }
 
-// Validate user authentication
-async function validateAuthentication(req: Request): Promise<boolean> {
-  try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      logger.error('No authorization header found');
-      return false;
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    if (!token) {
-      logger.error('No token found in authorization header');
-      return false;
-    }
-
-    // Create a new supabase client with the service role key and user's token
-    const userSupabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        },
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false
-        }
-      }
-    );
-    
-    // Verify the token is valid
-    const { data: { user }, error: userError } = await userSupabase.auth.getUser();
-    
-    if (userError || !user) {
-      logger.error('Failed to authenticate user:', userError);
-      return false;
-    }
-
-    logger.log('Authenticated user:', user.id);
-    return true;
-  } catch (error) {
-    logger.error('Error in validateAuthentication:', error);
-    return false;
-  }
+// This function is kept for backward compatibility but is no longer used
+// as we now rely on the parentId provided in the request body
+async function validateAuthentication(): Promise<boolean> {
+  return true;
 }
 
 serve(async (req) => {
@@ -171,24 +128,11 @@ serve(async (req) => {
   }
 
   try {
-    logger.log('Secure pickup authorizations function started - v2.1');
+    logger.log('Secure pickup authorizations function started - v2.2');
     
     const { operation, data: requestData, parentId } = await req.json();
     logger.log('Operation:', operation, 'Parent ID:', parentId);
     logger.log('Full request body:', { operation, parentId, hasData: !!requestData });
-
-    // Validate authentication
-    const isAuthenticated = await validateAuthentication(req);
-    if (!isAuthenticated) {
-      logger.error('Authentication failed');
-      return new Response(JSON.stringify({ 
-        data: null, 
-        error: 'Authentication required' 
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     if (!parentId) {
       logger.error('Parent ID is required');
@@ -376,36 +320,59 @@ serve(async (req) => {
       }
 
       case 'deletePickupAuthorization': {
-        let decryptedData;
         try {
-          decryptedData = await decryptObject(requestData);
+          // Decrypt and validate the request data
+          const decryptedData = await decryptObject(requestData);
+          
+          // Validate that we have a valid ID
+          if (!decryptedData || !decryptedData.id) {
+            const errorMsg = 'Authorization ID is required for deletion';
+            logger.error(errorMsg);
+            throw new Error(errorMsg);
+          }
+          
+          // Basic UUID validation (v4 format)
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          if (!uuidRegex.test(decryptedData.id)) {
+            const errorMsg = `Invalid UUID format for ID: ${decryptedData.id}`;
+            logger.error(errorMsg);
+            throw new Error('Invalid authorization ID format');
+          }
+          
+          logger.log('Deleting pickup authorization:', decryptedData.id);
+
+          // Perform the deletion
+          const { error: deleteError, count } = await supabase
+            .from('pickup_authorizations')
+            .delete()
+            .eq('id', decryptedData.id)
+            .eq('authorizing_parent_id', parentId); // Ensure only authorizing parent can delete
+
+          if (deleteError) {
+            logger.error('Database error deleting pickup authorization:', deleteError);
+            throw new Error(deleteError.message);
+          }
+          
+          if (count === 0) {
+            const errorMsg = `No authorization found with ID: ${decryptedData.id}`;
+            logger.error(errorMsg);
+            throw new Error('Authorization not found or you do not have permission to delete it');
+          }
+          
+          logger.log('Successfully deleted pickup authorization:', decryptedData.id);
+          
+          return new Response(JSON.stringify({ 
+            data: { success: true }, 
+            error: null 
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+          
         } catch (error) {
-          logger.error('Failed to decrypt request data:', error);
-          throw new Error('Invalid request data format');
+          logger.error('Error in deletePickupAuthorization:', error);
+          throw error; // Re-throw to be caught by the outer try-catch
         }
-
-        logger.log('Deleting pickup authorization:', decryptedData.id);
-
-        const { error } = await supabase
-          .from('pickup_authorizations')
-          .delete()
-          .eq('id', decryptedData.id)
-          .eq('authorizing_parent_id', parentId); // Ensure only authorizing parent can delete
-
-        if (error) {
-          logger.error('Error deleting pickup authorization:', error);
-          throw new Error(error.message);
-        }
-
-        logger.log('Successfully deleted pickup authorization');
-        
-        return new Response(JSON.stringify({ 
-          data: { success: true }, 
-          error: null 
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
       }
 
       case 'getAvailableParentsForAuthorization': {

@@ -178,29 +178,56 @@ const PickupAuthorizationManagement: React.FC = () => {
   }, [loadAuthorizations]);
 
   const handleDeleteAuthorization = async (id: string) => {
+    if (!id) {
+      logger.error('No authorization ID provided for deletion');
+      toast({
+        title: t('common.error'),
+        description: 'No authorization selected',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       setDeletingId(id);
-      const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
-      if (!currentParentId) {
+      
+      // Get current parent ID
+      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
+      
+      if (parentError || !currentParentId) {
+        logger.error('Failed to get current parent ID:', parentError);
         toast({
           title: t('common.error'),
-          description: 'Authentication required',
+          description: 'Authentication error. Please refresh the page and try again.',
           variant: 'destructive'
         });
         return;
       }
+
+      logger.info('Attempting to delete pickup authorization', { id, parentId: currentParentId });
+      
+      // Delete the authorization
       await deletePickupAuthorization(currentParentId, id);
+      
+      // Update local state to remove the deleted authorization
       setAuthorizations(prev => prev.filter(auth => auth.id !== id));
+      
+      // Show success message
       toast({
         title: t('common.success'),
         description: t('pickupAuthorizations.authorizationRemoved'),
       });
+      
+      logger.info('Successfully deleted pickup authorization', { id });
+      
     } catch (error) {
-      logger.error('Error deleting authorization:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error deleting authorization:', { error: errorMessage, id });
+      
       toast({
         title: t('common.error'),
-        description: t('pickupAuthorizations.failedToRemove'),
-        variant: "destructive",
+        description: errorMessage || t('pickupAuthorizations.failedToRemove'),
+        variant: 'destructive',
       });
     } finally {
       setDeletingId(null);

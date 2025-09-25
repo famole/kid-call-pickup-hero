@@ -305,14 +305,27 @@ class SecurePickupAuthorizationOperations {
   }
 
   // Delete a pickup authorization
-  async deletePickupAuthorizationSecure(parentId: string, id: string): Promise<{ data: boolean | null; error: any }> {
+  async deletePickupAuthorizationSecure(parentId: string, id: string): Promise<{ data: boolean | null; error: Error | null }> {
     try {
-      logger.info('Deleting secure pickup authorization');
+      // Input validation
+      if (!parentId || typeof parentId !== 'string') {
+        const error = new Error('Invalid parent ID provided');
+        logger.error('Validation error in deletePickupAuthorizationSecure:', error);
+        return { data: null, error };
+      }
+      
+      if (!id || typeof id !== 'string') {
+        const error = new Error('Invalid authorization ID provided');
+        logger.error('Validation error in deletePickupAuthorizationSecure:', error);
+        return { data: null, error };
+      }
+
+      logger.info('Deleting secure pickup authorization', { id, parentId });
       
       const deleteData = { id };
       const encryptedData = await encryptData(JSON.stringify(deleteData));
 
-      const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
+      const { data, error: invokeError } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
           operation: 'deletePickupAuthorization',
           parentId,
@@ -320,25 +333,32 @@ class SecurePickupAuthorizationOperations {
         }
       });
 
-      if (error) {
+      if (invokeError) {
+        logger.error('Secure pickup authorization deletion failed:', invokeError);
+        return { data: null, error: invokeError };
+      }
+
+      if (!data) {
+        const error = new Error('No response data received from server');
         logger.error('Secure pickup authorization deletion failed:', error);
         return { data: null, error };
       }
 
-      if (!data) {
-        logger.error('No data received from secure pickup authorization deletion');
-        return { data: null, error: new Error('No response data') };
-      }
-
+      // Handle potential error in response data
       if (data.error) {
-        logger.error('Secure pickup authorization deletion operation failed:', data.error);
-        return { data: null, error: new Error(data.error || 'Unknown error') };
+        const error = new Error(data.error.message || 'Failed to delete pickup authorization');
+        logger.error('Secure pickup authorization deletion failed:', error);
+        return { data: null, error };
       }
 
+      logger.info('Successfully deleted pickup authorization', { id });
       return { data: true, error: null };
+      
     } catch (error) {
-      logger.error('Error in deletePickupAuthorizationSecure:', error);
-      return { data: null, error };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during pickup authorization deletion';
+      const errorObj = error instanceof Error ? error : new Error(errorMessage);
+      logger.error('Error in deletePickupAuthorizationSecure:', errorObj);
+      return { data: null, error: errorObj };
     }
   }
 
