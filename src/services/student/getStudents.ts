@@ -1,76 +1,38 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { Child } from '@/types';
+import { secureStudentOperations } from "@/services/encryption/secureStudentClient";
+import { Child } from "@/types";
 
-// Get all students
+// Get all students using secure operations
 export const getAllStudents = async (includeDeleted: boolean = false): Promise<Child[]> => {
   try {
-    let query = supabase
-      .from('students')
-      .select('*');
-      
-    if (!includeDeleted) {
-      query = query.is('deleted_at', null);
-    }
-    
-    const { data, error } = await query.order('name');
-    
+    const { data, error } = await secureStudentOperations.getStudentsSecure(includeDeleted);
+
     if (error) {
-      console.error('Error fetching students:', error);
-      throw new Error(error.message);
+      console.error('Error fetching students with secure operations:', error);
+      throw new Error(error.message || 'Failed to fetch students');
     }
-    
-    // Transform database structure to match our application's structure
-    return data.map((student) => ({
-      id: student.id,
-      name: student.name,
-      classId: student.class_id || '',
-      parentIds: [], // We'll populate this through a separate query in getStudentsWithParents if needed
-      avatar: student.avatar || undefined
-    }));
+
+    return data || [];
   } catch (error) {
     console.error('Error in getAllStudents:', error);
     throw error;
   }
 };
 
-// Get a student by ID
+// Get a student by ID using secure operations
 export const getStudentById = async (id: string): Promise<Child | null> => {
   try {
-    const { data, error } = await supabase
-      .from('students')
-      .select('*')
-      .eq('id', id)
-      .is('deleted_at', null)
-      .single();
-    
+    const { data, error } = await secureStudentOperations.getStudentByIdSecure(id);
+
     if (error) {
-      console.error('Error fetching student:', error);
-      return null;
+      console.error('Error fetching student by ID with secure operations:', error);
+      throw new Error(error.message || 'Failed to fetch student');
     }
-    
-    // Get parent IDs for this student
-    const { data: parentRelations, error: parentsError } = await supabase
-      .from('student_parents')
-      .select('parent_id')
-      .eq('student_id', data.id);
-    
-    if (parentsError) {
-      console.error('Error fetching student parents:', parentsError);
-    }
-    
-    const parentIds = parentsError ? [] : parentRelations.map(rel => rel.parent_id);
-    
-    return {
-      id: data.id,
-      name: data.name,
-      classId: data.class_id || '',
-      parentIds: parentIds,
-      avatar: data.avatar || undefined
-    };
+
+    return data;
   } catch (error) {
     console.error('Error in getStudentById:', error);
-    return null;
+    throw error;
   }
 };
 

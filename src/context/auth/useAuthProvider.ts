@@ -52,10 +52,20 @@ export const useAuthProvider = (): AuthState & {
           // Also clear custom username session
           localStorage.removeItem('username_session');
         } else if (event === 'TOKEN_REFRESHED' && !session) {
-          // Session expired during token refresh - auto sign out
-          logger.log('Session expired during token refresh, signing out');
-          await logout();
-          return;
+          // Session expired during token refresh - try one more refresh before signing out
+          logger.log('Session expired during token refresh, attempting final refresh');
+          try {
+            const { data: finalRefresh } = await supabase.auth.refreshSession();
+            if (!finalRefresh.session) {
+              logger.log('Final refresh failed, signing out');
+              await logout();
+              return;
+            }
+          } catch (finalError) {
+            logger.error('Final refresh error:', finalError);
+            await logout();
+            return;
+          }
         } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           try {
             // Defer data fetching to prevent deadlocks
@@ -73,14 +83,29 @@ export const useAuthProvider = (): AuthState & {
     const loadUser = async () => {
       try {
         // Try to get session from Supabase first
-        const { data: { session }, error } = await supabase.auth.getSession();
+        let { data: { session }, error } = await supabase.auth.getSession();
         logger.log('Initial session check:', session?.user?.email);
         
         // Check if session is expired
         if (error || (session && session.expires_at && new Date(session.expires_at * 1000) < new Date())) {
-          logger.log('Session expired or error, signing out');
-          await logout();
-          return;
+          logger.log('Session expired or error, attempting refresh');
+          // Don't immediately logout - try to refresh the session first
+          try {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !refreshData.session) {
+              logger.log('Session refresh failed, signing out');
+              await logout();
+              return;
+            } else {
+              logger.log('Session refreshed successfully');
+              // Continue with the refreshed session
+              session = refreshData.session;
+            }
+          } catch (refreshError) {
+            logger.error('Error refreshing session:', refreshError);
+            await logout();
+            return;
+          }
         }
         
         if (session?.user) {
@@ -220,18 +245,30 @@ export const useAuthProvider = (): AuthState & {
         }
       }
       
-      // If no parent data exists and this is an OAuth user without invitation, reject the authentication
+      // If no parent data exists and this is an OAuth user without invitation, try one more time before rejecting
       if (!parentData && isOAuthUser) {
-        logger.log('OAuth user not found in database, redirecting to unauthorized page');
-        await supabase.auth.signOut();
-        setUser(null);
-        setLoading(false);
-        
-        // Redirect to unauthorized access page
-        if (typeof window !== 'undefined') {
-          window.location.href = '/unauthorized-access';
+        logger.log('OAuth user not found in database, retrying parent data fetch');
+        // Retry parent data fetch once more in case of temporary database issue
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+          parentData = await getParentData(authUser.email);
+        } catch (retryError) {
+          logger.error('Retry parent data fetch failed:', retryError);
         }
-        return;
+        
+        // If still no parent data after retry, then redirect to unauthorized
+        if (!parentData) {
+          logger.log('OAuth user still not found after retry, redirecting to unauthorized page');
+          await supabase.auth.signOut();
+          setUser(null);
+          setLoading(false);
+          
+          // Redirect to unauthorized access page
+          if (typeof window !== 'undefined') {
+            window.location.href = '/unauthorized-access';
+          }
+          return;
+        }
       }
 
       if (parentData) {

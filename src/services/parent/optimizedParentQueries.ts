@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { secureOperations } from '@/services/encryption';
+import { secureClassOperations } from '@/services/encryption/secureClassClient';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
@@ -54,15 +55,9 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
       throw new Error(studentsError.message);
     }
 
-    // Get classes data separately
-    const { data: classesData, error: classesError } = await supabase
-      .from('classes')
-      .select('id, name, grade');
-
-    if (classesError) {
-      logger.error('Error fetching classes:', classesError);
-      throw new Error(classesError.message);
-    }
+    // Get classes data using secure operations
+    const classesData = await secureClassOperations.getAll();
+    logger.log(`Fetched ${classesData?.length || 0} classes using secure operations`);
 
     if (studentParentError) {
       logger.error('Error fetching student-parent relationships:', studentParentError);
@@ -242,13 +237,13 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       studentsData = allStudents?.filter(s => studentIds.includes(s.id)) || [];
     }
 
-    // Get all classes data to resolve class names
-    const { data: classesData, error: classesError } = await supabase
-      .from('classes')
-      .select('id, name, grade');
-
-    if (classesError) {
-      logger.error('Error fetching classes:', classesError);
+    // Get all classes data to resolve class names using secure operations
+    let classesData = [];
+    try {
+      classesData = await secureClassOperations.getAll();
+      logger.log(`Fetched ${classesData?.length || 0} classes using secure operations`);
+    } catch (error) {
+      logger.error('Error fetching classes with secure operations:', error);
       // Don't throw, just log and continue with empty classes
     }
 

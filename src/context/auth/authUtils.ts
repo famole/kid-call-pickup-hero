@@ -24,11 +24,11 @@ export const cleanupAuthState = () => {
 };
 
 // Get parent data using server-side helper - supports both email and username
-export const getParentData = async (emailOrUsername: string | null) => {
+export const getParentData = async (emailOrUsername: string | null, retryCount: number = 0) => {
   if (!emailOrUsername) return null;
   
   try {
-    logger.log('Fetching parent data for identifier:', emailOrUsername);
+    logger.log('Fetching parent data for identifier:', emailOrUsername, 'retry:', retryCount);
     
     // Use the new database function that can handle both email and username
     const { data: parentData, error } = await supabase
@@ -36,6 +36,14 @@ export const getParentData = async (emailOrUsername: string | null) => {
     
     if (error) {
       logger.error('Error fetching parent data:', error);
+      
+      // Retry up to 2 times for network/temporary errors
+      if (retryCount < 2 && (error.message?.includes('network') || error.message?.includes('timeout') || error.code === 'PGRST301')) {
+        logger.log('Retrying parent data fetch due to temporary error');
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return getParentData(emailOrUsername, retryCount + 1);
+      }
+      
       return null;
     }
     
@@ -48,6 +56,13 @@ export const getParentData = async (emailOrUsername: string | null) => {
     return userData;
   } catch (error) {
     logger.error("Error fetching parent data:", error);
+    
+    // Retry for network errors
+    if (retryCount < 2) {
+      logger.log('Retrying parent data fetch due to exception');
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      return getParentData(emailOrUsername, retryCount + 1);
+    }
     return null;
   }
 };

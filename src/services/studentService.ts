@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Child } from '@/types';
+import { secureStudentOperations } from "@/services/encryption/secureStudentClient";
+import { Child } from "@/types";
 
 // Import functions from the refactored modules
 export { getAllStudents, getStudentById, getStudentsForParent } from './student/getStudents';
