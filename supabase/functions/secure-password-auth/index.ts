@@ -33,7 +33,7 @@ async function generatePasswordKey(passphrase: string): Promise<CryptoKey> {
 
 async function decryptPassword(encryptedPassword: string): Promise<string> {
   try {
-    const passphrase = Deno.env.get('PASSWORD_ENCRYPTION_KEY') || "P@ssw0rd_3ncrypt!0n_K3y_2024";
+    const passphrase = "P@ssw0rd_3ncrypt!0n_K3y_2024";
     const key = await generatePasswordKey(passphrase);
     const decoder = new TextDecoder();
     
@@ -59,7 +59,7 @@ async function decryptPassword(encryptedPassword: string): Promise<string> {
 
 async function encryptResponse(responseData: any): Promise<string> {
   try {
-    const passphrase = Deno.env.get('PASSWORD_ENCRYPTION_KEY') || "P@ssw0rd_3ncrypt!0n_K3y_2024";
+    const passphrase = "P@ssw0rd_3ncrypt!0n_K3y_2024";
     const key = await generatePasswordKey(passphrase);
     const encoder = new TextEncoder();
     

@@ -27,7 +27,7 @@ const generatePasswordKey = async (passphrase: string): Promise<CryptoKey> => {
 
 // Get password encryption passphrase
 const getPasswordEncryptionPassphrase = (): string => {
-  // Fallback to a consistent hardcoded key for compatibility
+  // Use consistent hardcoded key to ensure client/server compatibility
   return "P@ssw0rd_3ncrypt!0n_K3y_2024";
 };
 
