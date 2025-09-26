@@ -66,43 +66,78 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
 
     logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
 
-    // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
-    const currentDayOfWeek = new Date().getDay();
+    // Get pickup authorizations for family members using secure endpoint
+    let authorizationData: Array<{
+      id: string;
+      authorizing_parent_id: string;
+      authorized_parent_id: string;
+      student_id: string;
+      student_ids?: string[];
+      is_active: boolean;
+      start_date: string;
+      end_date: string;
+      allowed_days_of_week: number[];
+      created_at: string;
+      updated_at: string;
+      students: {
+        id: string;
+        name: string;
+        class_id: string;
+        avatar: string | null;
+        classes: {
+          id: string;
+          name: string;
+          grade: string;
+        } | null;
+      };
+    }> = [];
     
-    // Get pickup authorizations for family members
-    const { data: authorizationData, error: authError } = await supabase
-      .from('pickup_authorizations')
-      .select(`
-        authorized_parent_id,
-        student_id,
-        student_ids,
-        is_active,
-        start_date,
-        end_date,
-        allowed_days_of_week,
-        students!inner (
-          id,
-          name,
-          class_id,
-          avatar,
-          classes (
-            id,
-            name,
-            grade
-          )
-        )
-      `)
-      .eq('is_active', true)
-      .is('students.deleted_at', null)
-      .gte('end_date', new Date().toISOString().split('T')[0]) // Only current/future authorizations
-      .contains('allowed_days_of_week', [currentDayOfWeek]); // Only authorizations valid for today
-
-    if (authError) {
-      logger.warn('Error loading pickup authorizations:', authError);
+    try {
+      // Get the current parent ID using the secure RPC function
+      const { data: currentParentId, error: parentIdError } = await supabase.rpc('get_current_parent_id');
+      
+      if (parentIdError || !currentParentId) {
+        logger.warn('Error getting current parent ID:', parentIdError);
+        return [];
+      }
+      
+      const { data: authData, error: authError } = await supabase.functions.invoke('secure-pickup-authorizations', {
+        body: {
+          operation: 'getPickupAuthorizationsForParent',
+          parentId: currentParentId
+        }
+      });
+      
+      if (authError) {
+        logger.warn('Error loading pickup authorizations:', authError);
+      } else if (authData?.data?.encrypted_data) {
+        // Import the decryption function from encryption service
+        const { decryptData } = await import('@/services/encryption/encryptionService');
+        // Decrypt the response data
+        const decryptedData = await decryptData(authData.data.encrypted_data);
+        if (decryptedData) {
+          authorizationData = JSON.parse(decryptedData);
+        }
+      }
+    } catch (error) {
+      logger.warn('Error in secure pickup authorizations call:', error);
     }
 
+    // Define the student type
+    type StudentWithClass = {
+      id: string;
+      name: string;
+      classId: string | null;
+      className: string;
+      grade: string;
+      isPrimary: boolean;
+      avatar: string | null;
+      parentRelationshipId: string;
+      relationship: string | null;
+    };
+
     // Group students by parent ID
-    const studentsByParent = studentParentData?.reduce((acc, relation) => {
+    const studentsByParent = studentParentData?.reduce<Record<string, StudentWithClass[]>>((acc, relation) => {
       if (!acc[relation.parent_id]) {
         acc[relation.parent_id] = [];
       }
@@ -112,24 +147,46 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
       const studentClass = classesData?.find(c => c.id === student?.class_id);
       
       if (student) {
-        acc[relation.parent_id].push({
+        const studentWithClass: StudentWithClass = {
           id: student.id,
           name: student.name,
-          classId: student.class_id,
+          classId: student.class_id || null,
           className: studentClass?.name || 'No Class',
           grade: studentClass?.grade || 'No Grade',
-          isPrimary: relation.is_primary,
-          avatar: student.avatar,
+          isPrimary: Boolean(relation.is_primary),
+          avatar: student.avatar || null,
           parentRelationshipId: relation.id,
-          relationship: relation.relationship,
-        });
+          relationship: relation.relationship || null,
+        };
+        acc[relation.parent_id].push(studentWithClass);
       }
       return acc;
-    }, {} as Record<string, any[]>) || {};
+    }, {} as Record<string, StudentWithClass[]>) || {};
 
     // Add authorized students for family members
     if (authorizationData) {
-      authorizationData.forEach((auth: any) => {
+      type AuthorizationData = {
+        authorized_parent_id: string;
+        student_id: string;
+        student_ids?: string[];
+        is_active: boolean;
+        start_date: string;
+        end_date: string;
+        allowed_days_of_week: number[];
+        students: {
+          id: string;
+          name: string;
+          class_id: string;
+          avatar: string | null;
+          classes: {
+            id: string;
+            name: string;
+            grade: string;
+          } | null;
+        };
+      };
+
+      authorizationData.forEach((auth: AuthorizationData) => {
         const parentId = auth.authorized_parent_id;
         
         // Initialize array if doesn't exist
@@ -139,22 +196,24 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
 
         const student = auth.students;
         // Check if student is not already in the list (avoid duplicates from direct assignments)
-        const existingStudent = studentsByParent[parentId].find((s: any) => s.id === student.id);
-        if (!existingStudent) {
-          studentsByParent[parentId].push({
-            id: student.id,
-            name: student.name,
-            classId: student.class_id,
-            className: student.classes?.name || 'No Class',
-            grade: student.classes?.grade || 'No Grade',
-            isPrimary: false,
-            avatar: student.avatar,
-            parentRelationshipId: undefined, // No direct relationship
-            relationship: 'authorized',
-          });
-        }
-      });
-    }
+        const existingStudent = studentsByParent[parentId].find((s: StudentWithClass) => s.id === student.id);
+      
+      if (!existingStudent && student) {
+        const authorizedStudent: StudentWithClass = {
+          id: student.id,
+          name: student.name,
+          classId: student.class_id,
+          className: student.classes?.name || 'No Class',
+          grade: student.classes?.grade || 'No Grade',
+          isPrimary: false, // Authorized students are not primary
+          avatar: student.avatar || null,
+          parentRelationshipId: '', // No direct relationship ID for authorized students
+          relationship: 'authorized',
+        };
+        studentsByParent[parentId].push(authorizedStudent);
+      }
+    });
+  }
 
     // Combine parents with their students - convert dates properly
     const parentsWithStudents: ParentWithStudents[] = parentsData?.map(parent => ({
@@ -288,7 +347,9 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
       
       if (!studentsError && allStudents) {
-        authorizedStudentDetails = allStudents.filter(s => authorizedStudentIds.includes(s.id));
+        // Filter out deleted students and map to match expected structure
+        authorizedStudentDetails = allStudents
+          .filter(s => s && authorizedStudentIds.includes(s.id) && !s.deletedAt);
       }
     }
 
