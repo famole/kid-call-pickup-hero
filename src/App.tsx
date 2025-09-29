@@ -40,7 +40,7 @@ function App() {
         <Router>
           <div className="App">
             <Routes>
-              {/* <Route path="/login" element={<Login />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/password-setup" element={<PasswordSetup />} />
               <Route path="/unauthorized-access" element={<UnauthorizedAccess />} />
@@ -142,9 +142,7 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route path="*" element={<NotFound />} /> */}
-              <Route path="/" element={<UpsyDefaultScreen />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
           <Toaster />
