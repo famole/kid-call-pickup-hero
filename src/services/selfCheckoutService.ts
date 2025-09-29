@@ -109,16 +109,24 @@ export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfChec
     const result: SelfCheckoutAuthorizationWithDetails[] = [];
     
     for (const auth of data) {
+      console.log(`[getSelfCheckoutAuthorizationsForParent] Processing authorization ${auth.id} for student ${auth.student_id}`);
+      
       const student = await getStudentById(auth.student_id);
+      console.log(`[getSelfCheckoutAuthorizationsForParent] Student data:`, student);
+      
       let classInfo = null;
       let parentInfo = null;
       
       if (student && student.classId) {
         try {
+          console.log(`[getSelfCheckoutAuthorizationsForParent] Fetching class for student ${student.name}, classId: ${student.classId}`);
           classInfo = await getClassById(student.classId);
+          console.log(`[getSelfCheckoutAuthorizationsForParent] Class info fetched:`, classInfo);
         } catch (error) {
           console.error(`Error fetching class with id ${student.classId}:`, error);
         }
+      } else {
+        console.log(`[getSelfCheckoutAuthorizationsForParent] Student or classId missing:`, { student: student?.name, classId: student?.classId });
       }
 
       if (auth.authorizing_parent_id) {
@@ -129,6 +137,27 @@ export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfChec
         }
       }
       
+      // Create the student info object in the expected format
+      const studentInfo = student ? {
+        id: student.id,
+        name: student.name,
+        classId: student.classId,
+        avatar: student.avatar
+      } : undefined;
+
+      // Create the class info object in the expected format
+      const classData = classInfo ? {
+        id: classInfo.id,
+        name: classInfo.name,
+        grade: classInfo.grade,
+        teacher: classInfo.teacher
+      } : undefined;
+
+      console.log(`[getSelfCheckoutAuthorizationsForParent] Final data for auth ${auth.id}:`, {
+        student: studentInfo,
+        class: classData
+      });
+      
       result.push({
         id: auth.id,
         studentId: auth.student_id,
@@ -138,8 +167,8 @@ export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfChec
         isActive: auth.is_active,
         createdAt: new Date(auth.created_at),
         updatedAt: new Date(auth.updated_at),
-        student,
-        class: classInfo,
+        student: studentInfo,
+        class: classData,
         authorizingParent: parentInfo
       });
     }
