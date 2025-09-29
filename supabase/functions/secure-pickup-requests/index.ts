@@ -114,6 +114,12 @@ async function decryptObject(encryptedString: string): Promise<any> {
   }
 }
 
+// Define types for the request body
+interface CancelPickupRequestPayload {
+  requestId: string;
+  parentId?: string;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -180,6 +186,79 @@ serve(async (req) => {
         );
       }
 
+      case 'cancelPickupRequest': {
+        // Decrypt the request data
+        let decryptedData;
+        try {
+          decryptedData = await decryptObject(data);
+          console.log('Decrypted cancel request data:', decryptedData);
+        } catch (error) {
+          console.error('Error decrypting request data:', error);
+          throw new Error('Invalid request data');
+        }
+
+        const { requestId, parentId } = decryptedData as CancelPickupRequestPayload;
+        
+        if (!requestId) {
+          throw new Error('Request ID is required');
+        }
+        
+        console.log(`Canceling pickup request ${requestId} for parent ${parentId || 'authenticated user'}`);
+        
+        // First, verify the parent has permission to cancel this request
+        const { data: request, error: fetchError } = await supabase
+          .from('pickup_requests')
+          .select('*')
+          .eq('id', requestId)
+          .single();
+          
+        if (fetchError) {
+          console.error('Error fetching pickup request:', fetchError);
+          throw new Error('Failed to fetch pickup request');
+        }
+        
+        // Verify ownership - either match the parent_id or be an admin
+        const { data: { user } } = await supabase.auth.getUser();
+        const isAdmin = user?.user_metadata?.role === 'admin';
+        
+        if (!isAdmin && parentId && request.parent_id !== parentId) {
+          console.error(`Parent ${parentId} is not authorized to cancel request ${requestId}`);
+          throw new Error('Not authorized to cancel this pickup request');
+        }
+        
+        // Cancel the request
+        const { data: updatedRequest, error: updateError } = await supabase
+          .from('pickup_requests')
+          .update({ 
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', requestId)
+          .select('*')
+          .single();
+          
+        if (updateError) {
+          console.error('Error canceling pickup request:', updateError);
+          throw new Error('Failed to cancel pickup request');
+        }
+        
+        console.log(`Successfully canceled pickup request ${requestId}`);
+        
+        return new Response(
+          JSON.stringify({ 
+            data: { 
+              success: true,
+              request: updatedRequest
+            }, 
+            error: null 
+          }),
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
       case 'createPickupRequest': {
         const decryptedData = JSON.parse(await decryptObject(data));
         const { studentId, parentId } = decryptedData;
