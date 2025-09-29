@@ -15,9 +15,20 @@ export const getAllClasses = async (): Promise<Class[]> => {
 // Get a single class by ID
 export const getClassById = async (id: string): Promise<Class | null> => {
   try {
-    return await secureClassOperations.getById(id);
+    console.log(`[getClassById] Fetching class with ID: ${id}`);
+    const classData = await secureClassOperations.getById(id);
+    if (!classData) {
+      console.warn(`[getClassById] No class found with ID: ${id}`);
+    } else {
+      console.log(`[getClassById] Successfully fetched class:`, {
+        id: classData.id,
+        name: classData.name,
+        grade: classData.grade
+      });
+    }
+    return classData;
   } catch (error) {
-    console.error('Error in getClassById:', error);
+    console.error('[getClassById] Error fetching class:', error);
     return null;
   }
 };
