@@ -131,7 +131,16 @@ export const secureStudentOperations = {
       const decryptedData = await decryptObject(data.data.encrypted_data);
       logger.log('Decrypted students data:', decryptedData?.length || 0, 'students');
       
-      return { data: decryptedData, error: null };
+      // Map snake_case to camelCase for frontend
+      const mappedStudents: Child[] = (decryptedData || []).map((student: any) => ({
+        id: student.id,
+        name: student.name,
+        classId: student.class_id || '',
+        parentIds: student.parent_ids || [],
+        avatar: student.avatar
+      }));
+      
+      return { data: mappedStudents, error: null };
     } catch (error) {
       logger.error('Error in getStudentsSecure:', error);
       return { data: null, error };
@@ -162,7 +171,20 @@ export const secureStudentOperations = {
 
       const decrypted = await decryptObject(data.data.encrypted_data);
       logger.log('Decrypted student by ID present:', decrypted ? 'yes' : 'no');
-      return { data: decrypted || null, error: null };
+      
+      // Map snake_case to camelCase for frontend
+      if (decrypted) {
+        const mappedStudent: Child = {
+          id: decrypted.id,
+          name: decrypted.name,
+          classId: decrypted.class_id || '',
+          parentIds: decrypted.parent_ids || [],
+          avatar: decrypted.avatar
+        };
+        return { data: mappedStudent, error: null };
+      }
+      
+      return { data: null, error: null };
     } catch (error) {
       logger.error('Error in getStudentByIdSecure:', error);
       return { data: null, error };
