@@ -166,7 +166,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       // Get the authorizing parent ID (admin creating the authorization)
       const currentParentId = await getCurrentParentIdCached();
       if (!currentParentId) {
-        console.error('Error getting current parent ID:', parentError);
+        console.error('Error getting current parent ID');
         toast({
           title: t('familyMemberDetails.error'),
           description: 'Failed to authenticate admin',

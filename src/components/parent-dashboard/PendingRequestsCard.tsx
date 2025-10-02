@@ -35,11 +35,13 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
       logger.info('Cancel successful, calling onRequestCancelled callback');
       toast.success(t('dashboard.pickupRequestCancelled'));
       
-      // Trigger the refetch callback immediately after successful cancellation
+      // Trigger the refetch callback with a slight delay to ensure DB has been updated
       if (onRequestCancelled) {
-        logger.info('Calling refetch callback');
-        onRequestCancelled();
-        logger.info('Refetch callback called');
+        logger.info('Scheduling refetch callback');
+        setTimeout(() => {
+          logger.info('Executing refetch callback now');
+          onRequestCancelled();
+        }, 500);
       } else {
         logger.warn('No onRequestCancelled callback provided!');
       }

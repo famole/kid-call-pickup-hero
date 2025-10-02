@@ -267,7 +267,7 @@ export const checkPickupAuthorization = async (
 ): Promise<boolean> => {
   const parentId = await getCurrentParentIdCached();
   if (!parentId) {
-    console.error('Unable to determine current parent ID:', parentError);
+    console.error('Unable to determine current parent ID');
     return false;
   }
 

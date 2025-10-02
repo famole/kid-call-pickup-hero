@@ -195,7 +195,7 @@ const PickupAuthorizationManagement: React.FC = () => {
       // Get current parent ID
       const currentParentId = await getCurrentParentIdCached();
       if (!currentParentId) {
-        logger.error('Failed to get current parent ID:', parentError);
+        logger.error('Failed to get current parent ID');
         toast({
           title: t('common.error'),
           description: 'Authentication error. Please refresh the page and try again.',
