@@ -128,7 +128,6 @@ serve(async (req)=>{
       case 'getPickupAuthorizationsForParent':
         {
           logger.log('Getting pickup authorizations for parent:', parentId);
-          const currentDayOfWeek = new Date().getDay();
           
           const { data, error } = await supabase.from('pickup_authorizations')
             .select(`
@@ -151,7 +150,6 @@ serve(async (req)=>{
             .eq('is_active', true)
             .is('students.deleted_at', null)
             .gte('end_date', new Date().toISOString().split('T')[0])
-            .contains('allowed_days_of_week', [currentDayOfWeek])
             .order('created_at', { ascending: false });
             
           if (error) {
