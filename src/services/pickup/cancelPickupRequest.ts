@@ -85,7 +85,9 @@ export const cancelPickupRequest = async (requestId: string): Promise<void> => {
       throw new Error(error.message || 'Failed to cancel pickup request');
     }
     
-    if (!data?.success) {
+    // Edge function returns: { data: { success: true, request: {...} }, error: null }
+    // supabase.functions.invoke wraps this as: { data: { data: {...}, error: null } }
+    if (!data?.data?.success) {
       logger.error('Failed to cancel pickup request:', data?.error);
       throw new Error(data?.error || 'Failed to cancel pickup request');
     }
