@@ -106,7 +106,7 @@ class SecurePickupAuthorizationOperations {
         updatedAt: item.updated_at,
         authorizingParent: item.authorizing_parent,
         authorizedParent: item.authorized_parent,
-        student: item.student
+        student: item.students
       }));
 
       return { data: authorizations, error: null };
