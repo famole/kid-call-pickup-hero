@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import {
   getPickupAuthorizationsForParent,
   deletePickupAuthorization,
@@ -73,7 +74,7 @@ const PickupAuthorizationManagement: React.FC = () => {
         logger.info('Loading pickup authorizations and invitations');
         const [authData, invitationData] = await Promise.all([
           (async () => {
-            const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+            const currentParentId = await getCurrentParentIdCached();
             if (!currentParentId) {
               logger.error('PickupAuthorizationManagement: No current parent ID found');
               return [];
@@ -192,9 +193,8 @@ const PickupAuthorizationManagement: React.FC = () => {
       setDeletingId(id);
       
       // Get current parent ID
-      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-      
-      if (parentError || !currentParentId) {
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
         logger.error('Failed to get current parent ID:', parentError);
         toast({
           title: t('common.error'),

@@ -9,6 +9,7 @@ import {
 } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
@@ -67,9 +68,9 @@ export const useEditAuthorizationDialog = (
     if (!user) return;
 
     try {
-      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-      if (parentError || !currentParentId) {
-        console.error('Error getting current parent ID:', parentError);
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        console.error('Error getting current parent ID via cached helper');
         return;
       }
 
@@ -146,7 +147,7 @@ export const useEditAuthorizationDialog = (
 
     setLoading(true);
     try {
-      const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+      const currentParentId = await getCurrentParentIdCached();
       if (!currentParentId) return;
       
       await updatePickupAuthorization(currentParentId, authorization.id, {

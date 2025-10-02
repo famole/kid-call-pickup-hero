@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
 interface WithdrawalRecord {
   id: string;
@@ -45,15 +46,8 @@ export const useOptimizedWithdrawalHistory = () => {
     try {
       setLoading(true);
 
-      // Get current parent ID using the RPC function
-      const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-      
-      if (parentError) {
-        logger.error('Error getting current parent ID:', parentError);
-        setWithdrawalData([]);
-        return;
-      }
-
+      // Get current parent ID (cached)
+      const parentId = await getCurrentParentIdCached();
       if (!parentId) {
         logger.warn('No parent ID found for current user');
         setWithdrawalData([]);

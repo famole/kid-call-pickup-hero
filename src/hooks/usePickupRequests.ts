@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getActivePickupRequestsForParent } from '@/services/pickupService';
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { PickupRequest, Child } from '@/types';
 
 interface ChildWithType extends Child {
@@ -30,9 +31,9 @@ export const usePickupRequests = (children: ChildWithType[]) => {
     if (!user) return;
 
     try {
-      // Get current parent ID
-      const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-      if (!parentError && parentId) {
+      // Get current parent ID (cached)
+      const parentId = await getCurrentParentIdCached();
+      if (parentId) {
         currentParentIdRef.current = parentId;
       }
 

@@ -2,6 +2,12 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
 import { logger } from '@/utils/logger';
+import { isInvitedUserCached } from '@/services/auth/isInvitedUser';
+
+// Module-level cache for get_parent_by_identifier lookups
+const PARENT_IDENTIFIER_TTL_MS = 30_000; // 30s TTL
+const parentIdentifierCache = new Map<string, { value: any | null; expiresAt: number }>();
+const parentIdentifierInFlight = new Map<string, Promise<any | null>>();
 
 // Clean up auth state in localStorage
 export const cleanupAuthState = () => {
@@ -29,31 +35,53 @@ export const getParentData = async (emailOrUsername: string | null, retryCount: 
   
   try {
     logger.log('Fetching parent data for identifier:', emailOrUsername, 'retry:', retryCount);
-    
-    // Use the new database function that can handle both email and username
-    const { data: parentData, error } = await supabase
-      .rpc('get_parent_by_identifier', { identifier: emailOrUsername });
-    
-    if (error) {
-      logger.error('Error fetching parent data:', error);
-      
-      // Retry up to 2 times for network/temporary errors
-      if (retryCount < 2 && (error.message?.includes('network') || error.message?.includes('timeout') || error.code === 'PGRST301')) {
-        logger.log('Retrying parent data fetch due to temporary error');
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
-        return getParentData(emailOrUsername, retryCount + 1);
+
+    // Serve from cache if valid
+    const now = Date.now();
+    const cached = parentIdentifierCache.get(emailOrUsername);
+    if (cached && cached.expiresAt > now) {
+      return cached.value;
+    }
+
+    // Coalesce concurrent calls
+    const existing = parentIdentifierInFlight.get(emailOrUsername);
+    if (existing) return existing;
+
+    const promise = (async () => {
+      // Use the new database function that can handle both email and username
+      const { data: parentData, error } = await supabase
+        .rpc('get_parent_by_identifier', { identifier: emailOrUsername });
+
+      if (error) {
+        logger.error('Error fetching parent data:', error);
+        // Negative cache briefly to avoid hammering on repeated failures
+        parentIdentifierCache.set(emailOrUsername, { value: null, expiresAt: now + 5_000 });
+
+        // Retry up to 2 times for network/temporary errors
+        if (retryCount < 2 && (error.message?.includes('network') || error.message?.includes('timeout') || error.code === 'PGRST301')) {
+          logger.log('Retrying parent data fetch due to temporary error');
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+          return getParentData(emailOrUsername, retryCount + 1);
+        }
+        return null;
       }
-      
-      return null;
-    }
-    
-    if (!parentData || parentData.length === 0) {
-      logger.log('No parent found for identifier:', emailOrUsername);
-      return null;
-    }
-    
-    const userData = parentData[0];
-    return userData;
+
+      if (!parentData || parentData.length === 0) {
+        logger.log('No parent found for identifier:', emailOrUsername);
+        parentIdentifierCache.set(emailOrUsername, { value: null, expiresAt: now + 5_000 });
+        return null;
+      }
+
+      const userData = parentData[0];
+      parentIdentifierCache.set(emailOrUsername, { value: userData, expiresAt: Date.now() + PARENT_IDENTIFIER_TTL_MS });
+      return userData;
+    })()
+      .finally(() => {
+        parentIdentifierInFlight.delete(emailOrUsername);
+      });
+
+    parentIdentifierInFlight.set(emailOrUsername, promise);
+    return await promise;
   } catch (error) {
     logger.error("Error fetching parent data:", error);
     
@@ -109,13 +137,7 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
 // Create a User object from parent data
 export const createUserFromParentData = async (parentData: any): Promise<User> => {
   // Check if user is invited (only has authorizations, no direct student relationships)
-  let isInvitedUser = false;
-  try {
-    const { data } = await supabase.rpc('is_invited_user');
-    isInvitedUser = data || false;
-  } catch (error) {
-    logger.error('Error checking invited user status:', error);
-  }
+  const isInvitedUser = await isInvitedUserCached();
 
   // Debug logging to see what data we're receiving
   logger.log('🔍 createUserFromParentData - parentData:', parentData);

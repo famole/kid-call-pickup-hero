@@ -1,7 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { secureOperations } from '@/services/encryption';
+import { decryptData } from '@/services/encryption/encryptionService';
 import { Parent, ParentInput } from "@/types/parent";
 import { logger } from "@/utils/logger";
+
+// Module-level cache and in-flight coalescing for parent lookups
+const PARENT_BY_ID_TTL_MS = 30_000; // 30s
+const parentByIdCache = new Map<string, { value: Parent | null; expiresAt: number }>();
+const parentByIdInFlight = new Map<string, Promise<Parent | null>>();
 
 // Core CRUD operations for parents
 export const getAllParents = async (includeDeleted: boolean = false): Promise<Parent[]> => {
@@ -25,28 +31,70 @@ export const getAllParents = async (includeDeleted: boolean = false): Promise<Pa
 };
 
 export const getParentById = async (id: string): Promise<Parent | null> => {
-  // Use secure operations for getting parent data
-  const { data: allParents, error } = await secureOperations.getParentsSecure(false);
-  
-  if (error) {
-    logger.error('Error fetching parent:', error);
+  try {
+    if (!id) return null;
+
+    // Serve from cache if valid
+    const cached = parentByIdCache.get(id);
+    const now = Date.now();
+    if (cached && cached.expiresAt > now) {
+      return cached.value;
+    }
+
+    // Coalesce concurrent calls
+    const existing = parentByIdInFlight.get(id);
+    if (existing) return existing;
+
+    const promise = (async () => {
+      const { data, error } = await supabase.functions.invoke('secure-parents', {
+        body: {
+          operation: 'getParentById',
+          data: { id }
+        }
+      });
+
+      if (error) {
+        logger.error('Edge function error in getParentById:', error);
+        // brief negative cache to avoid hammering
+        parentByIdCache.set(id, { value: null, expiresAt: now + 5_000 });
+        return null;
+      }
+
+      if (!data || data.error) {
+        if (data?.error) logger.error('Server error in getParentById:', data.error);
+        parentByIdCache.set(id, { value: null, expiresAt: now + 5_000 });
+        return null;
+      }
+
+      const decrypted = await decryptData(data.data.encrypted_data);
+      if (!decrypted) {
+        parentByIdCache.set(id, { value: null, expiresAt: now + 5_000 });
+        return null;
+      }
+
+      const parent: Parent = {
+        id: decrypted.id,
+        name: decrypted.name,
+        email: decrypted.email,
+        phone: decrypted.phone,
+        role: decrypted.role || 'parent',
+        createdAt: new Date(decrypted.created_at),
+        updatedAt: new Date(decrypted.updated_at),
+      };
+
+      parentByIdCache.set(id, { value: parent, expiresAt: Date.now() + PARENT_BY_ID_TTL_MS });
+      return parent;
+    })()
+      .finally(() => {
+        parentByIdInFlight.delete(id);
+      });
+
+    parentByIdInFlight.set(id, promise);
+    return await promise;
+  } catch (e) {
+    logger.error('Error in getParentById:', e);
     return null;
   }
-  
-  const data = allParents?.find(p => p.id === id);
-  if (!data) {
-    return null;
-  }
-  
-  return {
-    id: data.id,
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    role: data.role || 'parent',
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
-  };
 };
 
 export const createParent = async (parentData: ParentInput): Promise<Parent> => {

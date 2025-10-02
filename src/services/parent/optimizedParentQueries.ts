@@ -5,6 +5,7 @@ import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { logger } from '@/utils/logger';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
 export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false): Promise<ParentWithStudents[]> => {
   try {
@@ -93,11 +94,10 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
     }> = [];
     
     try {
-      // Get the current parent ID using the secure RPC function
-      const { data: currentParentId, error: parentIdError } = await supabase.rpc('get_current_parent_id');
-      
-      if (parentIdError || !currentParentId) {
-        logger.warn('Error getting current parent ID:', parentIdError);
+      // Get the current parent ID using cached helper
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        logger.warn('Cached helper returned null current parent ID');
         return [];
       }
       

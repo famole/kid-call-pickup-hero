@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Users, Clock } from "lucide-react";
 import { Child, Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { getPickupAuthorizationsForStudent, deletePickupAuthorization } from '@/services/pickupAuthorizationService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/AuthContext';
@@ -67,7 +68,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   
   const deleteConfirmation = useDeleteConfirmation<PickupAuthorization>({
     onDelete: async (auth) => {
-      const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+      const currentParentId = await getCurrentParentIdCached();
       if (!currentParentId) {
         toast({
           title: t('common.error'),

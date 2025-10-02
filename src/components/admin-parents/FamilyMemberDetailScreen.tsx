@@ -20,6 +20,7 @@ import { Child, Class } from '@/types';
 import { logger } from '@/utils/logger';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { 
   getPickupAuthorizationsForParent,
   getPickupAuthorizationsForAuthorizedParent,
@@ -87,9 +88,9 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     setLoadingAuthorizations(true);
     try {
       // For admin functionality, we need to get the admin's parentId
-      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-      if (parentError || !currentParentId) {
-        console.error('Error getting current parent ID:', parentError);
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        console.error('Error getting current parent ID');
         toast({
           title: t('familyMemberDetails.error'),
           description: 'Failed to authenticate admin',
@@ -163,8 +164,8 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     
     try {
       // Get the authorizing parent ID (admin creating the authorization)
-      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-      if (parentError || !currentParentId) {
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
         console.error('Error getting current parent ID:', parentError);
         toast({
           title: t('familyMemberDetails.error'),
@@ -202,7 +203,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
 
   const handleRemoveAuthorization = async (authId: string) => {
     try {
-      const { data: currentParentId } = await supabase.rpc('get_current_parent_id');
+      const currentParentId = await getCurrentParentIdCached();
       if (!currentParentId) return;
       
       await deletePickupAuthorization(currentParentId, authId);

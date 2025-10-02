@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { Child, PickupRequest } from '@/types';
 import { logger } from '@/utils/logger';
 
@@ -59,16 +60,13 @@ const getCachedParentId = async (userId: string, isEmailUser: boolean): Promise<
   logger.log('Cache miss, determining parent ID. Default userId:', userId);
 
   if (isEmailUser) {
-    logger.log('Email user detected, calling get_current_parent_id RPC');
-    // Get parent ID from RPC for email users
-    const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
+    logger.log('Email user detected, using cached get_current_parent_id');
+    const rpcParentId = await getCurrentParentIdCached();
     if (rpcParentId) {
       parentId = rpcParentId;
-      logger.log('RPC returned parent ID:', parentId);
-    } else if (rpcError) {
-      logger.error('Error fetching parent ID via RPC:', rpcError);
+      logger.log('Cached helper returned parent ID:', parentId);
     } else {
-      logger.warn('RPC returned null parent ID');
+      logger.warn('Cached helper returned null parent ID');
     }
   } else {
     // For username users, get parent ID from localStorage

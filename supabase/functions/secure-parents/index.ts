@@ -156,6 +156,44 @@ serve(async (req) => {
         });
       }
 
+      case 'getParentById': {
+        const { id } = data || {};
+        if (!id) {
+          throw new Error('Missing required parameter: id');
+        }
+
+        let query = supabase
+          .from('parents')
+          .select(`
+            id,
+            name,
+            email,
+            username,
+            phone,
+            role,
+            created_at,
+            updated_at,
+            deleted_at
+          `)
+          .eq('id', id);
+
+        if (!includeDeleted) {
+          query = query.is('deleted_at', null);
+        }
+
+        const { data: parentData, error } = await query.maybeSingle();
+
+        if (error) {
+          console.error('Error fetching parent by id:', error);
+          throw error;
+        }
+
+        const encryptedParentData = await encryptObject(parentData || null);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedParentData }, error: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'createParent': {
         // Decrypt entire object received from client
         const decryptedData = await decryptObject(data.encrypted_data);

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
 interface StudentDeparture {
   id: string;
@@ -74,16 +76,10 @@ export const useSelfCheckoutHistory = () => {
     try {
       setLoading(true);
 
-      // Get current parent ID
-      const { data: parentData, error: parentError } = await supabase.rpc('get_current_parent_id');
-      
-      if (parentError) {
-        console.error('Error getting current parent ID:', parentError);
-        throw new Error(parentError.message);
-      }
-
+      // Get current parent ID (cached)
+      const parentData = await getCurrentParentIdCached();
       if (!parentData) {
-        console.log('No parent ID found for current user');
+        logger.log('No parent ID found for current user');
         setHistoryData({ authorizations: [], pickupAuthorizations: [] });
         return;
       }
@@ -108,7 +104,7 @@ export const useSelfCheckoutHistory = () => {
         .order('created_at', { ascending: false });
 
       if (selfCheckoutError) {
-        console.error('Error fetching self-checkout authorizations:', selfCheckoutError);
+        logger.error('Error fetching self-checkout authorizations:', selfCheckoutError);
         throw new Error(selfCheckoutError.message);
       }
 
@@ -137,7 +133,7 @@ export const useSelfCheckoutHistory = () => {
         .order('created_at', { ascending: false });
 
       if (pickupError) {
-        console.error('Error fetching pickup authorizations:', pickupError);
+        logger.error('Error fetching pickup authorizations:', pickupError);
         throw new Error(pickupError.message);
       }
 
@@ -153,7 +149,7 @@ export const useSelfCheckoutHistory = () => {
             .order('departed_at', { ascending: false });
 
           if (departuresError) {
-            console.warn('Error fetching departures for student:', auth.student_id, departuresError);
+            logger.warn('Error fetching departures for student:', auth.student_id, departuresError);
           }
 
           return {
@@ -195,7 +191,7 @@ export const useSelfCheckoutHistory = () => {
       });
 
     } catch (error) {
-      console.error('Error loading self-checkout history:', error);
+      logger.error('Error loading self-checkout history:', error);
       setHistoryData({ authorizations: [], pickupAuthorizations: [] });
     } finally {
       setLoading(false);

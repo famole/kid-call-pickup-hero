@@ -142,18 +142,27 @@ export const secureStudentOperations = {
   getStudentByIdSecure: async (id: string): Promise<{ data: Child | null; error: any }> => {
     try {
       logger.log('Fetching student by ID with secure operations:', id);
-      
-      // Get all students and filter by ID (since we don't have a specific getById operation)
-      const { data: students, error } = await secureStudentOperations.getStudentsSecure(false);
-      
+      // Call edge function to fetch a single student by id
+      const { data, error } = await supabase.functions.invoke('secure-students', {
+        body: {
+          operation: 'getStudentById',
+          data: { id }
+        }
+      });
+
       if (error) {
+        logger.error('Error from secure-students function:', error);
         return { data: null, error };
       }
 
-      const student = students?.find(s => s.id === id) || null;
-      logger.log('Found student by ID:', student ? 'yes' : 'no');
-      
-      return { data: student, error: null };
+      if (data?.error) {
+        logger.error('Error in secure-students response:', data.error);
+        return { data: null, error: data.error };
+      }
+
+      const decrypted = await decryptObject(data.data.encrypted_data);
+      logger.log('Decrypted student by ID present:', decrypted ? 'yes' : 'no');
+      return { data: decrypted || null, error: null };
     } catch (error) {
       logger.error('Error in getStudentByIdSecure:', error);
       return { data: null, error };

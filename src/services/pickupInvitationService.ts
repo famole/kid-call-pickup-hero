@@ -1,5 +1,25 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
+
+// Module-level TTL cache for pickup invitations
+const INVITATIONS_TTL_MS = 30_000; // 30s
+let invitationsCache: { value: PickupInvitationWithDetails[]; expiresAt: number; parentId: string } | null = null;
+let invitationsInFlight: Promise<PickupInvitationWithDetails[]> | null = null;
+
+const invalidateInvitationsCache = () => {
+  invitationsCache = null;
+};
+
+// Cache for pending invitation token by email
+const PENDING_TOKEN_TTL_MS = 30_000;
+const pendingTokenCache = new Map<string, { value: string | null; expiresAt: number }>();
+const pendingTokenInFlight = new Map<string, Promise<string | null>>();
+
+const invalidatePendingTokenCache = (email?: string) => {
+  if (email) pendingTokenCache.delete(email);
+  else pendingTokenCache.clear();
+};
 
 export interface PickupInvitation {
   id: string;
@@ -43,10 +63,9 @@ export interface PickupInvitationWithDetails extends PickupInvitation {
 export const createPickupInvitation = async (
   invitationData: PickupInvitationInput
 ): Promise<PickupInvitation> => {
-  // Get the current parent ID
-  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-  
-  if (parentError || !currentParentId) {
+  // Get the current parent ID (cached)
+  const currentParentId = await getCurrentParentIdCached();
+  if (!currentParentId) {
     throw new Error('Unable to authenticate parent');
   }
 
@@ -60,31 +79,54 @@ export const createPickupInvitation = async (
   const { data, error } = await secureInvitationOperations.createInvitationSecure(secureInvitationData);
 
   if (error) throw error;
+  // Invalidate cache after creating a new invitation
+  invalidateInvitationsCache();
+  invalidatePendingTokenCache();
   return mapInvitationFromDB(data);
 };
 
 // Get all invitations created by the current parent
 export const getPickupInvitationsForParent = async (): Promise<PickupInvitationWithDetails[]> => {
-  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-  
-  if (parentError || !currentParentId) {
+  const currentParentId = await getCurrentParentIdCached();
+  if (!currentParentId) {
     throw new Error('Unable to authenticate parent');
   }
 
-  // Use secure operations for encrypted data
-  const { secureInvitationOperations } = await import('@/services/encryption');
-  const { data, error } = await secureInvitationOperations.getInvitationsForParentSecure(currentParentId);
+  const now = Date.now();
+  // Serve from cache if valid and for the same parent
+  if (invitationsCache && invitationsCache.parentId === currentParentId && invitationsCache.expiresAt > now) {
+    return invitationsCache.value;
+  }
 
-  if (error) throw error;
+  // Coalesce concurrent requests
+  if (invitationsInFlight) return invitationsInFlight;
 
-  // Map database fields to interface and add student/parent details
-  const invitationsWithDetails = data?.map((invitation: any) => ({
-    ...mapInvitationFromDB(invitation),
-    students: invitation.students || [],
-    invitingParent: invitation.inviting_parent || undefined,
-  })) || [];
+  invitationsInFlight = (async () => {
+    // Use secure operations for encrypted data
+    const { secureInvitationOperations } = await import('@/services/encryption');
+    const { data, error } = await secureInvitationOperations.getInvitationsForParentSecure(currentParentId);
 
-  return invitationsWithDetails;
+    if (error) throw error;
+
+    // Map database fields to interface and add student/parent details
+    const invitationsWithDetails = data?.map((invitation: any) => ({
+      ...mapInvitationFromDB(invitation),
+      students: invitation.students || [],
+      invitingParent: invitation.inviting_parent || undefined,
+    })) || [];
+
+    // Cache result
+    invitationsCache = {
+      value: invitationsWithDetails,
+      expiresAt: Date.now() + INVITATIONS_TTL_MS,
+      parentId: currentParentId,
+    };
+    return invitationsWithDetails;
+  })().finally(() => {
+    invitationsInFlight = null;
+  });
+
+  return invitationsInFlight;
 };
 
 // Update an invitation
@@ -97,6 +139,9 @@ export const updatePickupInvitation = async (
   const { data, error } = await secureInvitationOperations.updateInvitationSecure(id, updates);
 
   if (error) throw error;
+  // Invalidate cache after update
+  invalidateInvitationsCache();
+  invalidatePendingTokenCache();
   return mapInvitationFromDB(data);
 };
 
@@ -107,6 +152,9 @@ export const deletePickupInvitation = async (id: string): Promise<void> => {
   const { error } = await secureInvitationOperations.deleteInvitationSecure(id);
 
   if (error) throw error;
+  // Invalidate cache after deletion
+  invalidateInvitationsCache();
+  invalidatePendingTokenCache();
 };
 
 // Get invitation by token (for accepting invitations)
@@ -126,6 +174,43 @@ export const getInvitationByToken = async (token: string): Promise<PickupInvitat
     students: data.students || [],
     invitingParent: data.inviting_parent || undefined,
   };
+};
+
+// Get first pending invitation token for a given invited email (cached)
+export const getPendingInvitationTokenForEmailCached = async (email: string): Promise<string | null> => {
+  const now = Date.now();
+  const cached = pendingTokenCache.get(email);
+  if (cached && cached.expiresAt > now) return cached.value;
+
+  const existing = pendingTokenInFlight.get(email);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pickup_invitations')
+        .select('invitation_token')
+        .eq('invited_email', email)
+        .eq('invitation_status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .limit(1);
+
+      if (error) {
+        logger.error('Error fetching pending invitation token:', error);
+        pendingTokenCache.set(email, { value: null, expiresAt: now + 5_000 });
+        return null;
+      }
+
+      const token = data && data.length > 0 ? (data[0] as any).invitation_token as string : null;
+      pendingTokenCache.set(email, { value: token, expiresAt: Date.now() + PENDING_TOKEN_TTL_MS });
+      return token;
+    } finally {
+      pendingTokenInFlight.delete(email);
+    }
+  })();
+
+  pendingTokenInFlight.set(email, promise);
+  return promise;
 };
 
 // Send invitation email

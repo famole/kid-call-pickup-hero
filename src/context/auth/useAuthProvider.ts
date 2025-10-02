@@ -10,6 +10,7 @@ import {
   createUserFromParentData,
   createUserFromAuthData,
 } from './authUtils';
+import { getPendingInvitationTokenForEmailCached } from '@/services/pickupInvitationService';
 import { decryptPassword, isPasswordEncryptionSupported, decryptResponse } from '@/services/encryption';
 
 export const useAuthProvider = (): AuthState & {
@@ -288,21 +289,16 @@ export const useAuthProvider = (): AuthState & {
           return;
         }
 
-        // Check for pending invitations for this user
+        // Check for pending invitations for this user (cached)
         try {
-          const { data: pendingInvitations } = await supabase
-            .from('pickup_invitations')
-            .select('invitation_token')
-            .eq('invited_email', authUser.email)
-            .eq('invitation_status', 'pending')
-            .gt('expires_at', new Date().toISOString())
-            .limit(1);
+          const invitationToken = authUser.email
+            ? await getPendingInvitationTokenForEmailCached(authUser.email)
+            : null;
 
-          // If user has pending invitations and we're not already on an invitation page, redirect
-          if (pendingInvitations && pendingInvitations.length > 0 && 
+          // If user has a pending invitation and we're not on an invitation-related page, redirect
+          if (invitationToken &&
               !window.location.pathname.includes('accept-invitation') &&
               !window.location.pathname.includes('password-setup')) {
-            const invitationToken = pendingInvitations[0].invitation_token;
             logger.log('Found pending invitation, redirecting to accept invitation page');
             window.location.href = `/accept-invitation/${invitationToken}`;
             return;

@@ -154,6 +154,42 @@ serve(async (req) => {
         });
       }
 
+      case 'getStudentById': {
+        const { id } = data || {};
+        if (!id) {
+          throw new Error('Missing required parameter: id');
+        }
+
+        let query = supabase
+          .from('students')
+          .select(`
+            id,
+            name,
+            class_id,
+            avatar,
+            created_at,
+            updated_at,
+            deleted_at
+          `)
+          .eq('id', id);
+
+        if (!includeDeleted) {
+          query = query.is('deleted_at', null);
+        }
+
+        const { data: studentData, error } = await query.maybeSingle();
+
+        if (error) {
+          console.error('Error fetching student by id:', error);
+          throw error;
+        }
+
+        const encryptedStudentData = await encryptObject(studentData || null);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedStudentData }, error: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'createStudent': {
         // Decrypt entire object received from client
         const decryptedData = await decryptObject(data.encrypted_data);

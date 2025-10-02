@@ -4,6 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { createPickupInvitation, sendInvitationEmail } from '@/services/pickupInvitationService';
 import { getStudentsForParent } from '@/services/studentService';
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { Child } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
@@ -49,11 +50,10 @@ export const useInvitationDialog = (isOpen: boolean, onInvitationSent: () => voi
     if (!user) return;
 
     try {
-      // Get current parent ID from the server
-      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-
-      if (parentError || !currentParentId) {
-        console.error('Error getting current parent ID:', parentError);
+      // Get current parent ID (cached)
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        console.error('Error getting current parent ID via cached helper');
         return;
       }
 

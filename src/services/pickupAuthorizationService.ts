@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
 export interface PickupAuthorization {
   id: string;
@@ -102,10 +103,9 @@ export const getParentsWhoShareStudents = async (): Promise<{
   parents: any[];
   sharedStudents: Record<string, string[]>;
 }> => {
-  // Use the server-side helper to get current parent ID
-  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-  
-  if (parentError || !currentParentId) {
+  // Use cached helper to get current parent ID
+  const currentParentId = await getCurrentParentIdCached();
+  if (!currentParentId) {
     throw new Error('Unable to authenticate parent');
   }
   
@@ -265,9 +265,8 @@ export const checkPickupAuthorization = async (
   studentId: string,
   date: string = new Date().toISOString().split('T')[0]
 ): Promise<boolean> => {
-  const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-
-  if (parentError || !parentId) {
+  const parentId = await getCurrentParentIdCached();
+  if (!parentId) {
     console.error('Unable to determine current parent ID:', parentError);
     return false;
   }

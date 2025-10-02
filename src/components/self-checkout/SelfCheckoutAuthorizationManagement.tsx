@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,10 @@ const SelfCheckoutAuthorizationManagement: React.FC = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
 
+  const didInitRef = useRef(false);
   useEffect(() => {
+    if (didInitRef.current) return; // prevent StrictMode double-invoke in dev
+    didInitRef.current = true;
     loadAuthorizations();
   }, []);
 
