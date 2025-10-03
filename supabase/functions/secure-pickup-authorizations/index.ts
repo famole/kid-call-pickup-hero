@@ -129,6 +129,12 @@ serve(async (req)=>{
         {
           logger.log('Getting pickup authorizations for parent:', parentId);
           
+          // Get today's date at start of day for comparison
+          // Authorizations should be valid through the entire day they expire
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const todayStr = today.toISOString().split('T')[0];
+          
           const { data, error } = await supabase.from('pickup_authorizations')
             .select(`
               *,
@@ -149,7 +155,7 @@ serve(async (req)=>{
             .eq('authorizing_parent_id', parentId)
             .eq('is_active', true)
             .is('students.deleted_at', null)
-            .gte('end_date', new Date().toISOString().split('T')[0])
+            .gte('end_date', todayStr)
             .order('created_at', { ascending: false });
             
           if (error) {
