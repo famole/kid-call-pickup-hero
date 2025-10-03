@@ -11,6 +11,8 @@ import { School, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from '@/components/ui/separator';
 import { useTranslation } from '@/hooks/useTranslation';
+import { logger } from '@/utils/logger';
+import { encryptPassword, isPasswordEncryptionSupported } from '@/services/encryption';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState(''); // Can be email or username
@@ -47,7 +49,19 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      await login(identifier, password);
+      // Encrypt password before sending for enhanced security
+      let encryptedPassword = password;
+      if (isPasswordEncryptionSupported()) {
+        try {
+          encryptedPassword = await encryptPassword(password);
+          logger.log('Password encrypted for transmission');
+        } catch (encryptionError) {
+          logger.warn('Password encryption failed, using plain text:', encryptionError);
+          // Continue with plain text if encryption fails
+        }
+      }
+
+      await login(identifier, encryptedPassword);
       toast({
         title: t('auth.welcomeBack'),
         description: t('auth.welcomeBack'),
@@ -55,11 +69,12 @@ const Login = () => {
       
       // Let the auth provider handle redirects based on pending invitations
       // No need to force navigate here as handleUserSession will handle it
-    } catch (error: any) {
-      console.error('Authentication error:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      logger.error('Authentication error:', error);
       toast({
         title: t('errors.authenticationError'),
-        description: error.message || t('errors.invalidEmailPassword'),
+        description: errorMessage || t('errors.invalidEmailPassword'),
         variant: 'destructive',
       });
     } finally {
@@ -91,11 +106,12 @@ const Login = () => {
         title: t('errors.redirectingToGoogle'),
         description: t('errors.redirectToCompleteLogin'),
       });
-    } catch (error: any) {
-      console.error('Google authentication error:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      logger.error('Google authentication error:', error);
       toast({
         title: t('errors.googleLoginError'),
-        description: error.message || t('errors.failedGoogleLogin'),
+        description: errorMessage || t('errors.failedGoogleLogin'),
         variant: 'destructive',
       });
       setIsGoogleLoading(false);
@@ -152,8 +168,9 @@ const Login = () => {
         });
         return;
       }
-    } catch (error: any) {
-      console.error('Error checking identifier:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      logger.error('Error checking identifier:', error);
       toast({
         title: t('common.error'),
         description: t('errors.errorCheckingEmail'),

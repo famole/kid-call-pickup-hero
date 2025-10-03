@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { getParentDashboardDataByParentId, createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
+import { createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
 import { getActivePickupRequestsForParent } from '@/services/pickup';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { createPickupRequest } from '@/services/pickup/createPickupRequest';
@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
+import { getCurrentParentId, getParentIdentifierForDashboard } from '@/services/auth/parentIdResolver';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -63,49 +64,36 @@ export const useOptimizedParentDashboard = () => {
     try {
       setLoading(true);
       
-      // Determine user type and parent ID
-      const isEmailUser = Boolean(user.email);
-      let parentId = user.id;
-
-      if (isEmailUser) {
-        // Try to get parent ID from RPC for email users
-        const { data: rpcParentId, error: rpcError } = await supabase.rpc('get_current_parent_id');
-        if (rpcParentId) {
-          parentId = rpcParentId;
-        } else if (rpcError) {
-          logger.error('Error fetching parent ID via RPC:', rpcError);
-        }
-      } else {
-        // For username users, get parent ID from localStorage
-        const storedParentId = localStorage.getItem('username_parent_id');
-        if (storedParentId) {
-          parentId = storedParentId;
-        }
+      // Get parent ID using centralized resolver with fallback methods
+      const parentId = await getCurrentParentId();
+      if (!parentId) {
+        logger.error('Failed to get parent ID with all fallback methods');
+        setLoading(false);
+        return;
       }
 
       setCurrentParentId(parentId);
       logger.log('Using parent ID for dashboard:', parentId);
 
+      // Get parent identifier for dashboard queries (email for email users, parent ID for username users)
+      const parentIdentifier = await getParentIdentifierForDashboard();
+      if (!parentIdentifier) {
+        logger.error('Failed to get parent identifier for dashboard');
+        setLoading(false);
+        return;
+      }
+
+      // Determine user type
+      const isEmailUser = Boolean(user.email);
+
       // Load dashboard data and pickup requests
       const [dashboardData, pickupRequests] = await Promise.all([
-        isEmailUser
-          ? getParentDashboardDataOptimized(user.email!)
-          : getParentDashboardDataByParentId(parentId),
+        // Use the unified function that handles both email and parent ID
+        getParentDashboardDataOptimized(isEmailUser ? user.email! : parentId),
         // For parents, get all affected requests; for family members, get only their own
         user?.role === 'parent' ? getParentAffectedPickupRequests() : getActivePickupRequestsForParent(parentId)
       ]);
 
-      console.log('🔍 DEBUG - Dashboard data results:', {
-        childrenCount: dashboardData.allChildren.length,
-        pickupRequestsCount: pickupRequests.length,
-        children: dashboardData.allChildren.map(c => ({ id: c.id, name: c.name, isAuthorized: c.isAuthorized })),
-        requests: pickupRequests.map(r => ({ 
-          id: r.id, 
-          studentId: r.studentId, 
-          parentId: r.parentId, 
-          requestingParent: r.requestingParent?.name 
-        }))
-      });
 
       setChildren(dashboardData.allChildren);
       
@@ -147,11 +135,11 @@ export const useOptimizedParentDashboard = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Set up periodic polling as a fallback in case realtime fails
+    // Set up periodic polling as a fallback in case realtime fails (every 60 seconds)
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    intervalRef.current = setInterval(() => loadDashboardData(true), 5000);
+    intervalRef.current = setInterval(() => loadDashboardData(true), 60000);
 
     // Clean up existing subscription
     if (subscriptionRef.current) {

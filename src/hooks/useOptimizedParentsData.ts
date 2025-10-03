@@ -27,11 +27,20 @@ export const useOptimizedParentsData = ({
   const lastFetchRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
 
-  // Filter parents by role(s)
+  // Filter parents by role(s) - Add more detailed logging
   const filteredParentsByRole = parents.filter(parent => {
+    // Log the first few parents to see their role values
+    if (parents.indexOf(parent) < 5) {
+      console.log(`Parent ${parent.name} has role:`, parent.role, 'typeof:', typeof parent.role);
+    }
+    
     // Use includedRoles if provided, otherwise filter by single userRole
     if (includedRoles && includedRoles.length > 0) {
-      return includedRoles.includes(parent.role || 'parent' as any);
+      const isIncluded = includedRoles.includes(parent.role || 'parent' as any);
+      if (parents.indexOf(parent) < 5) {
+        console.log(`Parent ${parent.name} included by roles:`, isIncluded, 'includedRoles:', includedRoles);
+      }
+      return isIncluded;
     }
     
     // Original single role logic
@@ -45,11 +54,15 @@ export const useOptimizedParentsData = ({
       return parent.role === 'family';
     } else {
       // For 'parent' role, include those with 'parent' role or no role set
-      return parent.role === 'parent' || !parent.role;
+      const isMatch = parent.role === 'parent' || !parent.role;
+      if (parents.indexOf(parent) < 5) {
+        console.log(`Parent ${parent.name} matches parent role filter:`, isMatch);
+      }
+      return isMatch;
     }
   });
 
-  console.log(`Filtered ${filteredParentsByRole.length} users for role: ${userRole}`);
+  console.log(`Filtered ${filteredParentsByRole.length} users for role: ${userRole}`, 'includedRoles:', includedRoles);
 
   const loadParents = useCallback(async (forceRefresh = false) => {
     const now = Date.now();

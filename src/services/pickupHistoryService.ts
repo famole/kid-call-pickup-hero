@@ -78,7 +78,10 @@ export const getAllPickupHistory = async (
       query = query.gte('completed_time', startDate.toISOString());
     }
     if (endDate) {
-      query = query.lte('completed_time', endDate.toISOString());
+      // Set end date to end of day (23:59:59.999) to include all records from that day
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      query = query.lte('completed_time', endOfDay.toISOString());
     }
 
     const { data, error } = await query;
@@ -179,7 +182,10 @@ export const getPickupHistoryCount = async (
       query = query.gte('completed_time', startDate.toISOString());
     }
     if (endDate) {
-      query = query.lte('completed_time', endDate.toISOString());
+      // Set end date to end of day (23:59:59.999) to include all records from that day
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      query = query.lte('completed_time', endOfDay.toISOString());
     }
 
     const { count, error } = await query;

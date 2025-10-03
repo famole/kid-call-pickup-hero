@@ -10,6 +10,8 @@ import {
   createUserFromParentData,
   createUserFromAuthData,
 } from './authUtils';
+import { getPendingInvitationTokenForEmailCached } from '@/services/pickupInvitationService';
+import { decryptPassword, isPasswordEncryptionSupported, decryptResponse } from '@/services/encryption';
 
 export const useAuthProvider = (): AuthState & {
   login: (identifier: string, password: string) => Promise<void>;
@@ -17,6 +19,28 @@ export const useAuthProvider = (): AuthState & {
 } => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const logout = async () => {
+    // Clean up auth state
+    cleanupAuthState();
+    
+    // Clean up username session
+    localStorage.removeItem('username_session');
+    
+    // Try to sign out from Supabase
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (error) {
+      logger.error("Error during sign out:", error);
+    }
+    
+    setUser(null);
+    
+    // Force page reload for a clean state
+    window.location.href = '/login';
+    
+    return Promise.resolve();
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -29,10 +53,20 @@ export const useAuthProvider = (): AuthState & {
           // Also clear custom username session
           localStorage.removeItem('username_session');
         } else if (event === 'TOKEN_REFRESHED' && !session) {
-          // Session expired during token refresh - auto sign out
-          logger.log('Session expired during token refresh, signing out');
-          await logout();
-          return;
+          // Session expired during token refresh - try one more refresh before signing out
+          logger.log('Session expired during token refresh, attempting final refresh');
+          try {
+            const { data: finalRefresh } = await supabase.auth.refreshSession();
+            if (!finalRefresh.session) {
+              logger.log('Final refresh failed, signing out');
+              await logout();
+              return;
+            }
+          } catch (finalError) {
+            logger.error('Final refresh error:', finalError);
+            await logout();
+            return;
+          }
         } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           try {
             // Defer data fetching to prevent deadlocks
@@ -50,14 +84,29 @@ export const useAuthProvider = (): AuthState & {
     const loadUser = async () => {
       try {
         // Try to get session from Supabase first
-        const { data: { session }, error } = await supabase.auth.getSession();
+        let { data: { session }, error } = await supabase.auth.getSession();
         logger.log('Initial session check:', session?.user?.email);
         
         // Check if session is expired
         if (error || (session && session.expires_at && new Date(session.expires_at * 1000) < new Date())) {
-          logger.log('Session expired or error, signing out');
-          await logout();
-          return;
+          logger.log('Session expired or error, attempting refresh');
+          // Don't immediately logout - try to refresh the session first
+          try {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !refreshData.session) {
+              logger.log('Session refresh failed, signing out');
+              await logout();
+              return;
+            } else {
+              logger.log('Session refreshed successfully');
+              // Continue with the refreshed session
+              session = refreshData.session;
+            }
+          } catch (refreshError) {
+            logger.error('Error refreshing session:', refreshError);
+            await logout();
+            return;
+          }
         }
         
         if (session?.user) {
@@ -197,18 +246,30 @@ export const useAuthProvider = (): AuthState & {
         }
       }
       
-      // If no parent data exists and this is an OAuth user without invitation, reject the authentication
+      // If no parent data exists and this is an OAuth user without invitation, try one more time before rejecting
       if (!parentData && isOAuthUser) {
-        logger.log('OAuth user not found in database, redirecting to unauthorized page');
-        await supabase.auth.signOut();
-        setUser(null);
-        setLoading(false);
-        
-        // Redirect to unauthorized access page
-        if (typeof window !== 'undefined') {
-          window.location.href = '/unauthorized-access';
+        logger.log('OAuth user not found in database, retrying parent data fetch');
+        // Retry parent data fetch once more in case of temporary database issue
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+          parentData = await getParentData(authUser.email);
+        } catch (retryError) {
+          logger.error('Retry parent data fetch failed:', retryError);
         }
-        return;
+        
+        // If still no parent data after retry, then redirect to unauthorized
+        if (!parentData) {
+          logger.log('OAuth user still not found after retry, redirecting to unauthorized page');
+          await supabase.auth.signOut();
+          setUser(null);
+          setLoading(false);
+          
+          // Redirect to unauthorized access page
+          if (typeof window !== 'undefined') {
+            window.location.href = '/unauthorized-access';
+          }
+          return;
+        }
       }
 
       if (parentData) {
@@ -228,21 +289,16 @@ export const useAuthProvider = (): AuthState & {
           return;
         }
 
-        // Check for pending invitations for this user
+        // Check for pending invitations for this user (cached)
         try {
-          const { data: pendingInvitations } = await supabase
-            .from('pickup_invitations')
-            .select('invitation_token')
-            .eq('invited_email', authUser.email)
-            .eq('invitation_status', 'pending')
-            .gt('expires_at', new Date().toISOString())
-            .limit(1);
+          const invitationToken = authUser.email
+            ? await getPendingInvitationTokenForEmailCached(authUser.email)
+            : null;
 
-          // If user has pending invitations and we're not already on an invitation page, redirect
-          if (pendingInvitations && pendingInvitations.length > 0 && 
+          // If user has a pending invitation and we're not on an invitation-related page, redirect
+          if (invitationToken &&
               !window.location.pathname.includes('accept-invitation') &&
               !window.location.pathname.includes('password-setup')) {
-            const invitationToken = pendingInvitations[0].invitation_token;
             logger.log('Found pending invitation, redirecting to accept invitation page');
             window.location.href = `/accept-invitation/${invitationToken}`;
             return;
@@ -283,33 +339,43 @@ export const useAuthProvider = (): AuthState & {
         logger.error("Sign out before login failed:", signOutError);
       }
       
-      // Check if this looks like a username (no @ symbol) or email
+      // Always try secure authentication first for better security
+      // Check if password appears to be encrypted (length > 50 indicates encryption)
+      const isEncrypted = password.length > 50;
       const isEmail = identifier.includes('@');
       
-      if (isEmail) {
-        // Try regular Supabase email/password auth first
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: identifier,
-          password,
+      // Try secure authentication first for all users (encrypted and plain text)
+      try {
+        logger.log('Attempting secure authentication for:', identifier, 'encrypted:', isEncrypted);
+        
+        // Use secure-password-auth endpoint for all authentication attempts
+        const { data: rawData, error } = await supabase.functions.invoke('secure-password-auth', {
+          body: { 
+            identifier, 
+            encryptedPassword: password,
+            authType: identifier.includes('@') ? 'email' : 'username'
+          }
         });
         
         if (error) {
+          logger.error("Secure password auth error:", error);
+          // Don't throw immediately, try fallback authentication
           throw error;
         }
         
-        // Handle user session
-        if (data.user) {
-          await handleUserSession(data.user);
-        }
-      } else {
-        // Use username auth edge function
-        const { data, error } = await supabase.functions.invoke('username-auth', {
-          body: { identifier, password }
-        });
-        
-        if (error) {
-          logger.error("Username auth error:", error);
-          throw new Error('Invalid credentials');
+        // Decrypt the encrypted response
+        let data;
+        try {
+          if (rawData.encryptedData) {
+            data = await decryptResponse(rawData.encryptedData);
+            logger.log('Auth response decrypted successfully');
+          } else {
+            // Fallback for unencrypted responses
+            data = rawData;
+          }
+        } catch (decryptionError) {
+          logger.error('Failed to decrypt auth response:', decryptionError);
+          throw new Error('Authentication response decryption failed');
         }
         
         if (data.error) {
@@ -321,9 +387,16 @@ export const useAuthProvider = (): AuthState & {
           throw new Error(data.error);
         }
         
-        // For username auth, we might get different response structures
+        // Handle successful authentication
         if (data.user && data.session) {
-          // Regular Supabase auth response (user has email)
+          // For email authentication, set the session in Supabase auth context
+          logger.log('Setting Supabase session from secure auth response');
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token
+          });
+          await handleUserSession(data.user);
+        } else if (data.user) {
           await handleUserSession(data.user);
         } else if (data.isUsernameAuth && data.parentData) {
           // Username-only authentication (no Supabase auth)
@@ -370,19 +443,116 @@ export const useAuthProvider = (): AuthState & {
               window.location.href = '/';
             }
           }, 100);
-        } else if (data.requireUsernameAuth) {
-          // Fallback for old response format
-          const mockUser = {
-            id: data.parentData.id,
-            email: null,
-            user_metadata: {
-              name: data.parentData.name,
-              username: data.parentData.username
-            }
-          };
-          await handleUserSession(mockUser);
+        }
+        
+        logger.log('Secure authentication successful');
+        return; // Exit early on success
+        
+      } catch (secureAuthError) {
+        logger.warn('Secure authentication failed, trying fallback:', secureAuthError);
+        
+        // Fallback to standard authentication methods
+        // Handle plain text passwords (fallback for compatibility)
+        const isEmail = identifier.includes('@');
+        
+        if (isEmail) {
+          // Try regular Supabase email/password auth
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: identifier,
+            password: password,
+          });
+          
+          if (error) {
+            throw error;
+          }
+          
+          // Handle user session
+          if (data.user) {
+            await handleUserSession(data.user);
+          }
         } else {
-          throw new Error('Authentication failed');
+          // Use username auth edge function
+          const { data, error } = await supabase.functions.invoke('username-auth', {
+            body: { identifier, password: password }
+          });
+          
+          if (error) {
+            logger.error("Username auth error:", error);
+            throw new Error('Invalid credentials');
+          }
+          
+          if (data.error) {
+            if (data.requirePasswordSetup) {
+              // Redirect to password setup for username-only users
+              window.location.href = `/password-setup?identifier=${encodeURIComponent(identifier)}`;
+              return;
+            }
+            throw new Error(data.error);
+          }
+          
+          // For username auth, handle different response structures
+          if (data.user && data.session) {
+            // Regular Supabase auth response (user has email)
+            await handleUserSession(data.user);
+          } else if (data.isUsernameAuth && data.parentData) {
+            // Username-only authentication (no Supabase auth)
+            // Store parent context in localStorage for username users
+            logger.log('Setting up username auth session for parent:', data.parentData.id);
+            
+            // Store the parent ID in localStorage so it can be used by queries
+            localStorage.setItem('username_parent_id', data.parentData.id);
+            
+            logger.log('Stored parent ID for username user:', data.parentData.id);
+            
+            // Store session in localStorage for persistence
+            const sessionData = {
+              id: data.parentData.id,
+              name: data.parentData.name,
+              username: data.parentData.username,
+              role: data.parentData.role,
+              timestamp: Date.now()
+            };
+            localStorage.setItem('username_session', JSON.stringify(sessionData));
+            
+            logger.log('🔍 Username auth success - stored session for:', data.parentData.username);
+            
+            const mockUser = {
+              id: data.parentData.id,
+              email: null,
+              user_metadata: {
+                name: data.parentData.name,
+                username: data.parentData.username,
+                role: data.parentData.role,
+                parent_id: data.parentData.id
+              }
+            };
+            
+            logger.log('🔍 Created mock user for username auth:', mockUser);
+            await handleUserSession(mockUser);
+            
+            // After successful username authentication, redirect to appropriate page
+            setTimeout(() => {
+              const userRole = data.parentData.role;
+              if (['admin', 'superadmin'].includes(userRole)) {
+                window.location.href = '/admin';
+              } else {
+                window.location.href = '/';
+              }
+            }, 100);
+          } else if (data.requireUsernameAuth) {
+            // Fallback for old response format
+            const mockUser = {
+              id: data.parentData.id,
+              email: null,
+              user_metadata: {
+                name: data.parentData.name,
+                username: data.parentData.username
+              }
+            };
+            await handleUserSession(mockUser);
+          } else {
+            throw new Error('Authentication failed');
+          }
         }
       }
       
@@ -393,28 +563,6 @@ export const useAuthProvider = (): AuthState & {
     } finally {
       setLoading(false);
     }
-  };
-
-  const logout = async () => {
-    // Clean up auth state
-    cleanupAuthState();
-    
-    // Clean up username session
-    localStorage.removeItem('username_session');
-    
-    // Try to sign out from Supabase
-    try {
-      await supabase.auth.signOut({ scope: 'global' });
-    } catch (error) {
-      logger.error("Error during sign out:", error);
-    }
-    
-    setUser(null);
-    
-    // Force page reload for a clean state
-    window.location.href = '/login';
-    
-    return Promise.resolve();
   };
 
   return {

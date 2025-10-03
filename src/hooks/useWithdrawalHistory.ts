@@ -29,12 +29,10 @@ export const useWithdrawalHistory = () => {
     try {
       setLoading(true);
 
-      // Get current parent data
-      const { data: parentData, error: parentError } = await supabase
-        .from('parents')
-        .select('id')
-        .eq('email', user.email)
-        .single();
+      // Get current parent data using secure operations
+      const { secureOperations } = await import('@/services/encryption');
+      const { data: allParents, error: parentError } = await secureOperations.getParentsSecure(false);
+      const parentData = allParents?.find(p => p.email === user.email);
       
       if (parentError) {
         console.error('Error getting current parent ID:', parentError);
@@ -75,12 +73,8 @@ export const useWithdrawalHistory = () => {
         for (const record of pickupHistoryData) {
           // Check if this pickup was done by the current parent (self pickup)
           if (record.parent_id === parentId) {
-            // Get parent name for self pickup
-            const { data: parentInfo, error: parentInfoError } = await supabase
-              .from('parents')
-              .select('name')
-              .eq('id', record.parent_id)
-              .single();
+            // Get parent name for self pickup using secure operations (already loaded above)
+            const parentInfo = allParents?.find(p => p.id === record.parent_id);
 
             allRecords.push({
               id: record.id,

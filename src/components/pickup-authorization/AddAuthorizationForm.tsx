@@ -14,11 +14,14 @@ import { Child } from '@/types';
 import SearchOnlyParentSelector from './SearchOnlyParentSelector';
 import { useTranslation } from '@/hooks/useTranslation';
 
+import DayOfWeekSelector from './DayOfWeekSelector';
+
 interface FormData {
   studentIds: string[];
   authorizedParentId: string;
   startDate: string;
   endDate: string;
+  allowedDaysOfWeek: number[];
 }
 
 interface ParentWithSharedStudents {
@@ -35,7 +38,7 @@ interface AddAuthorizationFormProps {
   formData: FormData;
   loading: boolean;
   onSubmit: (e: React.FormEvent) => void;
-  onUpdateFormData: (field: keyof FormData, value: string | string[]) => void;
+  onUpdateFormData: (field: keyof FormData, value: string | string[] | number[]) => void;
   onCancel: () => void;
   showOnlySharedParents: boolean;
   onToggleParentFilter: () => void;
@@ -110,6 +113,7 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
               value={formData.startDate}
               onChange={(e) => onUpdateFormData('startDate', e.target.value)}
               min={new Date().toISOString().split('T')[0]}
+              max={new Date(new Date().getFullYear() + 1, 11, 31).toISOString().split('T')[0]}
             />
           </div>
           <div className="space-y-2">
@@ -120,9 +124,16 @@ const AddAuthorizationForm: React.FC<AddAuthorizationFormProps> = ({
               value={formData.endDate}
               onChange={(e) => onUpdateFormData('endDate', e.target.value)}
               min={formData.startDate || new Date().toISOString().split('T')[0]}
+              max={new Date(new Date().getFullYear() + 1, 11, 31).toISOString().split('T')[0]}
             />
           </div>
         </div>
+
+        <DayOfWeekSelector
+          selectedDays={formData.allowedDaysOfWeek}
+          onChange={(days) => onUpdateFormData('allowedDaysOfWeek', days)}
+          label={t('pickupAuthorizations.allowedDays')}
+        />
 
         <div className="flex justify-end gap-2 pt-6 mt-6 border-t">
           <Button type="button" variant="outline" onClick={onCancel}>

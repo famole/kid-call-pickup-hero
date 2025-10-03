@@ -1,5 +1,25 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
+
+// Module-level TTL cache for pickup invitations
+const INVITATIONS_TTL_MS = 30_000; // 30s
+let invitationsCache: { value: PickupInvitationWithDetails[]; expiresAt: number; parentId: string } | null = null;
+let invitationsInFlight: Promise<PickupInvitationWithDetails[]> | null = null;
+
+const invalidateInvitationsCache = () => {
+  invitationsCache = null;
+};
+
+// Cache for pending invitation token by email
+const PENDING_TOKEN_TTL_MS = 30_000;
+const pendingTokenCache = new Map<string, { value: string | null; expiresAt: number }>();
+const pendingTokenInFlight = new Map<string, Promise<string | null>>();
+
+const invalidatePendingTokenCache = (email?: string) => {
+  if (email) pendingTokenCache.delete(email);
+  else pendingTokenCache.clear();
+};
 
 export interface PickupInvitation {
   id: string;
@@ -43,67 +63,70 @@ export interface PickupInvitationWithDetails extends PickupInvitation {
 export const createPickupInvitation = async (
   invitationData: PickupInvitationInput
 ): Promise<PickupInvitation> => {
-  // Get the current parent ID
-  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-  
-  if (parentError || !currentParentId) {
+  // Get the current parent ID (cached)
+  const currentParentId = await getCurrentParentIdCached();
+  if (!currentParentId) {
     throw new Error('Unable to authenticate parent');
   }
 
-  const { data, error } = await supabase
-    .from('pickup_invitations')
-    .insert({
-      invited_name: invitationData.invitedName,
-      invited_email: invitationData.invitedEmail,
-      invited_role: invitationData.invitedRole,
-      inviting_parent_id: currentParentId,
-      student_ids: invitationData.studentIds,
-      start_date: invitationData.startDate,
-      end_date: invitationData.endDate,
-    })
-    .select()
-    .single();
+  // Use secure operations for encrypted data
+  const { secureInvitationOperations } = await import('@/services/encryption');
+  const secureInvitationData = {
+    ...invitationData,
+    invitingParentId: currentParentId
+  };
+  
+  const { data, error } = await secureInvitationOperations.createInvitationSecure(secureInvitationData);
 
   if (error) throw error;
+  // Invalidate cache after creating a new invitation
+  invalidateInvitationsCache();
+  invalidatePendingTokenCache();
   return mapInvitationFromDB(data);
 };
 
 // Get all invitations created by the current parent
 export const getPickupInvitationsForParent = async (): Promise<PickupInvitationWithDetails[]> => {
-  const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-  
-  if (parentError || !currentParentId) {
+  const currentParentId = await getCurrentParentIdCached();
+  if (!currentParentId) {
     throw new Error('Unable to authenticate parent');
   }
 
-  const { data, error } = await supabase
-    .from('pickup_invitations')
-    .select(`
-      *,
-      inviting_parent:parents!pickup_invitations_inviting_parent_id_fkey(id, name, email)
-    `)
-    .eq('inviting_parent_id', currentParentId)
-    .order('created_at', { ascending: false });
+  const now = Date.now();
+  // Serve from cache if valid and for the same parent
+  if (invitationsCache && invitationsCache.parentId === currentParentId && invitationsCache.expiresAt > now) {
+    return invitationsCache.value;
+  }
 
-  if (error) throw error;
+  // Coalesce concurrent requests
+  if (invitationsInFlight) return invitationsInFlight;
 
-  // Get student names for each invitation
-  const invitationsWithStudents = await Promise.all(
-    data.map(async (invitation) => {
-      const { data: students } = await supabase
-        .from('students')
-        .select('id, name')
-        .in('id', invitation.student_ids);
+  invitationsInFlight = (async () => {
+    // Use secure operations for encrypted data
+    const { secureInvitationOperations } = await import('@/services/encryption');
+    const { data, error } = await secureInvitationOperations.getInvitationsForParentSecure(currentParentId);
 
-      return {
-        ...mapInvitationFromDB(invitation),
-        students: students || [],
-        invitingParent: invitation.inviting_parent || undefined,
-      };
-    })
-  );
+    if (error) throw error;
 
-  return invitationsWithStudents;
+    // Map database fields to interface and add student/parent details
+    const invitationsWithDetails = data?.map((invitation: any) => ({
+      ...mapInvitationFromDB(invitation),
+      students: invitation.students || [],
+      invitingParent: invitation.inviting_parent || undefined,
+    })) || [];
+
+    // Cache result
+    invitationsCache = {
+      value: invitationsWithDetails,
+      expiresAt: Date.now() + INVITATIONS_TTL_MS,
+      parentId: currentParentId,
+    };
+    return invitationsWithDetails;
+  })().finally(() => {
+    invitationsInFlight = null;
+  });
+
+  return invitationsInFlight;
 };
 
 // Update an invitation
@@ -111,143 +134,83 @@ export const updatePickupInvitation = async (
   id: string, 
   updates: Partial<PickupInvitationInput & { invitationStatus: string }>
 ): Promise<PickupInvitation> => {
-  const updateData: any = {};
-  
-  if (updates.invitedName !== undefined) updateData.invited_name = updates.invitedName;
-  if (updates.invitedEmail !== undefined) updateData.invited_email = updates.invitedEmail;
-  if (updates.invitedRole !== undefined) updateData.invited_role = updates.invitedRole;
-  if (updates.studentIds !== undefined) updateData.student_ids = updates.studentIds;
-  if (updates.startDate !== undefined) updateData.start_date = updates.startDate;
-  if (updates.endDate !== undefined) updateData.end_date = updates.endDate;
-  if (updates.invitationStatus !== undefined) updateData.invitation_status = updates.invitationStatus;
-
-  // If accepting the invitation, create parent record and authorizations
-  if (updates.invitationStatus === 'accepted') {
-    logger.info('Starting invitation acceptance process...');
-    
-    // First get the invitation details
-    const { data: invitation, error: invitationError } = await supabase
-      .from('pickup_invitations')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (invitationError) {
-      logger.error('Error fetching invitation:', invitationError);
-      throw invitationError;
-    }
-    logger.info('Invitation fetched successfully:', invitation);
-
-    // Create or update the parent record
-    logger.info('Checking for existing parent with email:', invitation.invited_email);
-    const { data: existingParent, error: existingParentError } = await supabase
-      .from('parents')
-      .select('id')
-      .eq('email', invitation.invited_email)
-      .single();
-
-    if (existingParentError && existingParentError.code !== 'PGRST116') {
-      logger.error('Error checking existing parent:', existingParentError);
-      throw existingParentError;
-    }
-
-    let parentId: string;
-
-    if (existingParent) {
-      logger.info('Found existing parent:', existingParent.id);
-      parentId = existingParent.id;
-    } else {
-      logger.info('Creating new parent record...');
-      // Create new parent record with the invited role
-      const { data: newParent, error: parentError } = await supabase
-        .from('parents')
-        .insert({
-          name: invitation.invited_name,
-          email: invitation.invited_email,
-          role: invitation.invited_role,
-          password_set: true
-        })
-        .select('id')
-        .single();
-
-      if (parentError) {
-        logger.error('Error creating parent:', parentError);
-        throw parentError;
-      }
-      logger.info('Created new parent:', newParent.id);
-      parentId = newParent.id;
-    }
-
-    // Update the invitation with the accepted parent ID
-    updateData.accepted_parent_id = parentId;
-
-    // Create pickup authorizations for all students in the invitation
-    const authorizationsToCreate = invitation.student_ids.map((studentId: string) => ({
-      student_id: studentId,
-      authorizing_parent_id: invitation.inviting_parent_id,
-      authorized_parent_id: parentId,
-      start_date: invitation.start_date,
-      end_date: invitation.end_date,
-      is_active: true
-    }));
-
-    const { error: authError } = await supabase
-      .from('pickup_authorizations')
-      .insert(authorizationsToCreate);
-
-    if (authError) throw authError;
-  }
-
-  const { data, error } = await supabase
-    .from('pickup_invitations')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single();
+  // Use secure operations for encrypted data
+  const { secureInvitationOperations } = await import('@/services/encryption');
+  const { data, error } = await secureInvitationOperations.updateInvitationSecure(id, updates);
 
   if (error) throw error;
+  // Invalidate cache after update
+  invalidateInvitationsCache();
+  invalidatePendingTokenCache();
   return mapInvitationFromDB(data);
 };
 
 // Delete an invitation
 export const deletePickupInvitation = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('pickup_invitations')
-    .delete()
-    .eq('id', id);
+  // Use secure operations for encrypted data
+  const { secureInvitationOperations } = await import('@/services/encryption');
+  const { error } = await secureInvitationOperations.deleteInvitationSecure(id);
 
   if (error) throw error;
+  // Invalidate cache after deletion
+  invalidateInvitationsCache();
+  invalidatePendingTokenCache();
 };
 
 // Get invitation by token (for accepting invitations)
 export const getInvitationByToken = async (token: string): Promise<PickupInvitationWithDetails | null> => {
-  const { data, error } = await supabase
-    .from('pickup_invitations')
-    .select(`
-      *,
-      inviting_parent:parents!pickup_invitations_inviting_parent_id_fkey(id, name, email)
-    `)
-    .eq('invitation_token', token)
-    .eq('invitation_status', 'pending')
-    .gte('expires_at', new Date().toISOString())
-    .single();
+  // Use secure operations for encrypted data
+  const { secureInvitationOperations } = await import('@/services/encryption');
+  const { data, error } = await secureInvitationOperations.getInvitationByTokenSecure(token);
 
   if (error) {
-    if (error.code === 'PGRST116') return null; // Not found
     throw error;
   }
 
-  // Get student names
-  const { data: students } = await supabase
-    .from('students')
-    .select('id, name')
-    .in('id', data.student_ids);
+  if (!data) return null;
 
   return {
     ...mapInvitationFromDB(data),
-    students: students || [],
+    students: data.students || [],
     invitingParent: data.inviting_parent || undefined,
   };
+};
+
+// Get first pending invitation token for a given invited email (cached)
+export const getPendingInvitationTokenForEmailCached = async (email: string): Promise<string | null> => {
+  const now = Date.now();
+  const cached = pendingTokenCache.get(email);
+  if (cached && cached.expiresAt > now) return cached.value;
+
+  const existing = pendingTokenInFlight.get(email);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pickup_invitations')
+        .select('invitation_token')
+        .eq('invited_email', email)
+        .eq('invitation_status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .limit(1);
+
+      if (error) {
+        logger.error('Error fetching pending invitation token:', error);
+        pendingTokenCache.set(email, { value: null, expiresAt: now + 5_000 });
+        return null;
+      }
+
+      const token = data && data.length > 0 ? (data[0] as any).invitation_token as string : null;
+      pendingTokenCache.set(email, { value: token, expiresAt: Date.now() + PENDING_TOKEN_TTL_MS });
+      return token;
+    } finally {
+      pendingTokenInFlight.delete(email);
+    }
+  })();
+
+  pendingTokenInFlight.set(email, promise);
+  return promise;
 };
 
 // Send invitation email

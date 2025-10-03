@@ -10,6 +10,7 @@ import { logger } from '@/utils/logger';
 export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?: string[]) => {
   const [pendingRequests, setPendingRequests] = useState<PickupRequestWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [cancellingRequests, setCancellingRequests] = useState<Set<string>>(new Set());
   const lastFetchRef = useRef<number>(0);
   const subscriptionRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -74,6 +75,14 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
   };
 
   const cancelRequest = async (requestId: string) => {
+    // Prevent double-cancel
+    if (cancellingRequests.has(requestId)) {
+      logger.warn(`Cancel already in progress for request ${requestId}`);
+      return;
+    }
+
+    setCancellingRequests(prev => new Set(prev).add(requestId));
+    
     try {
       logger.info(`Cancelling pickup request ${requestId}`);
       
@@ -93,17 +102,23 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
       // Refresh on error to get correct state
       fetchPendingRequests(true);
       throw error;
+    } finally {
+      setCancellingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(requestId);
+        return newSet;
+      });
     }
   };
 
   useEffect(() => {
     fetchPendingRequests(true);
 
-    // Poll periodically in case realtime updates fail
+    // Poll periodically in case realtime updates fail (every 30 seconds)
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    intervalRef.current = setInterval(() => fetchPendingRequests(true), 5000);
+    intervalRef.current = setInterval(() => fetchPendingRequests(true), 30000);
 
     // Clean up existing subscription
     if (subscriptionRef.current) {
@@ -181,6 +196,7 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
   return {
     pendingRequests,
     loading,
+    cancellingRequests,
     markAsCalled,
     cancelRequest,
     refetch: () => fetchPendingRequests(true)

@@ -2,6 +2,12 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
 import { logger } from '@/utils/logger';
+import { isInvitedUserCached } from '@/services/auth/isInvitedUser';
+
+// Module-level cache for get_parent_by_identifier lookups
+const PARENT_IDENTIFIER_TTL_MS = 30_000; // 30s TTL
+const parentIdentifierCache = new Map<string, { value: any | null; expiresAt: number }>();
+const parentIdentifierInFlight = new Map<string, Promise<any | null>>();
 
 // Clean up auth state in localStorage
 export const cleanupAuthState = () => {
@@ -24,30 +30,67 @@ export const cleanupAuthState = () => {
 };
 
 // Get parent data using server-side helper - supports both email and username
-export const getParentData = async (emailOrUsername: string | null) => {
+export const getParentData = async (emailOrUsername: string | null, retryCount: number = 0) => {
   if (!emailOrUsername) return null;
   
   try {
-    logger.log('Fetching parent data for identifier:', emailOrUsername);
-    
-    // Use the new database function that can handle both email and username
-    const { data: parentData, error } = await supabase
-      .rpc('get_parent_by_identifier', { identifier: emailOrUsername });
-    
-    if (error) {
-      logger.error('Error fetching parent data:', error);
-      return null;
+    logger.log('Fetching parent data for identifier:', emailOrUsername, 'retry:', retryCount);
+
+    // Serve from cache if valid
+    const now = Date.now();
+    const cached = parentIdentifierCache.get(emailOrUsername);
+    if (cached && cached.expiresAt > now) {
+      return cached.value;
     }
-    
-    if (!parentData || parentData.length === 0) {
-      logger.log('No parent found for identifier:', emailOrUsername);
-      return null;
-    }
-    
-    const userData = parentData[0];
-    return userData;
+
+    // Coalesce concurrent calls
+    const existing = parentIdentifierInFlight.get(emailOrUsername);
+    if (existing) return existing;
+
+    const promise = (async () => {
+      // Use the new database function that can handle both email and username
+      const { data: parentData, error } = await supabase
+        .rpc('get_parent_by_identifier', { identifier: emailOrUsername });
+
+      if (error) {
+        logger.error('Error fetching parent data:', error);
+        // Negative cache briefly to avoid hammering on repeated failures
+        parentIdentifierCache.set(emailOrUsername, { value: null, expiresAt: now + 5_000 });
+
+        // Retry up to 2 times for network/temporary errors
+        if (retryCount < 2 && (error.message?.includes('network') || error.message?.includes('timeout') || error.code === 'PGRST301')) {
+          logger.log('Retrying parent data fetch due to temporary error');
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+          return getParentData(emailOrUsername, retryCount + 1);
+        }
+        return null;
+      }
+
+      if (!parentData || parentData.length === 0) {
+        logger.log('No parent found for identifier:', emailOrUsername);
+        parentIdentifierCache.set(emailOrUsername, { value: null, expiresAt: now + 5_000 });
+        return null;
+      }
+
+      const userData = parentData[0];
+      parentIdentifierCache.set(emailOrUsername, { value: userData, expiresAt: Date.now() + PARENT_IDENTIFIER_TTL_MS });
+      return userData;
+    })()
+      .finally(() => {
+        parentIdentifierInFlight.delete(emailOrUsername);
+      });
+
+    parentIdentifierInFlight.set(emailOrUsername, promise);
+    return await promise;
   } catch (error) {
     logger.error("Error fetching parent data:", error);
+    
+    // Retry for network errors
+    if (retryCount < 2) {
+      logger.log('Retrying parent data fetch due to exception');
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      return getParentData(emailOrUsername, retryCount + 1);
+    }
     return null;
   }
 };
@@ -57,11 +100,11 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
   if (!email) return { isPreloaded: false, needsPasswordSetup: false };
   
   try {
-    const { data: parentData, error } = await supabase
-      .from('parents')
-      .select('is_preloaded, password_set')
-      .eq('email', email)
-      .single();
+    // Use the secure RPC function that handles encryption
+    const { data: parentDataArray, error } = await supabase
+      .rpc('get_parent_by_identifier', { identifier: email });
+    
+    const parentData = parentDataArray?.[0];
       
     if (error) {
       logger.error('Error checking preloaded status:', error);
@@ -71,10 +114,9 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
     // If this is an OAuth user and they're preloaded but password_set is false,
     // update it to true since OAuth users don't need passwords
     if (isOAuthUser && parentData?.is_preloaded && !parentData?.password_set) {
-      await supabase
-        .from('parents')
-        .update({ password_set: true })
-        .eq('email', email);
+      // Use secure operations for update
+      const { secureOperations } = await import('@/services/encryption');
+      await secureOperations.updateParentSecure(parentData.id, { password_set: true });
       
       return {
         isPreloaded: parentData?.is_preloaded || false,
@@ -95,13 +137,7 @@ export const checkPreloadedParentStatus = async (email: string | null, isOAuthUs
 // Create a User object from parent data
 export const createUserFromParentData = async (parentData: any): Promise<User> => {
   // Check if user is invited (only has authorizations, no direct student relationships)
-  let isInvitedUser = false;
-  try {
-    const { data } = await supabase.rpc('is_invited_user');
-    isInvitedUser = data || false;
-  } catch (error) {
-    logger.error('Error checking invited user status:', error);
-  }
+  const isInvitedUser = await isInvitedUserCached();
 
   // Debug logging to see what data we're receiving
   logger.log('🔍 createUserFromParentData - parentData:', parentData);
@@ -145,11 +181,9 @@ export const createParentFromOAuthUser = async (authUser: any): Promise<any> => 
       password_set: true // OAuth users don't need password setup
     };
 
-    const { data, error } = await supabase
-      .from('parents')
-      .insert(parentData)
-      .select()
-      .single();
+    // Use secure operations for creating parent
+    const { secureOperations } = await import('@/services/encryption');
+    const { data, error } = await secureOperations.createParentSecure(parentData);
 
     if (error && error.code !== '23505') { // 23505 is unique violation error
       logger.error('Error creating parent from OAuth:', error);

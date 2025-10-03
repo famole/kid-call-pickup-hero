@@ -32,11 +32,11 @@ export const usePasswordSetupLogic = () => {
       const parentId = urlParams.get('parentId');
       if (parentId && !identifierFromUrl) {
         try {
-          const { data: parentDataResult, error } = await supabase
-            .from('parents')
-            .select('email, username')
-            .eq('id', parentId)
-            .maybeSingle();
+          // Use secure RPC function to get parent data by ID
+          const { data: allParentsData, error } = await supabase
+            .rpc('get_parent_by_identifier', { identifier: parentId });
+          
+          const parentDataResult = allParentsData?.[0];
           
           if (!error && parentDataResult) {
             identifierFromUrl = parentDataResult.email || parentDataResult.username;
@@ -97,11 +97,11 @@ export const usePasswordSetupLogic = () => {
                             session?.user?.app_metadata?.provider !== 'email');
           setIsOAuthUser(isOAuth);
 
-          const { data: parentDataResult, error } = await supabase
-            .from('parents')
-            .select('*')
-            .eq('email', user.email)
-            .maybeSingle();
+          // Use secure RPC function to get parent data
+          const { data: parentDataArray, error } = await supabase
+            .rpc('get_parent_by_identifier', { identifier: user.email });
+          
+          const parentDataResult = parentDataArray?.[0];
 
           console.log('Authenticated user parent data:', {
             error: error?.message,

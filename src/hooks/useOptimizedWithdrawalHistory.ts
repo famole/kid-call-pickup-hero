@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
 interface WithdrawalRecord {
   id: string;
@@ -45,15 +46,8 @@ export const useOptimizedWithdrawalHistory = () => {
     try {
       setLoading(true);
 
-      // Get current parent ID using the RPC function
-      const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-      
-      if (parentError) {
-        logger.error('Error getting current parent ID:', parentError);
-        setWithdrawalData([]);
-        return;
-      }
-
+      // Get current parent ID (cached)
+      const parentId = await getCurrentParentIdCached();
       if (!parentId) {
         logger.warn('No parent ID found for current user');
         setWithdrawalData([]);
@@ -95,11 +89,16 @@ export const useOptimizedWithdrawalHistory = () => {
         const studentIds = pickupHistoryData.map(record => record.student_id);
         
         const [parentsData, authorizationsData] = await Promise.all([
-          // Get parent names
-          supabase
-            .from('parents')
-            .select('id, name')
-            .in('id', uniqueParentIds),
+          // Get parent names using secure operations
+          (async () => {
+            const { secureOperations } = await import('@/services/encryption');
+            const { data: allParents } = await secureOperations.getParentsSecure(false);
+            return { 
+              data: allParents?.filter(p => uniqueParentIds.includes(p.id))
+                .map(p => ({ id: p.id, name: p.name })) || [], 
+              error: null 
+            };
+          })(),
           // Get authorizations
           supabase
             .from('pickup_authorizations')

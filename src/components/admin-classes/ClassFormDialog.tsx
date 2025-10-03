@@ -84,10 +84,32 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({
   };
 
   const handleTeacherToggle = (teacherId: string, checked: boolean) => {
+    let newSelectedTeachers: string[];
     if (checked) {
-      setSelectedTeachers(prev => [...prev, teacherId]);
+      newSelectedTeachers = [...selectedTeachers, teacherId];
     } else {
-      setSelectedTeachers(prev => prev.filter(id => id !== teacherId));
+      newSelectedTeachers = selectedTeachers.filter(id => id !== teacherId);
+    }
+    
+    setSelectedTeachers(newSelectedTeachers);
+    
+    // Update classData immediately with teacher info
+    if (newSelectedTeachers.length > 0) {
+      const primaryTeacher = teachers.find(t => t.id === newSelectedTeachers[0]);
+      if (primaryTeacher) {
+        onClassDataChange({ 
+          ...classData, 
+          teacher: primaryTeacher.name,
+          selectedTeachers: newSelectedTeachers 
+        });
+      }
+    } else {
+      // Clear teacher data if no teachers selected
+      onClassDataChange({ 
+        ...classData, 
+        teacher: '',
+        selectedTeachers: [] 
+      });
     }
   };
 

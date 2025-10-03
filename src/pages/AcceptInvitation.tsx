@@ -10,6 +10,7 @@ import { getInvitationByToken, updatePickupInvitation } from '@/services/pickupI
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { Separator } from '@/components/ui/separator';
+import { logger } from '@/utils/logger';
 
 interface InvitationDetails {
   id: string;
@@ -118,7 +119,7 @@ const AcceptInvitation = () => {
           setShowLoginForm(true);
         }
       } catch (error) {
-        console.error('Error loading invitation:', error);
+        logger.error('Error loading invitation:', error);
         setError('Error al cargar la invitación');
       } finally {
         setLoading(false);
@@ -137,7 +138,7 @@ const AcceptInvitation = () => {
       toast.success('Invitación aceptada exitosamente');
       navigate('/');
     } catch (error) {
-      console.error('Error accepting invitation:', error);
+      logger.error('Error accepting invitation:', error);
       toast.error('Error al aceptar la invitación');
     } finally {
       setProcessing(false);
@@ -153,7 +154,7 @@ const AcceptInvitation = () => {
       toast.success('Invitación rechazada');
       navigate('/');
     } catch (error) {
-      console.error('Error declining invitation:', error);
+      logger.error('Error declining invitation:', error);
       toast.error('Error al rechazar la invitación');
     } finally {
       setProcessing(false);
@@ -182,7 +183,7 @@ const AcceptInvitation = () => {
         window.location.href = '/';
       }
     } catch (error: any) {
-      console.error('Error logging in and accepting invitation:', error);
+      logger.error('Error logging in and accepting invitation:', error);
       toast.error(error.message || 'Error al iniciar sesión');
     } finally {
       setIsSubmitting(false);
@@ -232,7 +233,7 @@ const AcceptInvitation = () => {
         window.location.href = '/';
       }
     } catch (error: any) {
-      console.error('Error creating account and accepting invitation:', error);
+      logger.error('Error creating account and accepting invitation:', error);
       toast.error(error.message || 'Error al crear la cuenta');
     } finally {
       setIsSubmitting(false);
@@ -253,7 +254,7 @@ const AcceptInvitation = () => {
       
       toast.info('Redirigiendo a Google...');
     } catch (error: any) {
-      console.error('Google authentication error:', error);
+      logger.error('Google authentication error:', error);
       toast.error(error.message || 'Error al autenticar con Google');
       setIsSubmitting(false);
     }

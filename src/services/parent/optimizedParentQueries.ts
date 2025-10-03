@@ -1,32 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
+import { secureOperations } from '@/services/encryption';
+import { secureClassOperations } from '@/services/encryption/secureClassClient';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { logger } from '@/utils/logger';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
 export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false): Promise<ParentWithStudents[]> => {
   try {
     logger.log('Fetching optimized parents with students data...');
     
-    let query = supabase
-      .from('parents')
-      .select(`
-        id,
-        name,
-        email,
-        username,
-        phone,
-        role,
-        created_at,
-        updated_at,
-        deleted_at
-      `);
-    
-    if (!includeDeleted) {
-      query = query.is('deleted_at', null);
-    }
-    
-    const { data: parentsData, error: parentsError } = await query.order('name');
+    // Use secure operations for parent data
+    const { data: parentsData, error: parentsError } = await secureOperations.getParentsSecure(includeDeleted);
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);
@@ -35,7 +21,7 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
 
     logger.log(`Fetched ${parentsData?.length || 0} parents from database`);
     logger.log(`Include deleted was: ${includeDeleted}`);
-    logger.log(`Parents with deleted_at:`, parentsData?.filter(p => p.deleted_at).length || 0);
+    logger.log(`Parents with deleted_at:`, parentsData?.filter(p => p.deletedAt).length || 0);
     
     // Log role distribution for debugging
     const roleDistribution = parentsData?.reduce((acc, parent) => {
@@ -52,20 +38,8 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
         parent_id,
         student_id,
         is_primary,
-        relationship,
-        students!inner (
-          id,
-          name,
-          class_id,
-          avatar,
-          classes (
-            id,
-            name,
-            grade
-          )
-        )
-      `)
-      .is('students.deleted_at', null);
+        relationship
+      `);
 
     if (studentParentError) {
       logger.error('Error fetching student-parent relationships:', studentParentError);
@@ -74,58 +48,145 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
 
     logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
 
-    // Get pickup authorizations for family members
-    const { data: authorizationData, error: authError } = await supabase
-      .from('pickup_authorizations')
-      .select(`
-        authorized_parent_id,
-        student_id,
-        student_ids,
-        is_active,
-        start_date,
-        end_date,
-        students!inner (
-          id,
-          name,
-          class_id,
-          avatar,
-          classes (
-            id,
-            name,
-            grade
-          )
-        )
-      `)
-      .eq('is_active', true)
-      .is('students.deleted_at', null)
-      .gte('end_date', new Date().toISOString().split('T')[0]); // Only current/future authorizations
+    // Get students data using secure operations
+    const { data: studentsData, error: studentsError } = await secureOperations.getStudentsSecure();
 
-    if (authError) {
-      logger.warn('Error loading pickup authorizations:', authError);
+    if (studentsError) {
+      logger.error('Error fetching students:', studentsError);
+      throw new Error(studentsError.message);
     }
 
+    // Get classes data using secure operations
+    const classesData = await secureClassOperations.getAll();
+    logger.log(`Fetched ${classesData?.length || 0} classes using secure operations`);
+
+    if (studentParentError) {
+      logger.error('Error fetching student-parent relationships:', studentParentError);
+      throw new Error(studentParentError.message);
+    }
+
+    logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
+
+    // Get pickup authorizations for family members using secure endpoint
+    let authorizationData: Array<{
+      id: string;
+      authorizing_parent_id: string;
+      authorized_parent_id: string;
+      student_id: string;
+      student_ids?: string[];
+      is_active: boolean;
+      start_date: string;
+      end_date: string;
+      allowed_days_of_week: number[];
+      created_at: string;
+      updated_at: string;
+      students: {
+        id: string;
+        name: string;
+        class_id: string;
+        avatar: string | null;
+        classes: {
+          id: string;
+          name: string;
+          grade: string;
+        } | null;
+      };
+    }> = [];
+    
+    try {
+      // Get the current parent ID using cached helper
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        logger.warn('Cached helper returned null current parent ID');
+        return [];
+      }
+      
+      const { data: authData, error: authError } = await supabase.functions.invoke('secure-pickup-authorizations', {
+        body: {
+          operation: 'getPickupAuthorizationsForParent',
+          parentId: currentParentId
+        }
+      });
+      
+      if (authError) {
+        logger.warn('Error loading pickup authorizations:', authError);
+      } else if (authData?.data?.encrypted_data) {
+        // Import the decryption function from encryption service
+        const { decryptData } = await import('@/services/encryption/encryptionService');
+        // Decrypt the response data
+        const decryptedData = await decryptData(authData.data.encrypted_data);
+        if (decryptedData) {
+          authorizationData = JSON.parse(decryptedData);
+        }
+      }
+    } catch (error) {
+      logger.warn('Error in secure pickup authorizations call:', error);
+    }
+
+    // Define the student type
+    type StudentWithClass = {
+      id: string;
+      name: string;
+      classId: string | null;
+      className: string;
+      grade: string;
+      isPrimary: boolean;
+      avatar: string | null;
+      parentRelationshipId: string;
+      relationship: string | null;
+    };
+
     // Group students by parent ID
-    const studentsByParent = studentParentData?.reduce((acc, relation) => {
+    const studentsByParent = studentParentData?.reduce<Record<string, StudentWithClass[]>>((acc, relation) => {
       if (!acc[relation.parent_id]) {
         acc[relation.parent_id] = [];
       }
-      acc[relation.parent_id].push({
-        id: relation.students.id,
-        name: relation.students.name,
-        classId: relation.students.class_id,
-        className: relation.students.classes?.name || 'No Class',
-        grade: relation.students.classes?.grade || 'No Grade',
-        isPrimary: relation.is_primary,
-        avatar: relation.students.avatar,
-        parentRelationshipId: relation.id,
-        relationship: relation.relationship,
-      });
+      
+      // Find student and class data
+      const student = studentsData?.find(s => s.id === relation.student_id);
+      const studentClass = classesData?.find(c => c.id === student?.class_id);
+      
+      if (student) {
+        const studentWithClass: StudentWithClass = {
+          id: student.id,
+          name: student.name,
+          classId: student.class_id || null,
+          className: studentClass?.name || 'No Class',
+          grade: studentClass?.grade || 'No Grade',
+          isPrimary: Boolean(relation.is_primary),
+          avatar: student.avatar || null,
+          parentRelationshipId: relation.id,
+          relationship: relation.relationship || null,
+        };
+        acc[relation.parent_id].push(studentWithClass);
+      }
       return acc;
-    }, {} as Record<string, any[]>) || {};
+    }, {} as Record<string, StudentWithClass[]>) || {};
 
     // Add authorized students for family members
     if (authorizationData) {
-      authorizationData.forEach((auth: any) => {
+      type AuthorizationData = {
+        authorized_parent_id: string;
+        student_id: string;
+        student_ids?: string[];
+        is_active: boolean;
+        start_date: string;
+        end_date: string;
+        allowed_days_of_week: number[];
+        students: {
+          id: string;
+          name: string;
+          class_id: string;
+          avatar: string | null;
+          classes: {
+            id: string;
+            name: string;
+            grade: string;
+          } | null;
+        };
+      };
+
+      authorizationData.forEach((auth: AuthorizationData) => {
         const parentId = auth.authorized_parent_id;
         
         // Initialize array if doesn't exist
@@ -135,22 +196,24 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
 
         const student = auth.students;
         // Check if student is not already in the list (avoid duplicates from direct assignments)
-        const existingStudent = studentsByParent[parentId].find((s: any) => s.id === student.id);
-        if (!existingStudent) {
-          studentsByParent[parentId].push({
-            id: student.id,
-            name: student.name,
-            classId: student.class_id,
-            className: student.classes?.name || 'No Class',
-            grade: student.classes?.grade || 'No Grade',
-            isPrimary: false,
-            avatar: student.avatar,
-            parentRelationshipId: undefined, // No direct relationship
-            relationship: 'authorized',
-          });
-        }
-      });
-    }
+        const existingStudent = studentsByParent[parentId].find((s: StudentWithClass) => s.id === student.id);
+      
+      if (!existingStudent && student) {
+        const authorizedStudent: StudentWithClass = {
+          id: student.id,
+          name: student.name,
+          classId: student.class_id,
+          className: student.classes?.name || 'No Class',
+          grade: student.classes?.grade || 'No Grade',
+          isPrimary: false, // Authorized students are not primary
+          avatar: student.avatar || null,
+          parentRelationshipId: '', // No direct relationship ID for authorized students
+          relationship: 'authorized',
+        };
+        studentsByParent[parentId].push(authorizedStudent);
+      }
+    });
+  }
 
     // Combine parents with their students - convert dates properly
     const parentsWithStudents: ParentWithStudents[] = parentsData?.map(parent => ({
@@ -179,59 +242,86 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
   }
 };
 
-export const getParentDashboardDataOptimized = async (parentEmail: string) => {
+export const getParentDashboardDataOptimized = async (parentIdentifier: string) => {
   try {
-    logger.log('Fetching parent dashboard data for:', parentEmail);
+    logger.log('Fetching parent dashboard data for parent identifier:', parentIdentifier);
 
-    // Get parent ID first (excluding deleted)
-    const { data: parentData, error: parentError } = await supabase
-      .from('parents')
-      .select('id')
-      .eq('email', parentEmail)
-      .is('deleted_at', null)
-      .single();
-
+    // Get parent data using secure operations
+    const { data: parentsData, error: parentError } = await secureOperations.getParentsSecure(false);
+    
     if (parentError) {
       logger.error('Error fetching parent:', parentError);
       throw new Error(parentError.message);
     }
 
+    // Find parent by ID (UUID), email, or username
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parentIdentifier);
+    let parentData;
+    
+    if (isUUID) {
+      parentData = parentsData?.find(p => p.id === parentIdentifier);
+    } else {
+      // Check if it's an email or username
+      parentData = parentsData?.find(p => p.email === parentIdentifier || p.username === parentIdentifier);
+    }
+    
     if (!parentData) {
-      logger.error('No parent found for email:', parentEmail);
+      logger.error('No parent found for identifier:', parentIdentifier);
       return { allChildren: [] };
     }
 
-    // Get direct children (via student_parents relationship)
-    const { data: childrenData, error: childrenError } = await supabase
+    // Get direct children (via student_parents relationship) - get IDs only
+    const { data: childrenRelations, error: childrenError } = await supabase
       .from('student_parents')
       .select(`
-        students!inner (
-          id,
-          name,
-          class_id,
-          avatar
-        ),
+        student_id,
         is_primary
       `)
-      .eq('parent_id', parentData.id)
-      .is('students.deleted_at', null);
+      .eq('parent_id', parentData.id);
 
     if (childrenError) {
-      logger.error('Error fetching children:', childrenError);
+      logger.error('Error fetching children relations:', childrenError);
       throw new Error(childrenError.message);
     }
 
+    // Get student details using secure operations
+    const studentIds = childrenRelations?.map(r => r.student_id) || [];
+    let studentsData = [];
+    if (studentIds.length > 0) {
+      const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
+      if (studentsError) {
+        logger.error('Error fetching students:', studentsError);
+        throw new Error(studentsError.message);
+      }
+      studentsData = allStudents?.filter(s => studentIds.includes(s.id)) || [];
+    }
+
+    // Get all classes data to resolve class names using secure operations
+    let classesData = [];
+    try {
+      classesData = await secureClassOperations.getAll();
+      logger.log(`Fetched ${classesData?.length || 0} classes using secure operations`);
+    } catch (error) {
+      logger.error('Error fetching classes with secure operations:', error);
+      // Don't throw, just log and continue with empty classes
+    }
+
+    // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+    const currentDayOfWeek = new Date().getDay();
+    
     // Get authorized children (excluding deleted students) - handle both old student_id and new student_ids
     const { data: authorizedChildren, error: authorizedError } = await supabase
       .from('pickup_authorizations')
       .select(`
         student_id,
-        student_ids
+        student_ids,
+        allowed_days_of_week
       `)
       .eq('authorized_parent_id', parentData.id)
       .eq('is_active', true)
       .lte('start_date', new Date().toISOString().split('T')[0])
-      .gte('end_date', new Date().toISOString().split('T')[0]);
+      .gte('end_date', new Date().toISOString().split('T')[0])
+      .contains('allowed_days_of_week', [currentDayOfWeek]);
 
     // Get student details for all authorized students
     let authorizedStudentIds: string[] = [];
@@ -251,17 +341,15 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
     // Remove duplicates
     authorizedStudentIds = [...new Set(authorizedStudentIds)];
 
-    // Get student details for authorized students
+    // Get student details for authorized students using secure operations
     let authorizedStudentDetails = [];
     if (authorizedStudentIds.length > 0) {
-      const { data: studentDetails, error: studentsError } = await supabase
-        .from('students')
-        .select('id, name, class_id, avatar')
-        .in('id', authorizedStudentIds)
-        .is('deleted_at', null);
-
-      if (!studentsError && studentDetails) {
-        authorizedStudentDetails = studentDetails;
+      const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
+      
+      if (!studentsError && allStudents) {
+        // Filter out deleted students and map to match expected structure
+        authorizedStudentDetails = allStudents
+          .filter(s => s && authorizedStudentIds.includes(s.id) && !s.deletedAt);
       }
     }
 
@@ -270,19 +358,31 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
       // Don't throw here, just log and continue
     }
 
-    // Combine and format children data
-    const directChildren: Child[] = childrenData?.map(relation => ({
-      id: relation.students.id,
-      name: relation.students.name,
-      classId: relation.students.class_id || '',
-      parentIds: [parentData.id],
-      avatar: relation.students.avatar,
-    })) || [];
+    // Helper function to get class name
+    const getClassName = (classId: string | null): string => {
+      if (!classId || !classesData) return 'Unknown Class';
+      const classData = classesData.find(c => c.id === classId);
+      return classData?.name || 'Unknown Class';
+    };
+
+    // Combine and format children data with class names
+    const directChildren: Child[] = childrenRelations?.map(relation => {
+      const student = studentsData.find(s => s.id === relation.student_id);
+      return {
+        id: relation.student_id,
+        name: student?.name || 'Unknown Student',
+        classId: student?.class_id || '',
+        className: getClassName(student?.class_id),
+        parentIds: [parentData.id],
+        avatar: student?.avatar,
+      };
+    }) || [];
 
     const authorizedChildrenFormatted: Child[] = authorizedStudentDetails?.map(student => ({
       id: student.id,
       name: student.name,
       classId: student.class_id || '',
+      className: getClassName(student.class_id),
       parentIds: [parentData.id],
       avatar: student.avatar,
     })) || [];
@@ -302,7 +402,7 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
 
     const allChildren = Array.from(allChildrenMap.values());
 
-    logger.log(`Found ${allChildren.length} children for parent ${parentEmail}`);
+    logger.log(`Found ${allChildren.length} children for parent identifier ${parentIdentifier}`);
 
     return { allChildren };
   } catch (error) {
@@ -312,12 +412,12 @@ export const getParentDashboardDataOptimized = async (parentEmail: string) => {
 };
 
 // Enhanced function that gets all pickup requests affecting a parent's children
-export const getParentDashboardWithRealTimeData = async (parentEmail: string) => {
+export const getParentDashboardWithRealTimeData = async (parentIdentifier: string) => {
   try {
-    logger.log('Fetching complete parent dashboard data for:', parentEmail);
+    logger.log('Fetching complete parent dashboard data for parent identifier:', parentIdentifier);
     
     // Get basic dashboard data
-    const dashboardData = await getParentDashboardDataOptimized(parentEmail);
+    const dashboardData = await getParentDashboardDataOptimized(parentIdentifier);
     
     // Get all pickup requests that affect this parent's children
     const affectedPickupRequests = await getParentAffectedPickupRequests();

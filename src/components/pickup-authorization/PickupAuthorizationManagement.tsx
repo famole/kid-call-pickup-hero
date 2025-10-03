@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,8 @@ import RoleBadge from './RoleBadge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
+import { supabase } from "@/integrations/supabase/client";
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import {
   getPickupAuthorizationsForParent,
   deletePickupAuthorization,
@@ -43,68 +45,189 @@ const PickupAuthorizationManagement: React.FC = () => {
   const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null);
   const { toast } = useToast();
   const { t } = useTranslation();
+  
+  // Refs for managing subscriptions and timeouts
+  const subscriptionRef = useRef<any>(null);
+  const invitationSubscriptionRef = useRef<any>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchRef = useRef<number>(0);
 
-  useEffect(() => {
-    loadAuthorizations();
-  }, []);
+  // Debounced loading function to prevent excessive API calls
+  const loadAuthorizations = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    
+    // Prevent excessive calls - only allow one call per 2 seconds unless forced
+    if (!forceRefresh && now - lastFetchRef.current < 2000) {
+      logger.info('Skipping authorization refresh - too recent');
+      return;
+    }
 
-  // Refresh data when the component becomes visible again
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        loadAuthorizations();
+    // Clear any pending debounced calls
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+      debounceTimeoutRef.current = null;
+    }
+
+    const doLoad = async () => {
+      try {
+        setLoading(true);
+        logger.info('Loading pickup authorizations and invitations');
+        const [authData, invitationData] = await Promise.all([
+          (async () => {
+            const currentParentId = await getCurrentParentIdCached();
+            if (!currentParentId) {
+              logger.error('PickupAuthorizationManagement: No current parent ID found');
+              return [];
+            }
+            logger.log('PickupAuthorizationManagement: Loading authorizations for parentId:', currentParentId);
+            return getPickupAuthorizationsForParent(currentParentId);
+          })(),
+          getPickupInvitationsForParent()
+        ]);
+        setAuthorizations(authData);
+        setInvitations(invitationData.filter(inv => inv.invitationStatus === 'pending'));
+        lastFetchRef.current = now;
+        logger.info(`Loaded ${authData.length} authorizations and ${invitationData.length} invitations`);
+      } catch (error) {
+        logger.error('Error loading authorizations:', error);
+        toast({
+          title: t('common.error'),
+          description: t('pickupAuthorizations.failedToLoad'),
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
-    const handleFocus = () => {
-      loadAuthorizations();
-    };
+    await doLoad();
+  }, [toast, t]);
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
+  // Initial load and setup real-time subscriptions
+  useEffect(() => {
+    loadAuthorizations(true);
+
+    // Clean up existing subscriptions
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current);
+    }
+    if (invitationSubscriptionRef.current) {
+      supabase.removeChannel(invitationSubscriptionRef.current);
+    }
+
+    // Set up real-time subscription for pickup_authorizations
+    const authChannel = supabase
+      .channel(`pickup_authorizations_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pickup_authorizations'
+        },
+        (payload) => {
+          logger.info('Pickup authorization change detected:', payload.eventType);
+          // Debounce the refresh to avoid rapid-fire updates
+          if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+          }
+          debounceTimeoutRef.current = setTimeout(() => {
+            loadAuthorizations(true);
+          }, 500);
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription for pickup_invitations
+    const invitationChannel = supabase
+      .channel(`pickup_invitations_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pickup_invitations'
+        },
+        (payload) => {
+          logger.info('Pickup invitation change detected:', payload.eventType);
+          // Debounce the refresh to avoid rapid-fire updates
+          if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+          }
+          debounceTimeoutRef.current = setTimeout(() => {
+            loadAuthorizations(true);
+          }, 500);
+        }
+      )
+      .subscribe();
+
+    subscriptionRef.current = authChannel;
+    invitationSubscriptionRef.current = invitationChannel;
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      logger.info('Cleaning up pickup authorization subscriptions');
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+      }
+      if (invitationSubscriptionRef.current) {
+        supabase.removeChannel(invitationSubscriptionRef.current);
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
-  }, []);
-
-  const loadAuthorizations = async () => {
-    try {
-      setLoading(true);
-      const [authData, invitationData] = await Promise.all([
-        getPickupAuthorizationsForParent(),
-        getPickupInvitationsForParent()
-      ]);
-      setAuthorizations(authData);
-      setInvitations(invitationData.filter(inv => inv.invitationStatus === 'pending'));
-    } catch (error) {
-      logger.error('Error loading authorizations:', error);
-      toast({
-        title: t('common.error'),
-        description: t('pickupAuthorizations.failedToLoad'),
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadAuthorizations]);
 
   const handleDeleteAuthorization = async (id: string) => {
+    if (!id) {
+      logger.error('No authorization ID provided for deletion');
+      toast({
+        title: t('common.error'),
+        description: 'No authorization selected',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       setDeletingId(id);
-      await deletePickupAuthorization(id);
+      
+      // Get current parent ID
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        logger.error('Failed to get current parent ID');
+        toast({
+          title: t('common.error'),
+          description: 'Authentication error. Please refresh the page and try again.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      logger.info('Attempting to delete pickup authorization', { id, parentId: currentParentId });
+      
+      // Delete the authorization
+      await deletePickupAuthorization(currentParentId, id);
+      
+      // Update local state to remove the deleted authorization
       setAuthorizations(prev => prev.filter(auth => auth.id !== id));
+      
+      // Show success message
       toast({
         title: t('common.success'),
         description: t('pickupAuthorizations.authorizationRemoved'),
       });
+      
+      logger.info('Successfully deleted pickup authorization', { id });
+      
     } catch (error) {
-      logger.error('Error deleting authorization:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error deleting authorization:', { error: errorMessage, id });
+      
       toast({
         title: t('common.error'),
-        description: t('pickupAuthorizations.failedToRemove'),
-        variant: "destructive",
+        description: errorMessage || t('pickupAuthorizations.failedToRemove'),
+        variant: 'destructive',
       });
     } finally {
       setDeletingId(null);
@@ -137,13 +260,22 @@ const PickupAuthorizationManagement: React.FC = () => {
   };
 
   const isExpired = (endDate: string) => {
-    return new Date(endDate) < new Date();
+    // Compare only dates, not times - authorization should be valid through end of day
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    return end < today;
   };
 
   const isActive = (startDate: string, endDate: string) => {
+    // Compare only dates, not times - authorization should be valid through end of day
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
     const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
     return today >= start && today <= end;
   };
 
@@ -418,7 +550,7 @@ const PickupAuthorizationManagement: React.FC = () => {
       <AddAuthorizationDialog
         isOpen={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onAuthorizationAdded={loadAuthorizations}
+        onAuthorizationAdded={() => loadAuthorizations(true)}
       />
       <EditAuthorizationDialog
         authorization={editingAuthorization}
@@ -427,7 +559,7 @@ const PickupAuthorizationManagement: React.FC = () => {
           if (!open) setEditingAuthorization(null);
           setIsEditDialogOpen(open);
         }}
-        onAuthorizationUpdated={loadAuthorizations}
+        onAuthorizationUpdated={() => loadAuthorizations(true)}
       />
     </div>
   );

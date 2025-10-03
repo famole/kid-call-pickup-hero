@@ -17,6 +17,7 @@ import * as Notifications from 'expo-notifications'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
 import PickupStatus from '../components/PickupStatus'
+import { getCurrentParentIdCached } from '../../../src/services/parent/getCurrentParentId'
 import MenuSheet from '../components/MenuSheet'
 
 // TYPES
@@ -108,8 +109,8 @@ export default function DashboardScreen({ session }: Props) {
   }, [students])
 
   const fetchActiveRequests = useCallback(async () => {
-    const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id')
-    if (parentError || !parentId) {
+    const parentId = await getCurrentParentIdCached()
+    if (!parentId) {
       setActiveRequests([])
       return
     }
@@ -210,6 +211,9 @@ export default function DashboardScreen({ session }: Props) {
     try {
       const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id')
       if (parentError || !parentId) throw new Error('Unable to determine current parent')
+      // Prefer cached helper when available
+      const cachedParentId = await getCurrentParentIdCached()
+      const effectiveParentId = cachedParentId || parentId
 
       for (const studentId of selectedStudentIds) {
         const { data: isAuthorized, error: authError } = await supabase.rpc(
@@ -221,7 +225,7 @@ export default function DashboardScreen({ session }: Props) {
 
         const { error } = await supabase.from('pickup_requests').insert({
           student_id: studentId,
-          parent_id: parentId,
+          parent_id: effectiveParentId,
           status: 'pending',
           request_time: new Date().toISOString(),
         })

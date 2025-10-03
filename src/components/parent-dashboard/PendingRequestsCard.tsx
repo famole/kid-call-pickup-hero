@@ -8,6 +8,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { cancelPickupRequest } from '@/services/pickup';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface PendingRequestsCardProps {
   pendingRequests: PickupRequest[];
@@ -29,10 +30,23 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
   const handleCancelRequest = async (requestId: string) => {
     setCancellingRequests(prev => new Set(prev).add(requestId));
     try {
+      logger.info('Starting cancel for request:', requestId);
       await cancelPickupRequest(requestId);
+      logger.info('Cancel successful, calling onRequestCancelled callback');
       toast.success(t('dashboard.pickupRequestCancelled'));
-      onRequestCancelled?.();
+      
+      // Trigger the refetch callback with a slight delay to ensure DB has been updated
+      if (onRequestCancelled) {
+        logger.info('Scheduling refetch callback');
+        setTimeout(() => {
+          logger.info('Executing refetch callback now');
+          onRequestCancelled();
+        }, 500);
+      } else {
+        logger.warn('No onRequestCancelled callback provided!');
+      }
     } catch (error) {
+      logger.error('Error cancelling pickup request:', error);
       toast.error(t('dashboard.errorCancellingRequest'));
     } finally {
       setCancellingRequests(prev => {

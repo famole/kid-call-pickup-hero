@@ -19,6 +19,8 @@ import { ParentWithStudents } from '@/types/parent';
 import { Child, Class } from '@/types';
 import { logger } from '@/utils/logger';
 import { useTranslation } from '@/hooks/useTranslation';
+import { supabase } from '@/integrations/supabase/client';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { 
   getPickupAuthorizationsForParent,
   getPickupAuthorizationsForAuthorizedParent,
@@ -85,10 +87,22 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     
     setLoadingAuthorizations(true);
     try {
+      // For admin functionality, we need to get the admin's parentId
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        console.error('Error getting current parent ID');
+        toast({
+          title: t('familyMemberDetails.error'),
+          description: 'Failed to authenticate admin',
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Get authorizations this parent has created
-      const parentAuthorizations = await getPickupAuthorizationsForParent();
+      const parentAuthorizations = await getPickupAuthorizationsForParent(parent.id);
       // Get authorizations where this parent is authorized
-      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(parent.id);
+      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(currentParentId, parent.id);
       
       setAuthorizations(parentAuthorizations);
       setReceivedAuthorizations(receivedAuths);
@@ -149,11 +163,24 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     if (!parent || !selectedAuthStudentId || !selectedAuthorizingParentId || !startDate || !endDate) return;
     
     try {
-      await createPickupAuthorization({
+      // Get the authorizing parent ID (admin creating the authorization)
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        console.error('Error getting current parent ID');
+        toast({
+          title: t('familyMemberDetails.error'),
+          description: 'Failed to authenticate admin',
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      await createPickupAuthorization(selectedAuthorizingParentId, {
         studentId: selectedAuthStudentId,
         authorizedParentId: parent.id,
         startDate: startDate,
-        endDate: endDate
+        endDate: endDate,
+        allowedDaysOfWeek: [1, 2, 3, 4, 5] // Default to weekdays
       });
       
       toast({
@@ -176,7 +203,10 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
 
   const handleRemoveAuthorization = async (authId: string) => {
     try {
-      await deletePickupAuthorization(authId);
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) return;
+      
+      await deletePickupAuthorization(currentParentId, authId);
       toast({
         title: t('familyMemberDetails.success'),
         description: t('familyMemberDetails.authorizationRemovedSuccess'),

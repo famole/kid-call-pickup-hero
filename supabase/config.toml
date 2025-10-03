@@ -8,3 +8,27 @@ verify_jwt = false
 
 [functions.setup-username-password]
 verify_jwt = false
+
+[functions.secure-password-auth]
+verify_jwt = false
+
+[functions.secure-pickup-invitations]
+verify_jwt = true
+
+[functions.secure-pickup-requests]
+verify_jwt = true
+
+[functions.secure-pickup-authorizations]
+verify_jwt = true
+
+[functions.secure-parents]
+verify_jwt = true
+
+[functions.secure-students]
+verify_jwt = true
+
+[functions.secure-classes]
+verify_jwt = true
+
+[functions.send-pickup-invitation]
+verify_jwt = true

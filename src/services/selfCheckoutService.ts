@@ -2,7 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { getStudentById } from './studentService';
 import { getClassById } from './classService';
 import { getParentById } from './parentService';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { logger } from "@/utils/logger";
+import type { Child } from "@/types";
+import type { Parent } from "@/types/parent";
+import { getCachedAuthUser } from '@/services/auth/getCachedAuthUser';
 
 // Export the base types
 export interface SelfCheckoutAuthorization {
@@ -82,14 +86,8 @@ export interface StudentDepartureWithDetails {
 // Function to get all self-checkout authorizations for the current parent
 export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfCheckoutAuthorizationWithDetails[]> => {
   try {
-    // Get current parent ID
-    const { data: parentData, error: parentError } = await supabase.rpc('get_current_parent_id');
-    
-    if (parentError) {
-      logger.error('Error getting current parent ID:', parentError);
-      throw new Error(parentError.message);
-    }
-
+    // Get current parent ID (cached)
+    const parentData = await getCurrentParentIdCached();
     if (!parentData) {
       logger.info('No parent ID found for current user');
       return [];
@@ -107,27 +105,71 @@ export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfChec
     }
     
     const result: SelfCheckoutAuthorizationWithDetails[] = [];
+    // Per-call caches to prevent duplicate fetches
+    const studentCache = new Map<string, Child | null>();
+    const parentCache = new Map<string, Parent | null>();
+    const getStudentCached = async (studentId: string) => {
+      if (studentCache.has(studentId)) return studentCache.get(studentId);
+      const s = await getStudentById(studentId);
+      studentCache.set(studentId, s);
+      return s;
+    };
+    const getParentCached = async (parentId: string): Promise<Parent | null> => {
+      if (parentCache.has(parentId)) return parentCache.get(parentId) as Parent | null;
+      const p = await getParentById(parentId);
+      parentCache.set(parentId, p);
+      return p;
+    };
     
     for (const auth of data) {
-      const student = await getStudentById(auth.student_id);
+      logger.log(`[getSelfCheckoutAuthorizationsForParent] Processing authorization ${auth.id} for student ${auth.student_id}`);
+      
+      const student = await getStudentCached(auth.student_id);
+      logger.log(`[getSelfCheckoutAuthorizationsForParent] Student data:`, student);
+      
       let classInfo = null;
       let parentInfo = null;
       
       if (student && student.classId) {
         try {
+          logger.log(`[getSelfCheckoutAuthorizationsForParent] Fetching class for student ${student.name}, classId: ${student.classId}`);
           classInfo = await getClassById(student.classId);
+          logger.log(`[getSelfCheckoutAuthorizationsForParent] Class info fetched:`, classInfo);
         } catch (error) {
           console.error(`Error fetching class with id ${student.classId}:`, error);
         }
+      } else {
+        logger.log(`[getSelfCheckoutAuthorizationsForParent] Student or classId missing:`, { student: student?.name, classId: student?.classId });
       }
 
       if (auth.authorizing_parent_id) {
         try {
-          parentInfo = await getParentById(auth.authorizing_parent_id);
+          parentInfo = await getParentCached(auth.authorizing_parent_id);
         } catch (error) {
           console.error(`Error fetching parent with id ${auth.authorizing_parent_id}:`, error);
         }
       }
+      
+      // Create the student info object in the expected format
+      const studentInfo = student ? {
+        id: student.id,
+        name: student.name,
+        classId: student.classId,
+        avatar: student.avatar
+      } : undefined;
+
+      // Create the class info object in the expected format
+      const classData = classInfo ? {
+        id: classInfo.id,
+        name: classInfo.name,
+        grade: classInfo.grade,
+        teacher: classInfo.teacher
+      } : undefined;
+
+      logger.log(`[getSelfCheckoutAuthorizationsForParent] Final data for auth ${auth.id}:`, {
+        student: studentInfo,
+        class: classData
+      });
       
       result.push({
         id: auth.id,
@@ -138,8 +180,8 @@ export const getSelfCheckoutAuthorizationsForParent = async (): Promise<SelfChec
         isActive: auth.is_active,
         createdAt: new Date(auth.created_at),
         updatedAt: new Date(auth.updated_at),
-        student,
-        class: classInfo,
+        student: studentInfo,
+        class: classData,
         authorizingParent: parentInfo
       });
     }
@@ -158,18 +200,16 @@ export const createSelfCheckoutAuthorization = async (
   endDate: string
 ): Promise<SelfCheckoutAuthorization> => {
   try {
-    // Get the current parent ID
-    const { data: currentUser, error: userError } = await supabase.auth.getUser();
-    if (userError || !currentUser.user) {
+    // Get the current parent ID (cached auth user)
+    const currentUser = await getCachedAuthUser();
+    if (!currentUser) {
       throw new Error('User not authenticated');
     }
 
-    // Get parent ID from the parents table
-    const { data: parentData, error: parentError } = await supabase
-      .from('parents')
-      .select('id')
-      .eq('email', currentUser.user.email)
-      .single();
+    // Get parent ID using secure operations
+    const { secureOperations } = await import('@/services/encryption');
+    const { data: allParents, error: parentError } = await secureOperations.getParentsSecure(false);
+    const parentData = allParents?.find(p => p.email === currentUser.email);
 
     if (parentError || !parentData) {
       throw new Error('Parent not found');
@@ -289,9 +329,17 @@ export const getActiveSelfCheckoutAuthorizations = async (): Promise<SelfCheckou
     }
     
     const result: SelfCheckoutAuthorizationWithDetails[] = [];
-    
+    // Per-call cache to prevent duplicate student fetches
+    const studentCache = new Map<string, Child | null>();
+    const getStudentCached = async (studentId: string) => {
+      if (studentCache.has(studentId)) return studentCache.get(studentId);
+      const s = await getStudentById(studentId);
+      studentCache.set(studentId, s);
+      return s;
+    };
+
     for (const auth of data) {
-      const student = await getStudentById(auth.student_id);
+      const student = await getStudentCached(auth.student_id);
       let classInfo = null;
       let parentInfo = null;
       
@@ -339,17 +387,18 @@ export const markStudentDeparture = async (
   notes?: string
 ): Promise<StudentDeparture> => {
   try {
+    // Resolve the current parent (app) ID, not the Supabase auth user ID
+    const currentParentId = await getCurrentParentIdCached();
     const { data, error } = await supabase
       .from('student_departures')
       .insert({
         student_id: studentId,
-        marked_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+        marked_by_user_id: currentParentId,
         notes: notes || null,
         departed_at: new Date().toISOString()
       })
       .select()
       .single();
-    
     if (error) {
       console.error('Error marking student departure:', error);
       throw new Error(error.message);
@@ -384,9 +433,24 @@ export const getRecentDepartures = async (limit: number = 50): Promise<StudentDe
     }
     
     const result: StudentDepartureWithDetails[] = [];
+    // Per-call caches to prevent duplicate fetches
+    const studentCache = new Map<string, Child | null>();
+    const parentCache = new Map<string, Parent | null>();
+    const getStudentCached = async (studentId: string) => {
+      if (studentCache.has(studentId)) return studentCache.get(studentId);
+      const s = await getStudentById(studentId);
+      studentCache.set(studentId, s);
+      return s;
+    };
+    const getParentCached = async (parentId: string) => {
+      if (parentCache.has(parentId)) return parentCache.get(parentId);
+      const p = await getParentById(parentId);
+      parentCache.set(parentId, p as any);
+      return p as any;
+    };
     
     for (const departure of data) {
-      const student = await getStudentById(departure.student_id);
+      const student = await getStudentCached(departure.student_id);
       let classInfo = null;
       let markedByUser = null;
       
@@ -400,7 +464,7 @@ export const getRecentDepartures = async (limit: number = 50): Promise<StudentDe
 
       if (departure.marked_by_user_id) {
         try {
-          markedByUser = await getParentById(departure.marked_by_user_id);
+          markedByUser = await getParentCached(departure.marked_by_user_id);
         } catch (error) {
           console.error(`Error fetching user with id ${departure.marked_by_user_id}:`, error);
         }

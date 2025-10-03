@@ -3,6 +3,7 @@ import { ScrollView, RefreshControl } from 'react-native';
 import { YStack, XStack, Card, H2, Paragraph, Button, Text, Sheet, Input, Select, Adapt } from 'tamagui';
 import { Plus, Users, Calendar, Edit, Trash2 } from '@tamagui/lucide-icons';
 import { useTranslation } from '../hooks/useTranslation';
+import { logger } from '../../utils/logger';
 
 // Mock data - in real app this would come from Supabase
 interface PickupAuthorization {
@@ -71,7 +72,7 @@ const PickupAuthorizationsScreen: React.FC = () => {
       ];
       setAuthorizations(mockData);
     } catch (error) {
-      console.error('Error loading authorizations:', error);
+      logger.error('Error loading authorizations:', error);
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,7 @@ const PickupAuthorizationsScreen: React.FC = () => {
       setIsAddSheetOpen(false);
       resetForm();
     } catch (error) {
-      console.error('Error creating authorization:', error);
+      logger.error('Error creating authorization:', error);
     }
   };
 

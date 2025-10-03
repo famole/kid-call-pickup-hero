@@ -138,6 +138,7 @@ export type Database = {
       }
       pickup_authorizations: {
         Row: {
+          allowed_days_of_week: number[] | null
           authorized_parent_id: string
           authorizing_parent_id: string
           created_at: string
@@ -150,6 +151,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allowed_days_of_week?: number[] | null
           authorized_parent_id: string
           authorizing_parent_id: string
           created_at?: string
@@ -162,6 +164,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allowed_days_of_week?: number[] | null
           authorized_parent_id?: string
           authorizing_parent_id?: string
           created_at?: string
@@ -559,6 +562,18 @@ export type Database = {
         Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      cancel_pickup_request_for_username_user: {
+        Args: { p_parent_id: string; p_request_id: string }
+        Returns: undefined
+      }
+      check_pickup_authorization_with_days: {
+        Args: {
+          p_check_date?: string
+          p_parent_id: string
+          p_student_id: string
+        }
+        Returns: boolean
+      }
       create_pickup_request_for_username_user: {
         Args: { p_parent_id: string; p_student_id: string }
         Returns: string
@@ -597,12 +612,10 @@ export type Database = {
         Args: { identifier: string }
         Returns: {
           created_at: string
-          deleted_at: string
           email: string
           id: string
           is_preloaded: boolean
           name: string
-          password_hash: string
           password_set: boolean
           phone: string
           role: Database["public"]["Enums"]["app_role"]

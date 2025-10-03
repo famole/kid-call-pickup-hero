@@ -2,6 +2,57 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Password decryption function (matches client-side encryption)
+async function generatePasswordKey(passphrase: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(passphrase),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: encoder.encode('upsy-password-salt-2024'),
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function decryptPassword(encryptedPassword: string): Promise<string> {
+  try {
+    const passphrase = Deno.env.get('PASSWORD_ENCRYPTION_KEY') || "P@ssw0rd_3ncrypt!0n_K3y_2024";
+    const key = await generatePasswordKey(passphrase);
+    const decoder = new TextDecoder();
+    
+    const combined = new Uint8Array(
+      atob(encryptedPassword).split('').map(char => char.charCodeAt(0))
+    );
+    
+    const iv = combined.slice(0, 12);
+    const data = combined.slice(12);
+
+    const decryptedPassword = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      data
+    );
+
+    return decoder.decode(decryptedPassword);
+  } catch (error) {
+    console.error('Password decryption failed:', error);
+    throw new Error('Failed to decrypt password');
+  }
+}
+
 // Password hashing utilities
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -34,6 +85,18 @@ serve(async (req) => {
     const { identifier, password } = await req.json();
     
     console.log('Username auth request for identifier:', identifier);
+
+    // Try to decrypt password if it appears to be encrypted (length > 50 indicates encryption)
+    let actualPassword = password;
+    if (password && password.length > 50) {
+      try {
+        actualPassword = await decryptPassword(password);
+        console.log('Password decrypted successfully for authentication');
+      } catch (decryptionError) {
+        console.warn('Password decryption failed, using as-is:', decryptionError);
+        // Continue with original password if decryption fails
+      }
+    }
 
     // Create Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -78,7 +141,7 @@ serve(async (req) => {
       }
       
       // Verify password against stored hash
-      const isPasswordValid = await verifyPassword(password, parent.password_hash);
+      const isPasswordValid = await verifyPassword(actualPassword, parent.password_hash);
       
       if (!isPasswordValid) {
         console.log('Password verification failed for username-only user');
@@ -101,7 +164,7 @@ serve(async (req) => {
     // For users with email, use regular Supabase auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: parent.email,
-      password: password,
+      password: actualPassword,
     });
 
     if (authError) {
@@ -122,7 +185,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in username-auth function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Authentication failed' 
+      error: error instanceof Error ? error.message : 'Authentication failed'
     }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -2,6 +2,57 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Password decryption function (matches client-side encryption)
+async function generatePasswordKey(passphrase: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(passphrase),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: encoder.encode('upsy-password-salt-2024'),
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function decryptPassword(encryptedPassword: string): Promise<string> {
+  try {
+    const passphrase = Deno.env.get('PASSWORD_ENCRYPTION_KEY') || "P@ssw0rd_3ncrypt!0n_K3y_2024";
+    const key = await generatePasswordKey(passphrase);
+    const decoder = new TextDecoder();
+    
+    const combined = new Uint8Array(
+      atob(encryptedPassword).split('').map(char => char.charCodeAt(0))
+    );
+    
+    const iv = combined.slice(0, 12);
+    const data = combined.slice(12);
+
+    const decryptedPassword = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      data
+    );
+
+    return decoder.decode(decryptedPassword);
+  } catch (error) {
+    console.error('Password decryption failed:', error);
+    throw new Error('Failed to decrypt password');
+  }
+}
+
 // Password hashing utilities
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -29,6 +80,18 @@ serve(async (req) => {
     const { identifier, password } = await req.json();
     
     console.log('Setting up password for username:', identifier);
+
+    // Try to decrypt password if it appears to be encrypted (length > 50 indicates encryption)
+    let actualPassword = password;
+    if (password && password.length > 50) {
+      try {
+        actualPassword = await decryptPassword(password);
+        console.log('Password decrypted successfully for setup');
+      } catch (decryptionError) {
+        console.warn('Password decryption failed, using as-is:', decryptionError);
+        // Continue with original password if decryption fails
+      }
+    }
 
     // Create Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -70,7 +133,7 @@ serve(async (req) => {
         // Create new auth user if it doesn't exist
         const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
           email: parent.email,
-          password: password,
+          password: actualPassword,
           email_confirm: true
         });
         
@@ -86,7 +149,7 @@ serve(async (req) => {
         const { error: updateAuthError } = await supabase.auth.admin.updateUserById(
           authUser.id,
           { 
-            password: password,
+            password: actualPassword,
             email_confirm: true
           }
         );
@@ -115,7 +178,7 @@ serve(async (req) => {
       console.log('Username-only user detected, using password hash approach');
       
       // For username-only users, use password hash approach
-      const passwordHash = await hashPassword(password);
+      const passwordHash = await hashPassword(actualPassword);
 
       // Update parent with password hash and mark password as set
       const { error: updateError } = await supabase
@@ -144,7 +207,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in setup-username-password function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Password setup failed' 
+      error: error instanceof Error ? error.message : 'Password setup failed'
     }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

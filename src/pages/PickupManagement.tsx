@@ -60,7 +60,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           .single();
         
         if (parentError || !parentData) {
-          console.error('Error fetching parent data for teacher:', parentError);
+          logger.error('Error fetching parent data for teacher:', parentError);
           return;
         }
         

@@ -6,6 +6,7 @@ import { logger } from '@/utils/logger';
 import { createPickupAuthorization, getAvailableParentsForAuthorization } from '@/services/pickupAuthorizationService';
 import { getStudentsForParent } from '@/services/studentService';
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +16,7 @@ interface FormData {
   authorizedParentId: string;
   startDate: string;
   endDate: string;
+  allowedDaysOfWeek: number[];
 }
 
 interface ParentWithSharedStudents extends ParentWithStudents {
@@ -36,18 +38,19 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     authorizedParentId: '',
     startDate: '',
     endDate: '',
+    allowedDaysOfWeek: [1, 2, 3, 4, 5], // Default to weekdays
   });
 
   useEffect(() => {
     if (isOpen) {
       loadData();
-      // Set default dates (today and one week from today)
+      // Set default dates (today and end of next school year)
       const today = new Date().toISOString().split('T')[0];
-      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const nextYear = new Date(new Date().getFullYear() + 1, 5, 30).toISOString().split('T')[0]; // End of June next year
       setFormData(prev => ({
         ...prev,
         startDate: today,
-        endDate: nextWeek,
+        endDate: nextYear,
       }));
     }
   }, [isOpen]);
@@ -56,11 +59,10 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     if (!user) return;
 
     try {
-      // Get current parent ID from the server
-      const { data: currentParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-
-      if (parentError || !currentParentId) {
-        logger.error('Error getting current parent ID:', parentError);
+      // Get current parent ID from the server (cached)
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        logger.error('Error getting current parent ID via cached helper');
         return;
       }
 
@@ -68,8 +70,8 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
 
-      // Load only available parents (family/other + shared students parents)
-      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization();
+      // Load only available parents (family/other + shared students parents)      
+      const { parents: availableParents, sharedStudents } = await getAvailableParentsForAuthorization(currentParentId);
       
       // Enhance available parents data with shared student information
       const enhancedAvailableParents = availableParents
@@ -106,7 +108,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     }
   };
 
-  const updateFormData = (field: keyof FormData, value: string | string[]) => {
+  const updateFormData = (field: keyof FormData, value: string | string[] | number[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -121,7 +123,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.studentIds.length === 0 || !formData.authorizedParentId || !formData.startDate || !formData.endDate) {
+    if (formData.studentIds.length === 0 || !formData.authorizedParentId || !formData.startDate || !formData.endDate || formData.allowedDaysOfWeek.length === 0) {
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.fillAllFields'),
@@ -130,7 +132,11 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       return;
     }
 
-    if (new Date(formData.startDate) > new Date(formData.endDate)) {
+    // Allow same-day authorizations (start date equals end date)
+    const startDateObj = new Date(formData.startDate);
+    const endDateObj = new Date(formData.endDate);
+    
+    if (startDateObj > endDateObj) {
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.startDateBeforeEndDate'),
@@ -142,12 +148,16 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
     setLoading(true);
     try {
       // Create authorization for each selected student
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) return;
+      
       for (const studentId of formData.studentIds) {
-        await createPickupAuthorization({
+        await createPickupAuthorization(currentParentId, {
           studentId,
           authorizedParentId: formData.authorizedParentId,
           startDate: formData.startDate,
-          endDate: formData.endDate
+          endDate: formData.endDate,
+          allowedDaysOfWeek: formData.allowedDaysOfWeek
         });
       }
       
@@ -171,6 +181,7 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
         authorizedParentId: '',
         startDate: '',
         endDate: '',
+        allowedDaysOfWeek: [1, 2, 3, 4, 5], // Reset to weekdays
       });
     } catch (error) {
       logger.error('Error creating authorization:', error);

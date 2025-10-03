@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { 
   getSelfCheckoutAuthorizationsForParent, 
@@ -87,7 +87,10 @@ export const useParentSelfCheckout = () => {
     }
   }, [user?.email, isActive]);
 
+  const didInitRef = useRef(false);
   useEffect(() => {
+    if (didInitRef.current) return; // prevent StrictMode double-invoke in dev
+    didInitRef.current = true;
     loadSelfCheckoutData();
   }, [loadSelfCheckoutData]);
 

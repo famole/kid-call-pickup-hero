@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { secureClassOperations } from '@/services/encryption/secureClassClient';
 
 // Service for managing class-teacher relationships
 export interface ClassTeacher {
@@ -51,35 +52,41 @@ export const getClassTeachers = async (): Promise<ClassTeacher[]> => {
 // Get classes with their assigned teachers
 export const getClassesWithTeachers = async (): Promise<ClassWithTeachers[]> => {
   try {
-    const { data, error } = await supabase
-      .from('classes')
+    // Get classes using secure operations
+    const classesData = await secureClassOperations.getAll();
+    
+    // Get class-teacher relationships separately
+    const { data: classTeachersData, error: classTeachersError } = await supabase
+      .from('class_teachers')
       .select(`
-        *,
-        class_teachers(
-          teacher_id,
-          parents!class_teachers_teacher_id_fkey(id, name, email)
-        )
-      `)
-      .order('name');
-    
-    if (error) {
-      console.error('Error fetching classes with teachers:', error);
-      throw new Error(error.message);
+        class_id,
+        teacher_id,
+        parents!class_teachers_teacher_id_fkey(id, name, email)
+      `);
+
+    if (classTeachersError) {
+      throw new Error(classTeachersError.message);
     }
-    
-    return data.map(cls => ({
-      id: cls.id,
-      name: cls.name,
-      grade: cls.grade,
-      teacher: cls.teacher, // Keep for backward compatibility
-      teachers: cls.class_teachers?.map((ct: any) => ({
+
+    // Combine classes data with teacher relationships
+    return classesData?.map(cls => {
+      const classTeachers = classTeachersData?.filter(ct => ct.class_id === cls.id) || [];
+      const teachers = classTeachers.map(ct => ({
         id: ct.parents.id,
         name: ct.parents.name,
         email: ct.parents.email
-      })) || [],
-      createdAt: cls.created_at,
-      updatedAt: cls.updated_at
-    }));
+      }));
+
+      return {
+        id: cls.id,
+        name: cls.name,
+        grade: cls.grade,
+        teacher: teachers.length > 0 ? teachers[0].name : '', // Keep for backward compatibility
+        teachers,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }) || [];
   } catch (error) {
     console.error('Error in getClassesWithTeachers:', error);
     throw error;

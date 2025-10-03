@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
+import { encryptPassword, isPasswordEncryptionSupported, validatePasswordStrength } from '@/services/encryption';
 
 const PasswordSetupForm = () => {
   const [password, setPassword] = useState('');
@@ -48,10 +49,12 @@ const PasswordSetupForm = () => {
       return;
     }
 
-    if (password.length < 6) {
+    // Enhanced password validation
+    const validation = validatePasswordStrength(password);
+    if (!validation.isValid) {
       toast({
         title: t('common.error'),
-        description: t('errors.passwordTooShort'),
+        description: validation.errors.join('. '),
         variant: "destructive",
       });
       return;
@@ -88,6 +91,18 @@ const PasswordSetupForm = () => {
         throw new Error(t('errors.noEmailForSetup'));
       }
 
+      // Encrypt password before sending for enhanced security
+      let encryptedPassword = password;
+      if (isPasswordEncryptionSupported()) {
+        try {
+          encryptedPassword = await encryptPassword(password);
+          logger.log('Password encrypted for setup transmission');
+        } catch (encryptionError) {
+          logger.warn('Password encryption failed during setup, using plain text:', encryptionError);
+          // Continue with plain text if encryption fails
+        }
+      }
+
       // Check if this is a password reset scenario by checking if parent exists but password_set is false
       // Use the database function to search by email or username
       const { data: existingParentResult } = await supabase
@@ -109,7 +124,7 @@ const PasswordSetupForm = () => {
               
               // For password reset, we'll use the setup-username-password function which can handle existing users
               const { data, error } = await supabase.functions.invoke('setup-username-password', {
-                body: { identifier: parentEmail, password }
+                body: { identifier: parentEmail, password: encryptedPassword }
               });
 
               if (error) {
@@ -124,7 +139,7 @@ const PasswordSetupForm = () => {
               // This is a new account setup
               const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: parentEmail,
-                password: password,
+                password: encryptedPassword,
                 options: {
                   emailRedirectTo: `${window.location.origin}/`
                 }
@@ -135,7 +150,7 @@ const PasswordSetupForm = () => {
                 if (authError.message?.includes('already registered')) {
                   // Try using the password setup function as fallback
                   const { data, error } = await supabase.functions.invoke('setup-username-password', {
-                    body: { identifier: parentEmail, password }
+                    body: { identifier: parentEmail, password: encryptedPassword }
                   });
 
                   if (error || data?.error) {
@@ -159,7 +174,7 @@ const PasswordSetupForm = () => {
         } else {
           // For username-only users without email, use the password setup edge function
           const { data, error } = await supabase.functions.invoke('setup-username-password', {
-            body: { identifier: userIdentifier, password }
+            body: { identifier: userIdentifier, password: encryptedPassword }
           });
 
           if (error) {
@@ -178,7 +193,7 @@ const PasswordSetupForm = () => {
 
           // For username-only users, automatically log them in after password setup
           try {
-            await login(userIdentifier, password);
+            await login(userIdentifier, encryptedPassword);
             // The login function should handle the redirect to dashboard
             return;
           } catch (loginError) {
@@ -203,7 +218,7 @@ const PasswordSetupForm = () => {
       } else {
         // User is already authenticated, just update password
         const { error: authError } = await supabase.auth.updateUser({
-          password: password
+          password: encryptedPassword
         });
 
         if (authError) {
@@ -228,11 +243,12 @@ const PasswordSetupForm = () => {
         // Redirect to main application
         navigate('/');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       logger.error('Error setting password:', error);
       toast({
         title: t('common.error'),
-        description: error.message || t('errors.failedSetPassword'),
+        description: errorMessage || t('errors.failedSetPassword'),
         variant: "destructive",
       });
     } finally {

@@ -5,6 +5,7 @@ import LoadingState from '@/components/password-setup/LoadingState';
 import AuthRequiredState from '@/components/password-setup/AuthRequiredState';
 import OAuthConfirmation from '@/components/password-setup/OAuthConfirmation';
 import PasswordSetupForm from '@/components/password-setup/PasswordSetupForm';
+import { logger } from '@/utils/logger';
 
 const PasswordSetup = () => {
   const {
@@ -17,7 +18,7 @@ const PasswordSetup = () => {
     hasPreloadedAccount
   } = usePasswordSetupLogic();
 
-  console.log('PasswordSetup render:', {
+  logger.log('PasswordSetup render:', {
     isInitialized,
     authCheckComplete,
     loading,

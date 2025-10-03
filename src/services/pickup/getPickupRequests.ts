@@ -48,46 +48,16 @@ export const getActivePickupRequestsForParent = async (
   providedParentId?: string
 ): Promise<PickupRequest[]> => {
   try {
-    let parentId = providedParentId;
-
-    // Resolve parent ID only if not provided by caller
-    if (!parentId) {
-      const { data: rpcParentId, error: parentError } = await supabase.rpc('get_current_parent_id');
-      if (rpcParentId) {
-        parentId = rpcParentId;
-      } else {
-        console.error('Unable to determine current parent ID:', parentError);
-        return [];
-      }
-    }
-
-    console.log('🔍 DEBUG - Querying pickup requests for parent:', parentId);
-    console.log('🔍 DEBUG - Expected parent ID from DB:', '4a694e20-2532-4b6d-a37a-e1666fcd118b');
-
-    // Use secure function that bypasses RLS for username users
-    const { data, error } = await supabase.rpc('get_pickup_requests_for_parent', {
-      p_parent_id: parentId
-    });
-    
-    console.log('🔍 DEBUG - Raw supabase pickup request query result:', { data, error, parentId });
+    // Use secure encrypted operations
+    const { securePickupOperations } = await import('@/services/encryption/securePickupClient');
+    const { data, error } = await securePickupOperations.getPickupRequestsSecure(providedParentId);
     
     if (error) {
-      console.error('Supabase error fetching pickup requests for parent:', error);
-      throw new Error(`Database error: ${error.message}`);
-    }
-    
-    if (!data) {
+      console.error('Secure pickup requests fetch failed:', error);
       return [];
     }
     
-    
-    return data.map(item => ({
-      id: item.id,
-      studentId: item.student_id,
-      parentId: item.parent_id,
-      requestTime: new Date(item.request_time),
-      status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
-    }));
+    return data || [];
   } catch (error) {
     console.error('Error in getActivePickupRequestsForParent:', error);
     // Return empty array instead of throwing to prevent app crashes

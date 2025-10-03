@@ -498,6 +498,11 @@
     "authorizationCreated": "Pickup authorization created successfully",
     "failedToCreate": "Failed to create pickup authorization",
     "loadDataError": "Failed to load data for authorization form",
+    "allowedDays": "Allowed Days",
+    "selectAtLeastOneDay": "Please select at least one day of the week",
+    "allDays": "All Days",
+    "weekdays": "Weekdays",
+    "weekends": "Weekends",
     "unknownStudent": "Unknown Student",
     "unknownParent": "Unknown Parent",
     "addPickupAuthorization": "Add Pickup Authorization",
@@ -670,7 +675,23 @@
     "private": "Private",
     "draft": "Draft",
     "published": "Published",
-    "archived": "Archived"
+    "archived": "Archived",
+    "days": {
+      "sunday": "Sunday",
+      "monday": "Monday", 
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    }
   },
   "auth": {
     "login": "Log In",
