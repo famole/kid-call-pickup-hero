@@ -80,8 +80,8 @@ const Signup = () => {
       }
     } catch (error: any) {
       toast({
-        title: "Error creating account",
-        description: error.message || "An error occurred during signup.",
+        title: t('errors.errorCreatingAccount'),
+        description: error.message || t('errors.errorOccurredDuringSignup'),
         variant: "destructive",
       });
     } finally {
@@ -106,14 +106,14 @@ const Signup = () => {
       
       // The redirect will happen automatically
       toast({
-        title: 'Redirecting to Google...',
-        description: 'You will be redirected to complete the signup process.',
+        title: t('errors.redirectingToGoogle'),
+        description: t('errors.redirectToCompleteSignup'),
       });
     } catch (error: any) {
       logger.error('Google signup error:', error);
       toast({
-        title: 'Google Signup Error',
-        description: error.message || 'Failed to signup with Google. Please try again.',
+        title: t('errors.googleSignupError'),
+        description: error.message || t('errors.failedGoogleSignup'),
         variant: 'destructive',
       });
       setIsGoogleLoading(false);
@@ -128,19 +128,19 @@ const Signup = () => {
             <div className="bg-school-primary w-12 h-12 rounded-full flex items-center justify-center mb-2">
               <UserPlus className="h-6 w-6 text-white" />
             </div>
-            <CardTitle className="text-2xl text-center">Check Your Email</CardTitle>
+            <CardTitle className="text-2xl text-center">{t('errors.checkYourEmail')}</CardTitle>
             <CardDescription className="text-center">
-              We've sent a confirmation link to <strong>{email}</strong>
+              {t('errors.confirmationSentTo')} <strong>{email}</strong>
             </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-4">
             <div className="text-center space-y-2">
               <p className="text-sm text-gray-600">
-                Click the link in your email to verify your account and set your password.
+                {t('errors.clickLinkToVerify')}
               </p>
               <p className="text-xs text-gray-500">
-                Didn't receive the email? Check your spam folder.
+                {t('errors.didntReceiveEmail')}
               </p>
             </div>
           </CardContent>
@@ -218,17 +218,17 @@ const Signup = () => {
           {/* Email/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">{t('forms.fullName')}</Label>
               <Input
                 id="name"
-                placeholder="Enter your name"
+                placeholder={t('forms.enterName')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -239,7 +239,7 @@ const Signup = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmEmail">Confirm Email</Label>
+              <Label htmlFor="confirmEmail">{t('auth.confirmEmail')}</Label>
               <Input
                 id="confirmEmail"
                 type="email"
@@ -250,7 +250,7 @@ const Signup = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone (optional)</Label>
+              <Label htmlFor="phone">{t('forms.phone')} ({t('common.optional')})</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -260,38 +260,38 @@ const Signup = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">{t('auth.role')}</Label>
               <Select value={role} onValueChange={(value: 'parent' | 'teacher') => setRole(value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
+                  <SelectValue placeholder={t('auth.selectRole')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="parent">Parent</SelectItem>
-                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="parent">{t('auth.parent')}</SelectItem>
+                  <SelectItem value="teacher">{t('auth.teacher')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="text-sm text-gray-500">
-              You'll set your password after confirming your email address.
+              {t('auth.passwordAfterEmail')}
             </div>
             <Button
               type="submit"
               className="w-full bg-school-primary hover:bg-school-primary/90"
               disabled={isLoading}
             >
-              {isLoading ? 'Creating account...' : 'Sign Up'}
+              {isLoading ? t('auth.creatingAccount') : t('auth.signUp')}
             </Button>
           </form>
         </CardContent>
         
         <CardFooter className="flex flex-col gap-4">
           <div className="text-sm text-center">
-            Already have an account?{" "}
+            {t('auth.alreadyHaveAccount')}{" "}
             <span 
               className="text-school-primary hover:underline cursor-pointer"
               onClick={() => navigate('/login')}
             >
-              Sign in
+              {t('auth.signIn')}
             </span>
           </div>
         </CardFooter>

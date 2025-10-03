@@ -165,7 +165,7 @@ serve(async (req) => {
     } else {
       // Handle username authentication
       const { data: parentData, error } = await supabase
-        .rpc('get_parent_by_identifier', { identifier });
+        .rpc('get_parent_by_identifier_pwd', { identifier });
 
       if (error || !parentData?.[0]) {
         console.error('Username lookup error:', error);

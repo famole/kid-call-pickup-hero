@@ -197,7 +197,7 @@ serve(async (req) => {
           throw new Error('Invalid request data');
         }
 
-        const { requestId, parentId } = decryptedData as CancelPickupRequestPayload;
+        const { requestId, parentId } = JSON.parse(decryptedData);
         
         if (!requestId) {
           throw new Error('Request ID is required');
@@ -230,8 +230,7 @@ serve(async (req) => {
         const { data: updatedRequest, error: updateError } = await supabase
           .from('pickup_requests')
           .update({ 
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
+            status: 'cancelled'
           })
           .eq('id', requestId)
           .select('*')
