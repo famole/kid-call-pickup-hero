@@ -132,7 +132,11 @@ export const useAddAuthorizationDialog = (isOpen: boolean, onAuthorizationAdded:
       return;
     }
 
-    if (new Date(formData.startDate) > new Date(formData.endDate)) {
+    // Allow same-day authorizations (start date equals end date)
+    const startDateObj = new Date(formData.startDate);
+    const endDateObj = new Date(formData.endDate);
+    
+    if (startDateObj > endDateObj) {
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.startDateBeforeEndDate'),
