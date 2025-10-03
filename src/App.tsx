@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -31,6 +32,7 @@ import './App.css';
 
 // Import i18n configuration
 import '@/i18n';
+import UpsyDefaultScreen from './components/UpsyDefaultScreen';
 
 // Optimized React Query configuration
 const queryClient = new QueryClient({
