@@ -260,13 +260,22 @@ const PickupAuthorizationManagement: React.FC = () => {
   };
 
   const isExpired = (endDate: string) => {
-    return new Date(endDate) < new Date();
+    // Compare only dates, not times - authorization should be valid through end of day
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    return end < today;
   };
 
   const isActive = (startDate: string, endDate: string) => {
+    // Compare only dates, not times - authorization should be valid through end of day
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
     const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
     return today >= start && today <= end;
   };
 
