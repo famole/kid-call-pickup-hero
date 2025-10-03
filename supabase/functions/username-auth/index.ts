@@ -103,7 +103,7 @@ serve(async (req) => {
 
     // Get parent data by username or email
     const { data: parentData, error: parentError } = await supabase
-      .rpc('get_parent_by_identifier', { identifier });
+      .rpc('get_parent_by_identifier_pwd', { identifier });
 
     if (parentError) {
       console.error('Error fetching parent:', parentError);
