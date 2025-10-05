@@ -25,6 +25,13 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
     statusFilter,
     handleStatusFilterChange,
     refreshData,
+    searchTerm,
+    onSearchChange,
+    currentPage,
+    pageSize,
+    totalCount,
+    onPageChange,
+    onPageSizeChange,
   } = useAdminFilteredData({ userRole, includedRoles });
 
   const {
@@ -68,6 +75,13 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
         statusFilter={statusFilter}
         onStatusFilterChange={handleStatusFilterChange}
         onAuthStatusRefresh={refreshData}
+        searchTerm={searchTerm}
+        onSearchChange={onSearchChange}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
       
       <ResetPasswordConfirmDialog

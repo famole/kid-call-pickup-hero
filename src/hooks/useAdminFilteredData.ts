@@ -12,6 +12,9 @@ interface UseAdminFilteredDataProps {
 export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilteredDataProps) => {
   const [statusFilter, setStatusFilter] = useState<'active' | 'deleted' | 'all'>('active');
   const [isFilterChanging, setIsFilterChanging] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   
   // Determine if we should include deleted records
   const includeDeleted = statusFilter === 'deleted' || statusFilter === 'all';
@@ -23,11 +26,19 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     isLoading,
     allStudents,
     loadingProgress,
+    totalCount,
     onParentAdded,
     onParentUpdated,
     onImportCompleted,
     refetch
-  } = useOptimizedParentsData({ userRole, includeDeleted, includedRoles });
+  } = useOptimizedParentsData({ 
+    userRole, 
+    includeDeleted, 
+    includedRoles,
+    searchTerm,
+    currentPage,
+    pageSize
+  });
 
   // Debug logging to check deleted filtering
   logger.log('Status filter:', statusFilter);
@@ -84,6 +95,20 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     return refetch();
   }, [refetch]);
 
+  const handleSearchChange = useCallback((search: string) => {
+    setSearchTerm(search);
+    setCurrentPage(1); // Reset to page 1 on search
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handlePageSizeChange = useCallback((size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to page 1 on page size change
+  }, []);
+
   return {
     parents,
     setParents,
@@ -97,5 +122,13 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     statusFilter,
     handleStatusFilterChange,
     refreshData,
+    // Pagination and search
+    searchTerm,
+    onSearchChange: handleSearchChange,
+    currentPage,
+    pageSize,
+    totalCount: totalCount || 0,
+    onPageChange: handlePageChange,
+    onPageSizeChange: handlePageSizeChange,
   };
 };

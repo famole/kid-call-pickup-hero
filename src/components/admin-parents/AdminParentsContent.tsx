@@ -28,6 +28,14 @@ interface AdminParentsContentProps {
   statusFilter?: 'active' | 'deleted' | 'all';
   onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
   authStatuses?: Map<string, ParentAuthStatus>;
+  // Server-side pagination and search
+  searchTerm?: string;
+  onSearchChange?: (search: string) => void;
+  currentPage?: number;
+  pageSize?: number;
+  totalCount?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
@@ -42,6 +50,13 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
   statusFilter = 'active',
   onStatusFilterChange,
   authStatuses,
+  searchTerm = '',
+  onSearchChange,
+  currentPage = 1,
+  pageSize = 50,
+  totalCount = 0,
+  onPageChange,
+  onPageSizeChange,
 }) => {
   // Use the class filter hook
   const { 
@@ -52,23 +67,12 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
     isLoadingClasses 
   } = useParentClassFilter({ parents: filteredParentsByRole });
 
-  // Use the search hook with class-filtered parents
-  const { searchTerm, setSearchTerm, filteredParents } = useParentSearch(filteredParentsByClass);
-
-  // Use pagination hook
-  const {
-    paginatedData: paginatedParents,
-    totalItems,
-    totalPages,
-    currentPage,
-    pageSize,
-    startIndex,
-    endIndex,
-    goToPage,
-    changePageSize,
-    hasNextPage,
-    hasPreviousPage,
-  } = useAdminPagination({ data: filteredParents });
+  // Calculate pagination values
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(currentPage * pageSize, totalCount);
+  const hasNextPage = currentPage < totalPages;
+  const hasPreviousPage = currentPage > 1;
 
   const getItemType = (): 'parents' | 'teachers' | 'students' | 'admins' | 'superadmins' => {
     switch (userRole) {
@@ -85,7 +89,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
         <div className="flex-1">
           <ParentSearch
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={onSearchChange || (() => {})}
             selectedClassId={selectedClassId}
             onClassFilterChange={setSelectedClassId}
             classList={classes}
@@ -101,7 +105,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
       </div>
       
       <ParentsTable
-        parents={paginatedParents}
+        parents={filteredParentsByClass}
         isLoading={false}
         searchTerm={searchTerm}
         onEditParent={onEditParent}
@@ -111,18 +115,18 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
         onResetParentPassword={onResetParentPassword}
         userRole={userRole}
         authStatuses={authStatuses}
-        totalItems={totalItems}
+        totalItems={totalCount}
       />
 
       <PaginationControls
         currentPage={currentPage}
         totalPages={totalPages}
         pageSize={pageSize}
-        totalItems={totalItems}
+        totalItems={totalCount}
         startIndex={startIndex}
         endIndex={endIndex}
-        onPageChange={goToPage}
-        onPageSizeChange={changePageSize}
+        onPageChange={onPageChange || (() => {})}
+        onPageSizeChange={onPageSizeChange || (() => {})}
         hasNextPage={hasNextPage}
         hasPreviousPage={hasPreviousPage}
         itemType={getItemType()}

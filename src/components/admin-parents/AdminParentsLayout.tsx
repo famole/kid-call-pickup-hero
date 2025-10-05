@@ -40,6 +40,14 @@ interface AdminParentsLayoutProps {
   statusFilter?: 'active' | 'deleted' | 'all';
   onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
   onAuthStatusRefresh?: () => void;
+  // Server-side pagination and search
+  searchTerm?: string;
+  onSearchChange?: (search: string) => void;
+  currentPage?: number;
+  pageSize?: number;
+  totalCount?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
@@ -61,6 +69,13 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   statusFilter,
   onStatusFilterChange,
   onAuthStatusRefresh,
+  searchTerm,
+  onSearchChange,
+  currentPage,
+  pageSize,
+  totalCount,
+  onPageChange,
+  onPageSizeChange,
 }) => {
   const [classes, setClasses] = React.useState<Class[]>([]);
   
@@ -153,6 +168,13 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
           authStatuses={authStatuses}
+          searchTerm={searchTerm}
+          onSearchChange={onSearchChange}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
         />
       </Card>
 
