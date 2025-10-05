@@ -247,23 +247,12 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
   try {
     logger.log('Fetching parent dashboard data for parent identifier:', parentIdentifier);
 
-    // Get parent data using secure operations
-    const { data: parentsData, error: parentError } = await secureOperations.getParentsSecure(false);
+    // Get parent data using targeted query instead of fetching all parents
+    const { data: parentData, error: parentError } = await secureOperations.getParentByIdentifierSecure(parentIdentifier);
     
     if (parentError) {
       logger.error('Error fetching parent:', parentError);
       throw new Error(parentError.message);
-    }
-
-    // Find parent by ID (UUID), email, or username
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parentIdentifier);
-    let parentData;
-    
-    if (isUUID) {
-      parentData = parentsData?.find(p => p.id === parentIdentifier);
-    } else {
-      // Check if it's an email or username
-      parentData = parentsData?.find(p => p.email === parentIdentifier || p.username === parentIdentifier);
     }
     
     if (!parentData) {

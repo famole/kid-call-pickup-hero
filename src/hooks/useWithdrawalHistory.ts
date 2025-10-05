@@ -29,10 +29,9 @@ export const useWithdrawalHistory = () => {
     try {
       setLoading(true);
 
-      // Get current parent data using secure operations
+      // Get current parent data using targeted query
       const { secureOperations } = await import('@/services/encryption');
-      const { data: allParents, error: parentError } = await secureOperations.getParentsSecure(false);
-      const parentData = allParents?.find(p => p.email === user.email);
+      const { data: parentData, error: parentError } = await secureOperations.getParentByIdentifierSecure(user.email);
       
       if (parentError) {
         console.error('Error getting current parent ID:', parentError);
@@ -73,8 +72,8 @@ export const useWithdrawalHistory = () => {
         for (const record of pickupHistoryData) {
           // Check if this pickup was done by the current parent (self pickup)
           if (record.parent_id === parentId) {
-            // Get parent name for self pickup using secure operations (already loaded above)
-            const parentInfo = allParents?.find(p => p.id === record.parent_id);
+            // Use the parent data we already fetched
+            const parentInfo = parentData;
 
             allRecords.push({
               id: record.id,

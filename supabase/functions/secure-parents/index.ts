@@ -499,6 +499,52 @@ serve(async (req) => {
         });
       }
 
+      case 'getParentByIdentifier': {
+        const { identifier } = data;
+
+        if (!identifier) {
+          throw new Error('identifier is required for getParentByIdentifier operation');
+        }
+
+        // Check if identifier is a UUID
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+
+        let query = supabase
+          .from('parents')
+          .select(`
+            id,
+            name,
+            email,
+            username,
+            phone,
+            role,
+            created_at,
+            updated_at,
+            deleted_at
+          `)
+          .is('deleted_at', null);
+
+        if (isUUID) {
+          query = query.eq('id', identifier);
+        } else {
+          // Try to match email or username
+          query = query.or(`email.eq.${identifier},username.eq.${identifier}`);
+        }
+
+        const { data: parentData, error } = await query.maybeSingle();
+
+        if (error) {
+          console.error('Error fetching parent by identifier:', error);
+          throw error;
+        }
+
+        // Return encrypted data to client
+        const encryptedResult = await encryptObject(parentData || null);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedResult }, error: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       default:
         throw new Error(`Unknown operation: ${operation}`);
     }

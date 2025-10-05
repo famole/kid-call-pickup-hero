@@ -263,6 +263,37 @@ export class SecureOperations {
     }
   }
 
+  // Secure operation to get parent by identifier (ID, email, or username)
+  async getParentByIdentifierSecure(identifier: string) {
+    try {
+      const { data, error } = await supabase.functions.invoke('secure-parents', {
+        body: { 
+          operation: 'getParentByIdentifier',
+          data: { identifier }
+        }
+      });
+
+      if (error) {
+        logger.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        logger.error('Server error in getParentByIdentifierSecure:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Decrypt the data
+      const { decryptData } = await import('./encryptionService');
+      const parentData = await decryptData(data.data.encrypted_data);
+
+      return { data: parentData, error: null };
+    } catch (error) {
+      logger.error('Error in getParentByIdentifierSecure:', error);
+      return { data: null, error };
+    }
+  }
+
   // Secure operation to get parents by IDs (optimized)
   async getParentsByIdsSecure(ids: string[]) {
     try {
