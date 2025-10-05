@@ -483,55 +483,48 @@ serve(async (req) => {
 
         const studentIds = currentParentStudents?.map((sp: any) => sp.student_id) || [];
 
-        // Fetch a limited number of parents (200) to reduce initial load
-        // Since data is encrypted, we need to decrypt to search, but limiting helps performance
-        const { data: allParents, error: parentsError } = await supabase
+        // Use database-level search with ILIKE for case-insensitive pattern matching
+        // This leverages the indexes we created and is much faster than application-level filtering
+        const searchPattern = `%${searchTerm.trim()}%`;
+        
+        const { data: matchedParents, error: parentsError } = await supabase
           .from('parents')
           .select('id, name, email, role, phone')
           .neq('id', currentParentId)
           .is('deleted_at', null)
+          .or(`name.ilike.${searchPattern},email.ilike.${searchPattern},username.ilike.${searchPattern}`)
           .order('name')
-          .limit(200);
+          .limit(20);
 
         if (parentsError) {
           console.error('Error fetching parents:', parentsError);
           throw new Error(`Failed to fetch parents: ${parentsError.message}`);
         }
 
-        // Decrypt and filter in a single pass to find first 20 matches
-        const matchedParents: any[] = [];
+        // Decrypt the matched results
+        const decryptedParents: any[] = [];
         const matchedParentIds: string[] = [];
-        const searchLower = searchTerm.toLowerCase().trim();
 
-        for (const parent of (allParents || [])) {
-          if (matchedParents.length >= 20) break; // Stop once we have 20 matches
-
+        for (const parent of (matchedParents || [])) {
           try {
             const decryptedName = await decryptData(parent.name);
             const decryptedEmail = await decryptData(parent.email);
+            const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
             
-            // Check if this parent matches the search term
-            const nameMatch = decryptedName?.toLowerCase().includes(searchLower);
-            const emailMatch = decryptedEmail?.toLowerCase().includes(searchLower);
-            
-            if (nameMatch || emailMatch) {
-              const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
-              
-              matchedParents.push({
-                id: parent.id,
-                name: decryptedName,
-                email: decryptedEmail,
-                phone: decryptedPhone,
-                role: parent.role,
-              });
-              matchedParentIds.push(parent.id);
-            }
+            decryptedParents.push({
+              id: parent.id,
+              name: decryptedName,
+              email: decryptedEmail,
+              phone: decryptedPhone,
+              role: parent.role,
+            });
+            matchedParentIds.push(parent.id);
           } catch (decryptError) {
             console.error(`Error decrypting parent ${parent.id}:`, decryptError);
           }
         }
 
-        // Only fetch shared students for the matched parents
+        // Fetch shared students for the matched parents
         const sharedStudents: Record<string, string[]> = {};
         if (studentIds.length > 0 && matchedParentIds.length > 0) {
           const { data: sharedParentRelations, error: sharedError } = await supabase
@@ -552,7 +545,7 @@ serve(async (req) => {
         }
 
         // Add shared student information to matched parents
-        const results = matchedParents.map((parent: any) => ({
+        const results = decryptedParents.map((parent: any) => ({
           ...parent,
           sharedStudentIds: sharedStudents[parent.id] || [],
         }));
