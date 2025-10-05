@@ -114,11 +114,11 @@ export const useOptimizedPickupManagement = (classId?: string, teacherClassIds?:
   useEffect(() => {
     fetchPendingRequests(true);
 
-    // Poll periodically in case realtime updates fail (every 30 seconds)
+    // Poll periodically in case realtime updates fail (every 20 seconds)
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    intervalRef.current = setInterval(() => fetchPendingRequests(true), 30000);
+    intervalRef.current = setInterval(() => fetchPendingRequests(true), 20000);
 
     // Clean up existing subscription
     if (subscriptionRef.current) {
