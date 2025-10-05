@@ -13,6 +13,7 @@ interface Parent {
   id: string;
   name: string;
   email: string;
+  username?: string;
   sharedStudentNames?: string[];
 }
 
@@ -169,17 +170,22 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
       </div>
 
       {selectedParent && (
-        <div className="p-2 bg-blue-50 border border-blue-200 rounded-md flex items-center justify-between">
-          <span className="font-medium text-sm">{selectedParent.name}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleClearSelection}
-            className="h-6 w-6 p-0 hover:bg-blue-100"
-          >
-            ×
-          </Button>
+        <div className="p-2 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="font-medium text-sm">{selectedParent.name}</span>
+              <div className="text-xs text-gray-500">{selectedParent.username || selectedParent.email}</div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearSelection}
+              className="h-6 w-6 p-0 hover:bg-blue-100"
+            >
+              ×
+            </Button>
+          </div>
         </div>
       )}
 
@@ -190,7 +196,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
             <Input
               ref={inputRef}
               type="text"
-              placeholder={placeholder || t('pickupAuthorizations.searchForParent')}
+              placeholder={placeholder || t('pickupAuthorizations.searchForParent') + ' (name, email, or username)'}
               value={searchTerm}
               onChange={handleInputChange}
               onFocus={() => searchTerm.length >= 3 && setIsOpen(true)}
@@ -220,6 +226,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
                   className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0"
                 >
                   <div className="font-medium text-sm">{parent.name}</div>
+                  <div className="text-xs text-gray-500">{parent.username || parent.email}</div>
                   {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
                     <div className="text-xs text-gray-500 mt-1">
                       {t('pickupAuthorizations.shares')}: {parent.sharedStudentNames.join(', ')}

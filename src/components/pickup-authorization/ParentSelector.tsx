@@ -50,6 +50,9 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
     // Search by parent email
     if (matchesSearch(parent.email, searchValue)) return true;
     
+    // Search by parent username
+    if (parent.username && matchesSearch(parent.username, searchValue)) return true;
+    
     // Search by children names
     if (parent.students && parent.students.length > 0) {
       return parent.students.some(student =>
@@ -98,7 +101,7 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span className="truncate">{selectedParent.email}</span>
+                      <span className="truncate">{selectedParent.username || selectedParent.email}</span>
                       {selectedParent.role && <RoleBadge role={selectedParent.role} size="sm" />}
                     </div>
                   {selectedParent.students && selectedParent.students.length > 0 && (
@@ -139,7 +142,7 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
             <div className="flex items-center border-b px-3">
               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
               <CommandInput 
-                placeholder="Search by name, email, or children..." 
+                placeholder="Search by name, email, username, or children..." 
                 value={searchValue}
                 onValueChange={setSearchValue}
                 className="flex-1 border-0 focus:ring-0"
@@ -151,7 +154,7 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
                   <Search className="h-8 w-8 text-gray-300 mx-auto" />
                   <p>No parents found</p>
                   <p className="text-xs text-gray-500">
-                    Try searching by name, email, or children's names
+                    Try searching by name, email, username, or children's names
                   </p>
                 </div>
               </CommandEmpty>
@@ -181,7 +184,7 @@ const ParentSelector: React.FC<ParentSelectorProps> = ({
                         {parent.role && <RoleBadge role={parent.role} size="sm" />}
                       </div>
                       <div className="text-xs text-gray-500 truncate">
-                        {parent.email}
+                        {parent.username || parent.email}
                       </div>
                       {parent.students && parent.students.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
