@@ -534,10 +534,38 @@ serve(async (req) => {
 
         for (const parent of (candidateParents || [])) {
           try {
-            const decryptedName = await decryptData(parent.name);
-            const decryptedEmail = await decryptData(parent.email);
-            const decryptedUsername = parent.username ? await decryptData(parent.username) : null;
-            const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
+            let decryptedName = '';
+            let decryptedEmail = '';
+            let decryptedUsername = '';
+            let decryptedPhone = '';
+            
+            // Try to decrypt each field, use raw value if decryption fails
+            try {
+              decryptedName = await decryptData(parent.name);
+            } catch (e) {
+              decryptedName = parent.name || '';
+              console.log(`Using raw name for parent ${parent.id}`);
+            }
+            
+            try {
+              decryptedEmail = await decryptData(parent.email);
+            } catch (e) {
+              decryptedEmail = parent.email || '';
+              console.log(`Using raw email for parent ${parent.id}`);
+            }
+            
+            try {
+              decryptedUsername = parent.username ? await decryptData(parent.username) : '';
+            } catch (e) {
+              decryptedUsername = parent.username || '';
+              console.log(`Using raw username for parent ${parent.id}`);
+            }
+            
+            try {
+              decryptedPhone = parent.phone ? await decryptData(parent.phone) : '';
+            } catch (e) {
+              decryptedPhone = parent.phone || '';
+            }
             
             // Check if any field matches the search term
             const nameMatch = decryptedName.toLowerCase().includes(lowerSearchTerm);
@@ -559,7 +587,8 @@ serve(async (req) => {
               if (decryptedParents.length >= 20) break;
             }
           } catch (decryptError) {
-            console.error(`Error decrypting parent ${parent.id}:`, decryptError);
+            console.error(`Error processing parent ${parent.id}:`, decryptError);
+            // Continue to next parent instead of failing completely
           }
         }
 
