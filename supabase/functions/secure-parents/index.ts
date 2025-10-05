@@ -552,9 +552,11 @@ serve(async (req) => {
 
         console.log(`Found ${results.length} matching parents`);
 
+        // Return encrypted data to client
+        const encryptedResults = await encryptObject(results);
         return new Response(
           JSON.stringify({
-            data: results,
+            data: { encrypted_data: encryptedResults },
             error: null
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
