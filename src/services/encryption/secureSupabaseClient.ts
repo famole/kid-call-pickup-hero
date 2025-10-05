@@ -387,7 +387,11 @@ export class SecureOperations {
         return [];
       }
 
-      return response.data.data;
+      // Decrypt the search results
+      const { decryptData } = await import('./encryptionService');
+      const decryptedResults = await decryptData(response.data.data.encrypted_data);
+
+      return decryptedResults;
     } catch (error) {
       logger.error('searchParentsSecure: Error searching parents:', error);
       throw error;
