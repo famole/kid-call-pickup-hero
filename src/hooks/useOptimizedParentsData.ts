@@ -11,15 +11,22 @@ interface UseOptimizedParentsDataProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   includeDeleted?: boolean;
   includedRoles?: ('parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other')[];
+  searchTerm?: string;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 export const useOptimizedParentsData = ({ 
   userRole = 'parent', 
   includeDeleted = false,
-  includedRoles
+  includedRoles,
+  searchTerm = '',
+  currentPage = 1,
+  pageSize = 50
 }: UseOptimizedParentsDataProps) => {
   const { toast } = useToast();
   const [parents, setParents] = useState<ParentWithStudents[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [allStudents, setAllStudents] = useState<Child[]>([]);
   const [loadingProgress, setLoadingProgress] = useState<string>('Initializing...');
@@ -27,15 +34,16 @@ export const useOptimizedParentsData = ({
   // Use ref to track last fetch time to prevent dependency issues
   const lastFetchRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout>();
 
   // Parents are now pre-filtered by backend, no need for frontend filtering
   const filteredParentsByRole = parents;
 
   logger.info(`Backend returned ${filteredParentsByRole.length} parents filtered by roles:`, includedRoles || [userRole]);
 
-  const loadParents = useCallback(async (forceRefresh = false) => {
+  const loadParents = useCallback(async (forceRefresh = false, search?: string, page?: number) => {
     const now = Date.now();
-    if (!forceRefresh && now - lastFetchRef.current < 10000) { // Cache for 10 seconds
+    if (!forceRefresh && now - lastFetchRef.current < 5000) { // Cache for 5 seconds
       return;
     }
 
@@ -45,18 +53,27 @@ export const useOptimizedParentsData = ({
     try {
       const startTime = performance.now();
       
-      logger.info(`Loading parents data for userRole: ${userRole}, includedRoles:`, includedRoles);
+      const effectivePage = page || currentPage;
+      const effectiveSearch = search !== undefined ? search : searchTerm;
       
-      // Use optimized query with backend role filtering
-      logger.info(`Fetching parents with includeDeleted: ${includeDeleted}`);
-      const data = await getParentsWithStudentsOptimized(includeDeleted, includedRoles);
+      logger.info(`Loading parents data for page: ${effectivePage}, search: "${effectiveSearch}"`);
+      
+      // Use optimized query with backend role filtering, pagination, and search
+      const result = await getParentsWithStudentsOptimized(
+        includeDeleted, 
+        includedRoles,
+        effectivePage,
+        pageSize,
+        effectiveSearch.trim().length >= 3 ? effectiveSearch : undefined
+      );
       
       const loadTime = performance.now() - startTime;
       
-      logger.info(`Loaded ${data.length} filtered parents/users from backend`);
+      logger.info(`Loaded ${result.parents.length} of ${result.totalCount} parents from backend`);
       
-      setParents(data);
-      setLoadingProgress(`Loaded ${data.length} parents`);
+      setParents(result.parents);
+      setTotalCount(result.totalCount);
+      setLoadingProgress(`Loaded ${result.parents.length} of ${result.totalCount} parents`);
       lastFetchRef.current = now;
       
       if (loadTime > 2000) {
@@ -76,7 +93,7 @@ export const useOptimizedParentsData = ({
     } finally {
       setIsLoading(false);
     }
-  }, [toast, userRole, includeDeleted, includedRoles]);
+  }, [toast, includeDeleted, includedRoles, currentPage, pageSize, searchTerm]);
 
   const loadStudents = useCallback(async () => {
     try {
@@ -110,14 +127,38 @@ export const useOptimizedParentsData = ({
     }
   }, [loadParents, loadStudents]);
 
-  // Refetch when includeDeleted changes
+  // Refetch when includeDeleted, currentPage changes
   useEffect(() => {
     if (isInitializedRef.current) {
-      logger.info('includeDeleted changed to:', includeDeleted);
+      logger.info('Parameters changed - includeDeleted:', includeDeleted, 'page:', currentPage);
       loadParents(true);
-      loadStudents();
     }
-  }, [includeDeleted, loadParents, loadStudents]);
+  }, [includeDeleted, currentPage, loadParents]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (isInitializedRef.current && searchTerm.trim().length >= 3) {
+      // Clear existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      
+      // Set new timer
+      debounceTimerRef.current = setTimeout(() => {
+        logger.info('Search term changed to:', searchTerm);
+        loadParents(true, searchTerm, 1); // Reset to page 1 on search
+      }, 500);
+      
+      return () => {
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+      };
+    } else if (isInitializedRef.current && searchTerm.trim().length === 0) {
+      // Clear search immediately
+      loadParents(true, '', 1);
+    }
+  }, [searchTerm, loadParents]);
 
   const onParentAdded = useCallback((newParent: ParentWithStudents) => {
     setParents(prev => [...prev, newParent]);
@@ -142,6 +183,7 @@ export const useOptimizedParentsData = ({
     isLoading,
     allStudents,
     loadingProgress,
+    totalCount,
     onParentAdded,
     onParentUpdated,
     onImportCompleted,

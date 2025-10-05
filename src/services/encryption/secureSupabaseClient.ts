@@ -200,13 +200,19 @@ export class SecureOperations {
     }
   }
 
-  // Secure operations for parents with students (optimized)
-  async getParentsWithStudentsSecure(includedRoles?: string[], includeDeleted: boolean = false) {
+  // Secure operations for parents with students (optimized with pagination and search)
+  async getParentsWithStudentsSecure(
+    includedRoles?: string[], 
+    includeDeleted: boolean = false,
+    page: number = 1,
+    pageSize: number = 50,
+    searchTerm?: string
+  ) {
     try {
       const { data, error } = await supabase.functions.invoke('secure-parents', {
         body: {
           operation: 'getParentsWithStudents',
-          data: { includedRoles, includeDeleted }
+          data: { includedRoles, includeDeleted, page, pageSize, searchTerm }
         }
       });
 
@@ -220,11 +226,11 @@ export class SecureOperations {
         throw new Error(data.error);
       }
 
-      // Decrypt the data
+      // Decrypt the data (includes parents array and pagination metadata)
       const { decryptData } = await import('./encryptionService');
-      const parentsWithStudentsData = await decryptData(data.data.encrypted_data);
+      const result = await decryptData(data.data.encrypted_data);
 
-      return { data: parentsWithStudentsData, error: null };
+      return { data: result, error: null };
     } catch (error) {
       logger.error('Error in getParentsWithStudentsSecure:', error);
       return { data: null, error };
