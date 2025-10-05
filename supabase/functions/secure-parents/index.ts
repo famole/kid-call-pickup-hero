@@ -245,7 +245,7 @@ serve(async (req) => {
       }
 
       case 'getParentsWithStudents': {
-        const { includedRoles } = data || {};
+        const { includedRoles, includeDeleted } = data || {};
         
         // Optimized query that joins parents with their students in one request
         let query = supabase
@@ -276,8 +276,12 @@ serve(async (req) => {
                 )
               )
             )
-          `)
-          .is('deleted_at', null);
+          `);
+        
+        // Apply deleted filter unless we want to include deleted
+        if (!includeDeleted) {
+          query = query.is('deleted_at', null);
+        }
         
         // Apply role filter if provided
         if (includedRoles && Array.isArray(includedRoles) && includedRoles.length > 0) {
