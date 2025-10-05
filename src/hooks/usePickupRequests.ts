@@ -4,6 +4,7 @@ import { getActivePickupRequestsForParent } from '@/services/pickupService';
 import { supabase } from '@/integrations/supabase/client';
 import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { PickupRequest, Child } from '@/types';
+import { logger } from '@/utils/logger'
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
@@ -110,15 +111,15 @@ export const usePickupRequests = (children: ChildWithType[]) => {
       });
       
       setActiveRequests(combinedRequests);
-      console.log('Pickup requests updated:', combinedRequests.length);
+      logger.info('Pickup requests updated:', combinedRequests.length);
     } catch (error) {
-      console.error('Error fetching pickup requests:', error);
+      logger.error('Error fetching pickup requests:', error);
     }
   }, [user, children]);
 
   // Handle real-time updates
   const handleRealtimeChange = useCallback(async (payload: any) => {
-    console.log('Pickup requests real-time change:', payload);
+    logger.info('Pickup requests real-time change:', payload);
     
     const studentId = payload.new?.student_id || payload.old?.student_id;
     const parentId = payload.new?.parent_id || payload.old?.parent_id;
@@ -128,7 +129,7 @@ export const usePickupRequests = (children: ChildWithType[]) => {
     const isOurRequest = parentId && parentId === currentParentIdRef.current;
     
     if (affectsOurChildren || isOurRequest) {
-      console.log('Pickup request change affects us, refreshing...', { 
+      logger.info('Pickup request change affects us, refreshing...', { 
         studentId, 
         parentId, 
         eventType: payload.eventType,
@@ -158,11 +159,11 @@ export const usePickupRequests = (children: ChildWithType[]) => {
         handleRealtimeChange
       )
       .subscribe((status) => {
-        console.log('Pickup requests subscription status:', status);
+        logger.info('Pickup requests subscription status:', status);
       });
 
     return () => {
-      console.log('Cleaning up pickup requests subscription');
+      logger.info('Cleaning up pickup requests subscription');
       supabase.removeChannel(channel);
     };
   }, [fetchPickupRequests, handleRealtimeChange]);

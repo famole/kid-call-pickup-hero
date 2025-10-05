@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { Child } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { logger } from '@/utils/logger';
 
 interface InvitationFormData {
   invitedName: string;
@@ -53,7 +54,7 @@ export const useInvitationDialog = (isOpen: boolean, onInvitationSent: () => voi
       // Get current parent ID (cached)
       const currentParentId = await getCurrentParentIdCached();
       if (!currentParentId) {
-        console.error('Error getting current parent ID via cached helper');
+        logger.error('Error getting current parent ID via cached helper');
         return;
       }
 
@@ -61,7 +62,7 @@ export const useInvitationDialog = (isOpen: boolean, onInvitationSent: () => voi
       const userChildren = await getStudentsForParent(currentParentId);
       setChildren(userChildren);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.loadDataError'),
@@ -133,7 +134,7 @@ export const useInvitationDialog = (isOpen: boolean, onInvitationSent: () => voi
         endDate: '',
       });
     } catch (error) {
-      console.error('Error creating invitation:', error);
+      logger.error('Error creating invitation:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.failedToSendInvitation'),

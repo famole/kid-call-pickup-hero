@@ -53,11 +53,11 @@ export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) 
   useEffect(() => {
     fetchCalledStudents(true);
 
-    // Set up periodic polling as a fallback in case realtime fails (every 30 seconds)
+    // Set up periodic polling as a fallback in case realtime fails (every 20 seconds)
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    intervalRef.current = setInterval(() => fetchCalledStudents(true), 30000);
+    intervalRef.current = setInterval(() => fetchCalledStudents(true), 20000);
 
     // Clean up existing subscription
     if (subscriptionRef.current) {

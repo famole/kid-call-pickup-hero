@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ParentInput, ParentWithStudents } from '@/types/parent';
 import { updateParent } from '@/services/parentService';
 import { useToast } from "@/hooks/use-toast";
+import { logger } from '@/utils/logger';
 
 interface UseEditParentFormProps {
   onParentUpdated: (updatedParent: ParentWithStudents) => void;
@@ -56,7 +57,7 @@ export const useEditParentForm = ({ onParentUpdated }: UseEditParentFormProps) =
       });
       closeEditParentSheet();
     } catch (error: any) {
-      console.error('Error updating parent:', error);
+      logger.error('Error updating parent:', error);
       const userTypeLabel = editingParent.role === 'teacher' ? 'teacher' : 
                            editingParent.role === 'admin' ? 'admin' : 'parent';
       

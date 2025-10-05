@@ -58,19 +58,28 @@ async function encryptData(data: string): Promise<string> {
     combined.set(iv);
     combined.set(new Uint8Array(encryptedData), iv.length);
 
-    return btoa(String.fromCharCode(...combined));
+    // Convert to base64 without spreading large arrays (avoids stack overflow)
+    let binary = '';
+    const len = combined.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(combined[i]);
+    }
+    return btoa(binary);
   } catch (error) {
     console.error('Encryption failed:', error);
-    return data; // Return original data if encryption fails
+    throw error;
   }
 }
 
 async function decryptData(encryptedData: string): Promise<string> {
   try {
     const key = await getEncryptionKey();
-    const combined = new Uint8Array(
-      atob(encryptedData).split('').map(char => char.charCodeAt(0))
-    );
+    const binaryString = atob(encryptedData);
+    const len = binaryString.length;
+    const combined = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      combined[i] = binaryString.charCodeAt(i);
+    }
     
     const iv = combined.slice(0, 12);
     const data = combined.slice(12);
@@ -84,7 +93,7 @@ async function decryptData(encryptedData: string): Promise<string> {
     return new TextDecoder().decode(decryptedData);
   } catch (error) {
     console.error('Decryption failed:', error);
-    return encryptedData; // Return original if decryption fails
+    throw error;
   }
 }
 
@@ -94,7 +103,7 @@ async function encryptObject(obj: Record<string, unknown>): Promise<string> {
     return await encryptData(jsonString);
   } catch (error) {
     console.error('Object encryption failed:', error);
-    return JSON.stringify(obj); // Return original if encryption fails
+    throw error;
   }
 }
 
@@ -104,11 +113,7 @@ async function decryptObject(encryptedString: string): Promise<Record<string, un
     return JSON.parse(decryptedString);
   } catch (error) {
     console.error('Object decryption failed:', error);
-    try {
-      return JSON.parse(encryptedString); // Try parsing original if decryption fails
-    } catch {
-      return encryptedString; // Return string if JSON parsing fails
-    }
+    throw error;
   }
 }
 
@@ -240,9 +245,10 @@ serve(async (req) => {
       }
 
       case 'getParentsWithStudents': {
-        const { includedRoles } = data || {};
+        const { includedRoles, includeDeleted } = data || {};
         
         // Optimized query that joins parents with their students in one request
+        // Using left joins (no !inner) so parents without students are still returned
         let query = supabase
           .from('parents')
           .select(`
@@ -255,24 +261,28 @@ serve(async (req) => {
             created_at,
             updated_at,
             deleted_at,
-            student_parents!inner (
+            student_parents (
               id,
               student_id,
               is_primary,
               relationship,
-              students!inner (
+              students (
                 id,
                 name,
                 class_id,
-                classes!inner (
+                classes (
                   id,
                   name,
                   grade
                 )
               )
             )
-          `)
-          .is('deleted_at', null);
+          `);
+        
+        // Apply deleted filter unless we want to include deleted
+        if (!includeDeleted) {
+          query = query.is('deleted_at', null);
+        }
         
         // Apply role filter if provided
         if (includedRoles && Array.isArray(includedRoles) && includedRoles.length > 0) {
@@ -297,15 +307,15 @@ serve(async (req) => {
           created_at: parent.created_at,
           updated_at: parent.updated_at,
           deleted_at: parent.deleted_at,
-          students: parent.student_parents.map((sp: any) => ({
+          students: (parent.student_parents || []).map((sp: any) => ({
             id: sp.student_id,
-            name: sp.students.name,
+            name: sp.students?.name || '',
             isPrimary: sp.is_primary,
             relationship: sp.relationship || undefined,
             parentRelationshipId: sp.id,
-            classId: sp.students.class_id,
-            className: sp.students.classes?.name || '',
-            grade: sp.students.classes?.grade || ''
+            classId: sp.students?.class_id || null,
+            className: sp.students?.classes?.name || '',
+            grade: sp.students?.classes?.grade || ''
           }))
         }));
 
@@ -408,7 +418,7 @@ serve(async (req) => {
       }
 
       case 'getParentByEmail': {
-        const { email } = data;
+        const email = data?.email;
 
         if (!email) {
           throw new Error('email is required for getParentByEmail operation');
@@ -457,8 +467,115 @@ serve(async (req) => {
         });
       }
 
+      case 'searchParents': {
+        const { searchTerm, currentParentId } = data;
+
+        if (!searchTerm || typeof searchTerm !== 'string' || searchTerm.trim().length < 3) {
+          throw new Error('searchTerm must be at least 3 characters for searchParents operation');
+        }
+
+        if (!currentParentId) {
+          throw new Error('currentParentId is required for searchParents operation');
+        }
+
+        console.log(`Searching parents with term: ${searchTerm} for parent: ${currentParentId}`);
+
+        // Get all students associated with the current parent
+        const { data: currentParentStudents, error: studentsError } = await supabase
+          .from('student_parents')
+          .select('student_id')
+          .eq('parent_id', currentParentId);
+
+        if (studentsError) {
+          console.error('Error fetching current parent students:', studentsError);
+          throw new Error(`Failed to fetch students: ${studentsError.message}`);
+        }
+
+        const studentIds = currentParentStudents?.map((sp: any) => sp.student_id) || [];
+
+        // Use database-level search with ILIKE for case-insensitive pattern matching
+        // This leverages the indexes we created and is much faster than application-level filtering
+        const searchPattern = `%${searchTerm.trim()}%`;
+        
+        const { data: matchedParents, error: parentsError } = await supabase
+          .from('parents')
+          .select('id, name, email, role, phone')
+          .neq('id', currentParentId)
+          .is('deleted_at', null)
+          .or(`name.ilike.${searchPattern},email.ilike.${searchPattern},username.ilike.${searchPattern}`)
+          .order('name')
+          .limit(20);
+
+        if (parentsError) {
+          console.error('Error fetching parents:', parentsError);
+          throw new Error(`Failed to fetch parents: ${parentsError.message}`);
+        }
+
+        // Decrypt the matched results
+        const decryptedParents: any[] = [];
+        const matchedParentIds: string[] = [];
+
+        for (const parent of (matchedParents || [])) {
+          try {
+            const decryptedName = await decryptData(parent.name);
+            const decryptedEmail = await decryptData(parent.email);
+            const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
+            
+            decryptedParents.push({
+              id: parent.id,
+              name: decryptedName,
+              email: decryptedEmail,
+              phone: decryptedPhone,
+              role: parent.role,
+            });
+            matchedParentIds.push(parent.id);
+          } catch (decryptError) {
+            console.error(`Error decrypting parent ${parent.id}:`, decryptError);
+          }
+        }
+
+        // Fetch shared students for the matched parents
+        const sharedStudents: Record<string, string[]> = {};
+        if (studentIds.length > 0 && matchedParentIds.length > 0) {
+          const { data: sharedParentRelations, error: sharedError } = await supabase
+            .from('student_parents')
+            .select('parent_id, student_id')
+            .in('student_id', studentIds)
+            .in('parent_id', matchedParentIds);
+
+          if (!sharedError && sharedParentRelations) {
+            for (const relation of sharedParentRelations) {
+              const parentId = relation.parent_id;
+              if (!sharedStudents[parentId]) {
+                sharedStudents[parentId] = [];
+              }
+              sharedStudents[parentId].push(relation.student_id);
+            }
+          }
+        }
+
+        // Add shared student information to matched parents
+        const results = decryptedParents.map((parent: any) => ({
+          ...parent,
+          sharedStudentIds: sharedStudents[parent.id] || [],
+        }));
+
+        console.log(`Found ${results.length} matching parents`);
+
+        // Return encrypted data to client
+        const encryptedResults = await encryptObject(results);
+        return new Response(
+          JSON.stringify({
+            data: { encrypted_data: encryptedResults },
+            error: null
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+
       case 'getParentsByIds': {
-        const { parentIds } = data;
+        // Handle both data.parentIds and parentIds at root level for backward compatibility
+        const parentIds = data?.parentIds;
 
         if (!parentIds || !Array.isArray(parentIds) || parentIds.length === 0) {
           throw new Error('parentIds array is required for getParentsByIds operation');

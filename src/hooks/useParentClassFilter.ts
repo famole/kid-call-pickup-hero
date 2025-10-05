@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { ParentWithStudents } from '@/types/parent';
 import { Class } from '@/types';
 import { getAllClasses } from '@/services/classService';
+import { logger } from '@/utils/logger';
 
 interface UseParentClassFilterProps {
   parents: ParentWithStudents[];
@@ -21,7 +22,7 @@ export const useParentClassFilter = ({ parents }: UseParentClassFilterProps) => 
         const classesData = await getAllClasses();
         setClasses(classesData);
       } catch (error) {
-        console.error('Failed to load classes:', error);
+        logger.error('Failed to load classes:', error);
       } finally {
         setIsLoadingClasses(false);
       }

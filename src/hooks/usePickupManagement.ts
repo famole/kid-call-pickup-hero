@@ -6,6 +6,7 @@ import { getClassById } from '@/services/classService';
 import { getParentById } from '@/services/parentService';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger'
 
 export const usePickupManagement = (classId?: string) => {
   const [pendingRequests, setPendingRequests] = useState<PickupRequestWithDetails[]>([]);
@@ -15,16 +16,16 @@ export const usePickupManagement = (classId?: string) => {
   const fetchPendingRequests = useCallback(async () => {
     setLoading(true);
     try {
-      console.log('Fetching pending pickup requests...');
+      logger.info('Fetching pending pickup requests...');
       
       const activeRequests = await getActivePickupRequests();
       const pendingOnly = activeRequests.filter(req => req.status === 'pending');
       
-      console.log(`Found ${pendingOnly.length} pending requests`);
+      logger.info(`Found ${pendingOnly.length} pending requests`);
       
       const requestsWithDetails = await Promise.all(pendingOnly.map(async (req) => {
         try {
-          console.log(`Fetching details for request ${req.id}`);
+          logger.info(`Fetching details for request ${req.id}`);
           const student = await getStudentById(req.studentId);
           let classInfo = null;
           let parentInfo = null;
@@ -33,7 +34,7 @@ export const usePickupManagement = (classId?: string) => {
             try {
               classInfo = await getClassById(student.classId);
             } catch (classError) {
-              console.error(`Error fetching class ${student.classId}:`, classError);
+              logger.error(`Error fetching class ${student.classId}:`, classError);
             }
           }
 
@@ -42,7 +43,7 @@ export const usePickupManagement = (classId?: string) => {
             try {
               parentInfo = await getParentById(req.parentId);
             } catch (parentError) {
-              console.error(`Error fetching parent ${req.parentId}:`, parentError);
+              logger.error(`Error fetching parent ${req.parentId}:`, parentError);
             }
           }
           
@@ -53,7 +54,7 @@ export const usePickupManagement = (classId?: string) => {
             parent: parentInfo
           };
         } catch (error) {
-          console.error(`Error fetching details for request ${req.id}:`, error);
+          logger.error(`Error fetching details for request ${req.id}:`, error);
           return {
             request: req,
             child: null,
@@ -72,7 +73,7 @@ export const usePickupManagement = (classId?: string) => {
 
       setPendingRequests(filteredRequests);
     } catch (error) {
-      console.error("Error fetching pending requests:", error);
+      logger.error("Error fetching pending requests:", error);
       setPendingRequests([]);
     } finally {
       setLoading(false);
@@ -81,14 +82,14 @@ export const usePickupManagement = (classId?: string) => {
 
   const markAsCalled = async (requestId: string) => {
     try {
-      console.log(`Marking request ${requestId} as called`);
+      logger.info(`Marking request ${requestId} as called`);
       
       // Optimistically remove from pending requests immediately
       setPendingRequests(prev => prev.filter(req => req.request.id !== requestId));
       
       await updatePickupRequestStatus(requestId, 'called');
       
-      console.log('Request marked as called. Server will auto-complete after 5 minutes.');
+      logger.info('Request marked as called. Server will auto-complete after 5 minutes.');
       
       // Force refresh to ensure consistency
       setTimeout(() => {
@@ -96,7 +97,7 @@ export const usePickupManagement = (classId?: string) => {
       }, 100);
       
     } catch (error) {
-      console.error("Error marking request as called:", error);
+      logger.error("Error marking request as called:", error);
       // Refresh on error to get correct state
       await fetchPendingRequests();
       throw error;
@@ -123,20 +124,20 @@ export const usePickupManagement = (classId?: string) => {
           table: 'pickup_requests'
         },
         async (payload) => {
-          console.log('Real-time pickup request change detected:', payload.eventType, payload);
+          logger.info('Real-time pickup request change detected:', payload.eventType, payload);
           
           // Force refresh after any change to ensure consistency
           fetchPendingRequests();
         }
       )
       .subscribe((status) => {
-        console.log('Pickup management subscription status:', status);
+        logger.info('Pickup management subscription status:', status);
       });
 
     subscriptionRef.current = channel;
 
     return () => {
-      console.log('Cleaning up pickup management subscription');
+      logger.info('Cleaning up pickup management subscription');
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;

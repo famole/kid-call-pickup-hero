@@ -623,6 +623,22 @@ export type Database = {
           username: string
         }[]
       }
+      get_parent_by_identifier_pwd: {
+        Args: { identifier: string }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          is_preloaded: boolean
+          name: string
+          password_hash: string
+          password_set: boolean
+          phone: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          username: string
+        }[]
+      }
       get_parent_id_from_metadata: {
         Args: Record<PropertyKey, never>
         Returns: string

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logger } from '@/utils/logger';
 
 interface UseDeleteConfirmationProps<T> {
   onDelete: (item: T) => Promise<void>;
@@ -34,7 +35,7 @@ export const useDeleteConfirmation = <T>({
       await onDelete(itemToDelete);
       closeDeleteConfirmation();
     } catch (error) {
-      console.error('Error deleting item:', error);
+      logger.error('Error deleting item:', error);
       setIsLoading(false);
     }
   };

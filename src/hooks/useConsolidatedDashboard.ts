@@ -130,10 +130,10 @@ export const useConsolidatedDashboard = () => {
         logger.log('Real-time subscription status:', status);
       });
 
-    // Reduced polling frequency since we have real-time updates
+    // Reduced polling frequency since we have real-time updates (every 20 seconds)
     intervalRef.current = setInterval(() => {
       loadDashboardData(true);
-    }, 60000); // Every 60 seconds instead of 30
+    }, 20000); // Every 20 seconds instead of 60
 
   }, [user?.id, activeRequests, loadDashboardData]);
 

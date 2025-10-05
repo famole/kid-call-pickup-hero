@@ -32,7 +32,7 @@ const AdminTabs = () => {
         </TabsContent>
         
         <TabsContent value="parents">
-          <AdminParentsScreen userRole="parent" />
+          <AdminParentsScreen userRole="parent" includedRoles={['parent']} />
         </TabsContent>
         
         <TabsContent value="family">
@@ -40,7 +40,7 @@ const AdminTabs = () => {
         </TabsContent>
         
         <TabsContent value="teachers">
-          <AdminParentsScreen userRole="teacher" />
+          <AdminParentsScreen userRole="teacher" includedRoles={['teacher']} />
         </TabsContent>
 
         <TabsContent value="pickup">

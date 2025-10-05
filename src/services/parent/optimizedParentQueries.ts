@@ -13,7 +13,7 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
     logger.log('includedRoles filter:', includedRoles);
     
     // Use secure operations for parent data - USE OPTIMIZED VERSION WITH ROLE FILTERING
-    const { data: parentsData, error: parentsError } = await secureOperations.getParentsWithStudentsSecure(includedRoles);
+    const { data: parentsData, error: parentsError } = await secureOperations.getParentsWithStudentsSecure(includedRoles, includeDeleted);
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);

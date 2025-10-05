@@ -5,6 +5,7 @@ import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentsWithStudentsOptimized } from '@/services/parent/optimizedParentQueries';
 import { getAllStudents } from '@/services/studentService';
+import { logger } from '@/utils/logger'
 
 interface UseOptimizedParentsDataProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
@@ -30,7 +31,7 @@ export const useOptimizedParentsData = ({
   // Parents are now pre-filtered by backend, no need for frontend filtering
   const filteredParentsByRole = parents;
 
-  console.log(`Backend returned ${filteredParentsByRole.length} parents filtered by roles:`, includedRoles || [userRole]);
+  logger.info(`Backend returned ${filteredParentsByRole.length} parents filtered by roles:`, includedRoles || [userRole]);
 
   const loadParents = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
@@ -44,15 +45,15 @@ export const useOptimizedParentsData = ({
     try {
       const startTime = performance.now();
       
-      console.log(`Loading parents data for userRole: ${userRole}, includedRoles:`, includedRoles);
+      logger.info(`Loading parents data for userRole: ${userRole}, includedRoles:`, includedRoles);
       
       // Use optimized query with backend role filtering
-      console.log(`Fetching parents with includeDeleted: ${includeDeleted}`);
+      logger.info(`Fetching parents with includeDeleted: ${includeDeleted}`);
       const data = await getParentsWithStudentsOptimized(includeDeleted, includedRoles);
       
       const loadTime = performance.now() - startTime;
       
-      console.log(`Loaded ${data.length} filtered parents/users from backend`);
+      logger.info(`Loaded ${data.length} filtered parents/users from backend`);
       
       setParents(data);
       setLoadingProgress(`Loaded ${data.length} parents`);
@@ -65,7 +66,7 @@ export const useOptimizedParentsData = ({
         });
       }
     } catch (error) {
-      console.error('Failed to load parents:', error);
+      logger.error('Failed to load parents:', error);
       setLoadingProgress('Failed to load parents');
       toast({
         title: "Error",
@@ -84,7 +85,7 @@ export const useOptimizedParentsData = ({
       setAllStudents(studentsData);
       setLoadingProgress(`Loaded ${studentsData.length} students`);
     } catch (error) {
-      console.error('Failed to load students:', error);
+      logger.error('Failed to load students:', error);
       setLoadingProgress('Failed to load students');
       toast({
         title: "Error",
@@ -112,7 +113,7 @@ export const useOptimizedParentsData = ({
   // Refetch when includeDeleted changes
   useEffect(() => {
     if (isInitializedRef.current) {
-      console.log('includeDeleted changed to:', includeDeleted);
+      logger.info('includeDeleted changed to:', includeDeleted);
       loadParents(true);
       loadStudents();
     }

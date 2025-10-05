@@ -201,12 +201,12 @@ export class SecureOperations {
   }
 
   // Secure operations for parents with students (optimized)
-  async getParentsWithStudentsSecure(includedRoles?: string[]) {
+  async getParentsWithStudentsSecure(includedRoles?: string[], includeDeleted: boolean = false) {
     try {
       const { data, error } = await supabase.functions.invoke('secure-parents', {
         body: {
           operation: 'getParentsWithStudents',
-          data: { includedRoles }
+          data: { includedRoles, includeDeleted }
         }
       });
 
@@ -237,7 +237,7 @@ export class SecureOperations {
       const response = await supabase.functions.invoke('secure-parents', {
         body: {
           operation: 'getParentByEmail',
-          email
+          data: { email }
         }
       });
 
@@ -300,7 +300,7 @@ export class SecureOperations {
       const response = await supabase.functions.invoke('secure-parents', {
         body: {
           operation: 'getParentsByIds',
-          parentIds: ids
+          data: { parentIds: ids }
         }
       });
 
@@ -355,6 +355,46 @@ export class SecureOperations {
     } catch (error) {
       logger.error('Error in getParentsWhoShareStudentsSecure:', error);
       return { data: null, error };
+    }
+  }
+
+  // Secure operation to search parents by search term
+  async searchParentsSecure(searchTerm: string, currentParentId: string): Promise<any[]> {
+    if (!searchTerm || searchTerm.trim().length < 3) {
+      logger.info('searchParentsSecure: Search term too short');
+      return [];
+    }
+
+    if (!currentParentId) {
+      logger.error('searchParentsSecure: No current parent ID provided');
+      return [];
+    }
+
+    try {
+      const response = await supabase.functions.invoke('secure-parents', {
+        body: {
+          operation: 'searchParents',
+          data: { searchTerm, currentParentId }
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to search parents');
+      }
+
+      if (!response.data || !response.data.data) {
+        logger.error('searchParentsSecure: Invalid response format', response);
+        return [];
+      }
+
+      // Decrypt the search results
+      const { decryptData } = await import('./encryptionService');
+      const decryptedResults = await decryptData(response.data.data.encrypted_data);
+
+      return decryptedResults;
+    } catch (error) {
+      logger.error('searchParentsSecure: Error searching parents:', error);
+      throw error;
     }
   }
 

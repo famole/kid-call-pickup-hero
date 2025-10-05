@@ -135,11 +135,11 @@ export const useOptimizedParentDashboard = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Set up periodic polling as a fallback in case realtime fails (every 60 seconds)
+    // Set up periodic polling as a fallback in case realtime fails (every 20 seconds)
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    intervalRef.current = setInterval(() => loadDashboardData(true), 60000);
+    intervalRef.current = setInterval(() => loadDashboardData(true), 20000);
 
     // Clean up existing subscription
     if (subscriptionRef.current) {
