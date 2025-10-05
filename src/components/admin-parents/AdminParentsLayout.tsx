@@ -43,6 +43,7 @@ interface AdminParentsLayoutProps {
   // Server-side pagination and search
   searchTerm?: string;
   onSearchChange?: (search: string) => void;
+  onSearchSubmit?: () => void;
   currentPage?: number;
   pageSize?: number;
   totalCount?: number;
@@ -71,6 +72,7 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
   onAuthStatusRefresh,
   searchTerm,
   onSearchChange,
+  onSearchSubmit,
   currentPage,
   pageSize,
   totalCount,
@@ -167,10 +169,11 @@ const AdminParentsLayout: React.FC<AdminParentsLayoutProps> = ({
           onManageStudents={hooks.studentManagement.openStudentModal}
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
-          authStatuses={authStatuses}
-          searchTerm={searchTerm}
-          onSearchChange={onSearchChange}
-          currentPage={currentPage}
+        authStatuses={authStatuses}
+        searchTerm={searchTerm}
+        onSearchChange={onSearchChange}
+        onSearchSubmit={onSearchSubmit}
+        currentPage={currentPage}
           pageSize={pageSize}
           totalCount={totalCount}
           onPageChange={onPageChange}

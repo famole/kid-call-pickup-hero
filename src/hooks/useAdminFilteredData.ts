@@ -12,7 +12,8 @@ interface UseAdminFilteredDataProps {
 export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilteredDataProps) => {
   const [statusFilter, setStatusFilter] = useState<'active' | 'deleted' | 'all'>('active');
   const [isFilterChanging, setIsFilterChanging] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [localSearchTerm, setLocalSearchTerm] = useState(''); // For input field
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // For actual API call
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   
@@ -35,7 +36,7 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     userRole, 
     includeDeleted, 
     includedRoles,
-    searchTerm,
+    searchTerm: activeSearchTerm,
     currentPage,
     pageSize
   });
@@ -96,9 +97,13 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
   }, [refetch]);
 
   const handleSearchChange = useCallback((search: string) => {
-    setSearchTerm(search);
-    setCurrentPage(1); // Reset to page 1 on search
+    setLocalSearchTerm(search);
   }, []);
+
+  const handleSearchSubmit = useCallback(() => {
+    setActiveSearchTerm(localSearchTerm);
+    setCurrentPage(1); // Reset to page 1 on search
+  }, [localSearchTerm]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -123,8 +128,9 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     handleStatusFilterChange,
     refreshData,
     // Pagination and search
-    searchTerm,
+    searchTerm: localSearchTerm,
     onSearchChange: handleSearchChange,
+    onSearchSubmit: handleSearchSubmit,
     currentPage,
     pageSize,
     totalCount: totalCount || 0,

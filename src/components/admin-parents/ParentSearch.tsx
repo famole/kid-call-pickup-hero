@@ -9,6 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 interface ParentSearchProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
+  onSearchSubmit?: () => void;
   selectedClassId: string;
   onClassFilterChange: (value: string) => void;
   classList: Class[];
@@ -18,12 +19,19 @@ interface ParentSearchProps {
 const ParentSearch: React.FC<ParentSearchProps> = ({
   searchTerm,
   onSearchChange,
+  onSearchSubmit,
   selectedClassId,
   onClassFilterChange,
   classList,
   placeholder
 }) => {
   const { t } = useTranslation();
+  
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && onSearchSubmit) {
+      onSearchSubmit();
+    }
+  };
   
   return (
     <div className="flex flex-col sm:flex-row gap-4 mb-6 items-start text-left">
@@ -34,6 +42,7 @@ const ParentSearch: React.FC<ParentSearchProps> = ({
           placeholder={placeholder || t('parentsManagement.searchPlaceholder')}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           className="pl-10 text-left"
         />
       </div>

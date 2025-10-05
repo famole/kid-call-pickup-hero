@@ -26,6 +26,7 @@ interface AdminParentsContainerProps {
   // Server-side pagination and search
   searchTerm?: string;
   onSearchChange?: (search: string) => void;
+  onSearchSubmit?: () => void;
   currentPage?: number;
   pageSize?: number;
   totalCount?: number;
@@ -54,6 +55,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
   onAuthStatusRefresh,
   searchTerm,
   onSearchChange,
+  onSearchSubmit,
   currentPage,
   pageSize,
   totalCount,
@@ -82,6 +84,7 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
       onAuthStatusRefresh={onAuthStatusRefresh}
       searchTerm={searchTerm}
       onSearchChange={onSearchChange}
+      onSearchSubmit={onSearchSubmit}
       currentPage={currentPage}
       pageSize={pageSize}
       totalCount={totalCount}

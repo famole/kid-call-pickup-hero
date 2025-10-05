@@ -31,6 +31,7 @@ interface AdminParentsContentProps {
   // Server-side pagination and search
   searchTerm?: string;
   onSearchChange?: (search: string) => void;
+  onSearchSubmit?: () => void;
   currentPage?: number;
   pageSize?: number;
   totalCount?: number;
@@ -52,6 +53,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
   authStatuses,
   searchTerm = '',
   onSearchChange,
+  onSearchSubmit,
   currentPage = 1,
   pageSize = 50,
   totalCount = 0,
@@ -90,6 +92,7 @@ const AdminParentsContent: React.FC<AdminParentsContentProps> = ({
           <ParentSearch
             searchTerm={searchTerm}
             onSearchChange={onSearchChange || (() => {})}
+            onSearchSubmit={onSearchSubmit || (() => {})}
             selectedClassId={selectedClassId}
             onClassFilterChange={setSelectedClassId}
             classList={classes}

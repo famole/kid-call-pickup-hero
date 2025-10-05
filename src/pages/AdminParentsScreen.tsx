@@ -27,6 +27,7 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
     refreshData,
     searchTerm,
     onSearchChange,
+    onSearchSubmit,
     currentPage,
     pageSize,
     totalCount,
@@ -77,6 +78,7 @@ const AdminParentsScreen: React.FC<AdminParentsScreenProps> = ({ userRole = 'par
         onAuthStatusRefresh={refreshData}
         searchTerm={searchTerm}
         onSearchChange={onSearchChange}
+        onSearchSubmit={onSearchSubmit}
         currentPage={currentPage}
         pageSize={pageSize}
         totalCount={totalCount}
