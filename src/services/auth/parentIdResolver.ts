@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { getCachedAuthUser } from '@/services/auth/getCachedAuthUser';
+import { logger } from '@/utils/logger'
 
 /**
  * Centralized parent ID resolver with multiple fallback methods
@@ -11,15 +12,15 @@ export const getCurrentParentId = async (): Promise<string | null> => {
     // Method 1: Try cached helper (which calls RPC under the hood with TTL + coalescing)
     const parentId = await getCurrentParentIdCached();
     if (parentId) {
-      console.log('✅ Got parent ID from cached helper:', parentId);
+      logger.info('✅ Got parent ID from cached helper:', parentId);
       return parentId;
     }
-    console.log('⚠️ Cached helper returned null for get_current_parent_id');
+    logger.info('⚠️ Cached helper returned null for get_current_parent_id');
     
     // Method 2: Check localStorage for username users
     const usernameParentId = localStorage.getItem('username_parent_id');
     if (usernameParentId) {
-      console.log('✅ Got parent ID from localStorage:', usernameParentId);
+      logger.info('✅ Got parent ID from localStorage:', usernameParentId);
       return usernameParentId;
     }
     
@@ -29,11 +30,11 @@ export const getCurrentParentId = async (): Promise<string | null> => {
       try {
         const sessionData = JSON.parse(usernameSession);
         if (sessionData.id) {
-          console.log('✅ Got parent ID from username session:', sessionData.id);
+          logger.info('✅ Got parent ID from username session:', sessionData.id);
           return sessionData.id;
         }
       } catch (parseError) {
-        console.error('Error parsing username session:', parseError);
+        logger.error('Error parsing username session:', parseError);
       }
     }
     
@@ -49,22 +50,22 @@ export const getCurrentParentId = async (): Promise<string | null> => {
           .single();
 
         if (!parentByEmailError && parentByEmail) {
-          console.log('✅ Got parent ID by email:', parentByEmail.id);
+          logger.info('✅ Got parent ID by email:', parentByEmail.id);
           return parentByEmail.id;
         }
       }
 
       // Check user metadata for parent_id
       if (user.user_metadata?.parent_id) {
-        console.log('✅ Got parent ID from user metadata:', user.user_metadata.parent_id);
+        logger.info('✅ Got parent ID from user metadata:', user.user_metadata.parent_id);
         return user.user_metadata.parent_id;
       }
     }
     
-    console.error('❌ All fallback methods failed to get parent ID');
+    logger.error('❌ All fallback methods failed to get parent ID');
     return null;
   } catch (error) {
-    console.error('Error in getCurrentParentId fallback:', error);
+    logger.error('Error in getCurrentParentId fallback:', error);
     return null;
   }
 };
@@ -79,27 +80,27 @@ export const getParentIdentifierForDashboard = async (): Promise<string | null> 
     const user = await getCachedAuthUser();
     
     if (!user) {
-      console.error('No authenticated user found');
+      logger.error('No authenticated user found');
       return null;
     }
     
     // If user has email, use email as identifier
     if (user.email) {
-      console.log('✅ Using email as parent identifier:', user.email);
+      logger.info('✅ Using email as parent identifier:', user.email);
       return user.email;
     }
     
     // For username-only users, get parent ID
     const parentId = await getCurrentParentId();
     if (parentId) {
-      console.log('✅ Using parent ID as identifier:', parentId);
+      logger.info('✅ Using parent ID as identifier:', parentId);
       return parentId;
     }
     
-    console.error('❌ Failed to get parent identifier for dashboard');
+    logger.error('❌ Failed to get parent identifier for dashboard');
     return null;
   } catch (error) {
-    console.error('Error in getParentIdentifierForDashboard:', error);
+    logger.error('Error in getParentIdentifierForDashboard:', error);
     return null;
   }
 };

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useOptimizedParentsData } from './useOptimizedParentsData';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
+import { logger } from '@/utils/logger';
 
 interface UseAdminFilteredDataProps {
   userRole: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
@@ -29,10 +30,10 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
   } = useOptimizedParentsData({ userRole, includeDeleted, includedRoles });
 
   // Debug logging to check deleted filtering
-  console.log('Status filter:', statusFilter);
-  console.log('Include deleted:', includeDeleted);
-  console.log('Total parents before filtering:', filteredParentsByRole.length);
-  console.log('Parents with deletedAt:', filteredParentsByRole.filter(p => p.deletedAt).length);
+  logger.log('Status filter:', statusFilter);
+  logger.log('Include deleted:', includeDeleted);
+  logger.log('Total parents before filtering:', filteredParentsByRole.length);
+  logger.log('Parents with deletedAt:', filteredParentsByRole.filter(p => p.deletedAt).length);
 
   // Apply status filter to parents - but don't double filter if we already fetched the right data
   const statusFilteredParents = filteredParentsByRole.filter(parent => {
@@ -64,7 +65,7 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
   });
 
   const handleStatusFilterChange = useCallback((newFilter: 'active' | 'deleted' | 'all') => {
-    console.log('Status filter changing from', statusFilter, 'to', newFilter);
+    logger.log('Status filter changing from', statusFilter, 'to', newFilter);
     setStatusFilter(newFilter);
     setIsFilterChanging(true);
   }, [statusFilter]);
@@ -74,7 +75,7 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     if (isFilterChanging) {
       refetch().finally(() => {
         setIsFilterChanging(false);
-        console.log('Filter change completed, loading state reset');
+        logger.log('Filter change completed, loading state reset');
       });
     }
   }, [includeDeleted, isFilterChanging, refetch]);

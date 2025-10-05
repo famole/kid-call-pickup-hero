@@ -1,13 +1,14 @@
 
 import { Class } from '@/types';
 import { secureClassOperations } from './encryption/secureClassClient';
+import { logger } from '@/utils/logger'
 
 // Fetch all classes
 export const getAllClasses = async (): Promise<Class[]> => {
   try {
     return await secureClassOperations.getAll();
   } catch (error) {
-    console.error('Error in getAllClasses:', error);
+    logger.error('Error in getAllClasses:', error);
     throw error;
   }
 };
@@ -15,12 +16,12 @@ export const getAllClasses = async (): Promise<Class[]> => {
 // Get a single class by ID
 export const getClassById = async (id: string): Promise<Class | null> => {
   try {
-    console.log(`[getClassById] Fetching class with ID: ${id}`);
+    logger.info(`[getClassById] Fetching class with ID: ${id}`);
     const classData = await secureClassOperations.getById(id);
     if (!classData) {
-      console.warn(`[getClassById] No class found with ID: ${id}`);
+      logger.warn(`[getClassById] No class found with ID: ${id}`);
     } else {
-      console.log(`[getClassById] Successfully fetched class:`, {
+      logger.info(`[getClassById] Successfully fetched class:`, {
         id: classData.id,
         name: classData.name,
         grade: classData.grade
@@ -28,7 +29,7 @@ export const getClassById = async (id: string): Promise<Class | null> => {
     }
     return classData;
   } catch (error) {
-    console.error('[getClassById] Error fetching class:', error);
+    logger.error('[getClassById] Error fetching class:', error);
     return null;
   }
 };
@@ -38,7 +39,7 @@ export const createClass = async (classData: Omit<Class, 'id'>): Promise<Class> 
   try {
     return await secureClassOperations.create(classData);
   } catch (error) {
-    console.error('Error in createClass:', error);
+    logger.error('Error in createClass:', error);
     throw error;
   }
 };
@@ -48,7 +49,7 @@ export const updateClass = async (id: string, classData: Partial<Class>): Promis
   try {
     return await secureClassOperations.update(id, classData);
   } catch (error) {
-    console.error('Error in updateClass:', error);
+    logger.error('Error in updateClass:', error);
     throw error;
   }
 };
@@ -58,7 +59,7 @@ export const deleteClass = async (id: string): Promise<void> => {
   try {
     await secureClassOperations.delete(id);
   } catch (error) {
-    console.error('Error in deleteClass:', error);
+    logger.error('Error in deleteClass:', error);
     throw error;
   }
 };
@@ -68,7 +69,7 @@ export const migrateClassesToSupabase = async (classes: Class[]): Promise<void> 
   try {
     await secureClassOperations.migrate(classes);
   } catch (error) {
-    console.error('Error in migrateClassesToSupabase:', error);
+    logger.error('Error in migrateClassesToSupabase:', error);
     throw error;
   }
 };
@@ -82,7 +83,7 @@ export const getClassesById = async (): Promise<Record<string, Class>> => {
       return acc;
     }, {} as Record<string, Class>);
   } catch (error) {
-    console.error('Error in getClassesById:', error);
+    logger.error('Error in getClassesById:', error);
     throw error;
   }
 };

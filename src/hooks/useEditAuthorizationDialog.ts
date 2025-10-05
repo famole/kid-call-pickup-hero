@@ -13,6 +13,7 @@ import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import { Child } from '@/types';
 import { ParentWithStudents } from '@/types/parent';
 import { useAuth } from '@/context/AuthContext';
+import { logger } from '@/utils/logger';
 
 interface FormData {
   studentIds: string[];
@@ -70,7 +71,7 @@ export const useEditAuthorizationDialog = (
     try {
       const currentParentId = await getCurrentParentIdCached();
       if (!currentParentId) {
-        console.error('Error getting current parent ID via cached helper');
+        logger.error('Error getting current parent ID via cached helper');
         return;
       }
 
@@ -102,7 +103,7 @@ export const useEditAuthorizationDialog = (
       setAllParents(enhancedAvailableParents);
       setParentsWhoShareStudents(parentsWithSharedStudents);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.loadDataError'),
@@ -166,7 +167,7 @@ export const useEditAuthorizationDialog = (
       onAuthorizationUpdated();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating authorization:', error);
+      logger.error('Error updating authorization:', error);
       toast({
         title: t('common.error'),
         description: t('pickupAuthorizations.failedToUpdate'),

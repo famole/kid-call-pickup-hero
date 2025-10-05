@@ -5,6 +5,7 @@ import { getAllClasses } from '@/services/classService';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 export const useOptimizedCalledStudents = (selectedClass?: string) => {
   const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
@@ -19,7 +20,7 @@ export const useOptimizedCalledStudents = (selectedClass?: string) => {
         const classData = await getAllClasses();
         setClasses(classData);
       } catch (error) {
-        console.error('Error fetching classes:', error);
+        logger.error('Error fetching classes:', error);
       }
     };
     
@@ -38,7 +39,7 @@ export const useOptimizedCalledStudents = (selectedClass?: string) => {
       setCalledChildren(data);
       lastFetchRef.current = now;
     } catch (error) {
-      console.error("Error fetching called children:", error);
+      logger.error("Error fetching called children:", error);
       setCalledChildren([]);
     } finally {
       setLoading(false);

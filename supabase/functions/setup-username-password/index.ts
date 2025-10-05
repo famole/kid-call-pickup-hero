@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { logger } from '@/utils/logger'
 
 // Password decryption function (matches client-side encryption)
 async function generatePasswordKey(passphrase: string): Promise<CryptoKey> {
@@ -79,16 +80,16 @@ serve(async (req) => {
   try {
     const { identifier, password } = await req.json();
     
-    console.log('Setting up password for username:', identifier);
+    logger.info('Setting up password for username:', identifier);
 
     // Try to decrypt password if it appears to be encrypted (length > 50 indicates encryption)
     let actualPassword = password;
     if (password && password.length > 50) {
       try {
         actualPassword = await decryptPassword(password);
-        console.log('Password decrypted successfully for setup');
+        logger.info('Password decrypted successfully for setup');
       } catch (decryptionError) {
-        console.warn('Password decryption failed, using as-is:', decryptionError);
+        logger.warn('Password decryption failed, using as-is:', decryptionError);
         // Continue with original password if decryption fails
       }
     }
@@ -101,27 +102,27 @@ serve(async (req) => {
       .rpc('get_parent_by_identifier', { identifier });
 
     if (parentError) {
-      console.error('Error fetching parent:', parentError);
+      logger.error('Error fetching parent:', parentError);
       throw new Error('User not found');
     }
 
     if (!parentData || parentData.length === 0) {
-      console.log('No parent found for identifier:', identifier);
+      logger.info('No parent found for identifier:', identifier);
       throw new Error('User not found');
     }
 
     const parent = parentData[0];
-    console.log('Setting password for parent:', parent.email || parent.username);
+    logger.info('Setting password for parent:', parent.email || parent.username);
 
     // Check if this is an email-based user (has Supabase auth account) or username-only user
     if (parent.email) {
-      console.log('Email-based user detected, using admin API to update auth password');
+      logger.info('Email-based user detected, using admin API to update auth password');
       
       // For email-based users, find their auth user and update password via admin API
       const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
       
       if (listError) {
-        console.error('Error listing users:', listError);
+        logger.error('Error listing users:', listError);
         throw new Error('Failed to find user account');
       }
 
@@ -129,7 +130,7 @@ serve(async (req) => {
       const authUser = users.find(u => u.email?.toLowerCase() === parent.email?.toLowerCase());
       
       if (!authUser) {
-        console.log('No auth user found, creating new auth account');
+        logger.info('No auth user found, creating new auth account');
         // Create new auth user if it doesn't exist
         const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
           email: parent.email,
@@ -138,13 +139,13 @@ serve(async (req) => {
         });
         
         if (createError) {
-          console.error('Error creating auth user:', createError);
+          logger.error('Error creating auth user:', createError);
           throw new Error('Failed to create user account');
         }
         
-        console.log('New auth user created successfully');
+        logger.info('New auth user created successfully');
       } else {
-        console.log('Updating existing auth user password');
+        logger.info('Updating existing auth user password');
         // Update existing auth user's password
         const { error: updateAuthError } = await supabase.auth.admin.updateUserById(
           authUser.id,
@@ -155,11 +156,11 @@ serve(async (req) => {
         );
         
         if (updateAuthError) {
-          console.error('Error updating auth user password:', updateAuthError);
+          logger.error('Error updating auth user password:', updateAuthError);
           throw new Error('Failed to update user password');
         }
         
-        console.log('Auth user password updated successfully');
+        logger.info('Auth user password updated successfully');
       }
       
       // Update parent record to mark password as set (no need for password_hash for email users)
@@ -171,11 +172,11 @@ serve(async (req) => {
         .eq('id', parent.id);
 
       if (updateError) {
-        console.error('Error updating parent record:', updateError);
+        logger.error('Error updating parent record:', updateError);
         throw new Error('Failed to update parent record');
       }
     } else {
-      console.log('Username-only user detected, using password hash approach');
+      logger.info('Username-only user detected, using password hash approach');
       
       // For username-only users, use password hash approach
       const passwordHash = await hashPassword(actualPassword);
@@ -190,12 +191,12 @@ serve(async (req) => {
         .eq('id', parent.id);
 
       if (updateError) {
-        console.error('Error updating parent password:', updateError);
+        logger.error('Error updating parent password:', updateError);
         throw new Error('Failed to set password');
       }
     }
 
-    console.log('Password setup successful for:', parent.email || parent.username);
+    logger.info('Password setup successful for:', parent.email || parent.username);
 
     return new Response(JSON.stringify({
       success: true,
@@ -205,7 +206,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in setup-username-password function:', error);
+    logger.error('Error in setup-username-password function:', error);
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Password setup failed'
     }), {

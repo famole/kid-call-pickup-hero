@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger'
 
 interface WithdrawalRecord {
   id: string;
@@ -34,13 +35,13 @@ export const useWithdrawalHistory = () => {
       const { data: parentData, error: parentError } = await secureOperations.getParentByIdentifierSecure(user.email);
       
       if (parentError) {
-        console.error('Error getting current parent ID:', parentError);
+        logger.error('Error getting current parent ID:', parentError);
         setWithdrawalData([]);
         return;
       }
 
       if (!parentData?.id) {
-        console.log('No parent ID found for current user');
+        logger.info('No parent ID found for current user');
         setWithdrawalData([]);
         return;
       }
@@ -67,7 +68,7 @@ export const useWithdrawalHistory = () => {
         .order('completed_time', { ascending: false });
 
       if (pickupError) {
-        console.error('Error fetching pickup history:', pickupError);
+        logger.error('Error fetching pickup history:', pickupError);
       } else if (pickupHistoryData) {
         for (const record of pickupHistoryData) {
           // Check if this pickup was done by the current parent (self pickup)

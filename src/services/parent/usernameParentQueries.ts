@@ -141,7 +141,7 @@ export const getActivePickupRequestsForParentId = async (parentId: string): Prom
       .eq('parent_id', parentId)
       .in('status', ['pending', 'called']);
 
-    console.log('🔍 DEBUG - Own pickup requests query result:', {
+    logger.info('🔍 DEBUG - Own pickup requests query result:', {
       parentId,
       ownRequests: ownRequests || [],
       error: ownRequestsError?.message
@@ -199,7 +199,7 @@ export const getActivePickupRequestsForParentId = async (parentId: string): Prom
           .in('status', ['pending', 'called'])
           .neq('parent_id', parentId); // Exclude own requests
 
-        console.log('🔍 DEBUG - Authorized pickup requests query result:', {
+        logger.info('🔍 DEBUG - Authorized pickup requests query result:', {
           uniqueStudentIds,
           authRequests: authRequests || [],
           error: authError?.message
@@ -217,7 +217,7 @@ export const getActivePickupRequestsForParentId = async (parentId: string): Prom
       ...authorizedRequests
     ];
 
-    console.log('🔍 DEBUG - Combined requests:', {
+    logger.info('🔍 DEBUG - Combined requests:', {
       ownRequestsCount: ownRequests?.length || 0,
       authorizedRequestsCount: authorizedRequests.length,
       totalRequests: allRequests.length

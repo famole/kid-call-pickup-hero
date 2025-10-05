@@ -12,6 +12,7 @@ import ClassGroup from './ClassGroup';
 import { Skeleton } from '@/components/ui/skeleton';
 import CardSkeleton from '@/components/ui/skeletons/CardSkeleton';
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 const ViewerDisplay: React.FC = () => {
   const { t } = useTranslation();
@@ -49,7 +50,7 @@ const ViewerDisplay: React.FC = () => {
           table: 'pickup_requests'
         },
         async (payload) => {
-          console.log('Viewer display real-time change detected:', payload.eventType, payload);
+          logger.log('Viewer display real-time change detected:', payload.eventType, payload);
           
           // Only refetch when relevant to called students
           if (payload.eventType === 'UPDATE' && 
@@ -59,18 +60,18 @@ const ViewerDisplay: React.FC = () => {
         }
       )
       .subscribe((status) => {
-        console.log('Viewer display subscription status:', status);
+        logger.log('Viewer display subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('Viewer display successfully subscribed to changes');
+          logger.log('Viewer display successfully subscribed to changes');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Viewer display subscription failed');
+          logger.error('Viewer display subscription failed');
         }
       });
 
     subscriptionRef.current = channel;
 
     return () => {
-      console.log('Cleaning up viewer display subscription');
+      logger.log('Cleaning up viewer display subscription');
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger'
 
 export const usePasswordSetupLogic = () => {
   const [parentData, setParentData] = useState<any>(null);
@@ -15,7 +16,7 @@ export const usePasswordSetupLogic = () => {
 
   useEffect(() => {
     const initializePasswordSetup = async () => {
-      console.log('Initializing password setup, loading:', loading, 'user:', user?.email);
+      logger.info('Initializing password setup, loading:', loading, 'user:', user?.email);
       
       // Wait for auth loading to complete
       if (loading) {
@@ -42,21 +43,21 @@ export const usePasswordSetupLogic = () => {
             identifierFromUrl = parentDataResult.email || parentDataResult.username;
           }
         } catch (error) {
-          console.error('Error fetching parent by ID:', error);
+          logger.error('Error fetching parent by ID:', error);
         }
       }
       
-      console.log('Identifier from URL:', identifierFromUrl);
+      logger.info('Identifier from URL:', identifierFromUrl);
       
       // If we have an identifier from URL but no authenticated user, check for preloaded account
       if (identifierFromUrl && !user) {
-        console.log('Checking for preloaded account with identifier:', identifierFromUrl);
+        logger.info('Checking for preloaded account with identifier:', identifierFromUrl);
         try {
           // Use the database function to search by email or username
           const { data: parentDataResult, error } = await supabase
             .rpc('get_parent_by_identifier', { identifier: identifierFromUrl });
 
-          console.log('Preloaded account check result:', {
+          logger.info('Preloaded account check result:', {
             error: error?.message,
             parentData: parentDataResult?.[0],
             isPreloaded: parentDataResult?.[0]?.is_preloaded,
@@ -68,28 +69,28 @@ export const usePasswordSetupLogic = () => {
             // Allow password setup for any account that doesn't have password set
             // This handles both preloaded accounts and password reset scenarios
             if (!parent.password_set) {
-              console.log('Found account that needs password setup');
+              logger.info('Found account that needs password setup');
               setParentData(parent);
               setHasPreloadedAccount(true);
               setIsInitialized(true);
               return;
             } else if (parent.password_set) {
-              console.log('Account already has password set');
+              logger.info('Account already has password set');
               // Redirect to login since password is already set
               navigate('/login');
               return;
             }
           } else {
-            console.log('No preloaded account found or error occurred:', error?.message);
+            logger.info('No preloaded account found or error occurred:', error?.message);
           }
         } catch (error) {
-          console.error('Error checking preloaded account:', error);
+          logger.error('Error checking preloaded account:', error);
         }
       }
       
       // Handle authenticated users
       if (user?.email) {
-        console.log('User is authenticated, checking their status');
+        logger.info('User is authenticated, checking their status');
         try {
           // Get current session to check if it's OAuth
           const { data: { session } } = await supabase.auth.getSession();
@@ -103,7 +104,7 @@ export const usePasswordSetupLogic = () => {
           
           const parentDataResult = parentDataArray?.[0];
 
-          console.log('Authenticated user parent data:', {
+          logger.info('Authenticated user parent data:', {
             error: error?.message,
             parentData: parentDataResult,
             isPreloaded: parentDataResult?.is_preloaded,
@@ -111,7 +112,7 @@ export const usePasswordSetupLogic = () => {
           });
 
           if (error) {
-            console.error('Error checking parent status:', error);
+            logger.error('Error checking parent status:', error);
             setIsInitialized(true);
             return;
           }
@@ -121,27 +122,27 @@ export const usePasswordSetupLogic = () => {
           // For authenticated users, check if they need password setup
           // This handles cases where users are authenticated but still need to set their password
           if (parentDataResult && !parentDataResult.password_set && !isOAuth) {
-            console.log('Authenticated user needs password setup');
+            logger.info('Authenticated user needs password setup');
             setIsInitialized(true);
             return;
           }
 
           // If password already set, redirect to main app
           if (parentDataResult?.password_set) {
-            console.log('Password already set, redirecting to main app');
+            logger.info('Password already set, redirecting to main app');
             navigate('/');
             return;
           }
 
-          console.log('Authenticated user setup complete');
+          logger.info('Authenticated user setup complete');
           setIsInitialized(true);
         } catch (error) {
-          console.error('Error checking password setup status:', error);
+          logger.error('Error checking password setup status:', error);
           setIsInitialized(true);
         }
       } else {
         // No authenticated user and no preloaded account found
-        console.log('No authenticated user, no preloaded account');
+        logger.info('No authenticated user, no preloaded account');
         setIsInitialized(true);
       }
     };
@@ -149,7 +150,7 @@ export const usePasswordSetupLogic = () => {
     initializePasswordSetup();
   }, [loading, user, navigate]);
 
-  console.log('Current state:', {
+  logger.info('Current state:', {
     isInitialized,
     authCheckComplete,
     hasPreloadedAccount,
