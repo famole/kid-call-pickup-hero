@@ -237,7 +237,7 @@ export class SecureOperations {
       const response = await supabase.functions.invoke('secure-parents', {
         body: {
           operation: 'getParentByEmail',
-          email
+          data: { email }
         }
       });
 
@@ -300,7 +300,7 @@ export class SecureOperations {
       const response = await supabase.functions.invoke('secure-parents', {
         body: {
           operation: 'getParentsByIds',
-          parentIds: ids
+          data: { parentIds: ids }
         }
       });
 

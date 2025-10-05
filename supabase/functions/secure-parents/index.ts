@@ -408,7 +408,7 @@ serve(async (req) => {
       }
 
       case 'getParentByEmail': {
-        const { email } = data;
+        const email = data?.email;
 
         if (!email) {
           throw new Error('email is required for getParentByEmail operation');
@@ -458,7 +458,8 @@ serve(async (req) => {
       }
 
       case 'getParentsByIds': {
-        const { parentIds } = data;
+        // Handle both data.parentIds and parentIds at root level for backward compatibility
+        const parentIds = data?.parentIds;
 
         if (!parentIds || !Array.isArray(parentIds) || parentIds.length === 0) {
           throw new Error('parentIds array is required for getParentsByIds operation');
