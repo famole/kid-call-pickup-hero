@@ -200,6 +200,164 @@ export class SecureOperations {
     }
   }
 
+  // Secure operations for parents with students (optimized)
+  async getParentsWithStudentsSecure(includedRoles?: string[]) {
+    try {
+      const { data, error } = await supabase.functions.invoke('secure-parents', {
+        body: {
+          operation: 'getParentsWithStudents',
+          data: { includedRoles }
+        }
+      });
+
+      if (error) {
+        logger.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        logger.error('Server error in getParentsWithStudentsSecure:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Decrypt the data
+      const { decryptData } = await import('./encryptionService');
+      const parentsWithStudentsData = await decryptData(data.data.encrypted_data);
+
+      return { data: parentsWithStudentsData, error: null };
+    } catch (error) {
+      logger.error('Error in getParentsWithStudentsSecure:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Secure operation to get parent by email (optimized)
+  async getParentByEmailSecure(email: string) {
+    try {
+      const response = await supabase.functions.invoke('secure-parents', {
+        body: {
+          operation: 'getParentByEmail',
+          email
+        }
+      });
+
+      if (response.error) {
+        logger.error('Edge function error:', response.error);
+        throw response.error;
+      }
+
+      const data = response.data;
+      if (data && data.error) {
+        logger.error('Server error in getParentByEmailSecure:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Decrypt the data
+      const { decryptData } = await import('./encryptionService');
+      const result = await decryptData(data.data.encrypted_data);
+
+      return { data: result, error: null };
+    } catch (error) {
+      logger.error('Error in getParentByEmailSecure:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Secure operation to get parent by identifier (ID, email, or username)
+  async getParentByIdentifierSecure(identifier: string) {
+    try {
+      const { data, error } = await supabase.functions.invoke('secure-parents', {
+        body: { 
+          operation: 'getParentByIdentifier',
+          data: { identifier }
+        }
+      });
+
+      if (error) {
+        logger.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        logger.error('Server error in getParentByIdentifierSecure:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Decrypt the data
+      const { decryptData } = await import('./encryptionService');
+      const parentData = await decryptData(data.data.encrypted_data);
+
+      return { data: parentData, error: null };
+    } catch (error) {
+      logger.error('Error in getParentByIdentifierSecure:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Secure operation to get parents by IDs (optimized)
+  async getParentsByIdsSecure(ids: string[]) {
+    try {
+      const response = await supabase.functions.invoke('secure-parents', {
+        body: {
+          operation: 'getParentsByIds',
+          parentIds: ids
+        }
+      });
+
+      if (response.error) {
+        logger.error('Edge function error:', response.error);
+        throw response.error;
+      }
+
+      const data = response.data;
+      if (data && data.error) {
+        logger.error('Server error in getParentsByIdsSecure:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Decrypt the data
+      const { decryptData } = await import('./encryptionService');
+      const result = await decryptData(data.data.encrypted_data);
+
+      return { data: result, error: null };
+    } catch (error) {
+      logger.error('Error in getParentsByIdsSecure:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Secure operation to get parents who share students with current parent
+  async getParentsWhoShareStudentsSecure(currentParentId: string) {
+    try {
+      const response = await supabase.functions.invoke('secure-parents', {
+        body: {
+          operation: 'getParentsWhoShareStudents',
+          data: { currentParentId }
+        }
+      });
+
+      if (response.error) {
+        logger.error('Edge function error:', response.error);
+        throw response.error;
+      }
+
+      const data = response.data;
+      if (data && data.error) {
+        logger.error('Server error in getParentsWhoShareStudentsSecure:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Decrypt the data
+      const { decryptData } = await import('./encryptionService');
+      const result = await decryptData(data.data.encrypted_data);
+
+      return { data: result, error: null };
+    } catch (error) {
+      logger.error('Error in getParentsWhoShareStudentsSecure:', error);
+      return { data: null, error };
+    }
+  }
+
   // Get the regular supabase client for non-sensitive operations
   get client() {
     return supabase;

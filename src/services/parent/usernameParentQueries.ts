@@ -226,10 +226,9 @@ export const getActivePickupRequestsForParentId = async (parentId: string): Prom
     // Get parent information for each request
     const requestsWithParents = await Promise.all(
       allRequests.map(async (req) => {
-        // Use secure operations to get parent data
+        // Use optimized operation to get parent data
         const { secureOperations } = await import('@/services/encryption');
-        const { data: allParentsData } = await secureOperations.getParentsSecure(false);
-        const parentData = allParentsData?.find(p => p.id === req.parent_id);
+        const { data: parentData } = await secureOperations.getParentByEmailSecure(`${req.parent_id}@placeholder.com`);
 
         return {
           id: req.id,

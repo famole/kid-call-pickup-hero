@@ -7,12 +7,13 @@ import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffe
 import { logger } from '@/utils/logger';
 import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
-export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false): Promise<ParentWithStudents[]> => {
+export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false, includedRoles?: string[]): Promise<ParentWithStudents[]> => {
   try {
     logger.log('Fetching optimized parents with students data...');
+    logger.log('includedRoles filter:', includedRoles);
     
-    // Use secure operations for parent data
-    const { data: parentsData, error: parentsError } = await secureOperations.getParentsSecure(includeDeleted);
+    // Use secure operations for parent data - USE OPTIMIZED VERSION WITH ROLE FILTERING
+    const { data: parentsData, error: parentsError } = await secureOperations.getParentsWithStudentsSecure(includedRoles);
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);
@@ -246,23 +247,12 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
   try {
     logger.log('Fetching parent dashboard data for parent identifier:', parentIdentifier);
 
-    // Get parent data using secure operations
-    const { data: parentsData, error: parentError } = await secureOperations.getParentsSecure(false);
+    // Get parent data using targeted query instead of fetching all parents
+    const { data: parentData, error: parentError } = await secureOperations.getParentByIdentifierSecure(parentIdentifier);
     
     if (parentError) {
       logger.error('Error fetching parent:', parentError);
       throw new Error(parentError.message);
-    }
-
-    // Find parent by ID (UUID), email, or username
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parentIdentifier);
-    let parentData;
-    
-    if (isUUID) {
-      parentData = parentsData?.find(p => p.id === parentIdentifier);
-    } else {
-      // Check if it's an email or username
-      parentData = parentsData?.find(p => p.email === parentIdentifier || p.username === parentIdentifier);
     }
     
     if (!parentData) {

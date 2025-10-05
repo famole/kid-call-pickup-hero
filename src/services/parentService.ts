@@ -17,10 +17,9 @@ export {
 } from './parent/studentParentRelations';
 
 // Use the new optimized version by default
-export { 
-  getParentsWithStudentsOptimized as getParentsWithStudents,
-  getParentDashboardDataOptimized 
-} from './parent/optimizedParentQueries';
+export {
+  getParentsWithStudents
+} from './parent/studentParentRelations';
 
 // Keep the original for backward compatibility if needed
 export { getParentsWithStudents as getParentsWithStudentsLegacy } from './parent/studentParentRelations';

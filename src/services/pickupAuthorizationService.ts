@@ -108,73 +108,17 @@ export const getParentsWhoShareStudents = async (): Promise<{
   if (!currentParentId) {
     throw new Error('Unable to authenticate parent');
   }
-  
-  // Get all students associated with the current parent
-  const { data: currentParentStudents, error: studentsError } = await supabase
-    .from('student_parents')
-    .select('student_id')
-    .eq('parent_id', currentParentId);
 
-  if (studentsError) {
-    console.error('Error fetching current parent students:', studentsError);
-    throw new Error(studentsError.message);
-  }
-
-  if (!currentParentStudents || currentParentStudents.length === 0) {
-    return { parents: [], sharedStudents: {} };
-  }
-
-  const studentIds = currentParentStudents.map(sp => sp.student_id);
-
-  // Get all other parents who are associated with these students
-  const { data: sharedParentRelations, error: sharedError } = await supabase
-    .from('student_parents')
-    .select(`
-      parent_id,
-      student_id
-    `)
-    .in('student_id', studentIds)
-    .neq('parent_id', currentParentId);
-
-  if (sharedError) {
-    console.error('Error fetching shared parents:', sharedError);
-    throw new Error(sharedError.message);
-  }
-
-  // Get parent data using secure operations
+  // Use the new optimized backend operation
   const { secureOperations } = await import('@/services/encryption');
-  const { data: allParents, error: parentsSecureError } = await secureOperations.getParentsSecure(false);
-  
-  if (parentsSecureError) {
-    console.error('Error fetching parents:', parentsSecureError);
-    throw new Error(parentsSecureError.message);
+  const { data, error } = await secureOperations.getParentsWhoShareStudentsSecure(currentParentId);
+
+  if (error) {
+    console.error('Error fetching parents who share students:', error);
+    throw new Error(error.message || 'Failed to fetch parents who share students');
   }
 
-  // Group by parent and track shared students
-  const parentMap = new Map();
-  const sharedStudents: Record<string, string[]> = {};
-
-  for (const relation of sharedParentRelations) {
-    const parentId = relation.parent_id;
-    const parentData = allParents?.find(p => p.id === parentId);
-    
-    // Skip if parent data is null (due to RLS restrictions or not found)
-    if (!parentData || !parentData.id) {
-      continue;
-    }
-    
-    if (!parentMap.has(parentId)) {
-      parentMap.set(parentId, { id: parentData.id, name: parentData.name, email: parentData.email });
-      sharedStudents[parentId] = [];
-    }
-    
-    sharedStudents[parentId].push(relation.student_id);
-  }
-
-  return {
-    parents: Array.from(parentMap.values()),
-    sharedStudents
-  };
+  return data || { parents: [], sharedStudents: {} };
 };
 
 // Get pickup authorizations for a specific student with parent details
