@@ -512,15 +512,15 @@ serve(async (req) => {
 
         const studentIds = currentParentStudents?.map((sp: any) => sp.student_id) || [];
 
-        // Since data is encrypted, we need to fetch a broader set and filter after decryption
-        // Fetch all parents to ensure we find matches
+        // Optimize: Fetch fewer parents for faster search
+        // We'll process in batches if needed
         const { data: candidateParents, error: parentsError } = await supabase
           .from('parents')
           .select('id, name, email, username, role, phone')
           .neq('id', currentParentId)
           .is('deleted_at', null)
           .order('name')
-          .limit(500); // Increased limit to search more parents
+          .limit(150); // Reduced from 500 for better performance
 
         if (parentsError) {
           console.error('Error fetching parents:', parentsError);
@@ -531,8 +531,12 @@ serve(async (req) => {
         const decryptedParents: any[] = [];
         const matchedParentIds: string[] = [];
         const lowerSearchTerm = searchTerm.trim().toLowerCase();
+        const startTime = Date.now();
 
         for (const parent of (candidateParents || [])) {
+          // Early exit if we have enough results
+          if (decryptedParents.length >= 20) break;
+          
           try {
             let decryptedName = '';
             let decryptedEmail = '';
@@ -544,27 +548,18 @@ serve(async (req) => {
               decryptedName = await decryptData(parent.name);
             } catch (e) {
               decryptedName = parent.name || '';
-              console.log(`Using raw name for parent ${parent.id}`);
             }
             
             try {
               decryptedEmail = await decryptData(parent.email);
             } catch (e) {
               decryptedEmail = parent.email || '';
-              console.log(`Using raw email for parent ${parent.id}`);
             }
             
             try {
               decryptedUsername = parent.username ? await decryptData(parent.username) : '';
             } catch (e) {
               decryptedUsername = parent.username || '';
-              console.log(`Using raw username for parent ${parent.id}`);
-            }
-            
-            try {
-              decryptedPhone = parent.phone ? await decryptData(parent.phone) : '';
-            } catch (e) {
-              decryptedPhone = parent.phone || '';
             }
             
             // Check if any field matches the search term
@@ -573,6 +568,13 @@ serve(async (req) => {
             const usernameMatch = decryptedUsername && decryptedUsername.toLowerCase().includes(lowerSearchTerm);
             
             if (nameMatch || emailMatch || usernameMatch) {
+              // Only decrypt phone if we've already matched (optimization)
+              try {
+                decryptedPhone = parent.phone ? await decryptData(parent.phone) : '';
+              } catch (e) {
+                decryptedPhone = parent.phone || '';
+              }
+              
               decryptedParents.push({
                 id: parent.id,
                 name: decryptedName,
@@ -582,15 +584,14 @@ serve(async (req) => {
                 role: parent.role,
               });
               matchedParentIds.push(parent.id);
-              
-              // Limit results to 20
-              if (decryptedParents.length >= 20) break;
             }
           } catch (decryptError) {
             console.error(`Error processing parent ${parent.id}:`, decryptError);
             // Continue to next parent instead of failing completely
           }
         }
+
+        const searchTime = Date.now() - startTime;
 
         // Fetch shared students for the matched parents
         const sharedStudents: Record<string, string[]> = {};
@@ -618,7 +619,7 @@ serve(async (req) => {
           sharedStudentIds: sharedStudents[parent.id] || [],
         }));
 
-        console.log(`Searched ${candidateParents?.length || 0} parents, found ${results.length} matches for term: "${searchTerm}"`);
+        console.log(`Search completed in ${searchTime}ms: searched ${candidateParents?.length || 0} parents, found ${results.length} matches for term: "${searchTerm}"`);
 
         // Return encrypted data to client
         const encryptedResults = await encryptObject(results);

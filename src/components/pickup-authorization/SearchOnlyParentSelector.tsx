@@ -49,7 +49,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
   const selectedParent = parents.find(p => p.id === value);
 
   const performSearch = useCallback(async (term: string) => {
-    if (term.trim().length < 3) {
+    if (term.trim().length < 2) {
       setFilteredParents([]);
       setIsSearching(false);
       return;
@@ -93,7 +93,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
       return;
     }
 
-    if (searchTerm.trim().length < 3) {
+    if (searchTerm.trim().length < 2) {
       setFilteredParents([]);
       setIsSearching(false);
       return;
@@ -196,10 +196,10 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
             <Input
               ref={inputRef}
               type="text"
-              placeholder={placeholder || t('pickupAuthorizations.searchForParent') + ' (name, email, or username)'}
+              placeholder={placeholder || t('pickupAuthorizations.searchForParent') + ' (min 2 characters)'}
               value={searchTerm}
               onChange={handleInputChange}
-              onFocus={() => searchTerm.length >= 3 && setIsOpen(true)}
+              onFocus={() => searchTerm.length >= 2 && setIsOpen(true)}
               className="pl-10"
             />
             {isSearching && (
@@ -207,9 +207,9 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
             )}
           </div>
 
-          {searchTerm.length > 0 && searchTerm.length < 3 && (
+          {searchTerm.length > 0 && searchTerm.length < 2 && (
             <p className="text-xs text-gray-500 mt-1">
-              {t('pickupAuthorizations.typeMoreCharacters', { remaining: 3 - searchTerm.length })}
+              {t('pickupAuthorizations.typeMoreCharacters', { remaining: 2 - searchTerm.length })}
             </p>
           )}
 
@@ -236,7 +236,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
             </div>
           )}
 
-          {isOpen && searchTerm.length >= 3 && !isSearching && filteredParents.length === 0 && (
+          {isOpen && searchTerm.length >= 2 && !isSearching && filteredParents.length === 0 && (
             <div
               ref={dropdownRef}
               className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg"
