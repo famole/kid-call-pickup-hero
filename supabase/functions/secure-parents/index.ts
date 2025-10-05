@@ -58,19 +58,28 @@ async function encryptData(data: string): Promise<string> {
     combined.set(iv);
     combined.set(new Uint8Array(encryptedData), iv.length);
 
-    return btoa(String.fromCharCode(...combined));
+    // Convert to base64 without spreading large arrays (avoids stack overflow)
+    let binary = '';
+    const len = combined.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(combined[i]);
+    }
+    return btoa(binary);
   } catch (error) {
     console.error('Encryption failed:', error);
-    return data; // Return original data if encryption fails
+    throw error;
   }
 }
 
 async function decryptData(encryptedData: string): Promise<string> {
   try {
     const key = await getEncryptionKey();
-    const combined = new Uint8Array(
-      atob(encryptedData).split('').map(char => char.charCodeAt(0))
-    );
+    const binaryString = atob(encryptedData);
+    const len = binaryString.length;
+    const combined = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      combined[i] = binaryString.charCodeAt(i);
+    }
     
     const iv = combined.slice(0, 12);
     const data = combined.slice(12);
@@ -84,7 +93,7 @@ async function decryptData(encryptedData: string): Promise<string> {
     return new TextDecoder().decode(decryptedData);
   } catch (error) {
     console.error('Decryption failed:', error);
-    return encryptedData; // Return original if decryption fails
+    throw error;
   }
 }
 
@@ -94,7 +103,7 @@ async function encryptObject(obj: Record<string, unknown>): Promise<string> {
     return await encryptData(jsonString);
   } catch (error) {
     console.error('Object encryption failed:', error);
-    return JSON.stringify(obj); // Return original if encryption fails
+    throw error;
   }
 }
 
@@ -104,11 +113,7 @@ async function decryptObject(encryptedString: string): Promise<Record<string, un
     return JSON.parse(decryptedString);
   } catch (error) {
     console.error('Object decryption failed:', error);
-    try {
-      return JSON.parse(encryptedString); // Try parsing original if decryption fails
-    } catch {
-      return encryptedString; // Return string if JSON parsing fails
-    }
+    throw error;
   }
 }
 
