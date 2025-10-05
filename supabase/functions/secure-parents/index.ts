@@ -471,7 +471,7 @@ serve(async (req) => {
         console.log(`Searching parents with term: ${searchTerm} for parent: ${currentParentId}`);
 
         // Get all students associated with the current parent
-        const { data: currentParentStudents, error: studentsError } = await supabaseClient
+        const { data: currentParentStudents, error: studentsError } = await supabase
           .from('student_parents')
           .select('student_id')
           .eq('parent_id', currentParentId);
@@ -484,7 +484,7 @@ serve(async (req) => {
         const studentIds = currentParentStudents?.map((sp: any) => sp.student_id) || [];
 
         // Get ALL parents in the school (excluding current parent)
-        const { data: allParents, error: parentsError } = await supabaseClient
+        const { data: allParents, error: parentsError } = await supabase
           .from('parents')
           .select('id, name, email, role, phone')
           .neq('id', currentParentId)
@@ -498,7 +498,7 @@ serve(async (req) => {
         // Get shared student relationships for display purposes
         const sharedStudents: Record<string, string[]> = {};
         if (studentIds.length > 0) {
-          const { data: sharedParentRelations, error: sharedError } = await supabaseClient
+          const { data: sharedParentRelations, error: sharedError } = await supabase
             .from('student_parents')
             .select('parent_id, student_id')
             .in('student_id', studentIds)
