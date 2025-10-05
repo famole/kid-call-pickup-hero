@@ -517,6 +517,7 @@
     "sharedOnly": "Shared Only",
     "showAll": "Show All",
     "shares": "Shares",
+    "typeMoreCharacters": "Type at least {{remaining}} more character(s) to search",
     "searchingAmong": "Searching among {{count}} parent(s) who share children with you",
     "children": "Children",
     "moreChildren": "+{{count}} more",

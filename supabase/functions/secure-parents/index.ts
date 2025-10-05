@@ -457,6 +457,110 @@ serve(async (req) => {
         });
       }
 
+      case 'searchParents': {
+        const { searchTerm, currentParentId } = data;
+
+        if (!searchTerm || typeof searchTerm !== 'string' || searchTerm.trim().length < 3) {
+          throw new Error('searchTerm must be at least 3 characters for searchParents operation');
+        }
+
+        if (!currentParentId) {
+          throw new Error('currentParentId is required for searchParents operation');
+        }
+
+        console.log(`Searching parents with term: ${searchTerm} for parent: ${currentParentId}`);
+
+        // Get all students associated with the current parent
+        const { data: currentParentStudents, error: studentsError } = await supabaseClient
+          .from('student_parents')
+          .select('student_id')
+          .eq('parent_id', currentParentId);
+
+        if (studentsError) {
+          console.error('Error fetching current parent students:', studentsError);
+          throw new Error(`Failed to fetch students: ${studentsError.message}`);
+        }
+
+        const studentIds = currentParentStudents?.map((sp: any) => sp.student_id) || [];
+
+        // Get ALL parents in the school (excluding current parent)
+        const { data: allParents, error: parentsError } = await supabaseClient
+          .from('parents')
+          .select('id, name, email, role, phone')
+          .neq('id', currentParentId)
+          .is('deleted_at', null);
+
+        if (parentsError) {
+          console.error('Error fetching all parents:', parentsError);
+          throw new Error(`Failed to fetch parents: ${parentsError.message}`);
+        }
+
+        // Get shared student relationships for display purposes
+        const sharedStudents: Record<string, string[]> = {};
+        if (studentIds.length > 0) {
+          const { data: sharedParentRelations, error: sharedError } = await supabaseClient
+            .from('student_parents')
+            .select('parent_id, student_id')
+            .in('student_id', studentIds)
+            .neq('parent_id', currentParentId);
+
+          if (!sharedError && sharedParentRelations) {
+            for (const relation of sharedParentRelations) {
+              const parentId = relation.parent_id;
+              if (!sharedStudents[parentId]) {
+                sharedStudents[parentId] = [];
+              }
+              sharedStudents[parentId].push(relation.student_id);
+            }
+          }
+        }
+
+        // Filter parents by search term BEFORE decryption (more efficient)
+        // Note: This is a trade-off - we decrypt all parents but only return matching ones
+        const decryptedParents = await Promise.all(
+          (allParents || []).map(async (parent: any) => {
+            try {
+              const decryptedName = await decryptData(parent.name);
+              const decryptedEmail = await decryptData(parent.email);
+              const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
+
+              return {
+                id: parent.id,
+                name: decryptedName,
+                email: decryptedEmail,
+                phone: decryptedPhone,
+                role: parent.role,
+                sharedStudentIds: sharedStudents[parent.id] || [],
+              };
+            } catch (decryptError) {
+              console.error(`Error decrypting parent ${parent.id}:`, decryptError);
+              return null;
+            }
+          })
+        );
+
+        // Filter by search term (case-insensitive) after decryption
+        const searchLower = searchTerm.toLowerCase().trim();
+        const filteredParents = decryptedParents
+          .filter((parent): parent is NonNullable<typeof parent> => parent !== null)
+          .filter(parent => {
+            const nameMatch = parent.name?.toLowerCase().includes(searchLower);
+            const emailMatch = parent.email?.toLowerCase().includes(searchLower);
+            return nameMatch || emailMatch;
+          })
+          .slice(0, 20); // Limit to 20 results
+
+        console.log(`Found ${filteredParents.length} matching parents`);
+
+        return new Response(
+          JSON.stringify({
+            data: filteredParents,
+            error: null
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+
       case 'getParentsByIds': {
         // Handle both data.parentIds and parentIds at root level for backward compatibility
         const parentIds = data?.parentIds;

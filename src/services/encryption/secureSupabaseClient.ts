@@ -358,6 +358,42 @@ export class SecureOperations {
     }
   }
 
+  // Secure operation to search parents by search term
+  async searchParentsSecure(searchTerm: string, currentParentId: string): Promise<any[]> {
+    if (!searchTerm || searchTerm.trim().length < 3) {
+      logger.info('searchParentsSecure: Search term too short');
+      return [];
+    }
+
+    if (!currentParentId) {
+      logger.error('searchParentsSecure: No current parent ID provided');
+      return [];
+    }
+
+    try {
+      const response = await supabase.functions.invoke('secure-parents', {
+        body: {
+          operation: 'searchParents',
+          data: { searchTerm, currentParentId }
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to search parents');
+      }
+
+      if (!response.data || !response.data.data) {
+        logger.error('searchParentsSecure: Invalid response format', response);
+        return [];
+      }
+
+      return response.data.data;
+    } catch (error) {
+      logger.error('searchParentsSecure: Error searching parents:', error);
+      throw error;
+    }
+  }
+
   // Get the regular supabase client for non-sensitive operations
   get client() {
     return supabase;

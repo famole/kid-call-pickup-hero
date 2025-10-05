@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search, Users } from 'lucide-react';
+import { Search, Users, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from '@/hooks/useTranslation';
-import { matchesSearch } from '@/utils/textUtils';
+import { secureOperations } from '@/services/encryption/secureSupabaseClient';
+import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
+import { logger } from '@/utils/logger';
 
 interface Parent {
   id: string;
@@ -37,24 +39,76 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filteredParents, setFilteredParents] = useState<Parent[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get selected parent name
   const selectedParent = parents.find(p => p.id === value);
 
-  useEffect(() => {
-    if (!searchTerm.trim()) {
+  const performSearch = useCallback(async (term: string) => {
+    if (term.trim().length < 3) {
       setFilteredParents([]);
+      setIsSearching(false);
       return;
     }
 
-    const filtered = parents.filter(parent =>
-      matchesSearch(parent.name, searchTerm) || matchesSearch(parent.email, searchTerm)
-    );
+    setIsSearching(true);
+    try {
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        logger.error('No current parent ID found');
+        setFilteredParents([]);
+        return;
+      }
 
-    setFilteredParents(filtered.slice(0, 10)); // Limit to 10 results
-  }, [searchTerm, parents]);
+      const results = await secureOperations.searchParentsSecure(term, currentParentId);
+      
+      // Filter by showOnlySharedParents if needed
+      const finalResults = showOnlySharedParents
+        ? results.filter(parent => 
+            parentsWhoShareStudents.some(sharedParent => sharedParent.id === parent.id)
+          )
+        : results;
+      
+      setFilteredParents(finalResults);
+    } catch (error) {
+      logger.error('Error searching parents:', error);
+      setFilteredParents([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [showOnlySharedParents, parentsWhoShareStudents]);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!searchTerm.trim()) {
+      setFilteredParents([]);
+      setIsSearching(false);
+      return;
+    }
+
+    if (searchTerm.trim().length < 3) {
+      setFilteredParents([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // Debounce search by 300ms
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(searchTerm);
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, performSearch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -139,10 +193,19 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
               placeholder={placeholder || t('pickupAuthorizations.searchForParent')}
               value={searchTerm}
               onChange={handleInputChange}
-              onFocus={() => searchTerm.length > 0 && setIsOpen(true)}
+              onFocus={() => searchTerm.length >= 3 && setIsOpen(true)}
               className="pl-10"
             />
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
+            )}
           </div>
+
+          {searchTerm.length > 0 && searchTerm.length < 3 && (
+            <p className="text-xs text-gray-500 mt-1">
+              {t('pickupAuthorizations.typeMoreCharacters', { remaining: 3 - searchTerm.length })}
+            </p>
+          )}
 
           {isOpen && filteredParents.length > 0 && (
             <div
@@ -167,7 +230,7 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
             </div>
           )}
 
-          {isOpen && searchTerm.length > 0 && filteredParents.length === 0 && (
+          {isOpen && searchTerm.length >= 3 && !isSearching && filteredParents.length === 0 && (
             <div
               ref={dropdownRef}
               className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg"

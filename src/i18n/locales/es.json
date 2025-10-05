@@ -520,6 +520,7 @@
     "sharedOnly": "Solo Compartidos",
     "showAll": "Mostrar Todo",
     "shares": "Comparte",
+    "typeMoreCharacters": "Escribe al menos {{remaining}} caracteres más para buscar",
     "searchingAmong": "Buscando entre {{count}} padre(s) que comparten hijos contigo",
     "children": "Hijos",
     "moreChildren": "+{{count}} más",
