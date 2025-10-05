@@ -23,6 +23,15 @@ interface AdminParentsContainerProps {
   statusFilter?: 'active' | 'deleted' | 'all';
   onStatusFilterChange?: (filter: 'active' | 'deleted' | 'all') => void;
   onAuthStatusRefresh?: () => void;
+  // Server-side pagination and search
+  searchTerm?: string;
+  onSearchChange?: (search: string) => void;
+  onSearchSubmit?: () => void;
+  currentPage?: number;
+  pageSize?: number;
+  totalCount?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
@@ -44,6 +53,14 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
   statusFilter,
   onStatusFilterChange,
   onAuthStatusRefresh,
+  searchTerm,
+  onSearchChange,
+  onSearchSubmit,
+  currentPage,
+  pageSize,
+  totalCount,
+  onPageChange,
+  onPageSizeChange,
 }) => {
   return (
     <AdminParentsLayout
@@ -65,6 +82,14 @@ const AdminParentsContainer: React.FC<AdminParentsContainerProps> = ({
       statusFilter={statusFilter}
       onStatusFilterChange={onStatusFilterChange}
       onAuthStatusRefresh={onAuthStatusRefresh}
+      searchTerm={searchTerm}
+      onSearchChange={onSearchChange}
+      onSearchSubmit={onSearchSubmit}
+      currentPage={currentPage}
+      pageSize={pageSize}
+      totalCount={totalCount}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
     />
   );
 };

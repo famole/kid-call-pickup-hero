@@ -245,7 +245,11 @@ serve(async (req) => {
       }
 
       case 'getParentsWithStudents': {
-        const { includedRoles, includeDeleted } = data || {};
+        const { includedRoles, includeDeleted, page = 1, pageSize = 50, searchTerm } = data || {};
+        
+        // Calculate offset for pagination
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
         
         // Optimized query that joins parents with their students in one request
         // Using left joins (no !inner) so parents without students are still returned
@@ -277,7 +281,7 @@ serve(async (req) => {
                 )
               )
             )
-          `);
+          `, { count: 'exact' });
         
         // Apply deleted filter unless we want to include deleted
         if (!includeDeleted) {
@@ -289,7 +293,17 @@ serve(async (req) => {
           query = query.in('role', includedRoles);
         }
         
-        const { data: parentsWithStudentsData, error } = await query.order('name');
+        // Apply search filter if provided (minimum 3 characters)
+        if (searchTerm && searchTerm.trim().length >= 3) {
+          const search = searchTerm.trim().toLowerCase();
+          // Search across name, email, and username
+          query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,username.ilike.%${search}%`);
+        }
+        
+        // Apply pagination and ordering
+        query = query.order('name').range(from, to);
+        
+        const { data: parentsWithStudentsData, error, count } = await query;
 
         if (error) {
           console.error('Error fetching parents with students:', error);
@@ -319,8 +333,13 @@ serve(async (req) => {
           }))
         }));
 
-        // Return encrypted data to client
-        const encryptedParentsWithStudentsData = await encryptObject(transformedParents);
+        // Return encrypted data to client with pagination metadata
+        const encryptedParentsWithStudentsData = await encryptObject({
+          parents: transformedParents,
+          totalCount: count || 0,
+          page,
+          pageSize
+        });
         return new Response(JSON.stringify({ data: { encrypted_data: encryptedParentsWithStudentsData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

@@ -7,20 +7,40 @@ import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffe
 import { logger } from '@/utils/logger';
 import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
-export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false, includedRoles?: string[]): Promise<ParentWithStudents[]> => {
+export const getParentsWithStudentsOptimized = async (
+  includeDeleted: boolean = false, 
+  includedRoles?: string[],
+  page: number = 1,
+  pageSize: number = 50,
+  searchTerm?: string
+): Promise<{ parents: ParentWithStudents[]; totalCount: number; page: number; pageSize: number }> => {
   try {
     logger.log('Fetching optimized parents with students data...');
     logger.log('includedRoles filter:', includedRoles);
+    logger.log('page:', page, 'pageSize:', pageSize, 'searchTerm:', searchTerm);
     
-    // Use secure operations for parent data - USE OPTIMIZED VERSION WITH ROLE FILTERING
-    const { data: parentsData, error: parentsError } = await secureOperations.getParentsWithStudentsSecure(includedRoles, includeDeleted);
+    // Use secure operations for parent data - USE OPTIMIZED VERSION WITH ROLE FILTERING, PAGINATION, AND SEARCH
+    const { data: result, error: parentsError } = await secureOperations.getParentsWithStudentsSecure(
+      includedRoles, 
+      includeDeleted,
+      page,
+      pageSize,
+      searchTerm
+    );
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);
       throw new Error(parentsError.message);
     }
 
-    logger.log(`Fetched ${parentsData?.length || 0} parents from database`);
+    if (!result || !result.parents) {
+      logger.warn('No parents data returned');
+      return { parents: [], totalCount: 0, page, pageSize };
+    }
+
+    const parentsData = result.parents;
+
+    logger.log(`Fetched ${parentsData?.length || 0} parents from database (page ${result.page} of total ${result.totalCount})`);
     logger.log(`Include deleted was: ${includeDeleted}`);
     logger.log(`Parents with deleted_at:`, parentsData?.filter(p => p.deletedAt).length || 0);
     
@@ -32,211 +52,12 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
     }, {} as Record<string, number>);
     logger.log('Role distribution:', roleDistribution);
 
-    const { data: studentParentData, error: studentParentError } = await supabase
-      .from('student_parents')
-      .select(`
-        id,
-        parent_id,
-        student_id,
-        is_primary,
-        relationship
-      `);
-
-    if (studentParentError) {
-      logger.error('Error fetching student-parent relationships:', studentParentError);
-      throw new Error(studentParentError.message);
-    }
-
-    logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
-
-    // Get students data using secure operations
-    const { data: studentsData, error: studentsError } = await secureOperations.getStudentsSecure();
-
-    if (studentsError) {
-      logger.error('Error fetching students:', studentsError);
-      throw new Error(studentsError.message);
-    }
-
-    // Get classes data using secure operations
-    const classesData = await secureClassOperations.getAll();
-    logger.log(`Fetched ${classesData?.length || 0} classes using secure operations`);
-
-    if (studentParentError) {
-      logger.error('Error fetching student-parent relationships:', studentParentError);
-      throw new Error(studentParentError.message);
-    }
-
-    logger.log(`Fetched ${studentParentData?.length || 0} student-parent relationships`);
-
-    // Get pickup authorizations for family members using secure endpoint
-    let authorizationData: Array<{
-      id: string;
-      authorizing_parent_id: string;
-      authorized_parent_id: string;
-      student_id: string;
-      student_ids?: string[];
-      is_active: boolean;
-      start_date: string;
-      end_date: string;
-      allowed_days_of_week: number[];
-      created_at: string;
-      updated_at: string;
-      students: {
-        id: string;
-        name: string;
-        class_id: string;
-        avatar: string | null;
-        classes: {
-          id: string;
-          name: string;
-          grade: string;
-        } | null;
-      };
-    }> = [];
-    
-    try {
-      // Get the current parent ID using cached helper
-      const currentParentId = await getCurrentParentIdCached();
-      if (!currentParentId) {
-        logger.warn('Cached helper returned null current parent ID');
-        return [];
-      }
-      
-      const { data: authData, error: authError } = await supabase.functions.invoke('secure-pickup-authorizations', {
-        body: {
-          operation: 'getPickupAuthorizationsForParent',
-          parentId: currentParentId
-        }
-      });
-      
-      if (authError) {
-        logger.warn('Error loading pickup authorizations:', authError);
-      } else if (authData?.data?.encrypted_data) {
-        // Import the decryption function from encryption service
-        const { decryptData } = await import('@/services/encryption/encryptionService');
-        // Decrypt the response data
-        const decryptedData = await decryptData(authData.data.encrypted_data);
-        if (decryptedData) {
-          authorizationData = JSON.parse(decryptedData);
-        }
-      }
-    } catch (error) {
-      logger.warn('Error in secure pickup authorizations call:', error);
-    }
-
-    // Define the student type
-    type StudentWithClass = {
-      id: string;
-      name: string;
-      classId: string | null;
-      className: string;
-      grade: string;
-      isPrimary: boolean;
-      avatar: string | null;
-      parentRelationshipId: string;
-      relationship: string | null;
+    return {
+      parents: parentsData || [],
+      totalCount: result.totalCount || 0,
+      page: result.page || page,
+      pageSize: result.pageSize || pageSize
     };
-
-    // Group students by parent ID
-    const studentsByParent = studentParentData?.reduce<Record<string, StudentWithClass[]>>((acc, relation) => {
-      if (!acc[relation.parent_id]) {
-        acc[relation.parent_id] = [];
-      }
-      
-      // Find student and class data
-      const student = studentsData?.find(s => s.id === relation.student_id);
-      const studentClass = classesData?.find(c => c.id === student?.class_id);
-      
-      if (student) {
-        const studentWithClass: StudentWithClass = {
-          id: student.id,
-          name: student.name,
-          classId: student.class_id || null,
-          className: studentClass?.name || 'No Class',
-          grade: studentClass?.grade || 'No Grade',
-          isPrimary: Boolean(relation.is_primary),
-          avatar: student.avatar || null,
-          parentRelationshipId: relation.id,
-          relationship: relation.relationship || null,
-        };
-        acc[relation.parent_id].push(studentWithClass);
-      }
-      return acc;
-    }, {} as Record<string, StudentWithClass[]>) || {};
-
-    // Add authorized students for family members
-    if (authorizationData) {
-      type AuthorizationData = {
-        authorized_parent_id: string;
-        student_id: string;
-        student_ids?: string[];
-        is_active: boolean;
-        start_date: string;
-        end_date: string;
-        allowed_days_of_week: number[];
-        students: {
-          id: string;
-          name: string;
-          class_id: string;
-          avatar: string | null;
-          classes: {
-            id: string;
-            name: string;
-            grade: string;
-          } | null;
-        };
-      };
-
-      authorizationData.forEach((auth: AuthorizationData) => {
-        const parentId = auth.authorized_parent_id;
-        
-        // Initialize array if doesn't exist
-        if (!studentsByParent[parentId]) {
-          studentsByParent[parentId] = [];
-        }
-
-        const student = auth.students;
-        // Check if student is not already in the list (avoid duplicates from direct assignments)
-        const existingStudent = studentsByParent[parentId].find((s: StudentWithClass) => s.id === student.id);
-      
-      if (!existingStudent && student) {
-        const authorizedStudent: StudentWithClass = {
-          id: student.id,
-          name: student.name,
-          classId: student.class_id,
-          className: student.classes?.name || 'No Class',
-          grade: student.classes?.grade || 'No Grade',
-          isPrimary: false, // Authorized students are not primary
-          avatar: student.avatar || null,
-          parentRelationshipId: '', // No direct relationship ID for authorized students
-          relationship: 'authorized',
-        };
-        studentsByParent[parentId].push(authorizedStudent);
-      }
-    });
-  }
-
-    // Combine parents with their students - convert dates properly
-    const parentsWithStudents: ParentWithStudents[] = parentsData?.map(parent => ({
-      id: parent.id,
-      name: parent.name,
-      email: parent.email,
-      username: parent.username,
-      phone: parent.phone || '',
-      role: parent.role || 'parent',
-      students: studentsByParent[parent.id] || [],
-      createdAt: new Date(parent.created_at),
-      updatedAt: new Date(parent.updated_at),
-      deletedAt: parent.deleted_at ? new Date(parent.deleted_at) : undefined,
-    })) || [];
-
-    logger.log(`Returning ${parentsWithStudents.length} parents with students data`);
-    
-    // Log teachers specifically for debugging
-    const teachers = parentsWithStudents.filter(p => p.role === 'teacher');
-    logger.log(`Found ${teachers.length} teachers:`, teachers.map(t => ({ name: t.name, role: t.role })));
-
-    return parentsWithStudents;
   } catch (error) {
     logger.error('Error in getParentsWithStudentsOptimized:', error);
     throw error;

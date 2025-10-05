@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { getActiveSelfCheckoutAuthorizations, SelfCheckoutAuthorizationWithDetails } from '@/services/selfCheckoutService';
 
-export const useSelfCheckoutStudents = (classId?: string) => {
+export const useSelfCheckoutStudents = (classId?: string, teacherClassIds?: string[]) => {
   const [authorizations, setAuthorizations] = useState<SelfCheckoutAuthorizationWithDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -18,10 +18,17 @@ export const useSelfCheckoutStudents = (classId?: string) => {
         setLoading(true);
         const data = await getActiveSelfCheckoutAuthorizations();
         
-        // Filter by class if specified
+        // Filter by teacher's classes first if applicable
         let filteredData = data;
-        if (classId && classId !== 'all') {
+        if (teacherClassIds && teacherClassIds.length > 0) {
           filteredData = data.filter(auth => 
+            auth.student?.classId && teacherClassIds.includes(auth.student.classId)
+          );
+        }
+        
+        // Then filter by selected class if specified
+        if (classId && classId !== 'all') {
+          filteredData = filteredData.filter(auth => 
             auth.student && auth.class && String(auth.student.classId) === String(classId)
           );
         }
@@ -36,7 +43,7 @@ export const useSelfCheckoutStudents = (classId?: string) => {
     };
 
     fetchAuthorizations();
-  }, [classId]);
+  }, [classId, teacherClassIds]);
 
   return {
     authorizations,
@@ -53,10 +60,17 @@ export const useSelfCheckoutStudents = (classId?: string) => {
           setLoading(true);
           const data = await getActiveSelfCheckoutAuthorizations();
           
-          // Filter by class if specified
+          // Filter by teacher's classes first if applicable
           let filteredData = data;
-          if (classId && classId !== 'all') {
+          if (teacherClassIds && teacherClassIds.length > 0) {
             filteredData = data.filter(auth => 
+              auth.student?.classId && teacherClassIds.includes(auth.student.classId)
+            );
+          }
+          
+          // Then filter by selected class if specified
+          if (classId && classId !== 'all') {
+            filteredData = filteredData.filter(auth => 
               auth.student && auth.class && String(auth.student.classId) === String(classId)
             );
           }

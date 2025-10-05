@@ -107,7 +107,8 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
     shouldFetchData ? teacherClassIds : undefined
   );
   const { authorizations, loading: selfCheckoutLoading } = useSelfCheckoutStudents(
-    shouldFetchData ? selectedClass : null
+    shouldFetchData ? selectedClass : null,
+    shouldFetchData ? teacherClassIds : undefined
   );
 
   // Check if user has permission to access this page - include superadmin
