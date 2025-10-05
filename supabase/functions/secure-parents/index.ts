@@ -513,14 +513,14 @@ serve(async (req) => {
         const studentIds = currentParentStudents?.map((sp: any) => sp.student_id) || [];
 
         // Since data is encrypted, we need to fetch a broader set and filter after decryption
-        // Fetch more parents to ensure we get good results after filtering
+        // Fetch all parents to ensure we find matches
         const { data: candidateParents, error: parentsError } = await supabase
           .from('parents')
           .select('id, name, email, username, role, phone')
           .neq('id', currentParentId)
           .is('deleted_at', null)
           .order('name')
-          .limit(100); // Fetch more candidates since we'll filter after decryption
+          .limit(500); // Increased limit to search more parents
 
         if (parentsError) {
           console.error('Error fetching parents:', parentsError);
@@ -589,7 +589,7 @@ serve(async (req) => {
           sharedStudentIds: sharedStudents[parent.id] || [],
         }));
 
-        console.log(`Found ${results.length} matching parents`);
+        console.log(`Searched ${candidateParents?.length || 0} parents, found ${results.length} matches for term: "${searchTerm}"`);
 
         // Return encrypted data to client
         const encryptedResults = await encryptObject(results);
