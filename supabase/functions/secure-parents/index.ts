@@ -512,44 +512,52 @@ serve(async (req) => {
 
         const studentIds = currentParentStudents?.map((sp: any) => sp.student_id) || [];
 
-        // Use database-level search with ILIKE for case-insensitive pattern matching
-        // This leverages the indexes we created and is much faster than application-level filtering
-        const searchPattern = `%${searchTerm.trim()}%`;
-        
-        const { data: matchedParents, error: parentsError } = await supabase
+        // Since data is encrypted, we need to fetch a broader set and filter after decryption
+        // Fetch more parents to ensure we get good results after filtering
+        const { data: candidateParents, error: parentsError } = await supabase
           .from('parents')
           .select('id, name, email, username, role, phone')
           .neq('id', currentParentId)
           .is('deleted_at', null)
-          .or(`name.ilike.${searchPattern},email.ilike.${searchPattern},username.ilike.${searchPattern}`)
           .order('name')
-          .limit(20);
+          .limit(100); // Fetch more candidates since we'll filter after decryption
 
         if (parentsError) {
           console.error('Error fetching parents:', parentsError);
           throw new Error(`Failed to fetch parents: ${parentsError.message}`);
         }
 
-        // Decrypt the matched results
+        // Decrypt and filter based on search term
         const decryptedParents: any[] = [];
         const matchedParentIds: string[] = [];
+        const lowerSearchTerm = searchTerm.trim().toLowerCase();
 
-        for (const parent of (matchedParents || [])) {
+        for (const parent of (candidateParents || [])) {
           try {
             const decryptedName = await decryptData(parent.name);
             const decryptedEmail = await decryptData(parent.email);
             const decryptedUsername = parent.username ? await decryptData(parent.username) : null;
             const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
             
-            decryptedParents.push({
-              id: parent.id,
-              name: decryptedName,
-              email: decryptedEmail,
-              username: decryptedUsername,
-              phone: decryptedPhone,
-              role: parent.role,
-            });
-            matchedParentIds.push(parent.id);
+            // Check if any field matches the search term
+            const nameMatch = decryptedName.toLowerCase().includes(lowerSearchTerm);
+            const emailMatch = decryptedEmail.toLowerCase().includes(lowerSearchTerm);
+            const usernameMatch = decryptedUsername && decryptedUsername.toLowerCase().includes(lowerSearchTerm);
+            
+            if (nameMatch || emailMatch || usernameMatch) {
+              decryptedParents.push({
+                id: parent.id,
+                name: decryptedName,
+                email: decryptedEmail,
+                username: decryptedUsername,
+                phone: decryptedPhone,
+                role: parent.role,
+              });
+              matchedParentIds.push(parent.id);
+              
+              // Limit results to 20
+              if (decryptedParents.length >= 20) break;
+            }
           } catch (decryptError) {
             console.error(`Error decrypting parent ${parent.id}:`, decryptError);
           }
