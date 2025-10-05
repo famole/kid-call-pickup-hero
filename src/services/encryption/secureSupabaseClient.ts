@@ -201,11 +201,12 @@ export class SecureOperations {
   }
 
   // Secure operations for parents with students (optimized)
-  async getParentsWithStudentsSecure() {
+  async getParentsWithStudentsSecure(includedRoles?: string[]) {
     try {
       const { data, error } = await supabase.functions.invoke('secure-parents', {
         body: {
-          operation: 'getParentsWithStudents'
+          operation: 'getParentsWithStudents',
+          data: { includedRoles }
         }
       });
 
@@ -290,6 +291,38 @@ export class SecureOperations {
       return { data: result, error: null };
     } catch (error) {
       logger.error('Error in getParentsByIdsSecure:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Secure operation to get parents who share students with current parent
+  async getParentsWhoShareStudentsSecure(currentParentId: string) {
+    try {
+      const response = await supabase.functions.invoke('secure-parents', {
+        body: {
+          operation: 'getParentsWhoShareStudents',
+          data: { currentParentId }
+        }
+      });
+
+      if (response.error) {
+        logger.error('Edge function error:', response.error);
+        throw response.error;
+      }
+
+      const data = response.data;
+      if (data && data.error) {
+        logger.error('Server error in getParentsWhoShareStudentsSecure:', data.error);
+        throw new Error(data.error);
+      }
+
+      // Decrypt the data
+      const { decryptData } = await import('./encryptionService');
+      const result = await decryptData(data.data.encrypted_data);
+
+      return { data: result, error: null };
+    } catch (error) {
+      logger.error('Error in getParentsWhoShareStudentsSecure:', error);
       return { data: null, error };
     }
   }

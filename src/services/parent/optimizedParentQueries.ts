@@ -7,12 +7,13 @@ import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffe
 import { logger } from '@/utils/logger';
 import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
-export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false): Promise<ParentWithStudents[]> => {
+export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = false, includedRoles?: string[]): Promise<ParentWithStudents[]> => {
   try {
     logger.log('Fetching optimized parents with students data...');
+    logger.log('includedRoles filter:', includedRoles);
     
-    // Use secure operations for parent data - USE OPTIMIZED VERSION
-    const { data: parentsData, error: parentsError } = await secureOperations.getParentsWithStudentsSecure();
+    // Use secure operations for parent data - USE OPTIMIZED VERSION WITH ROLE FILTERING
+    const { data: parentsData, error: parentsError } = await secureOperations.getParentsWithStudentsSecure(includedRoles);
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);

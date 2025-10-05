@@ -240,8 +240,10 @@ serve(async (req) => {
       }
 
       case 'getParentsWithStudents': {
+        const { includedRoles } = data || {};
+        
         // Optimized query that joins parents with their students in one request
-        const { data: parentsWithStudentsData, error } = await supabase
+        let query = supabase
           .from('parents')
           .select(`
             id,
@@ -270,8 +272,14 @@ serve(async (req) => {
               )
             )
           `)
-          .is('deleted_at', null)
-          .order('name');
+          .is('deleted_at', null);
+        
+        // Apply role filter if provided
+        if (includedRoles && Array.isArray(includedRoles) && includedRoles.length > 0) {
+          query = query.in('role', includedRoles);
+        }
+        
+        const { data: parentsWithStudentsData, error } = await query.order('name');
 
         if (error) {
           console.error('Error fetching parents with students:', error);

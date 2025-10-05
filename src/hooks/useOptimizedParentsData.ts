@@ -27,42 +27,10 @@ export const useOptimizedParentsData = ({
   const lastFetchRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
 
-  // Filter parents by role(s) - Add more detailed logging
-  const filteredParentsByRole = parents.filter(parent => {
-    // Log the first few parents to see their role values
-    if (parents.indexOf(parent) < 5) {
-      console.log(`Parent ${parent.name} has role:`, parent.role, 'typeof:', typeof parent.role);
-    }
-    
-    // Use includedRoles if provided, otherwise filter by single userRole
-    if (includedRoles && includedRoles.length > 0) {
-      const isIncluded = includedRoles.includes(parent.role || 'parent' as any);
-      if (parents.indexOf(parent) < 5) {
-        console.log(`Parent ${parent.name} included by roles:`, isIncluded, 'includedRoles:', includedRoles);
-      }
-      return isIncluded;
-    }
-    
-    // Original single role logic
-    if (userRole === 'superadmin') {
-      return parent.role === 'superadmin';
-    } else if (userRole === 'teacher') {
-      return parent.role === 'teacher';
-    } else if (userRole === 'admin') {
-      return parent.role === 'admin';
-    } else if (userRole === 'family') {
-      return parent.role === 'family';
-    } else {
-      // For 'parent' role, include those with 'parent' role or no role set
-      const isMatch = parent.role === 'parent' || !parent.role;
-      if (parents.indexOf(parent) < 5) {
-        console.log(`Parent ${parent.name} matches parent role filter:`, isMatch);
-      }
-      return isMatch;
-    }
-  });
+  // Parents are now pre-filtered by backend, no need for frontend filtering
+  const filteredParentsByRole = parents;
 
-  console.log(`Filtered ${filteredParentsByRole.length} users for role: ${userRole}`, 'includedRoles:', includedRoles);
+  console.log(`Backend returned ${filteredParentsByRole.length} parents filtered by roles:`, includedRoles || [userRole]);
 
   const loadParents = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
@@ -76,15 +44,15 @@ export const useOptimizedParentsData = ({
     try {
       const startTime = performance.now();
       
-      console.log(`Loading parents data for userRole: ${userRole}`);
+      console.log(`Loading parents data for userRole: ${userRole}, includedRoles:`, includedRoles);
       
-      // Use optimized query
+      // Use optimized query with backend role filtering
       console.log(`Fetching parents with includeDeleted: ${includeDeleted}`);
-      const data = await getParentsWithStudentsOptimized(includeDeleted);
+      const data = await getParentsWithStudentsOptimized(includeDeleted, includedRoles);
       
       const loadTime = performance.now() - startTime;
       
-      console.log(`Loaded ${data.length} total parents/users from database`);
+      console.log(`Loaded ${data.length} filtered parents/users from backend`);
       
       setParents(data);
       setLoadingProgress(`Loaded ${data.length} parents`);
@@ -107,7 +75,7 @@ export const useOptimizedParentsData = ({
     } finally {
       setIsLoading(false);
     }
-  }, [toast, userRole, includeDeleted]);
+  }, [toast, userRole, includeDeleted, includedRoles]);
 
   const loadStudents = useCallback(async () => {
     try {
