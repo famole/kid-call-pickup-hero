@@ -518,7 +518,7 @@ serve(async (req) => {
         
         const { data: matchedParents, error: parentsError } = await supabase
           .from('parents')
-          .select('id, name, email, role, phone')
+          .select('id, name, email, username, role, phone')
           .neq('id', currentParentId)
           .is('deleted_at', null)
           .or(`name.ilike.${searchPattern},email.ilike.${searchPattern},username.ilike.${searchPattern}`)
@@ -538,12 +538,14 @@ serve(async (req) => {
           try {
             const decryptedName = await decryptData(parent.name);
             const decryptedEmail = await decryptData(parent.email);
+            const decryptedUsername = parent.username ? await decryptData(parent.username) : null;
             const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
             
             decryptedParents.push({
               id: parent.id,
               name: decryptedName,
               email: decryptedEmail,
+              username: decryptedUsername,
               phone: decryptedPhone,
               role: parent.role,
             });
