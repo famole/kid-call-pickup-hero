@@ -206,10 +206,9 @@ export const createSelfCheckoutAuthorization = async (
       throw new Error('User not authenticated');
     }
 
-    // Get parent ID using secure operations
+    // Get parent ID using optimized operation
     const { secureOperations } = await import('@/services/encryption');
-    const { data: allParents, error: parentError } = await secureOperations.getParentsSecure(false);
-    const parentData = allParents?.find(p => p.email === currentUser.email);
+    const { data: parentData, error: parentError } = await secureOperations.getParentByEmailSecure(currentUser.email);
 
     if (parentError || !parentData) {
       throw new Error('Parent not found');

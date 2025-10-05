@@ -37,8 +37,8 @@ export const cancelPickupRequest = async (requestId: string): Promise<void> => {
       if (email) {
         try {
           const { secureOperations } = await import('@/services/encryption');
-          const { data: parents } = await secureOperations.getParentsSecure(false);
-          const byEmail = parents?.find((p: { id: string; email?: string }) => p.email === email);
+          const { data: parents } = await secureOperations.getParentByEmailSecure(email);
+          const byEmail = parents;
           if (byEmail?.id) resolvedParentId = byEmail.id;
         } catch (e) {
           logger.warn('Fallback secure-parents lookup failed:', e);

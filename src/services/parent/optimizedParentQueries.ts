@@ -11,8 +11,8 @@ export const getParentsWithStudentsOptimized = async (includeDeleted: boolean = 
   try {
     logger.log('Fetching optimized parents with students data...');
     
-    // Use secure operations for parent data
-    const { data: parentsData, error: parentsError } = await secureOperations.getParentsSecure(includeDeleted);
+    // Use secure operations for parent data - USE OPTIMIZED VERSION
+    const { data: parentsData, error: parentsError } = await secureOperations.getParentsWithStudentsSecure();
 
     if (parentsError) {
       logger.error('Error fetching parents:', parentsError);

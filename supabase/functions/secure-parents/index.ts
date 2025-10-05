@@ -88,7 +88,7 @@ async function decryptData(encryptedData: string): Promise<string> {
   }
 }
 
-async function encryptObject(obj: any): Promise<string> {
+async function encryptObject(obj: Record<string, unknown>): Promise<string> {
   try {
     const jsonString = JSON.stringify(obj);
     return await encryptData(jsonString);
@@ -98,7 +98,7 @@ async function encryptObject(obj: any): Promise<string> {
   }
 }
 
-async function decryptObject(encryptedString: string): Promise<any> {
+async function decryptObject(encryptedString: string): Promise<Record<string, unknown> | string> {
   try {
     const decryptedString = await decryptData(encryptedString);
     return JSON.parse(decryptedString);
@@ -235,6 +235,258 @@ serve(async (req) => {
         // Return encrypted data to client
         const encryptedUpdateData = await encryptObject(parentData || []);
         return new Response(JSON.stringify({ data: { encrypted_data: encryptedUpdateData }, error: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'getParentsWithStudents': {
+        // Optimized query that joins parents with their students in one request
+        const { data: parentsWithStudentsData, error } = await supabase
+          .from('parents')
+          .select(`
+            id,
+            name,
+            email,
+            username,
+            phone,
+            role,
+            created_at,
+            updated_at,
+            deleted_at,
+            student_parents!inner (
+              id,
+              student_id,
+              is_primary,
+              relationship,
+              students!inner (
+                id,
+                name,
+                class_id,
+                classes!inner (
+                  id,
+                  name,
+                  grade
+                )
+              )
+            )
+          `)
+          .is('deleted_at', null)
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching parents with students:', error);
+          throw error;
+        }
+
+        // Transform the data to match the expected ParentWithStudents structure
+        const transformedParents = (parentsWithStudentsData || []).map(parent => ({
+          id: parent.id,
+          name: parent.name,
+          email: parent.email,
+          username: parent.username,
+          phone: parent.phone,
+          role: parent.role,
+          created_at: parent.created_at,
+          updated_at: parent.updated_at,
+          deleted_at: parent.deleted_at,
+          students: parent.student_parents.map((sp: any) => ({
+            id: sp.student_id,
+            name: sp.students.name,
+            isPrimary: sp.is_primary,
+            relationship: sp.relationship || undefined,
+            parentRelationshipId: sp.id,
+            classId: sp.students.class_id,
+            className: sp.students.classes?.name || '',
+            grade: sp.students.classes?.grade || ''
+          }))
+        }));
+
+        // Return encrypted data to client
+        const encryptedParentsWithStudentsData = await encryptObject(transformedParents);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedParentsWithStudentsData }, error: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'getParentsWhoShareStudents': {
+        const { currentParentId } = data;
+
+        if (!currentParentId) {
+          throw new Error('currentParentId is required for getParentsWhoShareStudents operation');
+        }
+
+        // Get all students associated with the current parent
+        const { data: currentParentStudents, error: studentsError } = await supabase
+          .from('student_parents')
+          .select('student_id')
+          .eq('parent_id', currentParentId);
+
+        if (studentsError) {
+          console.error('Error fetching current parent students:', studentsError);
+          throw studentsError;
+        }
+
+        if (!currentParentStudents || currentParentStudents.length === 0) {
+          // Return empty result if no students found
+          const encryptedEmptyResult = await encryptObject({ parents: [], sharedStudents: {} });
+          return new Response(JSON.stringify({ data: { encrypted_data: encryptedEmptyResult }, error: null }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const studentIds = currentParentStudents.map(sp => sp.student_id);
+
+        // Get all other parents who are associated with these students
+        const { data: sharedParentRelations, error: sharedError } = await supabase
+          .from('student_parents')
+          .select(`
+            parent_id,
+            student_id,
+            parents!inner (
+              id,
+              name,
+              email,
+              role,
+              created_at,
+              updated_at,
+              deleted_at
+            )
+          `)
+          .in('student_id', studentIds)
+          .neq('parent_id', currentParentId)
+          .is('parents.deleted_at', null);
+
+        if (sharedError) {
+          console.error('Error fetching shared parents:', sharedError);
+          throw sharedError;
+        }
+
+        // Group by parent and track shared students
+        const parentMap = new Map();
+        const sharedStudents: Record<string, string[]> = {};
+
+        for (const relation of sharedParentRelations || []) {
+          const parentId = relation.parent_id;
+          const parentData = relation.parents;
+
+          // Skip if parent data is null (due to RLS restrictions or not found)
+          if (!parentData || !parentData.id) {
+            continue;
+          }
+
+          if (!parentMap.has(parentId)) {
+            parentMap.set(parentId, {
+              id: parentData.id,
+              name: parentData.name,
+              email: parentData.email,
+              role: parentData.role
+            });
+            sharedStudents[parentId] = [];
+          }
+
+          sharedStudents[parentId].push(relation.student_id);
+        }
+
+        const result = {
+          parents: Array.from(parentMap.values()),
+          sharedStudents
+        };
+
+        // Return encrypted data to client
+        const encryptedResult = await encryptObject(result);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedResult }, error: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'getParentByEmail': {
+        const { email } = data;
+
+        if (!email) {
+          throw new Error('email is required for getParentByEmail operation');
+        }
+
+        // Get parent by email
+        const { data: parentData, error } = await supabase
+          .from('parents')
+          .select(`
+            id,
+            name,
+            email,
+            role,
+            created_at,
+            updated_at,
+            deleted_at
+          `)
+          .eq('email', email)
+          .is('deleted_at', null)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // No parent found - return empty result
+            const encryptedEmptyResult = await encryptObject({});
+            return new Response(JSON.stringify({ data: { encrypted_data: encryptedEmptyResult }, error: null }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          console.error('Error fetching parent by email:', error);
+          throw error;
+        }
+
+        // Transform to expected format
+        const result = {
+          id: parentData.id,
+          name: parentData.name,
+          email: parentData.email,
+          role: parentData.role
+        };
+
+        // Return encrypted data to client
+        const encryptedResult = await encryptObject(result);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedResult }, error: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'getParentsByIds': {
+        const { parentIds } = data;
+
+        if (!parentIds || !Array.isArray(parentIds) || parentIds.length === 0) {
+          throw new Error('parentIds array is required for getParentsByIds operation');
+        }
+
+        // Get parents by IDs
+        const { data: parentsData, error } = await supabase
+          .from('parents')
+          .select(`
+            id,
+            name,
+            email,
+            role,
+            created_at,
+            updated_at,
+            deleted_at
+          `)
+          .in('id', parentIds)
+          .is('deleted_at', null);
+
+        if (error) {
+          console.error('Error fetching parents by IDs:', error);
+          throw error;
+        }
+
+        // Transform to expected format
+        const result = (parentsData || []).map(parent => ({
+          id: parent.id,
+          name: parent.name,
+          email: parent.email,
+          role: parent.role
+        }));
+
+        // Return encrypted data to client
+        const encryptedResult = await encryptObject(result);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedResult }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
