@@ -483,26 +483,62 @@ serve(async (req) => {
 
         const studentIds = currentParentStudents?.map((sp: any) => sp.student_id) || [];
 
-        // Get ALL parents in the school (excluding current parent)
+        // Fetch a limited number of parents (200) to reduce initial load
+        // Since data is encrypted, we need to decrypt to search, but limiting helps performance
         const { data: allParents, error: parentsError } = await supabase
           .from('parents')
           .select('id, name, email, role, phone')
           .neq('id', currentParentId)
-          .is('deleted_at', null);
+          .is('deleted_at', null)
+          .order('name')
+          .limit(200);
 
         if (parentsError) {
-          console.error('Error fetching all parents:', parentsError);
+          console.error('Error fetching parents:', parentsError);
           throw new Error(`Failed to fetch parents: ${parentsError.message}`);
         }
 
-        // Get shared student relationships for display purposes
+        // Decrypt and filter in a single pass to find first 20 matches
+        const matchedParents: any[] = [];
+        const matchedParentIds: string[] = [];
+        const searchLower = searchTerm.toLowerCase().trim();
+
+        for (const parent of (allParents || [])) {
+          if (matchedParents.length >= 20) break; // Stop once we have 20 matches
+
+          try {
+            const decryptedName = await decryptData(parent.name);
+            const decryptedEmail = await decryptData(parent.email);
+            
+            // Check if this parent matches the search term
+            const nameMatch = decryptedName?.toLowerCase().includes(searchLower);
+            const emailMatch = decryptedEmail?.toLowerCase().includes(searchLower);
+            
+            if (nameMatch || emailMatch) {
+              const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
+              
+              matchedParents.push({
+                id: parent.id,
+                name: decryptedName,
+                email: decryptedEmail,
+                phone: decryptedPhone,
+                role: parent.role,
+              });
+              matchedParentIds.push(parent.id);
+            }
+          } catch (decryptError) {
+            console.error(`Error decrypting parent ${parent.id}:`, decryptError);
+          }
+        }
+
+        // Only fetch shared students for the matched parents
         const sharedStudents: Record<string, string[]> = {};
-        if (studentIds.length > 0) {
+        if (studentIds.length > 0 && matchedParentIds.length > 0) {
           const { data: sharedParentRelations, error: sharedError } = await supabase
             .from('student_parents')
             .select('parent_id, student_id')
             .in('student_id', studentIds)
-            .neq('parent_id', currentParentId);
+            .in('parent_id', matchedParentIds);
 
           if (!sharedError && sharedParentRelations) {
             for (const relation of sharedParentRelations) {
@@ -515,46 +551,17 @@ serve(async (req) => {
           }
         }
 
-        // Filter parents by search term BEFORE decryption (more efficient)
-        // Note: This is a trade-off - we decrypt all parents but only return matching ones
-        const decryptedParents = await Promise.all(
-          (allParents || []).map(async (parent: any) => {
-            try {
-              const decryptedName = await decryptData(parent.name);
-              const decryptedEmail = await decryptData(parent.email);
-              const decryptedPhone = parent.phone ? await decryptData(parent.phone) : null;
+        // Add shared student information to matched parents
+        const results = matchedParents.map((parent: any) => ({
+          ...parent,
+          sharedStudentIds: sharedStudents[parent.id] || [],
+        }));
 
-              return {
-                id: parent.id,
-                name: decryptedName,
-                email: decryptedEmail,
-                phone: decryptedPhone,
-                role: parent.role,
-                sharedStudentIds: sharedStudents[parent.id] || [],
-              };
-            } catch (decryptError) {
-              console.error(`Error decrypting parent ${parent.id}:`, decryptError);
-              return null;
-            }
-          })
-        );
-
-        // Filter by search term (case-insensitive) after decryption
-        const searchLower = searchTerm.toLowerCase().trim();
-        const filteredParents = decryptedParents
-          .filter((parent): parent is NonNullable<typeof parent> => parent !== null)
-          .filter(parent => {
-            const nameMatch = parent.name?.toLowerCase().includes(searchLower);
-            const emailMatch = parent.email?.toLowerCase().includes(searchLower);
-            return nameMatch || emailMatch;
-          })
-          .slice(0, 20); // Limit to 20 results
-
-        console.log(`Found ${filteredParents.length} matching parents`);
+        console.log(`Found ${results.length} matching parents`);
 
         return new Response(
           JSON.stringify({
-            data: filteredParents,
+            data: results,
             error: null
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
