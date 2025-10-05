@@ -248,6 +248,7 @@ serve(async (req) => {
         const { includedRoles, includeDeleted } = data || {};
         
         // Optimized query that joins parents with their students in one request
+        // Using left joins (no !inner) so parents without students are still returned
         let query = supabase
           .from('parents')
           .select(`
@@ -260,16 +261,16 @@ serve(async (req) => {
             created_at,
             updated_at,
             deleted_at,
-            student_parents!inner (
+            student_parents (
               id,
               student_id,
               is_primary,
               relationship,
-              students!inner (
+              students (
                 id,
                 name,
                 class_id,
-                classes!inner (
+                classes (
                   id,
                   name,
                   grade
@@ -306,15 +307,15 @@ serve(async (req) => {
           created_at: parent.created_at,
           updated_at: parent.updated_at,
           deleted_at: parent.deleted_at,
-          students: parent.student_parents.map((sp: any) => ({
+          students: (parent.student_parents || []).map((sp: any) => ({
             id: sp.student_id,
-            name: sp.students.name,
+            name: sp.students?.name || '',
             isPrimary: sp.is_primary,
             relationship: sp.relationship || undefined,
             parentRelationshipId: sp.id,
-            classId: sp.students.class_id,
-            className: sp.students.classes?.name || '',
-            grade: sp.students.classes?.grade || ''
+            classId: sp.students?.class_id || null,
+            className: sp.students?.classes?.name || '',
+            grade: sp.students?.classes?.grade || ''
           }))
         }));
 
