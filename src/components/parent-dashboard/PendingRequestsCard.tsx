@@ -33,7 +33,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
       logger.info('Starting cancel for request:', requestId);
       await cancelPickupRequest(requestId);
       logger.info('Cancel successful, calling onRequestCancelled callback');
-      toast.success(t('dashboard.pickupRequestCancelled'));
+      toast(t('dashboard.pickupRequestCancelled'));
       
       // Trigger the refetch callback with a slight delay to ensure DB has been updated
       if (onRequestCancelled) {
