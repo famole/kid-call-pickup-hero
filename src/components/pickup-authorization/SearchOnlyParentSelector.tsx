@@ -226,7 +226,6 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
                   className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0"
                 >
                   <div className="font-medium text-sm">{parent.name}</div>
-                  <div className="text-xs text-gray-500">{parent.username || parent.email}</div>
                   {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
                     <div className="text-xs text-gray-500 mt-1">
                       {t('pickupAuthorizations.shares')}: {parent.sharedStudentNames.join(', ')}
