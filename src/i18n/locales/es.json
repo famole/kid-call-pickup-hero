@@ -439,7 +439,7 @@
     "selectAuthorizationType": "Seleccionar Tipo de Autorización",
     "selectAuthorizationTypeDescription": "Elige cómo quieres autorizar a alguien para recoger a tus hijos",
     "existingParents": "Usuarios Registrados",
-    "existingParentsDescription": "Autorizar a otro padre ya registrado en el sistema escolar",
+    "existingParentsDescription": "Autorizar a otro usuario ya registrado en el sistema escolar",
     "selectExistingParent": "Seleccionar Usuario Registrado",
     "familyMembers": "Familiares",
     "familyMembersDescription": "Invitar familiares (abuelos, parientes) que no están registrados en el sistema",
