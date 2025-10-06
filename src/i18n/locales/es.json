@@ -474,7 +474,7 @@
     "child": "Hijo",
     "parent": "Padre",
     "noParentsFound": "No se encontraron padres",
-    "authorizedParent": "Padre Autorizado",
+    "authorizedParent": "Usuario Autorizado",
     "startDate": "Fecha de Inicio",
     "endDate": "Fecha de Fin",
     "pendingInvitations": "Invitaciones Pendientes",
