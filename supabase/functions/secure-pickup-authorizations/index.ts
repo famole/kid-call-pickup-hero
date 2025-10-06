@@ -128,15 +128,12 @@ serve(async (req)=>{
       case 'getPickupAuthorizationsForParent':
         {
           logger.log('Getting pickup authorizations for parent:', parentId);
-          
           // Get today's date at start of day for comparison
           // Authorizations should be valid through the entire day they expire
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const todayStr = today.toISOString().split('T')[0];
-          
-          const { data, error } = await supabase.from('pickup_authorizations')
-            .select(`
+          const { data, error } = await supabase.from('pickup_authorizations').select(`
               *,
               authorizing_parent:parents!authorizing_parent_id (id, name, email, role),
               authorized_parent:parents!authorized_parent_id (id, name, email, role),
@@ -151,18 +148,13 @@ serve(async (req)=>{
                   grade
                 )
               )
-            `)
-            .eq('authorizing_parent_id', parentId)
-            .eq('is_active', true)
-            .is('students.deleted_at', null)
-            .gte('end_date', todayStr)
-            .order('created_at', { ascending: false });
-            
+            `).eq('authorizing_parent_id', parentId).eq('is_active', true).is('students.deleted_at', null).gte('end_date', todayStr).order('created_at', {
+            ascending: false
+          });
           if (error) {
             logger.error('Error fetching pickup authorizations:', error);
             throw new Error(error.message);
           }
-          
           const authorizations = data || [];
           const encryptedData = await encryptObject(authorizations);
           logger.log('Successfully fetched and encrypted pickup authorizations');
@@ -216,65 +208,68 @@ serve(async (req)=>{
             }
           });
         }
-      case 'createPickupAuthorization': {
-        let decryptedData;
-        try {
-          decryptedData = await decryptObject(requestData);
-          logger.log('Decrypted data for create:', decryptedData);
-        } catch (error) {
-          logger.error('Failed to decrypt request data:', error);
-          throw new Error('Invalid request data format');
-        }
-        const parsedData = JSON.parse(decryptedData);
-        // Validate required fields
-        if (!parsedData.authorizedParentId) {
-          throw new Error('Authorized parent ID is required');
-        }
-        if (!parsedData.studentId) {
-          throw new Error('Student ID is required');
-        }
-        if (!parsedData.startDate || !parsedData.endDate) {
-          throw new Error('Start date and end date are required');
-        }
-
-        logger.log('Creating pickup authorization with data:', {
-          authorizing_parent_id: parentId,
-          ...parsedData
-        });
-
-        try {
-          const { data, error } = await supabase
-            .from('pickup_authorizations')
-            .insert({
+      case 'createPickupAuthorization':
+        {
+          let decryptedData;
+          try {
+            decryptedData = await decryptObject(requestData);
+            logger.log('Decrypted data for create:', decryptedData);
+          } catch (error) {
+            logger.error('Failed to decrypt request data:', error);
+            throw new Error('Invalid request data format');
+          }
+          const parsedData = JSON.parse(decryptedData);
+          // Validate required fields
+          if (!parsedData.authorizedParentId) {
+            throw new Error('Authorized parent ID is required');
+          }
+          if (!parsedData.studentId) {
+            throw new Error('Student ID is required');
+          }
+          if (!parsedData.startDate || !parsedData.endDate) {
+            throw new Error('Start date and end date are required');
+          }
+          logger.log('Creating pickup authorization with data:', {
+            authorizing_parent_id: parentId,
+            ...parsedData
+          });
+          try {
+            const { data, error } = await supabase.from('pickup_authorizations').insert({
               authorizing_parent_id: parentId,
               authorized_parent_id: parsedData.authorizedParentId,
               student_id: parsedData.studentId,
               start_date: parsedData.startDate,
               end_date: parsedData.endDate,
-              allowed_days_of_week: parsedData.allowedDaysOfWeek || [0,1,2,3,4,5,6],
+              allowed_days_of_week: parsedData.allowedDaysOfWeek || [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
               is_active: true
-            })
-            .select()
-            .single();
-
-          if (error) throw error;
-          
-          logger.log('Successfully created pickup authorization:', data);
-          return new Response(JSON.stringify({ 
-            data: { encrypted_data: await encryptObject(data) }, 
-            error: null 
-          }), {
-            status: 200,
-            headers: { 
-              ...corsHeaders, 
-              'Content-Type': 'application/json' 
-            },
-          });
-        } catch (error) {
-          logger.error('Database error creating pickup authorization:', error);
-          throw error;
+            }).select().single();
+            if (error) throw error;
+            logger.log('Successfully created pickup authorization:', data);
+            return new Response(JSON.stringify({
+              data: {
+                encrypted_data: await encryptObject(data)
+              },
+              error: null
+            }), {
+              status: 200,
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              }
+            });
+          } catch (error) {
+            logger.error('Database error creating pickup authorization:', error);
+            throw error;
+          }
         }
-      }
       case 'updatePickupAuthorization':
         {
           let decryptedData;

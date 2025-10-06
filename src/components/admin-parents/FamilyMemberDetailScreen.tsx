@@ -87,22 +87,26 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     
     setLoadingAuthorizations(true);
     try {
-      logger.info('Loading authorizations for parent:', {
-        parentId: parent.id,
-        parentName: parent.name,
-        parentEmail: parent.email,
-        parentUsername: parent.username,
-        isUsernameUser: !parent.email && !!parent.username
-      });
+      // For admin functionality, we need to get the admin's parentId
+      const currentParentId = await getCurrentParentIdCached();
+      if (!currentParentId) {
+        logger.error('Error getting current parent ID');
+        toast({
+          title: t('familyMemberDetails.error'),
+          description: 'Failed to authenticate admin',
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Get authorizations this parent has created (where they are the authorizing parent)
       const parentAuthorizations = await getPickupAuthorizationsForParent(parent.id);
-      logger.info('Loaded authorizations created by parent:', parentAuthorizations.length);
-      
-      // Get authorizations where this parent is authorized (where they are the authorized parent)
-      // Pass parent.id directly as both parameters since we want authorizations FOR this specific parent
-      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(parent.id, parent.id);
-      logger.info('Loaded authorizations received by parent:', receivedAuths.length);
+      // Get authorizations where this parent is authorized
+      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(currentParentId, parent.id);
+      console.log(parent.id);
+      console.log(currentParentId);
+      console.log('Parent authorizations:', parentAuthorizations);
+      console.log('Received authorizations:', receivedAuths);
       
       setAuthorizations(parentAuthorizations);
       setReceivedAuthorizations(receivedAuths);
@@ -166,7 +170,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       // Get the authorizing parent ID (admin creating the authorization)
       const currentParentId = await getCurrentParentIdCached();
       if (!currentParentId) {
-        console.error('Error getting current parent ID');
+        logger.error('Error getting current parent ID');
         toast({
           title: t('familyMemberDetails.error'),
           description: 'Failed to authenticate admin',
@@ -192,7 +196,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       resetAuthorizationForm();
       loadAuthorizations();
     } catch (error) {
-      console.error('Error adding authorization:', error);
+      logger.error('Error adding authorization:', error);
       toast({
         title: t('familyMemberDetails.error'),
         description: t('familyMemberDetails.failedToAddAuth'),
@@ -213,7 +217,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       });
       loadAuthorizations();
     } catch (error) {
-      console.error('Error removing authorization:', error);
+      logger.error('Error removing authorization:', error);
       toast({
         title: t('familyMemberDetails.error'),
         description: t('familyMemberDetails.failedToRemoveAuth'),
@@ -296,7 +300,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
               </TabsTrigger>
               <TabsTrigger value="authorized" className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4" />
-                {t('familyMemberDetails.pickupAuthorizations', { count: receivedAuthorizations.length })}
+                {t('familyMemberDetails.pickupAuthorizations', { count: receivedAuthorizations.length + authorizations.length })}
               </TabsTrigger>
             </TabsList>
 
@@ -485,6 +489,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
               {/* Received Authorizations */}
               {receivedAuthorizations.length > 0 ? (
                 <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-muted-foreground mb-3">{t('familyMemberDetails.receivedAuthorizations')}</h4>
                   {receivedAuthorizations.map(auth => (
                     <Card key={auth.id}>
                       <CardContent className="flex items-center justify-between p-4">
@@ -515,13 +520,52 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                     </Card>
                   ))}
                 </div>
-              ) : (
+              ) : null}
+
+              {/* Created Authorizations */}
+              {authorizations.length > 0 ? (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-muted-foreground mb-3">{t('familyMemberDetails.createdAuthorizations')}</h4>
+                  {authorizations.map(auth => (
+                    <Card key={auth.id}>
+                      <CardContent className="flex items-center justify-between p-4">
+                        <div>
+                          <p className="font-medium">{auth.student?.name || t('familyMemberDetails.unknownStudent')}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {t('familyMemberDetails.authorizedTo', { name: auth.authorizedParent?.name || t('familyMemberDetails.unknownParent') })}
+                          </p>
+                          <div className="flex items-center gap-4 mt-1">
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(auth.startDate).toLocaleDateString()} - {new Date(auth.endDate).toLocaleDateString()}
+                            </div>
+                            <Badge variant={auth.isActive ? "default" : "secondary"}>
+                              {auth.isActive ? t('familyMemberDetails.active') : t('familyMemberDetails.inactive')}
+                            </Badge>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title={t('familyMemberDetails.removeAuthorization')}
+                          onClick={() => handleRemoveAuthorization(auth.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* No authorizations message */}
+              {receivedAuthorizations.length === 0 && authorizations.length === 0 ? (
                 <Card>
                   <CardContent className="p-6 text-center text-muted-foreground">
                     {t('familyMemberDetails.noAuthorizationsFound')}
                   </CardContent>
                 </Card>
-              )}
+              ) : null}
 
               {/* Add Authorization Form */}
               {showAddAuthorizationForm && (
