@@ -279,11 +279,40 @@ const PickupAuthorizationManagement: React.FC = () => {
     return today >= start && today <= end;
   };
 
-  const getStatusBadge = (startDate: string, endDate: string, isActiveAuth: boolean) => {
+  const isActiveToday = (startDate: string, endDate: string, allowedDaysOfWeek: number[]) => {
+    // First check if within date range
+    if (!isActive(startDate, endDate)) return false;
+    
+    // Then check if today's day of week is allowed
+    const currentDayOfWeek = new Date().getDay();
+    return allowedDaysOfWeek.includes(currentDayOfWeek);
+  };
+
+  const getStatusBadge = (startDate: string, endDate: string, isActiveAuth: boolean, allowedDaysOfWeek: number[]) => {
     if (!isActiveAuth) return { label: t('pickupAuthorizations.inactive'), variant: "secondary" as const };
     if (isExpired(endDate)) return { label: t('pickupAuthorizations.expired'), variant: "destructive" as const };
-    if (isActive(startDate, endDate)) return { label: t('pickupAuthorizations.active'), variant: "default" as const };
+    if (isActive(startDate, endDate)) {
+      // Check if today is an allowed day
+      if (isActiveToday(startDate, endDate, allowedDaysOfWeek)) {
+        return { label: t('pickupAuthorizations.activeToday'), variant: "default" as const };
+      } else {
+        return { label: t('pickupAuthorizations.activeNotToday'), variant: "outline" as const };
+      }
+    }
     return { label: t('pickupAuthorizations.scheduled'), variant: "outline" as const };
+  };
+
+  const getDayNames = (allowedDays: number[]) => {
+    const dayNames = [
+      t('common.days.sun'),
+      t('common.days.mon'),
+      t('common.days.tue'),
+      t('common.days.wed'),
+      t('common.days.thu'),
+      t('common.days.fri'),
+      t('common.days.sat')
+    ];
+    return allowedDays.sort().map(day => dayNames[day]).join(', ');
   };
 
   if (loading) {
@@ -436,7 +465,7 @@ const PickupAuthorizationManagement: React.FC = () => {
                   )}
                   <div className="space-y-3 sm:space-y-4">
                     {authorizations.map((auth) => {
-                      const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive);
+                      const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive, auth.allowedDaysOfWeek || [0,1,2,3,4,5,6]);
                       return (
                         <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
                           <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
@@ -481,6 +510,13 @@ const PickupAuthorizationManagement: React.FC = () => {
                                   <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                                   <span className="break-words">
                                     {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
+                                  <span className="font-medium">{t('pickupAuthorizations.allowedDays')}:</span>
+                                  <span className="break-words">
+                                    {getDayNames(auth.allowedDaysOfWeek || [0,1,2,3,4,5,6])}
                                   </span>
                                 </div>
                               </div>
