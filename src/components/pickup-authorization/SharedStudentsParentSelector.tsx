@@ -23,6 +23,7 @@ interface ParentWithSharedStudents {
   id: string;
   name: string;
   email: string;
+  username?: string;
   sharedStudentNames?: string[];
   students?: any[];
 }
@@ -117,7 +118,7 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
                 {displayParents.map((parent) => (
                   <CommandItem
                     key={parent.id}
-                    value={`${parent.name} ${parent.email}`}
+                    value={`${parent.name} ${parent.email || ''} ${parent.username || ''}`}
                     onSelect={() => {
                       onValueChange(parent.id);
                       setOpen(false);
@@ -136,7 +137,7 @@ const SharedStudentsParentSelector: React.FC<SharedStudentsParentSelectorProps> 
                           </div>
                         )}
                       </div>
-                      <span className="text-xs text-gray-500 truncate w-full">{parent.email}</span>
+                      <span className="text-xs text-gray-500 truncate w-full">{parent.username || parent.email}</span>
                       {parent.sharedStudentNames && parent.sharedStudentNames.length > 0 && (
                         <span className="text-xs text-school-primary truncate w-full">
                           {t('pickupAuthorizations.shares')}: {parent.sharedStudentNames.join(', ')}
