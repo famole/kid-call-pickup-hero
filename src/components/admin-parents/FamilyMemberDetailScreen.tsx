@@ -87,27 +87,27 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     
     setLoadingAuthorizations(true);
     try {
-      // For admin functionality, we need to get the admin's parentId
-      const currentParentId = await getCurrentParentIdCached();
-      if (!currentParentId) {
-        console.error('Error getting current parent ID');
-        toast({
-          title: t('familyMemberDetails.error'),
-          description: 'Failed to authenticate admin',
-          variant: "destructive",
-        });
-        return;
-      }
+      logger.info('Loading authorizations for parent:', {
+        parentId: parent.id,
+        parentName: parent.name,
+        parentEmail: parent.email,
+        parentUsername: parent.username,
+        isUsernameUser: !parent.email && !!parent.username
+      });
       
-      // Get authorizations this parent has created
+      // Get authorizations this parent has created (where they are the authorizing parent)
       const parentAuthorizations = await getPickupAuthorizationsForParent(parent.id);
-      // Get authorizations where this parent is authorized
-      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(currentParentId, parent.id);
+      logger.info('Loaded authorizations created by parent:', parentAuthorizations.length);
+      
+      // Get authorizations where this parent is authorized (where they are the authorized parent)
+      // Pass parent.id directly as both parameters since we want authorizations FOR this specific parent
+      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(parent.id, parent.id);
+      logger.info('Loaded authorizations received by parent:', receivedAuths.length);
       
       setAuthorizations(parentAuthorizations);
       setReceivedAuthorizations(receivedAuths);
     } catch (error) {
-      console.error('Error loading authorizations:', error);
+      logger.error('Error loading authorizations:', error);
       toast({
         title: t('familyMemberDetails.error'),
         description: t('familyMemberDetails.failedToLoadAuth'),
