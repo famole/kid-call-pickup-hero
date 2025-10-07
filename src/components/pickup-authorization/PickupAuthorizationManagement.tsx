@@ -256,14 +256,19 @@ const PickupAuthorizationManagement: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    // Parse date in local timezone to avoid timezone conversion issues
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleDateString();
   };
 
   const isExpired = (endDate: string) => {
     // Compare only dates, not times - authorization should be valid through end of day
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
+    // Parse date in local timezone
+    const [year, month, day] = endDate.split('-');
+    const end = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     end.setHours(0, 0, 0, 0);
     return end < today;
   };
@@ -272,9 +277,12 @@ const PickupAuthorizationManagement: React.FC = () => {
     // Compare only dates, not times - authorization should be valid through end of day
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const start = new Date(startDate);
+    // Parse dates in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-');
+    const start = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay));
     start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
+    const [endYear, endMonth, endDay] = endDate.split('-');
+    const end = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay));
     end.setHours(0, 0, 0, 0);
     return today >= start && today <= end;
   };
