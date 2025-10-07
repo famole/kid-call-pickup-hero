@@ -21,7 +21,11 @@ export const useAuthorizedParentsByDate = (date: Date) => {
     const fetchAuthorizedParents = async () => {
       setLoading(true);
       try {
-        const selectedDate = date.toISOString().split('T')[0];
+        // Format date in local timezone to avoid timezone conversion issues
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const selectedDate = `${year}-${month}-${day}`;
         const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
 
         logger.info('Fetching authorized parents for date:', selectedDate, 'day:', dayOfWeek);
