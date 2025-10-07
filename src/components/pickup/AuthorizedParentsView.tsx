@@ -117,13 +117,13 @@ export const AuthorizedParentsView: React.FC = () => {
                     {authorizedParents.map((parent) => (
                       <TableRow key={parent.parentId}>
                         <TableCell className="font-medium text-left">{parent.parentName}</TableCell>
-                        <TableCell className="text-muted-foreground">{parent.parentEmail}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-muted-foreground text-left">{parent.parentEmail}</TableCell>
+                        <TableCell className="text-left">
                           {parent.parentRole && (
                             <Badge variant="secondary">{parent.parentRole}</Badge>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-left">
                           <div className="flex flex-wrap gap-1">
                             {parent.students.map((student) => (
                               <Badge key={student.id} variant="outline" className="text-xs">
