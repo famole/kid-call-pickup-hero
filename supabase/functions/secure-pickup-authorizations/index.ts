@@ -272,9 +272,12 @@ serve(async (req)=>{
         }
       case 'updatePickupAuthorization':
         {
+          logger.log('Update operation received');
           let decryptedData;
           try {
+            logger.log('Decrypting request data...');
             decryptedData = await decryptObject(requestData);
+            logger.log('Decrypted data:', decryptedData);
           } catch (error) {
             logger.error('Failed to decrypt request data:', error);
             throw new Error('Invalid request data format');
@@ -295,6 +298,13 @@ serve(async (req)=>{
             logger.error('Error updating pickup authorization:', error);
             throw new Error(error.message);
           }
+          
+          if (!data) {
+            logger.error('No data returned from update');
+            throw new Error('Failed to update authorization - no data returned');
+          }
+          
+          logger.log('Successfully updated authorization:', data.id);
           const encryptedData = await encryptObject(data);
           logger.log('Successfully updated and encrypted pickup authorization');
           return new Response(JSON.stringify({
