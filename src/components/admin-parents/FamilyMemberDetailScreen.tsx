@@ -424,7 +424,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                         </SelectTrigger>
                         <SelectContent>
                           {availableStudents.length === 0 ? (
-                            <SelectItem value="" disabled>{t('familyMemberDetails.noStudentsMatch')}</SelectItem>
+                            <SelectItem value="no-students-placeholder" disabled>{t('familyMemberDetails.noStudentsMatch')}</SelectItem>
                           ) : (
                             availableStudents.map(student => {
                               const studentClass = classes.find(c => c.id === student.classId);

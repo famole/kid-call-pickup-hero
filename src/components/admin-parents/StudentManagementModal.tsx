@@ -231,7 +231,7 @@ const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       {availableStudents.length === 0 ? (
-                        <SelectItem value="" disabled>{t('studentManagement.noStudentsMatch')}</SelectItem>
+                        <SelectItem value="no-students-placeholder" disabled>{t('studentManagement.noStudentsMatch')}</SelectItem>
                       ) : (
                         availableStudents.map(student => {
                           const studentClass = classes.find(c => c.id === student.classId);
