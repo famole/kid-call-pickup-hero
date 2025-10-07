@@ -274,25 +274,27 @@ serve(async (req)=>{
         {
           logger.log('Update operation received');
           let decryptedData;
+          let parsedData;
           try {
             logger.log('Decrypting request data...');
             decryptedData = await decryptObject(requestData);
-            logger.log('Decrypted data:', decryptedData);
+            parsedData = typeof decryptedData === 'string' ? JSON.parse(decryptedData) : decryptedData;
+            logger.log('Parsed data:', parsedData);
           } catch (error) {
             logger.error('Failed to decrypt request data:', error);
             throw new Error('Invalid request data format');
           }
-          logger.log('Updating pickup authorization:', decryptedData.id);
+          logger.log('Updating pickup authorization:', parsedData.id);
           const updateData = {};
-          if (decryptedData.authorizedParentId) updateData.authorized_parent_id = decryptedData.authorizedParentId;
-          if (decryptedData.studentId) updateData.student_id = decryptedData.studentId;
-          if (decryptedData.studentIds) updateData.student_ids = decryptedData.studentIds;
-          if (decryptedData.startDate) updateData.start_date = decryptedData.startDate;
-          if (decryptedData.endDate) updateData.end_date = decryptedData.endDate;
-          if (decryptedData.allowedDaysOfWeek) updateData.allowed_days_of_week = decryptedData.allowedDaysOfWeek;
-          if (decryptedData.isActive !== undefined) updateData.is_active = decryptedData.isActive;
+          if (parsedData.authorizedParentId) updateData.authorized_parent_id = parsedData.authorizedParentId;
+          if (parsedData.studentId) updateData.student_id = parsedData.studentId;
+          if (parsedData.studentIds) updateData.student_ids = parsedData.studentIds;
+          if (parsedData.startDate) updateData.start_date = parsedData.startDate;
+          if (parsedData.endDate) updateData.end_date = parsedData.endDate;
+          if (parsedData.allowedDaysOfWeek) updateData.allowed_days_of_week = parsedData.allowedDaysOfWeek;
+          if (parsedData.isActive !== undefined) updateData.is_active = parsedData.isActive;
           updateData.updated_at = new Date().toISOString();
-          const { data, error } = await supabase.from('pickup_authorizations').update(updateData).eq('id', decryptedData.id).eq('authorizing_parent_id', parentId) // Ensure only authorizing parent can update
+          const { data, error } = await supabase.from('pickup_authorizations').update(updateData).eq('id', parsedData.id).eq('authorizing_parent_id', parentId) // Ensure only authorizing parent can update
           .select().single();
           if (error) {
             logger.error('Error updating pickup authorization:', error);
