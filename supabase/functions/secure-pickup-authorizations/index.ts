@@ -283,6 +283,7 @@ serve(async (req)=>{
           const updateData = {};
           if (decryptedData.authorizedParentId) updateData.authorized_parent_id = decryptedData.authorizedParentId;
           if (decryptedData.studentId) updateData.student_id = decryptedData.studentId;
+          if (decryptedData.studentIds) updateData.student_ids = decryptedData.studentIds;
           if (decryptedData.startDate) updateData.start_date = decryptedData.startDate;
           if (decryptedData.endDate) updateData.end_date = decryptedData.endDate;
           if (decryptedData.allowedDaysOfWeek) updateData.allowed_days_of_week = decryptedData.allowedDaysOfWeek;
