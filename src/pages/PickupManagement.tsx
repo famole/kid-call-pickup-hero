@@ -24,7 +24,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AuthorizedParentsView } from '@/components/pickup/AuthorizedParentsView';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuthorizedParentsByDate } from '@/hooks/useAuthorizedParentsByDate';
 
 interface PickupManagementProps {
   showNavigation?: boolean;
@@ -112,9 +111,6 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
     shouldFetchData ? selectedClass : null,
     shouldFetchData ? teacherClassIds : undefined
   );
-  
-  // Get authorized parents count for current date
-  const { authorizedParents } = useAuthorizedParentsByDate(new Date(), shouldFetchData ? selectedClass : 'all');
 
   // Check if user has permission to access this page - include superadmin
   const hasPermission = useMemo(() => user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'superadmin', [user?.role]);
@@ -208,7 +204,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
               <TabsTrigger value="authorized" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
                 <Users className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                 <span className={isMobile ? 'text-center leading-tight' : ''}>
-                  {isMobile ? `Autorizados (${authorizedParents.length})` : `Padres Autorizados (${authorizedParents.length})`}
+                  {isMobile ? 'Autorizados' : 'Padres Autorizados'}
                 </span>
               </TabsTrigger>
             </TabsList>
