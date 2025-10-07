@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { CalendarIcon, Users, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -15,41 +16,69 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 export const AuthorizedParentsView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [searchTerm, setSearchTerm] = useState('');
   const { authorizedParents, loading } = useAuthorizedParentsByDate(selectedDate);
   const isMobile = useIsMobile();
+
+  const filteredParents = useMemo(() => {
+    if (!searchTerm.trim()) return authorizedParents;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+    return authorizedParents.filter(parent => {
+      // Search by parent name
+      if (parent.parentName.toLowerCase().includes(searchLower)) {
+        return true;
+      }
+      // Search by student names
+      return parent.students.some(student => 
+        student.name.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [authorizedParents, searchTerm]);
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Padres Autorizados por Fecha
-            </CardTitle>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP", { locale: es }) : "Seleccionar fecha"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Padres Autorizados por Fecha
+              </CardTitle>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP", { locale: es }) : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre de padre o estudiante..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -63,17 +92,21 @@ export const AuthorizedParentsView: React.FC = () => {
                 </div>
               ))}
             </div>
-          ) : authorizedParents.length === 0 ? (
+          ) : filteredParents.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p className="text-lg font-medium">No hay padres autorizados para esta fecha</p>
-              <p className="text-sm mt-2">Selecciona otra fecha para ver las autorizaciones activas</p>
+              <p className="text-lg font-medium">
+                {searchTerm ? 'No se encontraron resultados' : 'No hay padres autorizados para esta fecha'}
+              </p>
+              <p className="text-sm mt-2">
+                {searchTerm ? 'Intenta con otro término de búsqueda' : 'Selecciona otra fecha para ver las autorizaciones activas'}
+              </p>
             </div>
           ) : (
             <div className="space-y-6">
               {isMobile ? (
                 <div className="space-y-4">
-                  {authorizedParents.map((parent) => (
+                  {filteredParents.map((parent) => (
                     <Card key={parent.parentId} className="border-l-4 border-l-primary">
                       <CardContent className="pt-4">
                         <div className="space-y-3">
@@ -114,7 +147,7 @@ export const AuthorizedParentsView: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {authorizedParents.map((parent) => (
+                    {filteredParents.map((parent) => (
                       <TableRow key={parent.parentId}>
                         <TableCell className="font-medium text-left">{parent.parentName}</TableCell>
                         <TableCell className="text-muted-foreground text-left">{parent.parentEmail}</TableCell>
@@ -138,7 +171,11 @@ export const AuthorizedParentsView: React.FC = () => {
                 </Table>
               )}
               <div className="text-sm text-muted-foreground text-center pt-4 border-t">
-                Total: {authorizedParents.length} {authorizedParents.length === 1 ? 'padre autorizado' : 'padres autorizados'}
+                {searchTerm ? (
+                  <>Mostrando {filteredParents.length} de {authorizedParents.length} {authorizedParents.length === 1 ? 'resultado' : 'resultados'}</>
+                ) : (
+                  <>Total: {authorizedParents.length} {authorizedParents.length === 1 ? 'padre autorizado' : 'padres autorizados'}</>
+                )}
               </div>
             </div>
           )}
