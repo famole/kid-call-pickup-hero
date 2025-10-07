@@ -13,7 +13,7 @@ interface AuthorizedParent {
   }>;
 }
 
-export const useAuthorizedParentsByDate = (date: Date) => {
+export const useAuthorizedParentsByDate = (date: Date, classId?: string) => {
   const [authorizedParents, setAuthorizedParents] = useState<AuthorizedParent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +28,7 @@ export const useAuthorizedParentsByDate = (date: Date) => {
         const selectedDate = `${year}-${month}-${day}`;
         const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
 
-        logger.info('Fetching authorized parents for date:', selectedDate, 'day:', dayOfWeek);
+        logger.info('Fetching authorized parents for date:', selectedDate, 'day:', dayOfWeek, 'classId:', classId);
 
         // Fetch all active authorizations for the selected date and day of week
         const { data: authorizations, error } = await supabase
@@ -69,11 +69,17 @@ export const useAuthorizedParentsByDate = (date: Date) => {
           }
         });
 
-        // Fetch student details
-        const { data: students, error: studentsError } = await supabase
+        // Fetch student details with optional class filter
+        let studentsQuery = supabase
           .from('students')
-          .select('id, name')
+          .select('id, name, class_id')
           .in('id', Array.from(allStudentIds));
+
+        if (classId && classId !== 'all') {
+          studentsQuery = studentsQuery.eq('class_id', classId);
+        }
+
+        const { data: students, error: studentsError } = await studentsQuery;
 
         if (studentsError) {
           logger.error('Error fetching students:', studentsError);
@@ -130,7 +136,7 @@ export const useAuthorizedParentsByDate = (date: Date) => {
     };
 
     fetchAuthorizedParents();
-  }, [date]);
+  }, [date, classId]);
 
   return { authorizedParents, loading };
 };

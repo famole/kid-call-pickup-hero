@@ -14,10 +14,14 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export const AuthorizedParentsView: React.FC = () => {
+interface AuthorizedParentsViewProps {
+  selectedClass?: string;
+}
+
+export const AuthorizedParentsView: React.FC<AuthorizedParentsViewProps> = ({ selectedClass = 'all' }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [searchTerm, setSearchTerm] = useState('');
-  const { authorizedParents, loading } = useAuthorizedParentsByDate(selectedDate);
+  const { authorizedParents, loading } = useAuthorizedParentsByDate(selectedDate, selectedClass);
   const isMobile = useIsMobile();
 
   const filteredParents = useMemo(() => {
