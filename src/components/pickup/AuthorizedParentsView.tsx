@@ -116,7 +116,7 @@ export const AuthorizedParentsView: React.FC = () => {
                   <TableBody>
                     {authorizedParents.map((parent) => (
                       <TableRow key={parent.parentId}>
-                        <TableCell className="font-medium">{parent.parentName}</TableCell>
+                        <TableCell className="font-medium text-left">{parent.parentName}</TableCell>
                         <TableCell className="text-muted-foreground">{parent.parentEmail}</TableCell>
                         <TableCell>
                           {parent.parentRole && (
