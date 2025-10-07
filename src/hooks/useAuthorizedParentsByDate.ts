@@ -122,10 +122,12 @@ export const useAuthorizedParentsByDate = (date: Date, classId?: string) => {
           }
         });
 
+        // Filter out parents with no students (when class filter removes all their students)
         const result = Array.from(parentMap.values())
+          .filter(parent => parent.students.length > 0)
           .sort((a, b) => a.parentName.localeCompare(b.parentName));
 
-        logger.info(`Found ${result.length} authorized parents for ${selectedDate}`);
+        logger.info(`Found ${result.length} authorized parents for ${selectedDate} with class filter: ${classId || 'all'}`);
         setAuthorizedParents(result);
       } catch (error) {
         logger.error('Error in fetchAuthorizedParents:', error);
