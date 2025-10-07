@@ -80,7 +80,7 @@ class SecurePickupAuthorizationOperations {
 
       // Decrypt the pickup authorizations data
       const decryptedData = await decryptData(data.data.encrypted_data);
-      
+      logger.info('Decrypted data:', decryptedData);
       if (!decryptedData) {
         logger.warn('Decryption returned empty data');
         return { data: [], error: null };
