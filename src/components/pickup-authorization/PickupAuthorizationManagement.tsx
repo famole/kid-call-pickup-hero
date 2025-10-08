@@ -489,10 +489,18 @@ const PickupAuthorizationManagement: React.FC = () => {
                       {t('pickupAuthorizations.activeAuthorizations')}
                     </h3>
                   )}
-                  {(() => {
-                    const filteredAuthorizations = authorizations.filter(auth => showExpired || !isExpired(auth.endDate));
-                    
-                    if (filteredAuthorizations.length === 0) {
+              {(() => {
+                // Filter based on showExpired toggle
+                const filteredAuthorizations = showExpired 
+                  ? authorizations 
+                  : authorizations.filter(auth => !isExpired(auth.endDate));
+                
+                console.log('Show Expired:', showExpired);
+                console.log('Total Authorizations:', authorizations.length);
+                console.log('Filtered Authorizations:', filteredAuthorizations.length);
+                console.log('Expired count:', authorizations.filter(auth => isExpired(auth.endDate)).length);
+                
+                if (filteredAuthorizations.length === 0) {
                       return (
                         <div className="text-center py-8 px-4 text-gray-500">
                           <p className="text-sm">
