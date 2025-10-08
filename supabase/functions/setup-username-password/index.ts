@@ -117,6 +117,18 @@ serve(async (req) => {
     if (parent.email) {
       console.log('Email-based user detected, using admin API to update auth password');
 
+      // For email users, ensure password is decrypted before sending to Supabase Auth
+      let finalPassword = actualPassword;
+      if (password && password.length > 50) {
+        try {
+          finalPassword = await decryptPassword(password);
+          console.log('Password decrypted successfully for email user');
+        } catch (decryptionError) {
+          console.warn('Password decryption failed for email user, using as-is:', decryptionError);
+          finalPassword = actualPassword;
+        }
+      }
+
       // For email-based users, find their auth user and update password via admin API
       // Use RPC function to get user ID by email, then get full user data
       console.log(`Looking for parent email: ${parent.email}`);
@@ -173,7 +185,7 @@ serve(async (req) => {
         // Create new auth user if it doesn't exist
         const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
           email: parent.email,
-          password: actualPassword,
+          password: finalPassword, // Use decrypted password for email users
           email_confirm: true
         });
 
@@ -189,7 +201,7 @@ serve(async (req) => {
         const { error: updateAuthError } = await supabase.auth.admin.updateUserById(
           authUser.id,
           {
-            password: actualPassword,
+            password: finalPassword, // Use decrypted password for email users
             email_confirm: true
           }
         );
