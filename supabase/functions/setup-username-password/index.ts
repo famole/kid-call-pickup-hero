@@ -116,18 +116,58 @@ serve(async (req) => {
     // Check if this is an email-based user (has Supabase auth account) or username-only user
     if (parent.email) {
       console.log('Email-based user detected, using admin API to update auth password');
-      
+
       // For email-based users, find their auth user and update password via admin API
-      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-      
-      if (listError) {
-        console.error('Error listing users:', listError);
-        throw new Error('Failed to find user account');
+      // Use RPC function to get user ID by email, then get full user data
+      console.log(`Looking for parent email: ${parent.email}`);
+
+      let authUser = null;
+
+      const { data: userId, error: getUserError } = await supabase.rpc('get_auth_user_id_by_email', {
+        user_email: parent.email
+      });
+
+      if (!getUserError && userId) {
+        console.log(`Found auth user ID via RPC: ${userId}`);
+
+        // Now get the full user data using the ID
+        const { data: authUserData, error: getUserByIdError } = await supabase.auth.admin.getUserById(userId);
+
+        if (!getUserByIdError && authUserData?.user) {
+          authUser = authUserData.user;
+          console.log(`Auth user found via getUserById: ${!!authUser}`);
+        } else {
+          console.log(`getUserById failed:`, getUserByIdError?.message || 'No user found');
+        }
+      } else {
+        console.log(`get_auth_user_id_by_email failed:`, getUserError?.message || 'No user ID found');
       }
 
-      // Find the auth user by email
-      const authUser = users.find(u => u.email?.toLowerCase() === parent.email?.toLowerCase());
-      
+      // Fallback to listing users if RPC approach fails
+      if (!authUser) {
+        console.log('RPC approach failed, falling back to listUsers (paginated)...');
+
+        const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+
+        if (listError) {
+          console.error('Error listing users:', listError);
+          throw new Error('Failed to find user account');
+        }
+
+        console.log(`Total auth users found in first page: ${users.length}`);
+
+        // Find the auth user by email - try exact match first, then case-insensitive
+        authUser = users.find(u => u.email === parent.email);
+        if (!authUser) {
+          authUser = users.find(u => u.email?.toLowerCase() === parent.email?.toLowerCase());
+        }
+
+        console.log(`Auth user found in list: ${!!authUser}`);
+        if (!authUser) {
+          console.log(`Available user emails (first 10):`, users.slice(0, 10).map(u => u.email));
+        }
+      }
+
       if (!authUser) {
         console.log('No auth user found, creating new auth account');
         // Create new auth user if it doesn't exist
@@ -136,37 +176,37 @@ serve(async (req) => {
           password: actualPassword,
           email_confirm: true
         });
-        
+
         if (createError) {
           console.error('Error creating auth user:', createError);
           throw new Error('Failed to create user account');
         }
-        
+
         console.log('New auth user created successfully');
       } else {
         console.log('Updating existing auth user password');
         // Update existing auth user's password
         const { error: updateAuthError } = await supabase.auth.admin.updateUserById(
           authUser.id,
-          { 
+          {
             password: actualPassword,
             email_confirm: true
           }
         );
-        
+
         if (updateAuthError) {
           console.error('Error updating auth user password:', updateAuthError);
           throw new Error('Failed to update user password');
         }
-        
+
         console.log('Auth user password updated successfully');
       }
-      
+
       // Update parent record to mark password as set (no need for password_hash for email users)
       const { error: updateError } = await supabase
         .from('parents')
-        .update({ 
-          password_set: true 
+        .update({
+          password_set: true
         })
         .eq('id', parent.id);
 
@@ -176,16 +216,16 @@ serve(async (req) => {
       }
     } else {
       console.log('Username-only user detected, using password hash approach');
-      
+
       // For username-only users, use password hash approach
       const passwordHash = await hashPassword(actualPassword);
 
       // Update parent with password hash and mark password as set
       const { error: updateError } = await supabase
         .from('parents')
-        .update({ 
+        .update({
           password_hash: passwordHash,
-          password_set: true 
+          password_set: true
         })
         .eq('id', parent.id);
 
@@ -206,7 +246,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in setup-username-password function:', error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : 'Password setup failed'
     }), {
       status: 400,
