@@ -91,15 +91,12 @@ const PasswordSetupForm = () => {
         throw new Error(t('errors.noEmailForSetup'));
       }
 
-      // For email users, we don't need to encrypt since Supabase auth handles security
-      // For username users, we still encrypt for the custom auth flow
-      const needsEncryption = !userIdentifier.includes('@');
-      let passwordToSend = password;
-      
-      if (needsEncryption && isPasswordEncryptionSupported()) {
+      // Encrypt password before sending for enhanced security
+      let encryptedPassword = password;
+      if (isPasswordEncryptionSupported()) {
         try {
-          passwordToSend = await encryptPassword(password);
-          logger.log('Password encrypted for setup transmission (username user)');
+          encryptedPassword = await encryptPassword(password);
+          logger.log('Password encrypted for setup transmission');
         } catch (encryptionError) {
           logger.warn('Password encryption failed during setup, using plain text:', encryptionError);
         }
@@ -123,7 +120,7 @@ const PasswordSetupForm = () => {
             if (existingParent && !existingParent.password_set) {
               // This is a password reset - user already exists in auth, we need to update their password
               const { data, error } = await supabase.functions.invoke('setup-username-password', {
-                body: { identifier: parentEmail, password: passwordToSend }
+                body: { identifier: parentEmail, password: encryptedPassword }
               });
 
               if (error) {
@@ -164,7 +161,7 @@ const PasswordSetupForm = () => {
               // This is a new account setup
               const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: parentEmail,
-                password: password, // Use plain password for Supabase auth
+                password: encryptedPassword,
                 options: {
                   emailRedirectTo: `${window.location.origin}/`
                 }
@@ -174,7 +171,7 @@ const PasswordSetupForm = () => {
                 // If signup fails because user already exists, try password reset approach
                 if (authError.message?.includes('already registered')) {
                   const { data, error } = await supabase.functions.invoke('setup-username-password', {
-                    body: { identifier: parentEmail, password: password } // Use plain password
+                    body: { identifier: parentEmail, password: encryptedPassword }
                   });
 
                   if (error || data?.error) {
@@ -214,7 +211,7 @@ const PasswordSetupForm = () => {
         } else {
           // For username-only users without email, use the password setup edge function
           const { data, error } = await supabase.functions.invoke('setup-username-password', {
-            body: { identifier: userIdentifier, password: passwordToSend } // This will be encrypted for username users
+            body: { identifier: userIdentifier, password: encryptedPassword }
           });
 
           if (error) {
@@ -248,7 +245,7 @@ const PasswordSetupForm = () => {
       } else {
         // User is already authenticated, just update password
         const { error: authError } = await supabase.auth.updateUser({
-          password: password // Use plain password for Supabase auth
+          password: encryptedPassword
         });
 
         if (authError) {
