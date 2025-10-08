@@ -471,6 +471,7 @@
     "activeToday": "Activa Hoy",
     "activeNotToday": "Activa (No Hoy)",
     "allowedDays": "Días Permitidos",
+    "showExpired": "Mostrar expiradas",
     "child": "Hijo",
     "parent": "Padre",
     "noParentsFound": "No se encontraron padres",

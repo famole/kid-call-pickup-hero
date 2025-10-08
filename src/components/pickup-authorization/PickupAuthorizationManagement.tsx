@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Calendar, Users, Plus, Trash2, Edit } from 'lucide-react';
 import RoleBadge from './RoleBadge';
 import { useToast } from '@/hooks/use-toast';
@@ -38,6 +40,7 @@ const PickupAuthorizationManagement: React.FC = () => {
   const [authorizations, setAuthorizations] = useState<PickupAuthorizationWithDetails[]>([]);
   const [invitations, setInvitations] = useState<PickupInvitationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showExpired, setShowExpired] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingAuthorization, setEditingAuthorization] = useState<PickupAuthorizationWithDetails | null>(null);
@@ -349,14 +352,26 @@ const PickupAuthorizationManagement: React.FC = () => {
                 {t('pickupAuthorizations.description')}
               </CardDescription>
             </div>
-            <Button 
-              onClick={() => setIsAddDialogOpen(true)}
-              className="w-full sm:w-auto bg-school-primary hover:bg-school-primary/90"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {t('pickupAuthorizations.addAuthorization')}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center w-full sm:w-auto">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-expired"
+                  checked={showExpired}
+                  onCheckedChange={setShowExpired}
+                />
+                <Label htmlFor="show-expired" className="text-sm cursor-pointer">
+                  {t('pickupAuthorizations.showExpired', 'Show expired')}
+                </Label>
+              </div>
+              <Button 
+                onClick={() => setIsAddDialogOpen(true)}
+                className="w-full sm:w-auto bg-school-primary hover:bg-school-primary/90"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t('pickupAuthorizations.addAuthorization')}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
@@ -472,7 +487,9 @@ const PickupAuthorizationManagement: React.FC = () => {
                     </h3>
                   )}
                   <div className="space-y-3 sm:space-y-4">
-                    {authorizations.map((auth) => {
+                    {authorizations
+                      .filter(auth => showExpired || !isExpired(auth.endDate))
+                      .map((auth) => {
                       const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive, auth.allowedDaysOfWeek || [0,1,2,3,4,5,6]);
                       return (
                         <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
