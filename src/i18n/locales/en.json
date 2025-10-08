@@ -469,6 +469,7 @@
     "activeNotToday": "Active (Not Today)",
     "allowedDays": "Allowed Days",
     "showExpired": "Show expired",
+    "noActiveAuthorizations": "No active authorizations. Toggle \"Show expired\" to view past authorizations.",
     "child": "Child",
     "parent": "Parent",
     "noParentsFound": "No parents found",

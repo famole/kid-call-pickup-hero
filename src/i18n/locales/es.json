@@ -472,6 +472,7 @@
     "activeNotToday": "Activa (No Hoy)",
     "allowedDays": "Días Permitidos",
     "showExpired": "Mostrar expiradas",
+    "noActiveAuthorizations": "No hay autorizaciones activas. Activa \"Mostrar expiradas\" para ver autorizaciones pasadas.",
     "child": "Hijo",
     "parent": "Padre",
     "noParentsFound": "No se encontraron padres",

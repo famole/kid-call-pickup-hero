@@ -342,26 +342,16 @@ const PickupAuthorizationManagement: React.FC = () => {
     <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                {t('pickupAuthorizations.title')}
-              </CardTitle>
-              <CardDescription className="text-sm">
-                {t('pickupAuthorizations.description')}
-              </CardDescription>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center w-full sm:w-auto">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-expired"
-                  checked={showExpired}
-                  onCheckedChange={setShowExpired}
-                />
-                <Label htmlFor="show-expired" className="text-sm cursor-pointer">
-                  {t('pickupAuthorizations.showExpired', 'Show expired')}
-                </Label>
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                  {t('pickupAuthorizations.title')}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {t('pickupAuthorizations.description')}
+                </CardDescription>
               </div>
               <Button 
                 onClick={() => setIsAddDialogOpen(true)}
@@ -372,6 +362,19 @@ const PickupAuthorizationManagement: React.FC = () => {
                 {t('pickupAuthorizations.addAuthorization')}
               </Button>
             </div>
+            
+            {authorizations.length > 0 && (
+              <div className="flex items-center space-x-2 pt-2 border-t">
+                <Switch
+                  id="show-expired"
+                  checked={showExpired}
+                  onCheckedChange={setShowExpired}
+                />
+                <Label htmlFor="show-expired" className="text-sm cursor-pointer font-medium">
+                  {t('pickupAuthorizations.showExpired')}
+                </Label>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
@@ -486,11 +489,25 @@ const PickupAuthorizationManagement: React.FC = () => {
                       {t('pickupAuthorizations.activeAuthorizations')}
                     </h3>
                   )}
-                  <div className="space-y-3 sm:space-y-4">
-                    {authorizations
-                      .filter(auth => showExpired || !isExpired(auth.endDate))
-                      .map((auth) => {
-                      const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive, auth.allowedDaysOfWeek || [0,1,2,3,4,5,6]);
+                  {(() => {
+                    const filteredAuthorizations = authorizations.filter(auth => showExpired || !isExpired(auth.endDate));
+                    
+                    if (filteredAuthorizations.length === 0) {
+                      return (
+                        <div className="text-center py-8 px-4 text-gray-500">
+                          <p className="text-sm">
+                            {showExpired 
+                              ? t('pickupAuthorizations.noAuthorizationsYet')
+                              : t('pickupAuthorizations.noActiveAuthorizations', 'No active authorizations. Toggle "Show expired" to view past authorizations.')}
+                          </p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="space-y-3 sm:space-y-4">
+                        {filteredAuthorizations.map((auth) => {
+                          const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive, auth.allowedDaysOfWeek || [0,1,2,3,4,5,6]);
                       return (
                         <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
                           <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
@@ -600,7 +617,9 @@ const PickupAuthorizationManagement: React.FC = () => {
                         </div>
                       );
                     })}
-                  </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
