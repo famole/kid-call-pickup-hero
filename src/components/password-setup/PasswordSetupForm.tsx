@@ -91,15 +91,17 @@ const PasswordSetupForm = () => {
         throw new Error(t('errors.noEmailForSetup'));
       }
 
-      // Encrypt password before sending for enhanced security
-      let encryptedPassword = password;
-      if (isPasswordEncryptionSupported()) {
+      // For email users, we don't need to encrypt since Supabase auth handles security
+      // For username users, we still encrypt for the custom auth flow
+      const needsEncryption = !userIdentifier.includes('@');
+      let passwordToSend = password;
+      
+      if (needsEncryption && isPasswordEncryptionSupported()) {
         try {
-          encryptedPassword = await encryptPassword(password);
-          logger.log('Password encrypted for setup transmission');
+          passwordToSend = await encryptPassword(password);
+          logger.log('Password encrypted for setup transmission (username user)');
         } catch (encryptionError) {
           logger.warn('Password encryption failed during setup, using plain text:', encryptionError);
-          // Continue with plain text if encryption fails
         }
       }
 
@@ -121,7 +123,7 @@ const PasswordSetupForm = () => {
             if (existingParent && !existingParent.password_set) {
               // This is a password reset - user already exists in auth, we need to update their password
               const { data, error } = await supabase.functions.invoke('setup-username-password', {
-                body: { identifier: parentEmail, password: encryptedPassword }
+                body: { identifier: parentEmail, password: passwordToSend }
               });
 
               if (error) {
@@ -145,6 +147,7 @@ const PasswordSetupForm = () => {
               });
 
               // Auto-login after password setup for email users
+              logger.log('Attempting auto-login with:', { email: parentEmail, passwordLength: password.length });
               try {
                 await login(parentEmail, password);
                 return;
@@ -161,7 +164,7 @@ const PasswordSetupForm = () => {
               // This is a new account setup
               const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: parentEmail,
-                password: encryptedPassword,
+                password: password, // Use plain password for Supabase auth
                 options: {
                   emailRedirectTo: `${window.location.origin}/`
                 }
@@ -171,7 +174,7 @@ const PasswordSetupForm = () => {
                 // If signup fails because user already exists, try password reset approach
                 if (authError.message?.includes('already registered')) {
                   const { data, error } = await supabase.functions.invoke('setup-username-password', {
-                    body: { identifier: parentEmail, password: encryptedPassword }
+                    body: { identifier: parentEmail, password: password } // Use plain password
                   });
 
                   if (error || data?.error) {
@@ -194,6 +197,7 @@ const PasswordSetupForm = () => {
               });
 
               // Auto-login after password setup for email users
+              logger.log('Attempting auto-login with:', { email: parentEmail, passwordLength: password.length });
               try {
                 await login(parentEmail, password);
                 return;
@@ -210,7 +214,7 @@ const PasswordSetupForm = () => {
         } else {
           // For username-only users without email, use the password setup edge function
           const { data, error } = await supabase.functions.invoke('setup-username-password', {
-            body: { identifier: userIdentifier, password: encryptedPassword }
+            body: { identifier: userIdentifier, password: passwordToSend } // This will be encrypted for username users
           });
 
           if (error) {
@@ -244,7 +248,7 @@ const PasswordSetupForm = () => {
       } else {
         // User is already authenticated, just update password
         const { error: authError } = await supabase.auth.updateUser({
-          password: encryptedPassword
+          password: password // Use plain password for Supabase auth
         });
 
         if (authError) {
