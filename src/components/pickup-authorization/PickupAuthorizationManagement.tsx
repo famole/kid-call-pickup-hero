@@ -47,7 +47,7 @@ const PickupAuthorizationManagement: React.FC = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, getCurrentLanguage } = useTranslation();
   
   // Refs for managing subscriptions and timeouts
   const subscriptionRef = useRef<any>(null);
@@ -262,7 +262,8 @@ const PickupAuthorizationManagement: React.FC = () => {
     // Parse date in local timezone to avoid timezone conversion issues
     const [year, month, day] = dateString.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    return date.toLocaleDateString();
+    const locale = getCurrentLanguage() === 'es' ? 'es-ES' : 'en-US';
+    return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const isExpired = (endDate: string) => {
