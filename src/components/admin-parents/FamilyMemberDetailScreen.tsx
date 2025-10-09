@@ -142,18 +142,12 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     return filtered;
   }, [parent, allStudents, studentSearchTerm, selectedClassFilter]);
 
-  // Filter available students for authorization (only those belonging to other parents)
+  // Filter available students for authorization - show all students
   const availableAuthStudents = useMemo(() => {
     if (!parent) return [];
     
-    return allStudents.filter(student => {
-      // Exclude students already assigned to this parent
-      const isAssignedToParent = parent.students?.some(ps => ps.id === student.id);
-      if (isAssignedToParent) return false;
-      
-      // Only include students that have authorizations this parent can receive
-      return true;
-    });
+    // Show all students so admin can create authorizations from any student's parent
+    return allStudents.filter(student => !student.deletedAt);
   }, [parent, allStudents]);
 
   // Filter available authorizing parents based on selected student
