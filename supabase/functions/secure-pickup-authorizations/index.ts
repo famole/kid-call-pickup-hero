@@ -128,11 +128,12 @@ serve(async (req)=>{
       case 'getPickupAuthorizationsForParent':
         {
           logger.log('Getting pickup authorizations for parent:', parentId);
-          // Get today's date at start of day for comparison
-          // Authorizations should be valid through the entire day they expire
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const todayStr = today.toISOString().split('T')[0];
+          
+          // Get today's date in YYYY-MM-DD format (UTC)
+          // Use UTC date to avoid timezone issues
+          const now = new Date();
+          const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+          
           const { data, error } = await supabase.from('pickup_authorizations').select(`
               *,
               authorizing_parent:parents!authorizing_parent_id (id, name, email, role),
@@ -182,13 +183,30 @@ serve(async (req)=>{
           }
           const targetParentId = decryptedData.parentId || parentId;
           logger.log('Getting pickup authorizations for authorized parent:', targetParentId);
+
+          // Get today's date in YYYY-MM-DD format (UTC)
+          // Use UTC date to avoid timezone issues
+          const now = new Date();
+          const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+
           const { data, error } = await supabase.from('pickup_authorizations').select(`
             *,
             authorizing_parent:parents!authorizing_parent_id (id, name, email),
-            students (id, name)
-          `).eq('authorized_parent_id', targetParentId).order('created_at', {
+            students!inner (
+              id,
+              name,
+              class_id,
+              avatar,
+              classes (
+                id,
+                name,
+                grade
+              )
+            )
+          `).eq('authorized_parent_id', targetParentId).eq('is_active', true).is('students.deleted_at', null).gte('end_date', todayStr).order('created_at', {
             ascending: false
           });
+
           if (error) {
             logger.error('Error fetching pickup authorizations for authorized parent:', error);
             throw new Error(error.message);
@@ -272,28 +290,41 @@ serve(async (req)=>{
         }
       case 'updatePickupAuthorization':
         {
+          logger.log('Update operation received');
           let decryptedData;
+          let parsedData;
           try {
+            logger.log('Decrypting request data...');
             decryptedData = await decryptObject(requestData);
+            parsedData = typeof decryptedData === 'string' ? JSON.parse(decryptedData) : decryptedData;
+            logger.log('Parsed data:', parsedData);
           } catch (error) {
             logger.error('Failed to decrypt request data:', error);
             throw new Error('Invalid request data format');
           }
-          logger.log('Updating pickup authorization:', decryptedData.id);
+          logger.log('Updating pickup authorization:', parsedData.id);
           const updateData = {};
-          if (decryptedData.authorizedParentId) updateData.authorized_parent_id = decryptedData.authorizedParentId;
-          if (decryptedData.studentId) updateData.student_id = decryptedData.studentId;
-          if (decryptedData.startDate) updateData.start_date = decryptedData.startDate;
-          if (decryptedData.endDate) updateData.end_date = decryptedData.endDate;
-          if (decryptedData.allowedDaysOfWeek) updateData.allowed_days_of_week = decryptedData.allowedDaysOfWeek;
-          if (decryptedData.isActive !== undefined) updateData.is_active = decryptedData.isActive;
+          if (parsedData.authorizedParentId) updateData.authorized_parent_id = parsedData.authorizedParentId;
+          if (parsedData.studentId) updateData.student_id = parsedData.studentId;
+          if (parsedData.studentIds) updateData.student_ids = parsedData.studentIds;
+          if (parsedData.startDate) updateData.start_date = parsedData.startDate;
+          if (parsedData.endDate) updateData.end_date = parsedData.endDate;
+          if (parsedData.allowedDaysOfWeek) updateData.allowed_days_of_week = parsedData.allowedDaysOfWeek;
+          if (parsedData.isActive !== undefined) updateData.is_active = parsedData.isActive;
           updateData.updated_at = new Date().toISOString();
-          const { data, error } = await supabase.from('pickup_authorizations').update(updateData).eq('id', decryptedData.id).eq('authorizing_parent_id', parentId) // Ensure only authorizing parent can update
+          const { data, error } = await supabase.from('pickup_authorizations').update(updateData).eq('id', parsedData.id).eq('authorizing_parent_id', parentId) // Ensure only authorizing parent can update
           .select().single();
           if (error) {
             logger.error('Error updating pickup authorization:', error);
             throw new Error(error.message);
           }
+          
+          if (!data) {
+            logger.error('No data returned from update');
+            throw new Error('Failed to update authorization - no data returned');
+          }
+          
+          logger.log('Successfully updated authorization:', data.id);
           const encryptedData = await encryptObject(data);
           logger.log('Successfully updated and encrypted pickup authorization');
           return new Response(JSON.stringify({

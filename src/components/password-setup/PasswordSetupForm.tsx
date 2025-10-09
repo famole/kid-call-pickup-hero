@@ -99,7 +99,6 @@ const PasswordSetupForm = () => {
           logger.log('Password encrypted for setup transmission');
         } catch (encryptionError) {
           logger.warn('Password encryption failed during setup, using plain text:', encryptionError);
-          // Continue with plain text if encryption fails
         }
       }
 
@@ -120,9 +119,6 @@ const PasswordSetupForm = () => {
             // Check if this is a password reset scenario (user exists but password_set is false)
             if (existingParent && !existingParent.password_set) {
               // This is a password reset - user already exists in auth, we need to update their password
-              // First, try to sign in with a temporary password or use admin API
-              
-              // For password reset, we'll use the setup-username-password function which can handle existing users
               const { data, error } = await supabase.functions.invoke('setup-username-password', {
                 body: { identifier: parentEmail, password: encryptedPassword }
               });
@@ -134,6 +130,32 @@ const PasswordSetupForm = () => {
 
               if (data?.error) {
                 throw new Error(data.error);
+              }
+
+              // Update the parent record to mark password as set
+              await supabase
+                .from('parents')
+                .update({ password_set: true })
+                .eq('email', parentEmail);
+
+              toast({
+                title: t('common.success'),
+                description: t('errors.accountSetupComplete'),
+              });
+
+              // Auto-login after password setup for email users
+              logger.log('Attempting auto-login with:', { email: parentEmail, passwordLength: password.length });
+              try {
+                await login(parentEmail, password);
+                return;
+              } catch (loginError) {
+                logger.error('Auto-login after password setup failed:', loginError);
+                toast({
+                  title: t('common.info'),
+                  description: 'Password set successfully. Please log in with your credentials.',
+                });
+                navigate('/login');
+                return;
               }
             } else {
               // This is a new account setup
@@ -148,7 +170,6 @@ const PasswordSetupForm = () => {
               if (authError) {
                 // If signup fails because user already exists, try password reset approach
                 if (authError.message?.includes('already registered')) {
-                  // Try using the password setup function as fallback
                   const { data, error } = await supabase.functions.invoke('setup-username-password', {
                     body: { identifier: parentEmail, password: encryptedPassword }
                   });
@@ -160,16 +181,32 @@ const PasswordSetupForm = () => {
                   throw authError;
                 }
               }
-            }
-            
-            // Update the parent record to mark password as set
-            const { error: updateError } = await supabase
-              .from('parents')
-              .update({ password_set: true })
-              .eq('email', parentEmail);
 
-            if (updateError) {
-              throw updateError;
+              // Update the parent record to mark password as set
+              await supabase
+                .from('parents')
+                .update({ password_set: true })
+                .eq('email', parentEmail);
+
+              toast({
+                title: t('common.success'),
+                description: t('errors.accountSetupComplete'),
+              });
+
+              // Auto-login after password setup for email users
+              logger.log('Attempting auto-login with:', { email: parentEmail, passwordLength: password.length });
+              try {
+                await login(parentEmail, password);
+                return;
+              } catch (loginError) {
+                logger.error('Auto-login after password setup failed:', loginError);
+                toast({
+                  title: t('common.info'),
+                  description: 'Password set successfully. Please log in with your credentials.',
+                });
+                navigate('/login');
+                return;
+              }
             }
         } else {
           // For username-only users without email, use the password setup edge function
@@ -193,12 +230,10 @@ const PasswordSetupForm = () => {
 
           // For username-only users, automatically log them in after password setup
           try {
-            await login(userIdentifier, encryptedPassword);
-            // The login function should handle the redirect to dashboard
+            await login(userIdentifier, password);
             return;
           } catch (loginError) {
             logger.error('Auto-login after password setup failed:', loginError);
-            // If auto-login fails, redirect to login page
             toast({
               title: t('common.info'),
               description: 'Password set successfully. Please log in with your credentials.',
@@ -207,14 +242,6 @@ const PasswordSetupForm = () => {
             return;
           }
         }
-
-        toast({
-          title: t('errors.accountSetupComplete'),
-          description: t('errors.passwordSetSuccessfully'),
-        });
-
-        // Redirect to login page so user can sign in with their new password
-        navigate('/login');
       } else {
         // User is already authenticated, just update password
         const { error: authError } = await supabase.auth.updateUser({

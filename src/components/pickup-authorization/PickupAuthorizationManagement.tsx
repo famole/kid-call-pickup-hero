@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Calendar, Users, Plus, Trash2, Edit } from 'lucide-react';
 import RoleBadge from './RoleBadge';
 import { useToast } from '@/hooks/use-toast';
@@ -38,13 +40,14 @@ const PickupAuthorizationManagement: React.FC = () => {
   const [authorizations, setAuthorizations] = useState<PickupAuthorizationWithDetails[]>([]);
   const [invitations, setInvitations] = useState<PickupInvitationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showExpired, setShowExpired] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingAuthorization, setEditingAuthorization] = useState<PickupAuthorizationWithDetails | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, getCurrentLanguage } = useTranslation();
   
   // Refs for managing subscriptions and timeouts
   const subscriptionRef = useRef<any>(null);
@@ -256,14 +259,20 @@ const PickupAuthorizationManagement: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    // Parse date in local timezone to avoid timezone conversion issues
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const locale = getCurrentLanguage() === 'es' ? 'es-ES' : 'en-US';
+    return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const isExpired = (endDate: string) => {
     // Compare only dates, not times - authorization should be valid through end of day
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
+    // Parse date in local timezone
+    const [year, month, day] = endDate.split('-');
+    const end = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     end.setHours(0, 0, 0, 0);
     return end < today;
   };
@@ -272,9 +281,12 @@ const PickupAuthorizationManagement: React.FC = () => {
     // Compare only dates, not times - authorization should be valid through end of day
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const start = new Date(startDate);
+    // Parse dates in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-');
+    const start = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay));
     start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
+    const [endYear, endMonth, endDay] = endDate.split('-');
+    const end = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay));
     end.setHours(0, 0, 0, 0);
     return today >= start && today <= end;
   };
@@ -331,24 +343,39 @@ const PickupAuthorizationManagement: React.FC = () => {
     <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                {t('pickupAuthorizations.title')}
-              </CardTitle>
-              <CardDescription className="text-sm">
-                {t('pickupAuthorizations.description')}
-              </CardDescription>
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                  {t('pickupAuthorizations.title')}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {t('pickupAuthorizations.description')}
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={() => setIsAddDialogOpen(true)}
+                className="w-full sm:w-auto bg-school-primary hover:bg-school-primary/90"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t('pickupAuthorizations.addAuthorization')}
+              </Button>
             </div>
-            <Button 
-              onClick={() => setIsAddDialogOpen(true)}
-              className="w-full sm:w-auto bg-school-primary hover:bg-school-primary/90"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {t('pickupAuthorizations.addAuthorization')}
-            </Button>
+            
+            {authorizations.length > 0 && (
+              <div className="flex items-center space-x-2 pt-2 border-t">
+                <Switch
+                  id="show-expired"
+                  checked={showExpired}
+                  onCheckedChange={setShowExpired}
+                />
+                <Label htmlFor="show-expired" className="text-sm cursor-pointer font-medium">
+                  {t('pickupAuthorizations.showExpired')}
+                </Label>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
@@ -463,9 +490,33 @@ const PickupAuthorizationManagement: React.FC = () => {
                       {t('pickupAuthorizations.activeAuthorizations')}
                     </h3>
                   )}
-                  <div className="space-y-3 sm:space-y-4">
-                    {authorizations.map((auth) => {
-                      const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive, auth.allowedDaysOfWeek || [0,1,2,3,4,5,6]);
+              {(() => {
+                // Filter based on showExpired toggle
+                const filteredAuthorizations = showExpired 
+                  ? authorizations 
+                  : authorizations.filter(auth => !isExpired(auth.endDate));
+                
+                console.log('Show Expired:', showExpired);
+                console.log('Total Authorizations:', authorizations.length);
+                console.log('Filtered Authorizations:', filteredAuthorizations.length);
+                console.log('Expired count:', authorizations.filter(auth => isExpired(auth.endDate)).length);
+                
+                if (filteredAuthorizations.length === 0) {
+                      return (
+                        <div className="text-center py-8 px-4 text-gray-500">
+                          <p className="text-sm">
+                            {showExpired 
+                              ? t('pickupAuthorizations.noAuthorizationsYet')
+                              : t('pickupAuthorizations.noActiveAuthorizations', 'No active authorizations. Toggle "Show expired" to view past authorizations.')}
+                          </p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="space-y-3 sm:space-y-4">
+                        {filteredAuthorizations.map((auth) => {
+                          const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive, auth.allowedDaysOfWeek || [0,1,2,3,4,5,6]);
                       return (
                         <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
                           <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
@@ -575,7 +626,9 @@ const PickupAuthorizationManagement: React.FC = () => {
                         </div>
                       );
                     })}
-                  </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

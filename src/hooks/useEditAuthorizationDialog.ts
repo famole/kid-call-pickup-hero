@@ -51,17 +51,23 @@ export const useEditAuthorizationDialog = (
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && authorization) {
       loadData();
-      if (authorization) {
-        setFormData({
-          studentIds: authorization.studentIds || [authorization.studentId],
-          authorizedParentId: authorization.authorizedParentId,
-          startDate: authorization.startDate,
-          endDate: authorization.endDate,
-          allowedDaysOfWeek: authorization.allowedDaysOfWeek || [1, 2, 3, 4, 5]
-        });
-      }
+      
+      // Properly handle student IDs - use studentIds array if available, otherwise create array from studentId
+      const studentIdArray = authorization.studentIds && authorization.studentIds.length > 0 
+        ? authorization.studentIds 
+        : (authorization.studentId ? [authorization.studentId] : []);
+      
+      logger.info('Setting form data with studentIds:', studentIdArray);
+      
+      setFormData({
+        studentIds: studentIdArray,
+        authorizedParentId: authorization.authorizedParentId,
+        startDate: authorization.startDate,
+        endDate: authorization.endDate,
+        allowedDaysOfWeek: authorization.allowedDaysOfWeek || [1, 2, 3, 4, 5]
+      });
     }
   }, [isOpen, authorization]);
 

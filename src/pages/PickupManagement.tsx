@@ -19,8 +19,9 @@ import { startAutoCompletionProcess } from '@/services/pickup/autoCompletePickup
 import { logger } from '@/utils/logger';
 import { Class } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, CheckCheck, LogOut } from 'lucide-react';
+import { Clock, CheckCheck, LogOut, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AuthorizedParentsView } from '@/components/pickup/AuthorizedParentsView';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -181,7 +182,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
           </div>
 
           <Tabs defaultValue="pending" className="space-y-6">
-            <TabsList className={`grid w-full ${isMobile ? 'grid-cols-3 h-auto p-1' : 'grid-cols-3'}`}>
+            <TabsList className={`grid w-full ${isMobile ? 'grid-cols-4 h-auto p-1' : 'grid-cols-4'}`}>
               <TabsTrigger value="pending" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
                 <Clock className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                 <span className={isMobile ? 'text-center leading-tight' : ''}>
@@ -198,6 +199,12 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
                 <LogOut className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                 <span className={isMobile ? 'text-center leading-tight' : ''}>
                   {isMobile ? 'Auto-Salida' : t('pickup.selfCheckout', { count: authorizations.length })}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="authorized" className={`flex items-center gap-1 ${isMobile ? 'text-xs px-1 py-2 flex-col min-h-[3rem]' : 'gap-2'}`}>
+                <Users className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                <span className={isMobile ? 'text-center leading-tight' : ''}>
+                  {isMobile ? 'Autorizados' : 'Padres Autorizados'}
                 </span>
               </TabsTrigger>
             </TabsList>
@@ -228,6 +235,10 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
                 authorizations={authorizations}
                 loading={selfCheckoutLoading}
               />
+            </TabsContent>
+
+            <TabsContent value="authorized" className="space-y-6 mt-4">
+              <AuthorizedParentsView selectedClass={selectedClass} />
             </TabsContent>
           </Tabs>
           

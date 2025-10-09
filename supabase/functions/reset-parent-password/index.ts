@@ -52,32 +52,87 @@ serve(async (req) => {
     console.log('Updated parent record successfully');
 
     // Get the user by email or username to get their ID
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    console.log(`Parent data from DB - email: ${parentData.email}, username: ${parentData.username}`);
     
-    if (listError) {
-      console.error('Error listing users:', listError);
-      throw new Error(`Failed to list users: ${listError.message}`);
-    }
-
-    // Look for user by email first, then by username in user metadata
     let user = null;
     
     if (parentData.email) {
-      // Find user by email
-      user = users.find(u => u.email?.toLowerCase() === parentData.email?.toLowerCase());
-      console.log(`Searching for email user: ${parentData.email}, found: ${!!user}`);
+      // For email users, use the PostgreSQL function to find the auth user ID
+      console.log(`Looking for email user: ${parentData.email}`);
+
+      const { data: userId, error: getUserError } = await supabaseAdmin.rpc('get_auth_user_id_by_email', {
+        user_email: parentData.email
+      });
+
+      if (!getUserError && userId) {
+        console.log(`Found auth user ID via RPC: ${userId}`);
+
+        // Now get the full user data using the ID
+        const { data: authUserData, error: getUserByIdError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+        if (!getUserByIdError && authUserData?.user) {
+          user = authUserData.user;
+          console.log(`Auth user found via getUserById: ${!!user}`);
+        } else {
+          console.log(`getUserById failed:`, getUserByIdError?.message || 'No user found');
+        }
+      } else {
+        console.log(`get_auth_user_id_by_email failed:`, getUserError?.message || 'No user ID found');
+      }
+
+      // Fallback to listing users if RPC approach fails
+      if (!user) {
+        console.log('RPC approach failed, falling back to listUsers (paginated)...');
+
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+
+        if (listError) {
+          console.error('Error listing users:', listError);
+          throw new Error(`Failed to list users: ${listError.message}`);
+        }
+
+        console.log(`Total users found in auth (first page): ${users.length}`);
+
+        // Find user by email - try exact match first, then case-insensitive
+        user = users.find(u => u.email === parentData.email);
+        if (!user) {
+          user = users.find(u => u.email?.toLowerCase() === parentData.email?.toLowerCase());
+        }
+        console.log(`Auth user found in list: ${!!user}`);
+        if (!user) {
+          console.log(`Available user emails (first 10):`, users.slice(0, 10).map(u => u.email));
+        }
+      }
     } else if (parentData.username) {
+      // For username users, we still need to list since there's no getUserByUsername
+      console.log(`Looking for username user: ${parentData.username}`);
+      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('Error listing users:', listError);
+        throw new Error(`Failed to list users: ${listError.message}`);
+      }
+
+      console.log(`Total users found in auth: ${users.length}`);
+      
       // For username-based users, they might be stored in different ways:
       // 1. Email field contains username (most common)
       // 2. user_metadata contains username
-      // 3. Both email and user_metadata are checked
+      // 3. app_metadata contains username
       user = users.find(u => {
         const emailMatch = u.email?.toLowerCase() === parentData.username?.toLowerCase();
         const metadataMatch = u.user_metadata?.username === parentData.username;
-        return emailMatch || metadataMatch;
+        const appMetadataMatch = u.app_metadata?.username === parentData.username;
+        return emailMatch || metadataMatch || appMetadataMatch;
       });
-      console.log(`Searching for username user: ${parentData.username}, found: ${!!user}`);
-      console.log(`Available users emails: ${users.map(u => u.email).join(', ')}`);
+      console.log(`Username user found: ${!!user}`);
+      if (!user) {
+        console.log(`Available users (first 10):`, users.slice(0, 10).map(u => ({
+          email: u.email,
+          user_metadata: u.user_metadata,
+          app_metadata: u.app_metadata
+        })));
+      }
     }
     
     if (user) {

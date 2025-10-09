@@ -54,7 +54,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
   onRemoveStudent,
   onTogglePrimary,
 }) => {
-  const { t } = useTranslation();
+  const { t, getCurrentLanguage } = useTranslation();
   const { toast } = useToast();
   
   // State for assigned students management
@@ -74,6 +74,11 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [loadingAuthorizations, setLoadingAuthorizations] = useState(false);
+
+  // Reset authorizing parent when student selection changes
+  useEffect(() => {
+    setSelectedAuthorizingParentId('');
+  }, [selectedAuthStudentId]);
 
   // Load pickup authorizations when parent changes
   useEffect(() => {
@@ -101,12 +106,8 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       
       // Get authorizations this parent has created (where they are the authorizing parent)
       const parentAuthorizations = await getPickupAuthorizationsForParent(parent.id);
-      // Get authorizations where this parent is authorized
-      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(currentParentId, parent.id);
-      console.log(parent.id);
-      console.log(currentParentId);
-      console.log('Parent authorizations:', parentAuthorizations);
-      console.log('Received authorizations:', receivedAuths);
+      // Get authorizations where this parent is authorized (use member.id not currentParentId)
+      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(parent.id);
       
       setAuthorizations(parentAuthorizations);
       setReceivedAuthorizations(receivedAuths);
@@ -141,19 +142,29 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     return filtered;
   }, [parent, allStudents, studentSearchTerm, selectedClassFilter]);
 
-  // Filter available students for authorization (only those belonging to other parents)
+  // Filter available students for authorization - show all students
   const availableAuthStudents = useMemo(() => {
     if (!parent) return [];
     
-    return allStudents.filter(student => {
-      // Exclude students already assigned to this parent
-      const isAssignedToParent = parent.students?.some(ps => ps.id === student.id);
-      if (isAssignedToParent) return false;
-      
-      // Only include students that have authorizations this parent can receive
-      return true;
-    });
+    // Show all students so admin can create authorizations from any student's parent
+    return allStudents.filter(student => !student.deletedAt);
   }, [parent, allStudents]);
+
+  // Filter available authorizing parents based on selected student
+  const availableAuthorizingParents = useMemo(() => {
+    if (!selectedAuthStudentId) return allParents.filter(p => p.id !== parent?.id);
+    
+    // Find the selected student
+    const selectedStudent = allStudents.find(s => s.id === selectedAuthStudentId);
+    if (!selectedStudent || !selectedStudent.parentIds || selectedStudent.parentIds.length === 0) {
+      return allParents.filter(p => p.id !== parent?.id);
+    }
+    
+    // Filter to only show parents of this student
+    return allParents.filter(p => 
+      p.id !== parent?.id && selectedStudent.parentIds.includes(p.id)
+    );
+  }, [selectedAuthStudentId, allStudents, allParents, parent]);
 
   const handleAddStudent = async () => {
     if (!parent || !selectedStudentId) return;
@@ -239,6 +250,14 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     setSelectedAuthorizingParentId('');
     setStartDate('');
     setEndDate('');
+  };
+
+  const formatDate = (dateString: string) => {
+    // Parse date in local timezone to avoid timezone conversion issues
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const locale = getCurrentLanguage() === 'es' ? 'es-ES' : 'en-US';
+    return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const handleClose = () => {
@@ -501,7 +520,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                           <div className="flex items-center gap-4 mt-1">
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              {new Date(auth.startDate).toLocaleDateString()} - {new Date(auth.endDate).toLocaleDateString()}
+                              {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
                             </div>
                             <Badge variant={auth.isActive ? "default" : "secondary"}>
                               {auth.isActive ? t('familyMemberDetails.active') : t('familyMemberDetails.inactive')}
@@ -537,7 +556,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                           <div className="flex items-center gap-4 mt-1">
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              {new Date(auth.startDate).toLocaleDateString()} - {new Date(auth.endDate).toLocaleDateString()}
+                              {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
                             </div>
                             <Badge variant={auth.isActive ? "default" : "secondary"}>
                               {auth.isActive ? t('familyMemberDetails.active') : t('familyMemberDetails.inactive')}
@@ -583,29 +602,49 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                             <SelectValue placeholder={t('familyMemberDetails.selectStudent')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableAuthStudents.map(student => {
-                              const studentClass = classes.find(c => c.id === student.classId);
-                              return (
-                                <SelectItem key={student.id} value={student.id}>
-                                  {student.name} {studentClass && `(${studentClass.name})`}
-                                </SelectItem>
-                              );
-                            })}
+                            {availableAuthStudents.length === 0 ? (
+                              <SelectItem value="no-students-placeholder" disabled>
+                                {t('familyMemberDetails.noStudentsMatch')}
+                              </SelectItem>
+                            ) : (
+                              availableAuthStudents.map(student => {
+                                const studentClass = classes.find(c => c.id === student.classId);
+                                return (
+                                  <SelectItem key={student.id} value={student.id}>
+                                    {student.name} {studentClass && `(${studentClass.name})`}
+                                  </SelectItem>
+                                );
+                              })
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>{t('familyMemberDetails.authorizingParent')}</Label>
-                        <Select value={selectedAuthorizingParentId} onValueChange={setSelectedAuthorizingParentId}>
+                        <Select 
+                          value={selectedAuthorizingParentId} 
+                          onValueChange={setSelectedAuthorizingParentId}
+                          disabled={!selectedAuthStudentId}
+                        >
                           <SelectTrigger>
-                            <SelectValue placeholder={t('familyMemberDetails.selectParent')} />
+                            <SelectValue placeholder={
+                              !selectedAuthStudentId 
+                                ? t('familyMemberDetails.selectStudentFirst')
+                                : t('familyMemberDetails.selectParent')
+                            } />
                           </SelectTrigger>
                           <SelectContent>
-                            {allParents.filter(p => p.id !== parent.id).map(parentOption => (
-                              <SelectItem key={parentOption.id} value={parentOption.id}>
-                                {parentOption.name}
+                            {availableAuthorizingParents.length === 0 ? (
+                              <SelectItem value="no-parents-placeholder" disabled>
+                                {t('familyMemberDetails.noParentsForStudent')}
                               </SelectItem>
-                            ))}
+                            ) : (
+                              availableAuthorizingParents.map(parentOption => (
+                                <SelectItem key={parentOption.id} value={parentOption.id}>
+                                  {parentOption.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       </div>

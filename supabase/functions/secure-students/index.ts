@@ -147,8 +147,34 @@ serve(async (req) => {
           throw error;
         }
 
+        // Fetch parent IDs for all students
+        const studentIds = (studentsData || []).map(s => s.id);
+        const { data: parentRelations, error: parentError } = await supabase
+          .from('student_parents')
+          .select('student_id, parent_id')
+          .in('student_id', studentIds);
+        
+        if (parentError) {
+          console.error('Error fetching parent relationships:', parentError);
+        }
+        
+        // Group parent IDs by student ID
+        const parentsByStudent = (parentRelations || []).reduce((acc, rel) => {
+          if (!acc[rel.student_id]) {
+            acc[rel.student_id] = [];
+          }
+          acc[rel.student_id].push(rel.parent_id);
+          return acc;
+        }, {} as Record<string, string[]>);
+        
+        // Add parent_ids to each student
+        const studentsWithParents = (studentsData || []).map(student => ({
+          ...student,
+          parent_ids: parentsByStudent[student.id] || []
+        }));
+
         // Return encrypted data to client
-        const encryptedStudentsData = await encryptObject(studentsData || []);
+        const encryptedStudentsData = await encryptObject(studentsWithParents);
         return new Response(JSON.stringify({ data: { encrypted_data: encryptedStudentsData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
