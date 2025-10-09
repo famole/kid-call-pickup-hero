@@ -54,7 +54,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
   onRemoveStudent,
   onTogglePrimary,
 }) => {
-  const { t } = useTranslation();
+  const { t, getCurrentLanguage } = useTranslation();
   const { toast } = useToast();
   
   // State for assigned students management
@@ -239,6 +239,14 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     setSelectedAuthorizingParentId('');
     setStartDate('');
     setEndDate('');
+  };
+
+  const formatDate = (dateString: string) => {
+    // Parse date in local timezone to avoid timezone conversion issues
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const locale = getCurrentLanguage() === 'es' ? 'es-ES' : 'en-US';
+    return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const handleClose = () => {
@@ -501,7 +509,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                           <div className="flex items-center gap-4 mt-1">
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              {new Date(auth.startDate).toLocaleDateString()} - {new Date(auth.endDate).toLocaleDateString()}
+                              {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
                             </div>
                             <Badge variant={auth.isActive ? "default" : "secondary"}>
                               {auth.isActive ? t('familyMemberDetails.active') : t('familyMemberDetails.inactive')}
@@ -537,7 +545,7 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                           <div className="flex items-center gap-4 mt-1">
                             <div className="flex items-center gap-1 text-sm text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              {new Date(auth.startDate).toLocaleDateString()} - {new Date(auth.endDate).toLocaleDateString()}
+                              {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
                             </div>
                             <Badge variant={auth.isActive ? "default" : "secondary"}>
                               {auth.isActive ? t('familyMemberDetails.active') : t('familyMemberDetails.inactive')}

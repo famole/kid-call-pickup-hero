@@ -128,11 +128,12 @@ serve(async (req)=>{
       case 'getPickupAuthorizationsForParent':
         {
           logger.log('Getting pickup authorizations for parent:', parentId);
-          // Get today's date at start of day for comparison
-          // Authorizations should be valid through the entire day they expire
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const todayStr = today.toISOString().split('T')[0];
+          
+          // Get today's date in YYYY-MM-DD format (UTC)
+          // Use UTC date to avoid timezone issues
+          const now = new Date();
+          const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+          
           const { data, error } = await supabase.from('pickup_authorizations').select(`
               *,
               authorizing_parent:parents!authorizing_parent_id (id, name, email, role),
