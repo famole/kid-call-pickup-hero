@@ -183,13 +183,30 @@ serve(async (req)=>{
           }
           const targetParentId = decryptedData.parentId || parentId;
           logger.log('Getting pickup authorizations for authorized parent:', targetParentId);
+
+          // Get today's date in YYYY-MM-DD format (UTC)
+          // Use UTC date to avoid timezone issues
+          const now = new Date();
+          const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+
           const { data, error } = await supabase.from('pickup_authorizations').select(`
             *,
             authorizing_parent:parents!authorizing_parent_id (id, name, email),
-            students (id, name)
-          `).eq('authorized_parent_id', targetParentId).order('created_at', {
+            students!inner (
+              id,
+              name,
+              class_id,
+              avatar,
+              classes (
+                id,
+                name,
+                grade
+              )
+            )
+          `).eq('authorized_parent_id', targetParentId).eq('is_active', true).is('students.deleted_at', null).gte('end_date', todayStr).order('created_at', {
             ascending: false
           });
+
           if (error) {
             logger.error('Error fetching pickup authorizations for authorized parent:', error);
             throw new Error(error.message);
