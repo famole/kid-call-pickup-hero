@@ -209,13 +209,27 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   };
 
   const isExpired = (endDate: string) => {
-    return new Date(endDate) < new Date();
+    // Compare only dates, not times - authorization should be valid through end of day
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Parse date in local timezone
+    const [year, month, day] = endDate.split('-');
+    const end = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    end.setHours(0, 0, 0, 0);
+    return end < today;
   };
 
   const isActive = (startDate: string, endDate: string) => {
+    // Compare only dates, not times - authorization should be valid through end of day
     const today = new Date();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    today.setHours(0, 0, 0, 0);
+    // Parse dates in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-');
+    const start = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay));
+    start.setHours(0, 0, 0, 0);
+    const [endYear, endMonth, endDay] = endDate.split('-');
+    const end = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay));
+    end.setHours(0, 0, 0, 0);
     return today >= start && today <= end;
   };
 
