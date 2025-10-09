@@ -59,7 +59,7 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
   getClassName,
   classList,
 }) => {
-  const { t } = useTranslation();
+  const { t, getCurrentLanguage } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const [parentRelations, setParentRelations] = useState<StudentParentRelation[]>([]);
@@ -204,7 +204,8 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
     .toUpperCase();
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    const locale = getCurrentLanguage() === 'es' ? 'es-ES' : 'en-US';
+    return new Date(dateString).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const isExpired = (endDate: string) => {
