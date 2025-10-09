@@ -1119,6 +1119,8 @@
     "student": "Student",
     "authorizingParent": "Authorizing Parent",
     "selectParent": "Select parent",
+    "selectStudentFirst": "Select a student first",
+    "noParentsForStudent": "No parents found for this student",
     "startDate": "Start Date",
     "endDate": "End Date",
     "addAuthorizationButton": "Add Authorization",

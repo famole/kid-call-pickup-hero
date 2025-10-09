@@ -75,6 +75,11 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
   const [endDate, setEndDate] = useState('');
   const [loadingAuthorizations, setLoadingAuthorizations] = useState(false);
 
+  // Reset authorizing parent when student selection changes
+  useEffect(() => {
+    setSelectedAuthorizingParentId('');
+  }, [selectedAuthStudentId]);
+
   // Load pickup authorizations when parent changes
   useEffect(() => {
     if (parent && isOpen) {
@@ -150,6 +155,22 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       return true;
     });
   }, [parent, allStudents]);
+
+  // Filter available authorizing parents based on selected student
+  const availableAuthorizingParents = useMemo(() => {
+    if (!selectedAuthStudentId) return allParents.filter(p => p.id !== parent?.id);
+    
+    // Find the selected student
+    const selectedStudent = allStudents.find(s => s.id === selectedAuthStudentId);
+    if (!selectedStudent || !selectedStudent.parentIds || selectedStudent.parentIds.length === 0) {
+      return allParents.filter(p => p.id !== parent?.id);
+    }
+    
+    // Filter to only show parents of this student
+    return allParents.filter(p => 
+      p.id !== parent?.id && selectedStudent.parentIds.includes(p.id)
+    );
+  }, [selectedAuthStudentId, allStudents, allParents, parent]);
 
   const handleAddStudent = async () => {
     if (!parent || !selectedStudentId) return;
@@ -587,29 +608,49 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
                             <SelectValue placeholder={t('familyMemberDetails.selectStudent')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableAuthStudents.map(student => {
-                              const studentClass = classes.find(c => c.id === student.classId);
-                              return (
-                                <SelectItem key={student.id} value={student.id}>
-                                  {student.name} {studentClass && `(${studentClass.name})`}
-                                </SelectItem>
-                              );
-                            })}
+                            {availableAuthStudents.length === 0 ? (
+                              <SelectItem value="no-students-placeholder" disabled>
+                                {t('familyMemberDetails.noStudentsMatch')}
+                              </SelectItem>
+                            ) : (
+                              availableAuthStudents.map(student => {
+                                const studentClass = classes.find(c => c.id === student.classId);
+                                return (
+                                  <SelectItem key={student.id} value={student.id}>
+                                    {student.name} {studentClass && `(${studentClass.name})`}
+                                  </SelectItem>
+                                );
+                              })
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>{t('familyMemberDetails.authorizingParent')}</Label>
-                        <Select value={selectedAuthorizingParentId} onValueChange={setSelectedAuthorizingParentId}>
+                        <Select 
+                          value={selectedAuthorizingParentId} 
+                          onValueChange={setSelectedAuthorizingParentId}
+                          disabled={!selectedAuthStudentId}
+                        >
                           <SelectTrigger>
-                            <SelectValue placeholder={t('familyMemberDetails.selectParent')} />
+                            <SelectValue placeholder={
+                              !selectedAuthStudentId 
+                                ? t('familyMemberDetails.selectStudentFirst')
+                                : t('familyMemberDetails.selectParent')
+                            } />
                           </SelectTrigger>
                           <SelectContent>
-                            {allParents.filter(p => p.id !== parent.id).map(parentOption => (
-                              <SelectItem key={parentOption.id} value={parentOption.id}>
-                                {parentOption.name}
+                            {availableAuthorizingParents.length === 0 ? (
+                              <SelectItem value="no-parents-placeholder" disabled>
+                                {t('familyMemberDetails.noParentsForStudent')}
                               </SelectItem>
-                            ))}
+                            ) : (
+                              availableAuthorizingParents.map(parentOption => (
+                                <SelectItem key={parentOption.id} value={parentOption.id}>
+                                  {parentOption.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
