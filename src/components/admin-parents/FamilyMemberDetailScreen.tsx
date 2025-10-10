@@ -156,14 +156,29 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
     
     // Find the selected student
     const selectedStudent = allStudents.find(s => s.id === selectedAuthStudentId);
+    console.log('🔍 Selected student for auth:', {
+      studentId: selectedAuthStudentId,
+      studentFound: !!selectedStudent,
+      studentName: selectedStudent?.name,
+      parentIds: selectedStudent?.parentIds,
+      parentIdsLength: selectedStudent?.parentIds?.length || 0
+    });
+    
     if (!selectedStudent || !selectedStudent.parentIds || selectedStudent.parentIds.length === 0) {
+      console.log('⚠️ No parent IDs found for selected student');
       return allParents.filter(p => p.id !== parent?.id);
     }
     
     // Filter to only show parents of this student
-    return allParents.filter(p => 
+    const filtered = allParents.filter(p => 
       p.id !== parent?.id && selectedStudent.parentIds.includes(p.id)
     );
+    
+    console.log(`✅ Filtered to ${filtered.length} authorizing parent(s) for student:`, 
+      filtered.map(p => p.name)
+    );
+    
+    return filtered;
   }, [selectedAuthStudentId, allStudents, allParents, parent]);
 
   const handleAddStudent = async () => {

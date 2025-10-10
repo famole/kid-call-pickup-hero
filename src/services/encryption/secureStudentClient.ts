@@ -140,6 +140,12 @@ export const secureStudentOperations = {
         avatar: student.avatar
       }));
       
+      // Log sample data for debugging
+      if (mappedStudents.length > 0) {
+        const sample = mappedStudents[0];
+        logger.log(`Sample student mapping: ${sample.name} has ${sample.parentIds.length} parent(s): ${sample.parentIds.join(', ')}`);
+      }
+      
       return { data: mappedStudents, error: null };
     } catch (error) {
       logger.error('Error in getStudentsSecure:', error);

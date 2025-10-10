@@ -149,6 +149,8 @@ serve(async (req) => {
 
         // Fetch parent IDs for all students
         const studentIds = (studentsData || []).map(s => s.id);
+        console.log(`Fetching parent relationships for ${studentIds.length} students`);
+        
         const { data: parentRelations, error: parentError } = await supabase
           .from('student_parents')
           .select('student_id, parent_id')
@@ -157,6 +159,8 @@ serve(async (req) => {
         if (parentError) {
           console.error('Error fetching parent relationships:', parentError);
         }
+        
+        console.log(`Found ${(parentRelations || []).length} parent-student relationships`);
         
         // Group parent IDs by student ID
         const parentsByStudent = (parentRelations || []).reduce((acc, rel) => {
@@ -167,11 +171,19 @@ serve(async (req) => {
           return acc;
         }, {} as Record<string, string[]>);
         
+        // Log sample of parent data
+        const sampleStudentId = studentIds[0];
+        if (sampleStudentId) {
+          console.log(`Sample: Student ${sampleStudentId} has ${(parentsByStudent[sampleStudentId] || []).length} parent(s)`);
+        }
+        
         // Add parent_ids to each student
         const studentsWithParents = (studentsData || []).map(student => ({
           ...student,
           parent_ids: parentsByStudent[student.id] || []
         }));
+        
+        console.log(`Returning ${studentsWithParents.length} students with parent data`);
 
         // Return encrypted data to client
         const encryptedStudentsData = await encryptObject(studentsWithParents);
