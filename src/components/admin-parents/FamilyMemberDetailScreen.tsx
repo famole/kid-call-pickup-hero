@@ -153,9 +153,30 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
   // Filter available authorizing parents based on selected student
   const availableAuthorizingParents = useMemo(() => {
     if (!selectedAuthStudentId) return allParents.filter(p => p.id !== parent?.id);
-    
+
     // Find the selected student
     const selectedStudent = allStudents.find(s => s.id === selectedAuthStudentId);
+
+    // If student has parents data (from getStudentsWithParents), use it directly
+    if (selectedStudent && 'parents' in selectedStudent && Array.isArray(selectedStudent.parents) && (selectedStudent.parents as any[]).length > 0) {
+      console.log('🔍 Using student.parents data for auth:', {
+        studentId: selectedAuthStudentId,
+        studentName: selectedStudent.name,
+        parentsCount: (selectedStudent.parents as any[]).length
+      });
+
+      const filtered = (selectedStudent.parents as any[]).filter((p: any) =>
+        p.id !== parent?.id
+      );
+
+      console.log(`✅ Filtered to ${filtered.length} authorizing parent(s) from student.parents:`,
+        filtered.map((p: any) => p.name)
+      );
+
+      return filtered;
+    }
+
+    // Fallback to parentIds matching (original logic)
     console.log('🔍 Selected student for auth:', {
       studentId: selectedAuthStudentId,
       studentFound: !!selectedStudent,
@@ -163,21 +184,30 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       parentIds: selectedStudent?.parentIds,
       parentIdsLength: selectedStudent?.parentIds?.length || 0
     });
-    
+
     if (!selectedStudent || !selectedStudent.parentIds || selectedStudent.parentIds.length === 0) {
       console.log('⚠️ No parent IDs found for selected student');
       return allParents.filter(p => p.id !== parent?.id);
     }
-    
+
     // Filter to only show parents of this student
-    const filtered = allParents.filter(p => 
+    const filtered = allParents.filter(p =>
       p.id !== parent?.id && selectedStudent.parentIds.includes(p.id)
     );
-    
-    console.log(`✅ Filtered to ${filtered.length} authorizing parent(s) for student:`, 
+
+    console.log(`✅ Filtered to ${filtered.length} authorizing parent(s) for student:`,
       filtered.map(p => p.name)
     );
-    
+
+    // Debug: Check if parents exist in allParents but aren't being matched
+    const unmatchedParentIds = selectedStudent.parentIds.filter(id =>
+      !allParents.some(p => p.id === id) && id !== parent?.id
+    );
+    if (unmatchedParentIds.length > 0) {
+      console.warn('⚠️ Parent IDs not found in allParents:', unmatchedParentIds);
+      console.log('Available parents in allParents:', allParents.map(p => ({ id: p.id, name: p.name })));
+    }
+
     return filtered;
   }, [selectedAuthStudentId, allStudents, allParents, parent]);
 
