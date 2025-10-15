@@ -257,6 +257,114 @@ serve(async (req) => {
         });
       }
 
+      case 'getStudentsWithParents': {
+        const { studentIds } = data || {};
+        if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+          throw new Error('studentIds array is required for getStudentsWithParents operation');
+        }
+
+        console.log(`Fetching ${studentIds.length} students with parent data`);
+
+        let query = supabase
+          .from('students')
+          .select(`
+            id,
+            name,
+            class_id,
+            avatar,
+            created_at,
+            updated_at,
+            deleted_at
+          `)
+          .in('id', studentIds);
+
+        if (!includeDeleted) {
+          query = query.is('deleted_at', null);
+        }
+
+        const { data: studentsData, error } = await query;
+
+        if (error) {
+          console.error('Error fetching students:', error);
+          throw error;
+        }
+
+        if (!studentsData || studentsData.length === 0) {
+          const encryptedEmptyData = await encryptObject([]);
+          return new Response(JSON.stringify({ data: { encrypted_data: encryptedEmptyData }, error: null }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        console.log(`Found ${studentsData.length} students, fetching parent relationships`);
+
+        // Fetch parent relationships for all students in one query
+        const { data: parentRelations, error: parentError } = await supabase
+          .from('student_parents')
+          .select(`
+            student_id,
+            parent_id,
+            is_primary,
+            relationship,
+            parents!inner (
+              id,
+              name,
+              email,
+              username,
+              phone,
+              role,
+              created_at,
+              updated_at,
+              deleted_at
+            )
+          `)
+          .in('student_id', studentIds);
+
+        if (parentError) {
+          console.error('Error fetching parent relationships:', parentError);
+        }
+
+        console.log(`Found ${(parentRelations || []).length} parent-student relationships`);
+
+        // Group parent relationships by student_id
+        const parentsByStudent = (parentRelations || []).reduce((acc, rel) => {
+          if (!acc[rel.student_id]) {
+            acc[rel.student_id] = [];
+          }
+
+          acc[rel.student_id].push({
+            id: rel.parents.id,
+            name: rel.parents.name,
+            email: rel.parents.email,
+            username: rel.parents.username,
+            phone: rel.parents.phone,
+            role: rel.parents.role,
+            created_at: rel.parents.created_at,
+            updated_at: rel.parents.updated_at,
+            deleted_at: rel.parents.deleted_at,
+            isPrimary: rel.is_primary,
+            relationship: rel.relationship
+          });
+
+          return acc;
+        }, {} as Record<string, any[]>);
+
+        // Add parent data to each student
+        const studentsWithParents = studentsData.map(student => ({
+          ...student,
+          parentIds: parentsByStudent[student.id]?.map(p => p.id) || [],
+          parents: parentsByStudent[student.id] || []
+        }));
+
+        console.log(`Returning ${studentsWithParents.length} students with parent data`);
+
+        // Return encrypted data to client
+        const encryptedStudentsData = await encryptObject(studentsWithParents);
+        return new Response(JSON.stringify({ data: { encrypted_data: encryptedStudentsData }, error: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'createStudent': {
         // Decrypt entire object received from client
         const decryptedData = await decryptObject(data.encrypted_data);
