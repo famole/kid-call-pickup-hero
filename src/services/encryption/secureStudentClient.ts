@@ -195,6 +195,7 @@ export const secureStudentOperations = {
       logger.error('Error in getStudentByIdSecure:', error);
       return { data: null, error };
     }
+  },
   // Get students with parents (for authorization assignment)
   getStudentsWithParentsSecure: async (studentIds: string[]): Promise<{ data: any[] | null; error: any }> => {
     try {
