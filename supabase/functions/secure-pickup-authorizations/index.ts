@@ -177,6 +177,7 @@ serve(async (req)=>{
           let decryptedData;
           try {
             decryptedData = await decryptObject(requestData);
+            decryptedData = JSON.parse(decryptedData);
           } catch (error) {
             logger.error('Failed to decrypt request data:', error);
             throw new Error('Invalid request data format');
@@ -363,7 +364,7 @@ serve(async (req)=>{
             console.log("DELETE 3");
             logger.log('Deleting pickup authorization:', parsedData.id);
             // Perform the deletion
-            const { error: deleteError, count } = await supabase.from('pickup_authorizations').delete().eq('id', parsedData.id).eq('authorizing_parent_id', parentId); // Ensure only authorizing parent can delete
+            const { error: deleteError, count } = await supabase.from('pickup_authorizations').delete().eq('id', parsedData.id);
             console.log("DELETE 4");
             if (deleteError) {
               logger.error('Database error deleting pickup authorization:', deleteError);

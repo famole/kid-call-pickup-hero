@@ -106,8 +106,8 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       
       // Get authorizations this parent has created (where they are the authorizing parent)
       const parentAuthorizations = await getPickupAuthorizationsForParent(parent.id);
-      // Get authorizations where this parent is authorized (use member.id not currentParentId)
-      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(parent.id);
+      // Get authorizations where this parent is authorized (pass admin ID first, then target parent ID)
+      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(currentParentId, parent.id);
       
       setAuthorizations(parentAuthorizations);
       setReceivedAuthorizations(receivedAuths);

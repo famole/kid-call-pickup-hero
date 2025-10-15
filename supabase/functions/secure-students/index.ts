@@ -222,7 +222,36 @@ serve(async (req) => {
           throw error;
         }
 
-        const encryptedStudentData = await encryptObject(studentData || null);
+        if (!studentData) {
+          const encryptedEmptyData = await encryptObject(null);
+          return new Response(JSON.stringify({ data: { encrypted_data: encryptedEmptyData }, error: null }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Fetch parent IDs for this student
+        console.log(`Fetching parent relationships for student ${id}`);
+
+        const { data: parentRelations, error: parentError } = await supabase
+          .from('student_parents')
+          .select('student_id, parent_id')
+          .eq('student_id', id);
+
+        if (parentError) {
+          console.error('Error fetching parent relationships:', parentError);
+        }
+
+        console.log(`Found ${(parentRelations || []).length} parent-student relationships for student ${id}`);
+
+        // Add parent_ids to the student
+        const studentWithParents = {
+          ...studentData,
+          parent_ids: parentRelations ? parentRelations.map(rel => rel.parent_id) : []
+        };
+
+        console.log(`Student ${id} has ${studentWithParents.parent_ids.length} parent(s)`);
+
+        const encryptedStudentData = await encryptObject(studentWithParents);
         return new Response(JSON.stringify({ data: { encrypted_data: encryptedStudentData }, error: null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

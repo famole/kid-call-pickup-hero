@@ -80,7 +80,6 @@ export const useOptimizedParentDashboard = () => {
       if (!parentIdentifier) {
         logger.error('Failed to get parent identifier for dashboard');
         setLoading(false);
-        return;
       }
 
       // Determine user type
@@ -90,10 +89,9 @@ export const useOptimizedParentDashboard = () => {
       const [dashboardData, pickupRequests] = await Promise.all([
         // Use the unified function that handles both email and parent ID
         getParentDashboardDataOptimized(isEmailUser ? user.email! : parentId),
-        // For parents, get all affected requests; for family members, get only their own
-        user?.role === 'parent' ? getParentAffectedPickupRequests() : getActivePickupRequestsForParent(parentId)
+        // Only get requests made by the current parent (not requests made by others)
+        getActivePickupRequestsForParent(parentId)
       ]);
-
 
       setChildren(dashboardData.allChildren);
       
@@ -168,22 +166,11 @@ export const useOptimizedParentDashboard = () => {
           const requestParentId = (payload.new as any)?.parent_id || (payload.old as any)?.parent_id;
           const isUsersRequest = requestParentId === currentParentIdRef.current || requestParentId === user.id;
           
-          // Also check if this is for their students (they might be authorized to pick up)
-          const requestStudentId = (payload.new as any)?.student_id || (payload.old as any)?.student_id;
-          const isForTheirStudent = childrenRef.current.some(child => child.id === requestStudentId);
-          
-          if (!isUsersRequest && !isForTheirStudent) {
-            logger.log('Ignoring pickup request change - not related to this user');
+          // Only process requests made by this user (not requests made by others for their students)
+          if (!isUsersRequest) {
+            logger.log('Ignoring pickup request change - not made by this user');
             return;
           }
-          
-          logger.log('Processing pickup request change for this user:', {
-            isUsersRequest,
-            isForTheirStudent,
-            requestParentId,
-            currentParentId,
-            requestStudentId
-          });
 
           // Handle real-time updates with notifications
           if (payload.eventType === 'INSERT' && (payload.new as any)?.status === 'pending') {
@@ -329,35 +316,8 @@ export const useOptimizedParentDashboard = () => {
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
   const calledRequests = activeRequests.filter(req => req.status === 'called');
 
-  // Get requests made by family members for this parent's assigned children
-  // Show to parents when family members request pickup for their children
-  const authorizedRequests = activeRequests.filter(req => {
-    const child = children.find(c => c.id === req.studentId);
-    // Show requests made by others (including family members) for children this parent is directly assigned to
-    const isDirectlyAssigned = child && !child.isAuthorized; // Direct children (not just authorized)
-    const isRequestByOther = req.parentId !== currentParentId;
-    
-    return isDirectlyAssigned && isRequestByOther;
-  });
-
-  // Debug logging for authorized requests
-  logger.info('🔍 Authorized requests result:', {
-    userRole: user?.role,
-    currentParentId,
-    totalActiveRequests: activeRequests.length,
-    authorizedRequestsCount: authorizedRequests.length,
-    authorizedRequests: authorizedRequests.map(req => ({
-      id: req.id,
-      studentId: req.studentId,
-      parentId: req.parentId,
-      requestingParent: req.requestingParent?.name
-    })),
-    childrenSummary: children.map(c => ({ 
-      id: c.id, 
-      name: c.name, 
-      isAuthorized: c.isAuthorized 
-    }))
-  });
+  // Only show requests made by the current parent (no authorized requests from others)
+  const authorizedRequests: PickupRequest[] = [];
 
   return {
     children,
