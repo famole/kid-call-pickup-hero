@@ -127,6 +127,9 @@ serve(async (req) => {
   }
 
   try {
+    // Get the authorization header for user authentication
+    const authHeader = req.headers.get('Authorization');
+    
     let requestBody;
     try {
       requestBody = await req.json();
@@ -218,18 +221,36 @@ serve(async (req) => {
         }
         
         // Verify ownership - either match the parent_id or be an admin/superadmin
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        // Check if user has admin or superadmin role from parents table
+        // Create a client with the user's JWT to get user info
         let isAdmin = false;
-        if (user?.email) {
-          const { data: parentData } = await supabase
-            .from('parents')
-            .select('role')
-            .eq('email', user.email)
-            .single();
+        
+        if (authHeader) {
+          const token = authHeader.replace('Bearer ', '');
+          const userClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            {
+              global: {
+                headers: {
+                  Authorization: authHeader
+                }
+              }
+            }
+          );
           
-          isAdmin = parentData?.role === 'admin' || parentData?.role === 'superadmin';
+          const { data: { user } } = await userClient.auth.getUser(token);
+          
+          // Check if user has admin or superadmin role from parents table
+          if (user?.email) {
+            const { data: parentData } = await supabase
+              .from('parents')
+              .select('role')
+              .eq('email', user.email)
+              .single();
+            
+            isAdmin = parentData?.role === 'admin' || parentData?.role === 'superadmin';
+            console.log(`User ${user.email} admin status: ${isAdmin}`);
+          }
         }
         
         if (!isAdmin && parentId && request.parent_id !== parentId) {
