@@ -200,7 +200,7 @@ serve(async (req) => {
           throw new Error('Invalid request data');
         }
 
-        const { requestId, parentId } = JSON.parse(decryptedData);
+        const { requestId, parentId } = decryptedData;
         
         if (!requestId) {
           throw new Error('Request ID is required');
