@@ -217,9 +217,20 @@ serve(async (req) => {
           throw new Error('Failed to fetch pickup request');
         }
         
-        // Verify ownership - either match the parent_id or be an admin
+        // Verify ownership - either match the parent_id or be an admin/superadmin
         const { data: { user } } = await supabase.auth.getUser();
-        const isAdmin = user?.user_metadata?.role === 'admin';
+        
+        // Check if user has admin or superadmin role from parents table
+        let isAdmin = false;
+        if (user?.email) {
+          const { data: parentData } = await supabase
+            .from('parents')
+            .select('role')
+            .eq('email', user.email)
+            .single();
+          
+          isAdmin = parentData?.role === 'admin' || parentData?.role === 'superadmin';
+        }
         
         if (!isAdmin && parentId && request.parent_id !== parentId) {
           console.error(`Parent ${parentId} is not authorized to cancel request ${requestId}`);
