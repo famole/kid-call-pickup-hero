@@ -197,7 +197,7 @@ serve(async (req) => {
           throw new Error('Invalid request data');
         }
 
-        const { requestId, parentId } = JSON.parse(decryptedData);
+        const { requestId, parentId } = decryptedData;
         
         if (!requestId) {
           throw new Error('Request ID is required');
@@ -219,9 +219,29 @@ serve(async (req) => {
         
         // Verify ownership - either match the parent_id or be an admin
         const { data: { user } } = await supabase.auth.getUser();
-        const isAdmin = user?.user_metadata?.role === 'admin';
-        
-        if (!isAdmin && parentId && request.parent_id !== parentId) {
+
+        // Check if user is admin (from user metadata)
+        const isAdmin = user?.user_metadata?.role === 'admin' || user?.user_metadata?.role === 'superadmin';
+
+        // Additional check: verify admin status in database as fallback
+        let isAdminInDb = false;
+        if (user?.email) {
+          const { data: parentData } = await supabase
+            .from('parents')
+            .select('role')
+            .eq('email', user.email)
+            .single();
+
+          if (parentData && (parentData.role === 'admin' || parentData.role === 'superadmin')) {
+            isAdminInDb = true;
+          }
+        }
+
+        const hasAdminAccess = isAdmin || isAdminInDb;
+
+        if (hasAdminAccess) {
+          console.log(`Admin user (${user?.email}) canceling pickup request ${requestId}`);
+        } else if (parentId && request.parent_id !== parentId) {
           console.error(`Parent ${parentId} is not authorized to cancel request ${requestId}`);
           throw new Error('Not authorized to cancel this pickup request');
         }
