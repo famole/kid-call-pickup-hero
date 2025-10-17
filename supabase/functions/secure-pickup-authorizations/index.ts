@@ -444,6 +444,137 @@ serve(async (req)=>{
             }
           });
         }
+      case 'getAuthorizedParentsByDate':
+        {
+          try {
+            // Decrypt request data to get date and optional classId
+            const decryptedData = await decryptObject(requestData);
+            const parsedData = JSON.parse(decryptedData);
+            
+            const selectedDate = parsedData.date;
+            const dayOfWeek = parsedData.dayOfWeek;
+            const classId = parsedData.classId;
+            
+            logger.log('Getting authorized parents for date:', selectedDate, 'day:', dayOfWeek, 'classId:', classId);
+
+            // Fetch all active authorizations for the selected date and day of week
+            const { data: authorizations, error } = await supabase
+              .from('pickup_authorizations')
+              .select(`
+                id,
+                authorized_parent_id,
+                student_ids,
+                allowed_days_of_week,
+                authorized_parent:parents!authorized_parent_id (
+                  id,
+                  name,
+                  email,
+                  role
+                )
+              `)
+              .eq('is_active', true)
+              .lte('start_date', selectedDate)
+              .gte('end_date', selectedDate)
+              .contains('allowed_days_of_week', [dayOfWeek]);
+
+            if (error) {
+              logger.error('Error fetching authorized parents:', error);
+              throw new Error(error.message);
+            }
+
+            if (!authorizations || authorizations.length === 0) {
+              logger.log('No authorizations found for date:', selectedDate);
+              return new Response(JSON.stringify({
+                data: { encrypted_data: await encryptObject([]) },
+                error: null
+              }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              });
+            }
+
+            // Get all unique student IDs
+            const allStudentIds = new Set();
+            authorizations.forEach(auth => {
+              if (auth.student_ids && Array.isArray(auth.student_ids)) {
+                auth.student_ids.forEach(id => allStudentIds.add(id));
+              }
+            });
+
+            // Fetch student details with optional class filter
+            let studentsQuery = supabase
+              .from('students')
+              .select('id, name, class_id')
+              .in('id', Array.from(allStudentIds))
+              .is('deleted_at', null);
+
+            if (classId && classId !== 'all') {
+              studentsQuery = studentsQuery.eq('class_id', classId);
+            }
+
+            const { data: students, error: studentsError } = await studentsQuery;
+
+            if (studentsError) {
+              logger.error('Error fetching students:', studentsError);
+            }
+
+            // Create a map for quick student lookup
+            const studentsMap = new Map();
+            (students || []).forEach(s => studentsMap.set(s.id, s));
+
+            // Group authorizations by parent
+            const parentMap = new Map();
+
+            authorizations.forEach(auth => {
+              const parent = auth.authorized_parent;
+              if (!parent) return;
+
+              if (!parentMap.has(parent.id)) {
+                parentMap.set(parent.id, {
+                  parentId: parent.id,
+                  parentName: parent.name,
+                  parentEmail: parent.email || '',
+                  parentRole: parent.role,
+                  students: []
+                });
+              }
+
+              const parentData = parentMap.get(parent.id);
+              
+              // Add students for this authorization
+              if (auth.student_ids && Array.isArray(auth.student_ids)) {
+                auth.student_ids.forEach(studentId => {
+                  const student = studentsMap.get(studentId);
+                  if (student && !parentData.students.some(s => s.id === studentId)) {
+                    parentData.students.push({
+                      id: student.id,
+                      name: student.name
+                    });
+                  }
+                });
+              }
+            });
+
+            // Filter out parents with no students (when class filter removes all their students)
+            const result = Array.from(parentMap.values())
+              .filter(parent => parent.students.length > 0)
+              .sort((a, b) => a.parentName.localeCompare(b.parentName));
+
+            logger.log(`Found ${result.length} authorized parents for ${selectedDate} with class filter: ${classId || 'all'}`);
+            
+            const encryptedData = await encryptObject(result);
+            return new Response(JSON.stringify({
+              data: { encrypted_data: encryptedData },
+              error: null
+            }), {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          } catch (error) {
+            logger.error('Error in getAuthorizedParentsByDate:', error);
+            throw error;
+          }
+        }
       default:
         throw new Error(`Unknown operation: ${operation}`);
     }
