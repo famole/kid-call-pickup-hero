@@ -40,11 +40,10 @@ export const useAuthorizedParentsByDate = (date: Date, classId?: string) => {
         
         const encryptedData = await encryptData(JSON.stringify(requestData));
 
-        // Call the secure edge function
+        // Call the secure edge function (no parentId needed for this operation)
         const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
           body: {
             operation: 'getAuthorizedParentsByDate',
-            parentId: 'system', // This operation doesn't require a specific parent
             data: encryptedData
           }
         });
@@ -63,7 +62,7 @@ export const useAuthorizedParentsByDate = (date: Date, classId?: string) => {
 
         // Decrypt the response
         const decryptedData = await decryptData(data.data.encrypted_data);
-        const result = JSON.parse(decryptedData);
+        const result = typeof decryptedData === 'string' ? JSON.parse(decryptedData) : decryptedData;
 
         logger.info(`✅ Found ${result.length} authorized parents for ${selectedDate} with class filter: ${classId || 'all'}`);
         logger.info('Authorized parents:', result.map((p: AuthorizedParent) => ({ 

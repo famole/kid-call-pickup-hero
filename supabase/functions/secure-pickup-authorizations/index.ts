@@ -111,8 +111,11 @@ serve(async (req)=>{
       parentId,
       hasData: !!requestData
     });
-    if (!parentId) {
-      logger.error('Parent ID is required');
+    
+    // parentId validation - skip for operations that don't need a specific parent
+    const operationsWithoutParentId = ['getAuthorizedParentsByDate'];
+    if (!parentId && !operationsWithoutParentId.includes(operation)) {
+      logger.error('Parent ID is required for operation:', operation);
       return new Response(JSON.stringify({
         data: null,
         error: 'Parent ID is required'
@@ -124,6 +127,7 @@ serve(async (req)=>{
         }
       });
     }
+    
     switch(operation){
       case 'getPickupAuthorizationsForParent':
         {
