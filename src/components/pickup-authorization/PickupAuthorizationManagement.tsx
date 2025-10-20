@@ -13,7 +13,6 @@ import { logger } from '@/utils/logger';
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 import {
-  getPickupAuthorizationsForParent,
   deletePickupAuthorization,
   PickupAuthorizationWithDetails
 } from '@/services/pickupAuthorizationService';
@@ -38,6 +37,7 @@ import {
 
 const PickupAuthorizationManagement: React.FC = () => {
   const [authorizations, setAuthorizations] = useState<PickupAuthorizationWithDetails[]>([]);
+  const [receivedAuthorizations, setReceivedAuthorizations] = useState<PickupAuthorizationWithDetails[]>([]);
   const [invitations, setInvitations] = useState<PickupInvitationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [showExpired, setShowExpired] = useState(false);
@@ -48,6 +48,9 @@ const PickupAuthorizationManagement: React.FC = () => {
   const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null);
   const { toast } = useToast();
   const { t, getCurrentLanguage } = useTranslation();
+
+  // State to store current parent ID
+  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
   
   // Refs for managing subscriptions and timeouts
   const subscriptionRef = useRef<any>(null);
@@ -58,7 +61,7 @@ const PickupAuthorizationManagement: React.FC = () => {
   // Debounced loading function to prevent excessive API calls
   const loadAuthorizations = useCallback(async (forceRefresh = false) => {
     const now = Date.now();
-    
+
     // Prevent excessive calls - only allow one call per 2 seconds unless forced
     if (!forceRefresh && now - lastFetchRef.current < 2000) {
       logger.info('Skipping authorization refresh - too recent');
@@ -74,23 +77,79 @@ const PickupAuthorizationManagement: React.FC = () => {
     const doLoad = async () => {
       try {
         setLoading(true);
-        logger.info('Loading pickup authorizations and invitations');
-        const [authData, invitationData] = await Promise.all([
-          (async () => {
-            const currentParentId = await getCurrentParentIdCached();
-            if (!currentParentId) {
-              logger.error('PickupAuthorizationManagement: No current parent ID found');
-              return [];
-            }
-            logger.log('PickupAuthorizationManagement: Loading authorizations for parentId:', currentParentId);
-            return getPickupAuthorizationsForParent(currentParentId);
-          })(),
-          getPickupInvitationsForParent()
-        ]);
-        setAuthorizations(authData);
+        logger.info('Loading pickup authorizations using Supabase SDK');
+
+        const currentParentId = await getCurrentParentIdCached();
+        if (!currentParentId) {
+          logger.error('PickupAuthorizationManagement: No current parent ID found');
+          setAuthorizations([]);
+          setReceivedAuthorizations([]);
+          return;
+        }
+
+        // Set current parent ID for use in rendering
+        setCurrentParentId(currentParentId);
+
+        // Get today's date in YYYY-MM-DD format (UTC)
+        const today = new Date();
+        const todayStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}-${String(today.getUTCDate()).padStart(2, '0')}`;
+
+        // Get ALL pickup authorizations from the system (admin view)
+        const { data: allAuthsData, error: authsError } = await supabase
+          .from('pickup_authorizations')
+          .select(`
+            *,
+            authorizing_parent:parents!authorizing_parent_id (id, name, email, role),
+            authorized_parent:parents!authorized_parent_id (id, name, email, role),
+            students!inner (
+              id,
+              name,
+              class_id,
+              avatar,
+              classes (
+                id,
+                name,
+                grade
+              )
+            )
+          `)
+          .eq('is_active', true)
+          .is('students.deleted_at', null)
+          .gte('end_date', todayStr)
+          .order('created_at', { ascending: false });
+
+        if (authsError) {
+          logger.error('Error fetching all authorizations:', authsError);
+          throw new Error(authsError.message);
+        }
+
+        // Transform data to match interface
+        const allAuths = (allAuthsData || []).map(auth => ({
+          id: auth.id,
+          authorizingParentId: auth.authorizing_parent_id,
+          authorizedParentId: auth.authorized_parent_id,
+          studentId: auth.student_id,
+          studentIds: auth.student_ids,
+          startDate: auth.start_date,
+          endDate: auth.end_date,
+          allowedDaysOfWeek: auth.allowed_days_of_week || [0,1,2,3,4,5,6],
+          isActive: auth.is_active,
+          createdAt: auth.created_at,
+          updatedAt: auth.updated_at,
+          authorizingParent: auth.authorizing_parent,
+          authorizedParent: auth.authorized_parent,
+          student: auth.students,
+          type: 'all'
+        }));
+
+        // Get invitations
+        const invitationData = await getPickupInvitationsForParent();
+
+        setAuthorizations(allAuths);
         setInvitations(invitationData.filter(inv => inv.invitationStatus === 'pending'));
         lastFetchRef.current = now;
-        logger.info(`Loaded ${authData.length} authorizations and ${invitationData.length} invitations`);
+        logger.info(`Loaded ${allAuths.length} authorizations and ${invitationData.length} invitations`);
+
       } catch (error) {
         logger.error('Error loading authorizations:', error);
         toast({
@@ -327,6 +386,124 @@ const PickupAuthorizationManagement: React.FC = () => {
     return allowedDays.sort().map(day => dayNames[day]).join(', ');
   };
 
+  const renderAuthorizations = (auths: PickupAuthorizationWithDetails[]) => {
+    return (
+      <div className="space-y-3 sm:space-y-4">
+        {auths.map((auth) => {
+          const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive, auth.allowedDaysOfWeek || [0,1,2,3,4,5,6]);
+          return (
+            <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
+              <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+                    <h4 className="font-medium text-base truncate">
+                      {auth.student?.name || t('pickupAuthorizations.unknownStudent')}
+                    </h4>
+                    <Badge
+                      variant={statusBadge.variant}
+                      className={`w-fit ${
+                        statusBadge.variant === "default" ? "bg-school-primary hover:bg-school-primary/90" : ""
+                      }`}
+                    >
+                      {statusBadge.label}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">{t('pickupAuthorizations.createdBy')}:</span>{' '}
+                        <span>
+                          {auth.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">{t('pickupAuthorizations.authorizedTo')}:</span>{' '}
+                        <span>
+                          {auth.authorizedParent?.name || t('pickupAuthorizations.unknownParent')}
+                        </span>
+                      </p>
+                      {auth.authorizedParent?.role && (
+                        <RoleBadge role={auth.authorizedParent.role} size="sm" />
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="break-words">
+                        {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
+                      <span className="font-medium">{t('pickupAuthorizations.allowedDays')}:</span>
+                      <span className="break-words">
+                        {getDayNames(auth.allowedDaysOfWeek || [0,1,2,3,4,5,6])}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end sm:flex-shrink-0 space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingAuthorization(auth);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span className="ml-2 sm:hidden">{t('common.edit')}</span>
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={deletingId === auth.id}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="ml-2 sm:hidden">{t('common.remove')}</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="mx-4 max-w-md">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-lg">
+                          {t('pickupAuthorizations.removeAuthorization')}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm">
+                          {t('pickupAuthorizations.removeAuthorizationConfirm')
+                            .replace('{studentName}', auth.student?.name || '')
+                            .replace('{parentName}', auth.authorizedParent?.name || '')}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                        <AlertDialogCancel className="w-full sm:w-auto">
+                          {t('common.cancel')}
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteAuthorization(auth.id)}
+                          className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {t('pickupAuthorizations.removeAuthorizationButton')}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Card>
@@ -348,10 +525,10 @@ const PickupAuthorizationManagement: React.FC = () => {
               <div className="space-y-1">
                 <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
                   <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                  {t('pickupAuthorizations.title')}
+                  {t('pickupAuthorizations.allAuthorizationsTitle')}
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  {t('pickupAuthorizations.description')}
+                  {t('pickupAuthorizations.allAuthorizationsDescription')}
                 </CardDescription>
               </div>
               <Button 
@@ -490,142 +667,17 @@ const PickupAuthorizationManagement: React.FC = () => {
                       {t('pickupAuthorizations.activeAuthorizations')}
                     </h3>
                   )}
-              {(() => {
-                // Filter based on showExpired toggle
-                const filteredAuthorizations = showExpired 
-                  ? authorizations 
-                  : authorizations.filter(auth => !isExpired(auth.endDate));
-                
-                console.log('Show Expired:', showExpired);
-                console.log('Total Authorizations:', authorizations.length);
-                console.log('Filtered Authorizations:', filteredAuthorizations.length);
-                console.log('Expired count:', authorizations.filter(auth => isExpired(auth.endDate)).length);
-                
-                if (filteredAuthorizations.length === 0) {
-                      return (
-                        <div className="text-center py-8 px-4 text-gray-500">
-                          <p className="text-sm">
-                            {showExpired 
-                              ? t('pickupAuthorizations.noAuthorizationsYet')
-                              : t('pickupAuthorizations.noActiveAuthorizations', 'No active authorizations. Toggle "Show expired" to view past authorizations.')}
-                          </p>
-                        </div>
-                      );
-                    }
-                    
+
+                  {/* All Authorizations */}
+                  {(() => {
+                    if (authorizations.length === 0) return null;
+
                     return (
-                      <div className="space-y-3 sm:space-y-4">
-                        {filteredAuthorizations.map((auth) => {
-                          const statusBadge = getStatusBadge(auth.startDate, auth.endDate, auth.isActive, auth.allowedDaysOfWeek || [0,1,2,3,4,5,6]);
-                      return (
-                        <div key={auth.id} className="border rounded-lg p-4 space-y-3 bg-white">
-                          <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
-                            <div className="space-y-2 flex-1 min-w-0">
-                              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
-                                <h4 className="font-medium text-base truncate">
-                                  {auth.student?.name || t('pickupAuthorizations.unknownStudent')}
-                                </h4>
-                                <Badge 
-                                  variant={statusBadge.variant}
-                                  className={`w-fit ${
-                                    statusBadge.variant === "default" ? "bg-school-primary hover:bg-school-primary/90" : ""
-                                  }`}
-                                >
-                                  {statusBadge.label}
-                                </Badge>
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="text-sm text-gray-600">
-                                    <span className="font-medium">{t('pickupAuthorizations.createdBy')}:</span>{' '}
-                                    <span>
-                                      {auth.authorizingParent?.name || t('pickupAuthorizations.unknownParent')}
-                                    </span>
-                                  </p>
-                                </div>
-                                
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="text-sm text-gray-600">
-                                    <span className="font-medium">{t('pickupAuthorizations.authorizedTo')}:</span>{' '}
-                                    <span>
-                                      {auth.authorizedParent?.name || t('pickupAuthorizations.unknownParent')}
-                                    </span>
-                                  </p>
-                                  {auth.authorizedParent?.role && (
-                                    <RoleBadge role={auth.authorizedParent.role} size="sm" />
-                                  )}
-                                </div>
-                                
-                                <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
-                                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                                  <span className="break-words">
-                                    {formatDate(auth.startDate)} - {formatDate(auth.endDate)}
-                                  </span>
-                                </div>
-                                
-                                <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
-                                  <span className="font-medium">{t('pickupAuthorizations.allowedDays')}:</span>
-                                  <span className="break-words">
-                                    {getDayNames(auth.allowedDaysOfWeek || [0,1,2,3,4,5,6])}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex justify-end sm:flex-shrink-0 space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingAuthorization(auth);
-                                  setIsEditDialogOpen(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                                <span className="ml-2 sm:hidden">{t('common.edit')}</span>
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={deletingId === auth.id}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="ml-2 sm:hidden">{t('common.remove')}</span>
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="mx-4 max-w-md">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-lg">
-                                      {t('pickupAuthorizations.removeAuthorization')}
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription className="text-sm">
-                                      {t('pickupAuthorizations.removeAuthorizationConfirm')
-                                        .replace('{studentName}', auth.student?.name || '')
-                                        .replace('{parentName}', auth.authorizedParent?.name || '')}
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                                    <AlertDialogCancel className="w-full sm:w-auto">
-                                      {t('common.cancel')}
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeleteAuthorization(auth.id)}
-                                      className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      {t('pickupAuthorizations.removeAuthorizationButton')}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                      <div className="space-y-3">
+                        <h4 className="text-md font-medium text-gray-700">
+                          {t('pickupAuthorizations.allActiveAuthorizations')}
+                        </h4>
+                        {renderAuthorizations(authorizations)}
                       </div>
                     );
                   })()}

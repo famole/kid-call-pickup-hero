@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ import {
 } from '@/services/pickupAuthorizationService';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from "@/components/ui/separator";
+import { secureStudentOperations } from '@/services/encryption/secureStudentClient';
 
 interface FamilyMemberDetailScreenProps {
   isOpen: boolean;
@@ -75,9 +76,22 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
   const [endDate, setEndDate] = useState('');
   const [loadingAuthorizations, setLoadingAuthorizations] = useState(false);
 
+  // State for selected student's parent data (fetched from API)
+  const [selectedStudentParentData, setSelectedStudentParentData] = useState<any[] | null>(null);
+  const [loadingStudentParents, setLoadingStudentParents] = useState(false);
+
   // Reset authorizing parent when student selection changes
   useEffect(() => {
     setSelectedAuthorizingParentId('');
+  }, [selectedAuthStudentId]);
+
+  // Fetch parent data when student is selected for authorization
+  useEffect(() => {
+    if (selectedAuthStudentId) {
+      loadStudentParentsData();
+    } else {
+      setSelectedStudentParentData(null);
+    }
   }, [selectedAuthStudentId]);
 
   // Load pickup authorizations when parent changes
@@ -106,8 +120,8 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       
       // Get authorizations this parent has created (where they are the authorizing parent)
       const parentAuthorizations = await getPickupAuthorizationsForParent(parent.id);
-      // Get authorizations where this parent is authorized (use member.id not currentParentId)
-      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(parent.id);
+      // Get authorizations where this parent is authorized (pass admin ID first, then target parent ID)
+      const receivedAuths = await getPickupAuthorizationsForAuthorizedParent(currentParentId, parent.id);
       
       setAuthorizations(parentAuthorizations);
       setReceivedAuthorizations(receivedAuths);
@@ -122,6 +136,57 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
       setLoadingAuthorizations(false);
     }
   };
+
+  const loadStudentParentsData = useCallback(async () => {
+    if (!selectedAuthStudentId) return;
+
+    setLoadingStudentParents(true);
+    try {
+      logger.log('Fetching parent data for selected student:', selectedAuthStudentId);
+
+      const { data, error } = await secureStudentOperations.getStudentsWithParentsSecure([selectedAuthStudentId]);
+
+      if (error) {
+        logger.error('Error fetching student parent data:', error);
+        toast({
+          title: t('familyMemberDetails.error'),
+          description: 'Failed to load student parent information',
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const studentData = data[0];
+        logger.log('Loaded parent data for student:', {
+          studentId: selectedAuthStudentId,
+          parentsCount: studentData.parents?.length || 0
+        });
+        setSelectedStudentParentData(studentData.parents || []);
+      } else {
+        logger.log('No parent data found for student:', selectedAuthStudentId);
+        setSelectedStudentParentData([]);
+      }
+    } catch (error) {
+      logger.error('Error in loadStudentParentsData:', error);
+      toast({
+        title: t('familyMemberDetails.error'),
+        description: 'Failed to load student parent information',
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStudentParents(false);
+    }
+  }, [selectedAuthStudentId, toast, t]);
+
+  // Fetch parent data when student is selected for authorization
+  useEffect(() => {
+    if (selectedAuthStudentId) {
+      loadStudentParentsData();
+    } else {
+      setSelectedStudentParentData(null);
+    }
+  }, [selectedAuthStudentId, loadStudentParentsData]);
 
   // Filter available students for assignment
   const availableStudents = useMemo(() => {
@@ -153,18 +218,81 @@ const FamilyMemberDetailScreen: React.FC<FamilyMemberDetailScreenProps> = ({
   // Filter available authorizing parents based on selected student
   const availableAuthorizingParents = useMemo(() => {
     if (!selectedAuthStudentId) return allParents.filter(p => p.id !== parent?.id);
-    
+
+    // Use fresh parent data if available (from API call)
+    if (selectedStudentParentData && selectedStudentParentData.length > 0) {
+      logger.log('🔍 Using fresh parent data for authorization:', {
+        studentId: selectedAuthStudentId,
+        parentsCount: selectedStudentParentData.length
+      });
+
+      const filtered = selectedStudentParentData.filter((p: any) =>
+        p.id !== parent?.id
+      );
+
+      logger.log(`✅ Filtered to ${filtered.length} authorizing parent(s) from fresh data:`,
+        filtered.map((p: any) => p.name)
+      );
+
+      return filtered;
+    }
+
     // Find the selected student
     const selectedStudent = allStudents.find(s => s.id === selectedAuthStudentId);
+
+    // If student has parents data (from getStudentsWithParents), use it directly
+    if (selectedStudent && 'parents' in selectedStudent && Array.isArray(selectedStudent.parents) && (selectedStudent.parents as any[]).length > 0) {
+      console.log('🔍 Using student.parents data for auth:', {
+        studentId: selectedAuthStudentId,
+        studentName: selectedStudent.name,
+        parentsCount: (selectedStudent.parents as any[]).length
+      });
+
+      const filtered = (selectedStudent.parents as any[]).filter((p: any) =>
+        p.id !== parent?.id
+      );
+
+      console.log(`✅ Filtered to ${filtered.length} authorizing parent(s) from student.parents:`,
+        filtered.map((p: any) => p.name)
+      );
+
+      return filtered;
+    }
+
+    // Fallback to parentIds matching (original logic)
+    console.log('🔍 Selected student for auth:', {
+      studentId: selectedAuthStudentId,
+      studentFound: !!selectedStudent,
+      studentName: selectedStudent?.name,
+      parentIds: selectedStudent?.parentIds,
+      parentIdsLength: selectedStudent?.parentIds?.length || 0
+    });
+
     if (!selectedStudent || !selectedStudent.parentIds || selectedStudent.parentIds.length === 0) {
+      console.log('⚠️ No parent IDs found for selected student');
       return allParents.filter(p => p.id !== parent?.id);
     }
-    
+
     // Filter to only show parents of this student
-    return allParents.filter(p => 
+    const filtered = allParents.filter(p =>
       p.id !== parent?.id && selectedStudent.parentIds.includes(p.id)
     );
-  }, [selectedAuthStudentId, allStudents, allParents, parent]);
+
+    console.log(`✅ Filtered to ${filtered.length} authorizing parent(s) for student:`,
+      filtered.map(p => p.name)
+    );
+
+    // Debug: Check if parents exist in allParents but aren't being matched
+    const unmatchedParentIds = selectedStudent.parentIds.filter(id =>
+      !allParents.some(p => p.id === id) && id !== parent?.id
+    );
+    if (unmatchedParentIds.length > 0) {
+      console.warn('⚠️ Parent IDs not found in allParents:', unmatchedParentIds);
+      console.log('Available parents in allParents:', allParents.map(p => ({ id: p.id, name: p.name })));
+    }
+
+    return filtered;
+  }, [selectedAuthStudentId, allStudents, allParents, parent, selectedStudentParentData]);
 
   const handleAddStudent = async () => {
     if (!parent || !selectedStudentId) return;

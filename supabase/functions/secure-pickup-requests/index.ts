@@ -127,6 +127,9 @@ serve(async (req) => {
   }
 
   try {
+    // Get the authorization header for user authentication
+    const authHeader = req.headers.get('Authorization');
+    
     let requestBody;
     try {
       requestBody = await req.json();
@@ -197,7 +200,7 @@ serve(async (req) => {
           throw new Error('Invalid request data');
         }
 
-        const { requestId, parentId } = JSON.parse(decryptedData);
+        const { requestId, parentId } = decryptedData;
         
         if (!requestId) {
           throw new Error('Request ID is required');
@@ -217,9 +220,38 @@ serve(async (req) => {
           throw new Error('Failed to fetch pickup request');
         }
         
-        // Verify ownership - either match the parent_id or be an admin
-        const { data: { user } } = await supabase.auth.getUser();
-        const isAdmin = user?.user_metadata?.role === 'admin';
+        // Verify ownership - either match the parent_id or be an admin/superadmin
+        // Create a client with the user's JWT to get user info
+        let isAdmin = false;
+        
+        if (authHeader) {
+          const token = authHeader.replace('Bearer ', '');
+          const userClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            {
+              global: {
+                headers: {
+                  Authorization: authHeader
+                }
+              }
+            }
+          );
+          
+          const { data: { user } } = await userClient.auth.getUser(token);
+          
+          // Check if user has admin or superadmin role from parents table
+          if (user?.email) {
+            const { data: parentData } = await supabase
+              .from('parents')
+              .select('role')
+              .eq('email', user.email)
+              .single();
+            
+            isAdmin = parentData?.role === 'admin' || parentData?.role === 'superadmin';
+            console.log(`User ${user.email} admin status: ${isAdmin}`);
+          }
+        }
         
         if (!isAdmin && parentId && request.parent_id !== parentId) {
           console.error(`Parent ${parentId} is not authorized to cancel request ${requestId}`);

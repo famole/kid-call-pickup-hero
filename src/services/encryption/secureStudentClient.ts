@@ -140,6 +140,12 @@ export const secureStudentOperations = {
         avatar: student.avatar
       }));
       
+      // Log sample data for debugging
+      if (mappedStudents.length > 0) {
+        const sample = mappedStudents[0];
+        logger.log(`Sample student mapping: ${sample.name} has ${sample.parentIds.length} parent(s): ${sample.parentIds.join(', ')}`);
+      }
+      
       return { data: mappedStudents, error: null };
     } catch (error) {
       logger.error('Error in getStudentsSecure:', error);
@@ -190,14 +196,58 @@ export const secureStudentOperations = {
       return { data: null, error };
     }
   },
+  // Get students with parents (for authorization assignment)
+  getStudentsWithParentsSecure: async (studentIds: string[]): Promise<{ data: any[] | null; error: any }> => {
+    try {
+      logger.log('Fetching students with parents for authorization:', studentIds);
+
+      const { data, error } = await supabase.functions.invoke('secure-students', {
+        body: {
+          operation: 'getStudentsWithParents',
+          data: { studentIds }
+        }
+      });
+
+      if (error) {
+        logger.error('Error from secure-students function:', error);
+        return { data: null, error };
+      }
+
+      if (data?.error) {
+        logger.error('Error in secure-students response:', data.error);
+        return { data: null, error: data.error };
+      }
+
+      const decrypted = await decryptObject(data.data.encrypted_data);
+      logger.log('Decrypted students with parents present:', decrypted ? decrypted.length : 0);
+
+      // Map snake_case to camelCase for frontend
+      if (decrypted && Array.isArray(decrypted)) {
+        const mappedStudents = decrypted.map((student: any) => ({
+          id: student.id,
+          name: student.name,
+          classId: student.class_id || '',
+          parentIds: student.parentIds || [],
+          avatar: student.avatar,
+          parents: student.parents || []
+        }));
+        return { data: mappedStudents, error: null };
+      }
+
+      return { data: [], error: null };
+    } catch (error) {
+      logger.error('Error in getStudentsWithParentsSecure:', error);
+      return { data: null, error };
+    }
+  },
 
   // Create student with encryption
   createStudentSecure: async (studentData: Partial<Child>): Promise<{ data: Child[] | null; error: any }> => {
     try {
       logger.log('Creating student with secure operations');
-      
+
       const encryptedData = await encryptObject(studentData);
-      
+
       const { data, error } = await supabase.functions.invoke('secure-students', {
         body: {
           operation: 'createStudent',
@@ -218,7 +268,7 @@ export const secureStudentOperations = {
       // Decrypt the response
       const decryptedData = await decryptObject(data.data.encrypted_data);
       logger.log('Created student successfully');
-      
+
       return { data: decryptedData, error: null };
     } catch (error) {
       logger.error('Error in createStudentSecure:', error);
@@ -230,15 +280,15 @@ export const secureStudentOperations = {
   updateStudentSecure: async (studentId: string, studentData: Partial<Child>): Promise<{ data: Child[] | null; error: any }> => {
     try {
       logger.log('Updating student with secure operations:', studentId);
-      
+
       const encryptedData = await encryptObject(studentData);
-      
+
       const { data, error } = await supabase.functions.invoke('secure-students', {
         body: {
           operation: 'updateStudent',
-          data: { 
+          data: {
             studentId,
-            encrypted_data: encryptedData 
+            encrypted_data: encryptedData
           }
         }
       });
@@ -256,7 +306,7 @@ export const secureStudentOperations = {
       // Decrypt the response
       const decryptedData = await decryptObject(data.data.encrypted_data);
       logger.log('Updated student successfully');
-      
+
       return { data: decryptedData, error: null };
     } catch (error) {
       logger.error('Error in updateStudentSecure:', error);
