@@ -122,17 +122,17 @@ const SelfCheckoutStatusCard: React.FC<SelfCheckoutStatusCardProps> = ({
                 </Avatar>
                 
                 <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm truncate">{student.studentName}</h4>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 truncate">
                         {student.className} - {t('admin.grade')} {student.classGrade}
                       </p>
                     </div>
                     
                     <Badge 
                       variant={student.departedAt ? "secondary" : student.isActive ? "default" : "outline"}
-                      className={`text-xs ${
+                      className={`text-xs flex-shrink-0 ${
                         student.departedAt ? "" : 
                         student.isActive ? "bg-green-600 hover:bg-green-700" : ""
                       }`}
