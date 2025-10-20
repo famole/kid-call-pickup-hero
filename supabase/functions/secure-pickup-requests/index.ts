@@ -195,12 +195,20 @@ serve(async (req) => {
         try {
           decryptedData = await decryptObject(data);
           console.log('Decrypted cancel request data:', decryptedData);
+          console.log('Type of decryptedData:', typeof decryptedData);
+          
+          // Ensure it's parsed as object if it came through as string
+          if (typeof decryptedData === 'string') {
+            console.log('Decrypted data is string, parsing...');
+            decryptedData = JSON.parse(decryptedData);
+          }
         } catch (error) {
           console.error('Error decrypting request data:', error);
           throw new Error('Invalid request data');
         }
 
         const { requestId, parentId } = decryptedData;
+        console.log('Extracted requestId:', requestId, 'parentId:', parentId);
         
         if (!requestId) {
           throw new Error('Request ID is required');
@@ -291,8 +299,18 @@ serve(async (req) => {
       }
       
       case 'createPickupRequest': {
-        const decryptedData = JSON.parse(await decryptObject(data));
+        let decryptedData = await decryptObject(data);
+        console.log('Decrypted create request data:', decryptedData);
+        console.log('Type of decryptedData:', typeof decryptedData);
+        
+        // Ensure it's parsed as object if it came through as string
+        if (typeof decryptedData === 'string') {
+          console.log('Decrypted data is string, parsing...');
+          decryptedData = JSON.parse(decryptedData);
+        }
+        
         const { studentId, parentId } = decryptedData;
+        console.log('Extracted studentId:', studentId, 'parentId:', parentId);
         
         if (!parentId) {
           throw new Error('Parent ID is required');
@@ -327,7 +345,7 @@ serve(async (req) => {
       }
 
       case 'getParentAffectedRequests': {
-        const decryptedData = JSON.parse(await decryptObject(data));
+        const decryptedData = await decryptObject(data);
         const { parentId } = decryptedData;
         
         if (!parentId) {
