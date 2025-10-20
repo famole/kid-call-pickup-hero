@@ -291,7 +291,7 @@ serve(async (req) => {
       }
       
       case 'createPickupRequest': {
-        const decryptedData = JSON.parse(await decryptObject(data));
+        const decryptedData = await decryptObject(data);
         const { studentId, parentId } = decryptedData;
         
         if (!parentId) {
@@ -327,7 +327,7 @@ serve(async (req) => {
       }
 
       case 'getParentAffectedRequests': {
-        const decryptedData = JSON.parse(await decryptObject(data));
+        const decryptedData = await decryptObject(data);
         const { parentId } = decryptedData;
         
         if (!parentId) {
