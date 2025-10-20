@@ -299,8 +299,18 @@ serve(async (req) => {
       }
       
       case 'createPickupRequest': {
-        const decryptedData = await decryptObject(data);
+        let decryptedData = await decryptObject(data);
+        console.log('Decrypted create request data:', decryptedData);
+        console.log('Type of decryptedData:', typeof decryptedData);
+        
+        // Ensure it's parsed as object if it came through as string
+        if (typeof decryptedData === 'string') {
+          console.log('Decrypted data is string, parsing...');
+          decryptedData = JSON.parse(decryptedData);
+        }
+        
         const { studentId, parentId } = decryptedData;
+        console.log('Extracted studentId:', studentId, 'parentId:', parentId);
         
         if (!parentId) {
           throw new Error('Parent ID is required');
