@@ -86,11 +86,13 @@ export const useOptimizedParentDashboard = () => {
       const isEmailUser = Boolean(user.email);
 
       // Load dashboard data and pickup requests
-      const [dashboardData, pickupRequests] = await Promise.all([
+      const [dashboardData, ownPickupRequests, authorizedPickupRequests] = await Promise.all([
         // Use the unified function that handles both email and parent ID
         getParentDashboardDataOptimized(isEmailUser ? user.email! : parentId),
-        // Only get requests made by the current parent (not requests made by others)
-        getActivePickupRequestsForParent(parentId)
+        // Only get requests made by the current parent
+        getActivePickupRequestsForParent(parentId),
+        // Get requests for children this parent can see (own + authorized)
+        getParentAffectedPickupRequests()
       ]);
 
       setChildren(dashboardData.allChildren);
@@ -112,12 +114,26 @@ export const useOptimizedParentDashboard = () => {
         }
       }
       
-      setActiveRequests(pickupRequests);
+      setActiveRequests(ownPickupRequests);
+
+      // Combine own requests and authorized requests, removing duplicates
+      const allRequests = [...ownPickupRequests];
+      for (const authRequest of authorizedPickupRequests) {
+        const exists = allRequests.some(req => req.id === authRequest.id);
+        if (!exists) {
+          allRequests.push(authRequest);
+        }
+      }
+
+      // Update activeRequests to include both own and authorized requests
+      setActiveRequests(allRequests);
 
       lastFetchRef.current = now;
       logger.log('Parent dashboard data loaded successfully', {
         childrenCount: dashboardData.allChildren.length,
-        requestsCount: pickupRequests.length
+        ownRequestsCount: ownPickupRequests.length,
+        authorizedRequestsCount: authorizedPickupRequests.length,
+        totalRequestsCount: allRequests.length
       });
     } catch (error) {
       logger.error('Error loading parent dashboard data:', error);
@@ -316,8 +332,9 @@ export const useOptimizedParentDashboard = () => {
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
   const calledRequests = activeRequests.filter(req => req.status === 'called');
 
-  // Only show requests made by the current parent (no authorized requests from others)
-  const authorizedRequests: PickupRequest[] = [];
+  // Separate own requests vs authorized requests (requests made by others but visible to this parent)
+  const ownRequests = activeRequests.filter(req => req.parentId === currentParentId);
+  const authorizedRequests = activeRequests.filter(req => req.parentId !== currentParentId);
 
   return {
     children,
