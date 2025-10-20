@@ -195,12 +195,20 @@ serve(async (req) => {
         try {
           decryptedData = await decryptObject(data);
           console.log('Decrypted cancel request data:', decryptedData);
+          console.log('Type of decryptedData:', typeof decryptedData);
+          
+          // Ensure it's parsed as object if it came through as string
+          if (typeof decryptedData === 'string') {
+            console.log('Decrypted data is string, parsing...');
+            decryptedData = JSON.parse(decryptedData);
+          }
         } catch (error) {
           console.error('Error decrypting request data:', error);
           throw new Error('Invalid request data');
         }
 
         const { requestId, parentId } = decryptedData;
+        console.log('Extracted requestId:', requestId, 'parentId:', parentId);
         
         if (!requestId) {
           throw new Error('Request ID is required');
