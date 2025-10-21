@@ -451,13 +451,14 @@ serve(async (req)=>{
       case 'getAuthorizedParentsByDate':
         {
           try {
-            // Decrypt request data to get date and optional classId
+            // Decrypt request data to get date, optional classId, and search term
             const decryptedData = await decryptObject(requestData);
             const parsedData = JSON.parse(decryptedData);
             
             const selectedDate = parsedData.date;
             const dayOfWeek = parsedData.dayOfWeek;
             const classId = parsedData.classId;
+            const searchTerm = parsedData.searchTerm?.toLowerCase().trim() || '';
             
             logger.log('Getting authorized parents for date:', selectedDate, 'day:', dayOfWeek, 'classId:', classId);
 
@@ -560,8 +561,24 @@ serve(async (req)=>{
             });
 
             // Filter out parents with no students (when class filter removes all their students)
+            // Apply search filter if provided
             const result = Array.from(parentMap.values())
-              .filter(parent => parent.students.length > 0)
+              .filter(parent => {
+                if (parent.students.length === 0) return false;
+                
+                // If no search term, include all parents with students
+                if (!searchTerm) return true;
+                
+                // Search by parent name
+                if (parent.parentName.toLowerCase().includes(searchTerm)) {
+                  return true;
+                }
+                
+                // Search by student names
+                return parent.students.some(student => 
+                  student.name.toLowerCase().includes(searchTerm)
+                );
+              })
               .sort((a, b) => a.parentName.localeCompare(b.parentName));
 
             logger.log(`Found ${result.length} authorized parents for ${selectedDate} with class filter: ${classId || 'all'}`);

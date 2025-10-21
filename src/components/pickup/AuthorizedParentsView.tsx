@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -21,24 +21,8 @@ interface AuthorizedParentsViewProps {
 export const AuthorizedParentsView: React.FC<AuthorizedParentsViewProps> = ({ selectedClass = 'all' }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [searchTerm, setSearchTerm] = useState('');
-  const { authorizedParents, loading } = useAuthorizedParentsByDate(selectedDate, selectedClass);
+  const { authorizedParents, loading } = useAuthorizedParentsByDate(selectedDate, selectedClass, searchTerm);
   const isMobile = useIsMobile();
-
-  const filteredParents = useMemo(() => {
-    if (!searchTerm.trim()) return authorizedParents;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-    return authorizedParents.filter(parent => {
-      // Search by parent name
-      if (parent.parentName.toLowerCase().includes(searchLower)) {
-        return true;
-      }
-      // Search by student names
-      return parent.students.some(student => 
-        student.name.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [authorizedParents, searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -96,7 +80,7 @@ export const AuthorizedParentsView: React.FC<AuthorizedParentsViewProps> = ({ se
                 </div>
               ))}
             </div>
-          ) : filteredParents.length === 0 ? (
+          ) : authorizedParents.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
               <p className="text-lg font-medium">
@@ -110,7 +94,7 @@ export const AuthorizedParentsView: React.FC<AuthorizedParentsViewProps> = ({ se
             <div className="space-y-6">
               {isMobile ? (
                 <div className="space-y-4">
-                  {filteredParents.map((parent) => (
+                  {authorizedParents.map((parent) => (
                     <Card key={parent.parentId} className="border-l-4 border-l-primary">
                       <CardContent className="pt-4">
                         <div className="space-y-3">
@@ -151,7 +135,7 @@ export const AuthorizedParentsView: React.FC<AuthorizedParentsViewProps> = ({ se
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredParents.map((parent) => (
+                    {authorizedParents.map((parent) => (
                       <TableRow key={parent.parentId}>
                         <TableCell className="font-medium text-left">{parent.parentName}</TableCell>
                         <TableCell className="text-muted-foreground text-left">{parent.parentEmail}</TableCell>
@@ -175,11 +159,7 @@ export const AuthorizedParentsView: React.FC<AuthorizedParentsViewProps> = ({ se
                 </Table>
               )}
               <div className="text-sm text-muted-foreground text-center pt-4 border-t">
-                {searchTerm ? (
-                  <>Mostrando {filteredParents.length} de {authorizedParents.length} {authorizedParents.length === 1 ? 'resultado' : 'resultados'}</>
-                ) : (
-                  <>Total: {authorizedParents.length} {authorizedParents.length === 1 ? 'padre autorizado' : 'padres autorizados'}</>
-                )}
+                Total: {authorizedParents.length} {authorizedParents.length === 1 ? 'padre autorizado' : 'padres autorizados'}
               </div>
             </div>
           )}

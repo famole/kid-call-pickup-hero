@@ -14,7 +14,7 @@ interface AuthorizedParent {
   }>;
 }
 
-export const useAuthorizedParentsByDate = (date: Date, classId?: string) => {
+export const useAuthorizedParentsByDate = (date: Date, classId?: string, searchTerm?: string) => {
   const [authorizedParents, setAuthorizedParents] = useState<AuthorizedParent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +35,8 @@ export const useAuthorizedParentsByDate = (date: Date, classId?: string) => {
         const requestData = {
           date: selectedDate,
           dayOfWeek: dayOfWeek,
-          classId: classId || 'all'
+          classId: classId || 'all',
+          searchTerm: searchTerm || ''
         };
         
         const encryptedData = await encryptData(JSON.stringify(requestData));
@@ -80,7 +81,7 @@ export const useAuthorizedParentsByDate = (date: Date, classId?: string) => {
     };
 
     fetchAuthorizedParents();
-  }, [date, classId]);
+  }, [date, classId, searchTerm]);
 
   return { authorizedParents, loading };
 };
