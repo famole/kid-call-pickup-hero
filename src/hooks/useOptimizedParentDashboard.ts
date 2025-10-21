@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
 import { createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
+import { getActivePickupRequestsForParent } from '@/services/pickup';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { createPickupRequest } from '@/services/pickup/createPickupRequest';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,10 +86,12 @@ export const useOptimizedParentDashboard = () => {
       const isEmailUser = Boolean(user.email);
 
       // Load dashboard data and pickup requests
-      const [dashboardData, allPickupRequests] = await Promise.all([
+      const [dashboardData, ownPickupRequests, authorizedPickupRequests] = await Promise.all([
         // Use the unified function that handles both email and parent ID
         getParentDashboardDataOptimized(isEmailUser ? user.email! : parentId),
-        // Get all requests for children this parent can see (own + authorized) - edge function handles the logic
+        // Only get requests made by the current parent
+        getActivePickupRequestsForParent(parentId),
+        // Get requests for children this parent can see (own + authorized)
         getParentAffectedPickupRequests()
       ]);
 
@@ -111,13 +114,26 @@ export const useOptimizedParentDashboard = () => {
         }
       }
       
-      // Edge function already returns all relevant requests (own + authorized)
-      setActiveRequests(allPickupRequests);
+      setActiveRequests(ownPickupRequests);
+
+      // Combine own requests and authorized requests, removing duplicates
+      const allRequests = [...ownPickupRequests];
+      for (const authRequest of authorizedPickupRequests) {
+        const exists = allRequests.some(req => req.id === authRequest.id);
+        if (!exists) {
+          allRequests.push(authRequest);
+        }
+      }
+
+      // Update activeRequests to include both own and authorized requests
+      setActiveRequests(allRequests);
 
       lastFetchRef.current = now;
       logger.log('Parent dashboard data loaded successfully', {
         childrenCount: dashboardData.allChildren.length,
-        requestsCount: allPickupRequests.length
+        ownRequestsCount: ownPickupRequests.length,
+        authorizedRequestsCount: authorizedPickupRequests.length,
+        totalRequestsCount: allRequests.length
       });
     } catch (error) {
       logger.error('Error loading parent dashboard data:', error);
@@ -316,8 +332,9 @@ export const useOptimizedParentDashboard = () => {
   const pendingRequests = activeRequests.filter(req => req.status === 'pending');
   const calledRequests = activeRequests.filter(req => req.status === 'called');
 
-  // Edge function already handles authorization logic - these are all visible requests
-  const authorizedRequests: PickupRequest[] = [];
+  // Separate own requests vs authorized requests (requests made by others but visible to this parent)
+  const ownRequests = activeRequests.filter(req => req.parentId === currentParentId);
+  const authorizedRequests = activeRequests.filter(req => req.parentId !== currentParentId);
 
   return {
     children,
