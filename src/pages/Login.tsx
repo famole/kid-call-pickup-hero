@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
 import { encryptPassword, isPasswordEncryptionSupported } from '@/services/encryption';
+import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState(''); // Can be email or username
@@ -22,6 +23,7 @@ const Login = () => {
   const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(false);
   const [firstTimeEmail, setFirstTimeEmail] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -316,6 +318,15 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-school-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
             <Button
               type="submit"
@@ -348,6 +359,11 @@ const Login = () => {
           </Button>
         </CardContent>
       </Card>
+      
+      <ForgotPasswordDialog 
+        open={showForgotPassword} 
+        onOpenChange={setShowForgotPassword} 
+      />
     </div>
   );
 };
