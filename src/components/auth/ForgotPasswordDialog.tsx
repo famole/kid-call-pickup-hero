@@ -74,6 +74,17 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
         throw new Error(t('auth.invalidOrExpiredCode'));
       }
 
+      // Set password_set to false to allow password reset
+      const { error: updateError } = await supabase
+        .from('parents')
+        .update({ password_set: false })
+        .eq('email', email);
+
+      if (updateError) {
+        console.error('Error updating password_set flag:', updateError);
+        // Continue anyway - the password reset flow should still work
+      }
+
       // Navigate to password setup with verified email and OTP
       navigate(`/password-setup?email=${encodeURIComponent(email)}&otp=${otp}&reset=true`);
       handleClose();
