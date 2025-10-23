@@ -7,19 +7,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Mail, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { useNavigate } from 'react-router-dom';
 
 interface ForgotPasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+type Step = 'email' | 'otp' | 'success';
+
 export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open, onOpenChange }) => {
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [step, setStep] = useState<Step>('email');
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email.trim()) {
@@ -30,19 +36,51 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
     setLoading(true);
     
     try {
-      const redirectUrl = `${window.location.origin}/password-setup`;
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
+      const { error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email },
       });
 
       if (error) throw error;
 
-      setEmailSent(true);
-      toast.success(t('auth.resetLinkSent'));
+      setStep('otp');
+      toast.success('Verification code sent to your email');
     } catch (error: any) {
-      console.error('Error sending reset email:', error);
-      toast.error(error.message || t('auth.failedToSendReset'));
+      console.error('Error sending OTP:', error);
+      toast.error(error.message || 'Failed to send verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (otp.length !== 6) {
+      toast.error('Please enter a 6-digit code');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.rpc('verify_password_reset_otp', {
+        p_email: email,
+        p_otp_code: otp,
+      });
+
+      if (error) throw error;
+
+      if (!data) {
+        throw new Error('Invalid or expired code');
+      }
+
+      // Navigate to password setup with verified email and OTP
+      navigate(`/password-setup?email=${encodeURIComponent(email)}&otp=${otp}&reset=true`);
+      handleClose();
+      toast.success('Code verified! Set your new password.');
+    } catch (error: any) {
+      console.error('Error verifying OTP:', error);
+      toast.error(error.message || 'Invalid or expired code');
     } finally {
       setLoading(false);
     }
@@ -50,7 +88,8 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
 
   const handleClose = () => {
     setEmail('');
-    setEmailSent(false);
+    setOtp('');
+    setStep('email');
     onOpenChange(false);
   };
 
@@ -60,15 +99,13 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
         <DialogHeader>
           <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
           <DialogDescription>
-            {emailSent 
-              ? t('auth.resetPasswordSent')
-              : t('auth.resetPasswordDescription')
-            }
+            {step === 'email' && 'Enter your email to receive a verification code'}
+            {step === 'otp' && 'Enter the 6-digit code sent to your email'}
           </DialogDescription>
         </DialogHeader>
         
-        {!emailSent ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {step === 'email' && (
+          <form onSubmit={handleSendOTP} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="reset-email">{t('auth.email')}</Label>
               <Input
@@ -99,26 +136,70 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('auth.sending')}
+                    Sending...
                   </>
                 ) : (
                   <>
                     <Mail className="mr-2 h-4 w-4" />
-                    {t('auth.sendResetLink')}
+                    Send Code
                   </>
                 )}
               </Button>
             </div>
           </form>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <Mail className="h-12 w-12 text-school-primary" />
+        )}
+
+        {step === 'otp' && (
+          <form onSubmit={handleVerifyOTP} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Verification Code</Label>
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={otp}
+                  onChange={setOtp}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Enter the 6-digit code sent to {email}
+              </p>
             </div>
-            <Button onClick={handleClose} className="w-full">
-              {t('common.close')}
-            </Button>
-          </div>
+            
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep('email')}
+                disabled={loading}
+                className="flex-1"
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading || otp.length !== 6}
+                className="flex-1"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify & Continue'
+                )}
+              </Button>
+            </div>
+          </form>
         )}
       </DialogContent>
     </Dialog>

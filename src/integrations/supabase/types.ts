@@ -136,6 +136,33 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_otps: {
+        Row: {
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          otp_code: string
+          used: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          used?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          used?: boolean | null
+        }
+        Relationships: []
+      }
       pickup_authorizations: {
         Row: {
           allowed_days_of_week: number[] | null
@@ -554,10 +581,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      auto_complete_expired_requests: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      auto_complete_expired_requests: { Args: never; Returns: undefined }
       can_manage_user: {
         Args: { target_user_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
@@ -574,6 +598,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_otps: { Args: never; Returns: undefined }
       create_pickup_request_for_username_user: {
         Args: { p_parent_id: string; p_student_id: string }
         Returns: string
@@ -583,7 +608,7 @@ export type Database = {
         Returns: string
       }
       get_auth_status_for_parents: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           email: string
           email_confirmed: boolean
@@ -592,20 +617,15 @@ export type Database = {
           providers: string[]
         }[]
       }
-      get_current_parent_id: {
-        Args: Record<PropertyKey, never>
+      get_auth_user_id_by_email: {
+        Args: { user_email: string }
         Returns: string
       }
-      get_current_parent_id_enhanced: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_email: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_parent_id: { Args: never; Returns: string }
+      get_current_parent_id_enhanced: { Args: never; Returns: string }
+      get_current_user_email: { Args: never; Returns: string }
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_parent_by_identifier: {
@@ -639,10 +659,7 @@ export type Database = {
           username: string
         }[]
       }
-      get_parent_id_from_metadata: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_parent_id_from_metadata: { Args: never; Returns: string }
       get_pickup_requests_for_parent: {
         Args: { p_parent_id: string }
         Returns: {
@@ -661,29 +678,18 @@ export type Database = {
         Args: { user_role: Database["public"]["Enums"]["app_role"] }
         Returns: number
       }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_current_user_superadmin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_current_user_teacher: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_invited_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_parent_of_student: {
-        Args: { student_id: string }
-        Returns: boolean
-      }
+      is_current_user_admin: { Args: never; Returns: boolean }
+      is_current_user_superadmin: { Args: never; Returns: boolean }
+      is_current_user_teacher: { Args: never; Returns: boolean }
+      is_invited_user: { Args: never; Returns: boolean }
+      is_parent_of_student: { Args: { student_id: string }; Returns: boolean }
       set_username_user_context: {
         Args: { parent_id: string }
         Returns: undefined
+      }
+      verify_password_reset_otp: {
+        Args: { p_email: string; p_otp_code: string }
+        Returns: boolean
       }
     }
     Enums: {
