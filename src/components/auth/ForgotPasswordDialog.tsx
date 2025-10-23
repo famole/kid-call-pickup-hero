@@ -43,10 +43,10 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
       if (error) throw error;
 
       setStep('otp');
-      toast.success('Verification code sent to your email');
+      toast.success(t('auth.codeSentToEmail'));
     } catch (error: any) {
       console.error('Error sending OTP:', error);
-      toast.error(error.message || 'Failed to send verification code');
+      toast.error(error.message || t('auth.failedToSendCode'));
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
     e.preventDefault();
     
     if (otp.length !== 6) {
-      toast.error('Please enter a 6-digit code');
+      toast.error(t('auth.enterSixDigitCode'));
       return;
     }
 
@@ -71,16 +71,16 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
       if (error) throw error;
 
       if (!data) {
-        throw new Error('Invalid or expired code');
+        throw new Error(t('auth.invalidOrExpiredCode'));
       }
 
       // Navigate to password setup with verified email and OTP
       navigate(`/password-setup?email=${encodeURIComponent(email)}&otp=${otp}&reset=true`);
       handleClose();
-      toast.success('Code verified! Set your new password.');
+      toast.success(t('auth.codeVerified'));
     } catch (error: any) {
       console.error('Error verifying OTP:', error);
-      toast.error(error.message || 'Invalid or expired code');
+      toast.error(error.message || t('auth.invalidOrExpiredCode'));
     } finally {
       setLoading(false);
     }
@@ -99,8 +99,8 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
         <DialogHeader>
           <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
           <DialogDescription>
-            {step === 'email' && 'Enter your email to receive a verification code'}
-            {step === 'otp' && 'Enter the 6-digit code sent to your email'}
+            {step === 'email' && t('auth.enterEmailForCode')}
+            {step === 'otp' && t('auth.enterCodeSentToEmail')}
           </DialogDescription>
         </DialogHeader>
         
@@ -136,12 +136,12 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
+                    {t('auth.sending')}
                   </>
                 ) : (
                   <>
                     <Mail className="mr-2 h-4 w-4" />
-                    Send Code
+                    {t('auth.sendResetLink')}
                   </>
                 )}
               </Button>
@@ -152,7 +152,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
         {step === 'otp' && (
           <form onSubmit={handleVerifyOTP} className="space-y-4">
             <div className="space-y-2">
-              <Label>Verification Code</Label>
+              <Label>{t('auth.verificationCode')}</Label>
               <div className="flex justify-center">
                 <InputOTP
                   maxLength={6}
@@ -170,7 +170,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
                 </InputOTP>
               </div>
               <p className="text-xs text-muted-foreground text-center">
-                Enter the 6-digit code sent to {email}
+                {t('auth.enterCodeInstructions', { email })}
               </p>
             </div>
             
@@ -182,7 +182,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
                 disabled={loading}
                 className="flex-1"
               >
-                Back
+                {t('common.back')}
               </Button>
               <Button
                 type="submit"
@@ -192,10 +192,10 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
+                    {t('auth.verifying')}
                   </>
                 ) : (
-                  'Verify & Continue'
+                  t('auth.verifyContinue')
                 )}
               </Button>
             </div>
