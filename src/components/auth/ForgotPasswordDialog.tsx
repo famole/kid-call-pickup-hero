@@ -131,7 +131,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1"
+                className="flex-1 bg-school-primary hover:bg-school-primary/90"
               >
                 {loading ? (
                   <>
@@ -187,7 +187,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
               <Button
                 type="submit"
                 disabled={loading || otp.length !== 6}
-                className="flex-1"
+                className="flex-1 bg-school-primary hover:bg-school-primary/90"
               >
                 {loading ? (
                   <>
