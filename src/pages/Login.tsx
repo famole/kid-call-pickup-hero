@@ -347,18 +347,6 @@ const Login = () => {
             {t('auth.setupAccount')}
           </Button>
         </CardContent>
-        
-        <CardFooter className="flex flex-col gap-4">
-          <div className="text-sm text-center">
-            {t('auth.newToSystem')}{" "}
-            <span 
-              className="text-school-primary hover:underline cursor-pointer"
-              onClick={() => navigate('/signup')}
-            >
-              {t('auth.signUp')}
-            </span>
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );
