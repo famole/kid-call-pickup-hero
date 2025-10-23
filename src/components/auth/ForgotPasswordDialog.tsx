@@ -23,7 +23,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
     e.preventDefault();
     
     if (!email.trim()) {
-      toast.error('Please enter your email address');
+      toast.error(t('auth.enterEmail'));
       return;
     }
 
@@ -39,10 +39,10 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
       if (error) throw error;
 
       setEmailSent(true);
-      toast.success('Password reset link sent! Check your email.');
+      toast.success(t('auth.resetLinkSent'));
     } catch (error: any) {
       console.error('Error sending reset email:', error);
-      toast.error(error.message || 'Failed to send reset email');
+      toast.error(error.message || t('auth.failedToSendReset'));
     } finally {
       setLoading(false);
     }
@@ -58,11 +58,11 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Reset Password</DialogTitle>
+          <DialogTitle>{t('auth.resetPassword')}</DialogTitle>
           <DialogDescription>
             {emailSent 
-              ? 'We sent you a password reset link. Check your email and click the link to reset your password.'
-              : 'Enter your email address and we\'ll send you a link to reset your password.'
+              ? t('auth.resetPasswordSent')
+              : t('auth.resetPasswordDescription')
             }
           </DialogDescription>
         </DialogHeader>
@@ -70,11 +70,11 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
         {!emailSent ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="reset-email">Email</Label>
+              <Label htmlFor="reset-email">{t('auth.email')}</Label>
               <Input
                 id="reset-email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t('auth.enterEmail')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -89,7 +89,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
                 disabled={loading}
                 className="flex-1"
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -99,12 +99,12 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
+                    {t('auth.sending')}
                   </>
                 ) : (
                   <>
                     <Mail className="mr-2 h-4 w-4" />
-                    Send Reset Link
+                    {t('auth.sendResetLink')}
                   </>
                 )}
               </Button>
@@ -116,7 +116,7 @@ export const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({ open
               <Mail className="h-12 w-12 text-school-primary" />
             </div>
             <Button onClick={handleClose} className="w-full">
-              Close
+              {t('common.close')}
             </Button>
           </div>
         )}
