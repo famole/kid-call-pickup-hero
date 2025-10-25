@@ -471,6 +471,7 @@
     "showExpired": "Show expired",
     "noActiveAuthorizations": "No active authorizations",
     "toggleExpiredToSee": "Toggle \"Show expired\" to view past authorizations.",
+    "allActiveAuthorizations": "All Authorizations",
     "child": "Child",
     "parent": "Parent",
     "noParentsFound": "No parents found",
