@@ -94,7 +94,7 @@ const PickupAuthorizationManagement: React.FC = () => {
         const today = new Date();
         const todayStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}-${String(today.getUTCDate()).padStart(2, '0')}`;
 
-        // Get ALL pickup authorizations from the system (admin view)
+        // Get ALL pickup authorizations from the system (including expired ones)
         const { data: allAuthsData, error: authsError } = await supabase
           .from('pickup_authorizations')
           .select(`
@@ -115,7 +115,6 @@ const PickupAuthorizationManagement: React.FC = () => {
           `)
           .eq('is_active', true)
           .is('students.deleted_at', null)
-          .gte('end_date', todayStr)
           .order('created_at', { ascending: false });
 
         if (authsError) {
@@ -672,12 +671,26 @@ const PickupAuthorizationManagement: React.FC = () => {
                   {(() => {
                     if (authorizations.length === 0) return null;
 
+                    // Filter authorizations based on showExpired toggle
+                    const filteredAuths = showExpired 
+                      ? authorizations 
+                      : authorizations.filter(auth => !isExpired(auth.endDate));
+
+                    if (filteredAuths.length === 0 && !showExpired) {
+                      return (
+                        <div className="text-center py-6 text-gray-500">
+                          <p>{t('pickupAuthorizations.noActiveAuthorizations')}</p>
+                          <p className="text-sm mt-2">{t('pickupAuthorizations.toggleExpiredToSee')}</p>
+                        </div>
+                      );
+                    }
+
                     return (
                       <div className="space-y-3">
                         <h4 className="text-md font-medium text-gray-700">
                           {t('pickupAuthorizations.allActiveAuthorizations')}
                         </h4>
-                        {renderAuthorizations(authorizations)}
+                        {renderAuthorizations(filteredAuths)}
                       </div>
                     );
                   })()}
