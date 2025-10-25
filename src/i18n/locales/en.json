@@ -472,6 +472,8 @@
     "noActiveAuthorizations": "No active authorizations",
     "toggleExpiredToSee": "Toggle \"Show expired\" to view past authorizations.",
     "allActiveAuthorizations": "All Authorizations",
+    "allAuthorizationsTitle": "Pickup Authorizations",
+    "allAuthorizationsDescription": "Manage who can pick up your children",
     "child": "Child",
     "parent": "Parent",
     "noParentsFound": "No parents found",

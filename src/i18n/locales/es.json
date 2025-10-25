@@ -475,6 +475,8 @@
     "noActiveAuthorizations": "No hay autorizaciones activas",
     "toggleExpiredToSee": "Activa \"Mostrar expiradas\" para ver autorizaciones pasadas.",
     "allActiveAuthorizations": "Todas las Autorizaciones",
+    "allAuthorizationsTitle": "Autorizaciones de Retiro",
+    "allAuthorizationsDescription": "Administra quién puede recoger a tus hijos",
     "child": "Hijo",
     "parent": "Padre",
     "noParentsFound": "No se encontraron padres",
