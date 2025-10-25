@@ -69,24 +69,8 @@ const PasswordSetupForm = () => {
       const isPasswordReset = urlParams.get('reset') === 'true';
       const otpCode = urlParams.get('otp');
 
-      // Handle OTP-based password reset
-      if (isPasswordReset && otpCode && identifierFromUrl) {
-        // Verify OTP is still valid
-        const { data: isValid, error: verifyError } = await supabase.rpc('verify_password_reset_otp', {
-          p_email: identifierFromUrl,
-          p_otp_code: otpCode,
-        });
-
-        if (verifyError || !isValid) {
-          toast({
-            title: t('common.error'),
-            description: 'Verification code has expired or is invalid. Please request a new code.',
-            variant: "destructive",
-          });
-          navigate('/login');
-          return;
-        }
-
+      // Handle OTP-based password reset (OTP already verified in ForgotPasswordDialog)
+      if (isPasswordReset && identifierFromUrl) {
         // Encrypt password
         let encryptedPassword = password;
         if (isPasswordEncryptionSupported()) {
