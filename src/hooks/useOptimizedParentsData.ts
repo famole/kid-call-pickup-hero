@@ -10,6 +10,7 @@ import { logger } from '@/utils/logger'
 interface UseOptimizedParentsDataProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
   includeDeleted?: boolean;
+  deletedOnly?: boolean;
   includedRoles?: ('parent' | 'teacher' | 'admin' | 'superadmin' | 'family' | 'other')[];
   searchTerm?: string;
   currentPage?: number;
@@ -19,6 +20,7 @@ interface UseOptimizedParentsDataProps {
 export const useOptimizedParentsData = ({ 
   userRole = 'parent', 
   includeDeleted = false,
+  deletedOnly = false,
   includedRoles,
   searchTerm = '',
   currentPage = 1,
@@ -60,7 +62,8 @@ export const useOptimizedParentsData = ({
       
       // Use optimized query with backend role filtering, pagination, and search
       const result = await getParentsWithStudentsOptimized(
-        includeDeleted, 
+        includeDeleted,
+        deletedOnly,
         includedRoles,
         effectivePage,
         pageSize,
@@ -93,7 +96,7 @@ export const useOptimizedParentsData = ({
     } finally {
       setIsLoading(false);
     }
-  }, [toast, includeDeleted, includedRoles, currentPage, pageSize, searchTerm]);
+  }, [toast, includeDeleted, deletedOnly, includedRoles, currentPage, pageSize, searchTerm]);
 
   const loadStudents = useCallback(async () => {
     try {

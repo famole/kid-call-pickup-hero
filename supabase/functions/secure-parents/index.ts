@@ -233,7 +233,7 @@ serve(async (req)=>{
         }
       case 'getParentsWithStudents':
         {
-          const { includedRoles, includeDeleted, page = 1, pageSize = 50, searchTerm } = data || {};
+          const { includedRoles, includeDeleted, deletedOnly, page = 1, pageSize = 50, searchTerm } = data || {};
           // Calculate offset for pagination
           const from = (page - 1) * pageSize;
           const to = from + pageSize - 1;
@@ -268,10 +268,15 @@ serve(async (req)=>{
           `, {
             count: 'exact'
           });
-          // Apply deleted filter unless we want to include deleted
-          if (!includeDeleted) {
+          // Apply deleted filter
+          if (deletedOnly) {
+            // Show only deleted records
+            query = query.not('deleted_at', 'is', null);
+          } else if (!includeDeleted) {
+            // Show only active records
             query = query.is('deleted_at', null);
           }
+          // If includeDeleted is true and deletedOnly is false, show all records
           // Apply role filter if provided
           if (includedRoles && Array.isArray(includedRoles) && includedRoles.length > 0) {
             query = query.in('role', includedRoles);
