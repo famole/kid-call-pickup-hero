@@ -302,9 +302,9 @@ serve(async (req)=>{
               username: parent.username,
               phone: parent.phone,
               role: parent.role,
-              created_at: parent.created_at,
-              updated_at: parent.updated_at,
-              deleted_at: parent.deleted_at,
+              createdAt: parent.created_at,
+              updatedAt: parent.updated_at,
+              deletedAt: parent.deleted_at,
               students: (parent.student_parents || []).map((sp)=>({
                   id: sp.student_id,
                   name: sp.students?.name || '',
