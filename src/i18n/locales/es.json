@@ -40,6 +40,7 @@
     "authorizedPickupRequestsBeingProcessed": "Hay solicitudes de recogida autorizadas siendo procesadas",
     "waitingInPickupQueue": "Esperando a ser llamado...",
     "requested": "Solicitado: {{time}}",
+    "calledBy": "Llamado por {{name}}",
     "readyForPickup": "¡Listo para Recogida! ({{count}})",
     "childrenReadyHeadToPickup": "¡Tus hijos están listos - dirígete al área de recogida! 🌟",
     "readyForPickupHeadToArea": "¡Listo para recogida! ¡Dirígete al área de recogida!",

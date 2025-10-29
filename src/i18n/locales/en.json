@@ -40,6 +40,7 @@
     "authorizedPickupRequestsBeingProcessed": "There are authorized pickup requests being processed",
     "waitingInPickupQueue": "Waiting in pickup queue...",
     "requested": "Requested: {{time}}",
+    "calledBy": "Called by {{name}}",
     "readyForPickup": "Ready for Pickup! ({{count}})",
     "childrenReadyHeadToPickup": "Your children are ready - head to the pickup area! 🌟",
     "readyForPickupHeadToArea": "Ready for pickup! Head to the pickup area!",
