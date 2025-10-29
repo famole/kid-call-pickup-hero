@@ -74,9 +74,17 @@ const Login = () => {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       logger.error('Authentication error:', error);
+      
+      // Map common error messages to translation keys
+      let translatedMessage = t('errors.invalidEmailPassword');
+      if (errorMessage.toLowerCase().includes('invalid login credentials') || 
+          errorMessage.toLowerCase().includes('invalid credentials')) {
+        translatedMessage = t('errors.invalidLoginCredentials');
+      }
+      
       toast({
         title: t('errors.authenticationError'),
-        description: errorMessage || t('errors.invalidEmailPassword'),
+        description: translatedMessage,
         variant: 'destructive',
       });
     } finally {

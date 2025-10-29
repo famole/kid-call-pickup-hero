@@ -707,6 +707,7 @@
     "networkError": "Error de red",
     "validationError": "Error de validación",
     "authenticationError": "Error de Autenticación",
+    "invalidLoginCredentials": "Credenciales de acceso inválidas. Por favor verifica tu correo/usuario y contraseña.",
     "invalidEmailPassword": "Email o contraseña inválidos. Por favor intenta de nuevo.",
     "googleLoginError": "Error de Inicio de Sesión con Google",
     "failedGoogleLogin": "Falló el inicio de sesión con Google. Por favor intenta de nuevo.",
