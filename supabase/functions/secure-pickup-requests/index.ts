@@ -410,10 +410,17 @@ serve(async (req) => {
           );
         }
 
-        // Get all active pickup requests for these children  
+        // Get all active pickup requests for these children with parent info
         const { data: requests, error: requestsError } = await supabase
           .from('pickup_requests')
-          .select('*')
+          .select(`
+            *,
+            parents!pickup_requests_parent_id_fkey (
+              id,
+              name,
+              email
+            )
+          `)
           .in('student_id', uniqueStudentIds)
           .in('status', ['pending', 'called']);
 
