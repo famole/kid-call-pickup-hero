@@ -60,6 +60,7 @@ export const useOptimizedWithdrawalHistory = () => {
       const authorizedStudentIds = await getAuthorizedStudentIds(parentId);
       
       // Optimized query 1: Get pickup history with students data
+      // Get all pickups for the parent's students, regardless of who made the pickup
       const { data: pickupHistoryData, error: pickupError } = await supabase
         .from('pickup_history')
         .select(`
@@ -77,7 +78,7 @@ export const useOptimizedWithdrawalHistory = () => {
             )
           )
         `)
-        .or(`parent_id.eq.${parentId}${authorizedStudentIds ? `,student_id.in.(${authorizedStudentIds})` : ''}`)
+        .in('student_id', authorizedStudentIds ? authorizedStudentIds.split(',') : [])
         .order('completed_time', { ascending: false })
         .limit(200); // Limit to 200 most recent records for performance
 
@@ -125,26 +126,24 @@ export const useOptimizedWithdrawalHistory = () => {
           authMap.set(`${auth.student_id}-${auth.authorized_parent_id}`, auth);
         });
 
-        // Process pickup records
+        // Process pickup records - show all pickups for the parent's students
         for (const record of pickupHistoryData) {
           const isOwnPickup = record.parent_id === parentId;
           const authKey = `${record.student_id}-${record.parent_id}`;
           const authorization = authMap.get(authKey);
 
-          if (isOwnPickup || authorization) {
-            allRecords.push({
-              id: record.id,
-              studentId: record.student_id,
-              studentName: record.students?.name || 'Unknown Student',
-              studentAvatar: record.students?.avatar,
-              className: record.students?.classes ? 
-                `${record.students.classes.name} - Grade ${record.students.classes.grade}` : undefined,
-              date: new Date(record.completed_time),
-              type: isOwnPickup ? 'self_pickup' : 'authorized_pickup',
-              parentName: isOwnPickup ? parentMap.get(record.parent_id) : undefined,
-              authorizedParentName: !isOwnPickup ? authorization?.parents?.name : undefined
-            });
-          }
+          allRecords.push({
+            id: record.id,
+            studentId: record.student_id,
+            studentName: record.students?.name || 'Unknown Student',
+            studentAvatar: record.students?.avatar,
+            className: record.students?.classes ? 
+              `${record.students.classes.name} - Grade ${record.students.classes.grade}` : undefined,
+            date: new Date(record.completed_time),
+            type: isOwnPickup ? 'self_pickup' : 'authorized_pickup',
+            parentName: isOwnPickup ? parentMap.get(record.parent_id) : undefined,
+            authorizedParentName: !isOwnPickup ? parentMap.get(record.parent_id) : undefined
+          });
         }
       }
 
