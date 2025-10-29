@@ -415,7 +415,7 @@ serve(async (req) => {
           .from('pickup_requests')
           .select(`
             *,
-            parents!pickup_requests_parent_id_fkey (
+            parents (
               id,
               name,
               email
