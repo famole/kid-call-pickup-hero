@@ -1,6 +1,7 @@
 import React from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
 import { useParentSelfCheckout } from '@/hooks/useParentSelfCheckout';
+import { useRecentPickupNotifications } from '@/hooks/useRecentPickupNotifications';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
@@ -8,6 +9,7 @@ import ChildrenSelectionCard from '@/components/parent-dashboard/ChildrenSelecti
 import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCard';
 import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard';
 import SelfCheckoutStatusCard from '@/components/parent-dashboard/SelfCheckoutStatusCard';
+import RecentPickupsNotification from '@/components/parent-dashboard/RecentPickupsNotification';
 
 /**
  * Enhanced Parent Dashboard Component
@@ -42,6 +44,11 @@ const EnhancedParentDashboard: React.FC = () => {
     loading: selfCheckoutLoading
   } = useParentSelfCheckout();
 
+  const {
+    recentPickups,
+    dismissNotification
+  } = useRecentPickupNotifications();
+
   // Get children with active requests to disable selection
   const childrenWithActiveRequests = [
     ...pendingRequests.map(req => req.studentId),
@@ -65,6 +72,11 @@ const EnhancedParentDashboard: React.FC = () => {
       <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
         <div className="space-y-3 sm:space-y-4">
           <ParentDashboardHeader userName={user?.name} />
+          
+          <RecentPickupsNotification 
+            pickups={recentPickups}
+            onDismiss={dismissNotification}
+          />
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* Status Components - Left side for larger screens */}
