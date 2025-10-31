@@ -21,18 +21,18 @@ export const PasswordResetEmail = ({
 }: PasswordResetEmailProps) => (
   <Html>
     <Head />
-    <Preview>Your password reset code</Preview>
+    <Preview>Tu código de restablecimiento de contraseña</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Password Reset Code</Heading>
+        <Heading style={h1}>Código de Restablecimiento de Contraseña</Heading>
         <Text style={text}>
-          Hello,
+          Hola,
         </Text>
         <Text style={text}>
-          We received a request to reset the password for your account ({email}).
+          Recibimos una solicitud para restablecer la contraseña de tu cuenta ({email}).
         </Text>
         <Text style={text}>
-          Use the following code to reset your password:
+          Usa el siguiente código para restablecer tu contraseña:
         </Text>
         <div style={codeContainer}>
           <Text style={code}>{otpCode}</Text>
@@ -45,11 +45,11 @@ export const PasswordResetEmail = ({
             marginBottom: '16px',
           }}
         >
-          This code will expire in 15 minutes. If you didn&apos;t request a password reset, 
-          you can safely ignore this email.
+          Este código expirará en 15 minutos. Si no solicitaste restablecer tu contraseña, 
+          puedes ignorar este correo de forma segura.
         </Text>
         <Text style={footer}>
-          Upsy - School Pickup Management System
+          Upsy - Sistema de Gestión de Recogida Escolar
         </Text>
       </Container>
     </Body>
