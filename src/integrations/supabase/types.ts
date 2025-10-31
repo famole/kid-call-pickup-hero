@@ -599,6 +599,7 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_otps: { Args: never; Returns: undefined }
+      complete_all_pending_pickup_requests: { Args: never; Returns: undefined }
       create_pickup_request_for_username_user: {
         Args: { p_parent_id: string; p_student_id: string }
         Returns: string
