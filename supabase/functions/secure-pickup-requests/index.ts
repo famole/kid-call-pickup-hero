@@ -345,8 +345,25 @@ serve(async (req) => {
       }
 
       case 'getParentAffectedRequests': {
-        const decryptedData = await decryptObject(data);
+        // Decrypt the request data
+        let decryptedData;
+        try {
+          decryptedData = await decryptObject(data);
+          console.log('Decrypted parent affected requests data:', decryptedData);
+          console.log('Type of decryptedData:', typeof decryptedData);
+          
+          // Ensure it's parsed as object if it came through as string
+          if (typeof decryptedData === 'string') {
+            console.log('Decrypted data is string, parsing...');
+            decryptedData = JSON.parse(decryptedData);
+          }
+        } catch (error) {
+          console.error('Error decrypting request data:', error);
+          throw new Error('Invalid request data');
+        }
+
         const { parentId } = decryptedData;
+        console.log('Extracted parentId:', parentId);
         
         if (!parentId) {
           throw new Error('Parent ID is required');
@@ -393,10 +410,17 @@ serve(async (req) => {
           );
         }
 
-        // Get all active pickup requests for these children  
+        // Get all active pickup requests for these children with parent info
         const { data: requests, error: requestsError } = await supabase
           .from('pickup_requests')
-          .select('*')
+          .select(`
+            *,
+            parents (
+              id,
+              name,
+              email
+            )
+          `)
           .in('student_id', uniqueStudentIds)
           .in('status', ['pending', 'called']);
 

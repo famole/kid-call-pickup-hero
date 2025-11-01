@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
 import { encryptPassword, isPasswordEncryptionSupported } from '@/services/encryption';
+import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState(''); // Can be email or username
@@ -22,6 +23,7 @@ const Login = () => {
   const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(false);
   const [firstTimeEmail, setFirstTimeEmail] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -72,9 +74,17 @@ const Login = () => {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       logger.error('Authentication error:', error);
+      
+      // Map common error messages to translation keys
+      let translatedMessage = t('errors.invalidEmailPassword');
+      if (errorMessage.toLowerCase().includes('invalid login credentials') || 
+          errorMessage.toLowerCase().includes('invalid credentials')) {
+        translatedMessage = t('errors.invalidLoginCredentials');
+      }
+      
       toast({
         title: t('errors.authenticationError'),
-        description: errorMessage || t('errors.invalidEmailPassword'),
+        description: translatedMessage,
         variant: 'destructive',
       });
     } finally {
@@ -316,6 +326,15 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-school-primary hover:underline"
+                >
+                  {t('auth.forgotPassword')}
+                </button>
+              </div>
             </div>
             <Button
               type="submit"
@@ -347,19 +366,12 @@ const Login = () => {
             {t('auth.setupAccount')}
           </Button>
         </CardContent>
-        
-        <CardFooter className="flex flex-col gap-4">
-          <div className="text-sm text-center">
-            {t('auth.newToSystem')}{" "}
-            <span 
-              className="text-school-primary hover:underline cursor-pointer"
-              onClick={() => navigate('/signup')}
-            >
-              {t('auth.signUp')}
-            </span>
-          </div>
-        </CardFooter>
       </Card>
+      
+      <ForgotPasswordDialog 
+        open={showForgotPassword} 
+        onOpenChange={setShowForgotPassword} 
+      />
     </div>
   );
 };

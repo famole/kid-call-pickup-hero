@@ -204,6 +204,7 @@ export class SecureOperations {
   async getParentsWithStudentsSecure(
     includedRoles?: string[], 
     includeDeleted: boolean = false,
+    deletedOnly: boolean = false,
     page: number = 1,
     pageSize: number = 50,
     searchTerm?: string
@@ -212,7 +213,7 @@ export class SecureOperations {
       const { data, error } = await supabase.functions.invoke('secure-parents', {
         body: {
           operation: 'getParentsWithStudents',
-          data: { includedRoles, includeDeleted, page, pageSize, searchTerm }
+          data: { includedRoles, includeDeleted, deletedOnly, page, pageSize, searchTerm }
         }
       });
 

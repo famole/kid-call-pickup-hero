@@ -214,7 +214,12 @@ class SecurePickupOperations {
         studentId: item.student_id,
         parentId: item.parent_id,
         requestTime: new Date(item.request_time),
-        status: item.status as 'pending' | 'called' | 'completed' | 'cancelled'
+        status: item.status as 'pending' | 'called' | 'completed' | 'cancelled',
+        requestingParent: item.parents ? {
+          id: item.parents.id,
+          name: item.parents.name,
+          email: item.parents.email
+        } : undefined
       }));
 
       logger.info('Final transformed pickup requests for getParentAffectedRequests:', pickupRequests);

@@ -42,6 +42,7 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
         <div className="space-y-3">
           {calledRequests.map((request) => {
             const child = children.find(c => c.id === request.studentId);
+            const isDifferentParent = request.parentId !== currentParentId;
             
             return (
               <div 
@@ -58,6 +59,11 @@ const CalledRequestsCard: React.FC<CalledRequestsCardProps> = ({
                   <div className="text-xs text-green-600 font-semibold">
                     ✨ {t('dashboard.readyForPickupHeadToArea')} 🚙
                   </div>
+                  {isDifferentParent && request.requestingParent && (
+                    <div className="text-xs text-blue-600 font-medium mt-1">
+                      👤 {t('dashboard.calledBy', { name: request.requestingParent.name })}
+                    </div>
+                  )}
                   <div className="text-xs text-gray-500 mt-1">
                     {t('dashboard.called', { time: new Date(request.requestTime).toLocaleTimeString() })}
                   </div>

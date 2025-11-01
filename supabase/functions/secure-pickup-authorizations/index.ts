@@ -451,13 +451,14 @@ serve(async (req)=>{
       case 'getAuthorizedParentsByDate':
         {
           try {
-            // Decrypt request data to get date and optional classId
+            // Decrypt request data to get date, optional classId, and search term
             const decryptedData = await decryptObject(requestData);
             const parsedData = JSON.parse(decryptedData);
             
             const selectedDate = parsedData.date;
             const dayOfWeek = parsedData.dayOfWeek;
             const classId = parsedData.classId;
+            const searchTerm = parsedData.searchTerm?.toLowerCase().trim() || '';
             
             logger.log('Getting authorized parents for date:', selectedDate, 'day:', dayOfWeek, 'classId:', classId);
 
@@ -467,6 +468,7 @@ serve(async (req)=>{
               .select(`
                 id,
                 authorized_parent_id,
+                student_id,
                 student_ids,
                 allowed_days_of_week,
                 authorized_parent:parents!authorized_parent_id (
@@ -497,9 +499,14 @@ serve(async (req)=>{
               });
             }
 
-            // Get all unique student IDs
+            // Get all unique student IDs from both student_id and student_ids fields
             const allStudentIds = new Set();
             authorizations.forEach(auth => {
+              // Add singular student_id if it exists
+              if (auth.student_id) {
+                allStudentIds.add(auth.student_id);
+              }
+              // Add array of student_ids if it exists
               if (auth.student_ids && Array.isArray(auth.student_ids)) {
                 auth.student_ids.forEach(id => allStudentIds.add(id));
               }
@@ -545,7 +552,19 @@ serve(async (req)=>{
 
               const parentData = parentMap.get(parent.id);
               
-              // Add students for this authorization
+              // Add students for this authorization (check both singular and array fields)
+              // First, handle singular student_id
+              if (auth.student_id) {
+                const student = studentsMap.get(auth.student_id);
+                if (student && !parentData.students.some(s => s.id === auth.student_id)) {
+                  parentData.students.push({
+                    id: student.id,
+                    name: student.name
+                  });
+                }
+              }
+              
+              // Then, handle array student_ids
               if (auth.student_ids && Array.isArray(auth.student_ids)) {
                 auth.student_ids.forEach(studentId => {
                   const student = studentsMap.get(studentId);
@@ -560,8 +579,24 @@ serve(async (req)=>{
             });
 
             // Filter out parents with no students (when class filter removes all their students)
+            // Apply search filter if provided
             const result = Array.from(parentMap.values())
-              .filter(parent => parent.students.length > 0)
+              .filter(parent => {
+                if (parent.students.length === 0) return false;
+                
+                // If no search term, include all parents with students
+                if (!searchTerm) return true;
+                
+                // Search by parent name
+                if (parent.parentName.toLowerCase().includes(searchTerm)) {
+                  return true;
+                }
+                
+                // Search by student names
+                return parent.students.some(student => 
+                  student.name.toLowerCase().includes(searchTerm)
+                );
+              })
               .sort((a, b) => a.parentName.localeCompare(b.parentName));
 
             logger.log(`Found ${result.length} authorized parents for ${selectedDate} with class filter: ${classId || 'all'}`);

@@ -66,6 +66,51 @@ const PasswordSetupForm = () => {
       // Get identifier (email or username) from URL parameters if user is not authenticated
       const urlParams = new URLSearchParams(window.location.search);
       let identifierFromUrl = urlParams.get('email') || urlParams.get('identifier');
+      const isPasswordReset = urlParams.get('reset') === 'true';
+      const otpCode = urlParams.get('otp');
+
+      // Handle OTP-based password reset (OTP already verified in ForgotPasswordDialog)
+      if (isPasswordReset && identifierFromUrl) {
+        // Encrypt password
+        let encryptedPassword = password;
+        if (isPasswordEncryptionSupported()) {
+          try {
+            encryptedPassword = await encryptPassword(password);
+          } catch (encryptionError) {
+            logger.warn('Password encryption failed, using plain text:', encryptionError);
+          }
+        }
+
+        // Reset password using the edge function
+        const { data, error } = await supabase.functions.invoke('setup-username-password', {
+          body: { identifier: identifierFromUrl, password: encryptedPassword }
+        });
+
+        if (error || data?.error) {
+          throw new Error(data?.error || 'Failed to reset password');
+        }
+
+        // Update the parent record to mark password as set
+        await supabase
+          .from('parents')
+          .update({ password_set: true })
+          .eq('email', identifierFromUrl);
+
+        toast({
+          title: t('common.success'),
+          description: 'Password reset successfully. You can now log in with your new password.',
+        });
+
+        // Auto-login after password reset
+        try {
+          await login(identifierFromUrl, password);
+          return;
+        } catch (loginError) {
+          logger.error('Auto-login after password reset failed:', loginError);
+          navigate('/login');
+          return;
+        }
+      }
       
       // If we have parentId, fetch the parent data to get the identifier
       const parentId = urlParams.get('parentId');

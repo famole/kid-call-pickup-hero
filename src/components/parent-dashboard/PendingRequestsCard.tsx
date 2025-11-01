@@ -80,6 +80,7 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
           {pendingRequests.map((request) => {
             const child = children.find(c => c.id === request.studentId);
             const isLoading = cancellingRequests.has(request.id);
+            const isDifferentParent = request.parentId !== currentParentId;
             
             return (
               <div 
@@ -96,6 +97,11 @@ const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
                   <div className="text-xs text-orange-600 font-medium">
                     ⏱️ {t('dashboard.waitingInPickupQueue')}
                   </div>
+                  {isDifferentParent && request.requestingParent && (
+                    <div className="text-xs text-blue-600 font-medium mt-1">
+                      👤 {t('dashboard.calledBy', { name: request.requestingParent.name })}
+                    </div>
+                  )}
                   <div className="text-xs text-gray-500 mt-1">
                     {t('dashboard.requested', { time: new Date(request.requestTime).toLocaleTimeString() })}
                   </div>

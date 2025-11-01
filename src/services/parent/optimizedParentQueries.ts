@@ -8,7 +8,8 @@ import { logger } from '@/utils/logger';
 import { getCurrentParentIdCached } from '@/services/parent/getCurrentParentId';
 
 export const getParentsWithStudentsOptimized = async (
-  includeDeleted: boolean = false, 
+  includeDeleted: boolean = false,
+  deletedOnly: boolean = false,
   includedRoles?: string[],
   page: number = 1,
   pageSize: number = 50,
@@ -17,12 +18,14 @@ export const getParentsWithStudentsOptimized = async (
   try {
     logger.log('Fetching optimized parents with students data...');
     logger.log('includedRoles filter:', includedRoles);
+    logger.log('includeDeleted:', includeDeleted, 'deletedOnly:', deletedOnly);
     logger.log('page:', page, 'pageSize:', pageSize, 'searchTerm:', searchTerm);
     
     // Use secure operations for parent data - USE OPTIMIZED VERSION WITH ROLE FILTERING, PAGINATION, AND SEARCH
     const { data: result, error: parentsError } = await secureOperations.getParentsWithStudentsSecure(
       includedRoles, 
       includeDeleted,
+      deletedOnly,
       page,
       pageSize,
       searchTerm

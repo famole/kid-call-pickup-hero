@@ -18,7 +18,8 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
   const [pageSize, setPageSize] = useState(50);
   
   // Determine if we should include deleted records
-  const includeDeleted = statusFilter === 'deleted' || statusFilter === 'all';
+  const includeDeleted = statusFilter === 'all';
+  const deletedOnly = statusFilter === 'deleted';
   
   const {
     parents,
@@ -34,7 +35,8 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     refetch
   } = useOptimizedParentsData({ 
     userRole, 
-    includeDeleted, 
+    includeDeleted,
+    deletedOnly,
     includedRoles,
     searchTerm: activeSearchTerm,
     currentPage,
@@ -47,20 +49,8 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
   logger.log('Total parents before filtering:', filteredParentsByRole.length);
   logger.log('Parents with deletedAt:', filteredParentsByRole.filter(p => p.deletedAt).length);
 
-  // Apply status filter to parents - but don't double filter if we already fetched the right data
-  const statusFilteredParents = filteredParentsByRole.filter(parent => {
-    // If we're showing deleted only and includeDeleted is true, 
-    // the query already filtered correctly, so just show deleted ones
-    if (statusFilter === 'deleted') {
-      return !!parent.deletedAt;
-    }
-    // If we're showing active only, show non-deleted
-    if (statusFilter === 'active') {
-      return !parent.deletedAt;
-    }
-    // For 'all', show everything we fetched
-    return true;
-  });
+  // Backend already filters correctly, so just return what we got
+  const statusFilteredParents = filteredParentsByRole;
 
   // Apply status filter to students
   const statusFilteredStudents = allStudents.filter(student => {
@@ -82,7 +72,7 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
     setIsFilterChanging(true);
   }, [statusFilter]);
 
-  // Effect to handle refetch when includeDeleted changes and reset loading state
+  // Effect to handle refetch when includeDeleted or deletedOnly changes and reset loading state
   useEffect(() => {
     if (isFilterChanging) {
       refetch().finally(() => {
@@ -90,7 +80,7 @@ export const useAdminFilteredData = ({ userRole, includedRoles }: UseAdminFilter
         logger.log('Filter change completed, loading state reset');
       });
     }
-  }, [includeDeleted, isFilterChanging, refetch]);
+  }, [includeDeleted, deletedOnly, isFilterChanging, refetch]);
 
   const refreshData = useCallback(() => {
     return refetch();
