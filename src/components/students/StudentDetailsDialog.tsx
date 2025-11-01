@@ -205,7 +205,10 @@ const StudentDetailsDialog: React.FC<StudentDetailsDialogProps> = ({
 
   const formatDate = (dateString: string) => {
     const locale = getCurrentLanguage() === 'es' ? 'es-ES' : 'en-US';
-    return new Date(dateString).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+    // Parse date in local timezone to avoid timezone conversion issues
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const isExpired = (endDate: string) => {
