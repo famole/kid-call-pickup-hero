@@ -135,7 +135,7 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       .eq('is_active', true)
       .lte('start_date', new Date().toISOString().split('T')[0])
       .gte('end_date', new Date().toISOString().split('T')[0])
-      .contains('allowed_days_of_week', [currentDayOfWeek]);
+      .overlaps('allowed_days_of_week', [currentDayOfWeek]);
 
     // Get student details for all authorized students
     let authorizedStudentIds: string[] = [];
