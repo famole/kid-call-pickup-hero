@@ -27,7 +27,9 @@ export const useParentDashboardData = () => {
       if (user?.id || user?.email || user?.username) {
         try {
           setLoading(true);
-          const identifier = user.id || user.email || user.username;
+          // For OAuth and email users, always use email as identifier
+          // For username-only users, use their parent ID or username
+          const identifier = user.email || user.id || user.username;
           logger.log('Loading parent dashboard data for identifier:', identifier);
           
           // Use the optimized query that only fetches relevant students
