@@ -122,6 +122,13 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
 
     // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
     const currentDayOfWeek = new Date().getDay();
+    const today = new Date().toISOString().split('T')[0];
+    
+    logger.log('Checking authorizations for:', {
+      parentId: parentData.id,
+      currentDayOfWeek,
+      today
+    });
     
     // Get authorized children (excluding deleted students) - handle both old student_id and new student_ids
     const { data: authorizedChildren, error: authorizedError } = await supabase
@@ -129,13 +136,21 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       .select(`
         student_id,
         student_ids,
-        allowed_days_of_week
+        allowed_days_of_week,
+        start_date,
+        end_date
       `)
       .eq('authorized_parent_id', parentData.id)
       .eq('is_active', true)
-      .lte('start_date', new Date().toISOString().split('T')[0])
-      .gte('end_date', new Date().toISOString().split('T')[0])
+      .lte('start_date', today)
+      .gte('end_date', today)
       .overlaps('allowed_days_of_week', [currentDayOfWeek]);
+    
+    logger.log('Authorization query result:', {
+      found: authorizedChildren?.length || 0,
+      error: authorizedError,
+      data: authorizedChildren
+    });
 
     // Get student details for all authorized students
     let authorizedStudentIds: string[] = [];
@@ -154,6 +169,8 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
 
     // Remove duplicates
     authorizedStudentIds = [...new Set(authorizedStudentIds)];
+    
+    logger.log('Authorized student IDs collected:', authorizedStudentIds);
 
     // Get student details for authorized students using secure operations
     let authorizedStudentDetails = [];
@@ -164,6 +181,8 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
         // Filter out deleted students and map to match expected structure
         authorizedStudentDetails = allStudents
           .filter(s => s && authorizedStudentIds.includes(s.id) && !s.deletedAt);
+        
+        logger.log('Authorized student details found:', authorizedStudentDetails.length);
       }
     }
 
@@ -216,7 +235,15 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
 
     const allChildren = Array.from(allChildrenMap.values());
 
-    logger.log(`Found ${allChildren.length} children for parent identifier ${parentIdentifier}`);
+    logger.log(`Found ${allChildren.length} children for parent identifier ${parentIdentifier}`, {
+      directChildren: directChildren.length,
+      authorizedChildren: authorizedChildrenFormatted.length,
+      breakdown: allChildren.map(c => ({
+        id: c.id,
+        name: c.name,
+        isAuthorized: (c as any).isAuthorized
+      }))
+    });
 
     return { allChildren };
   } catch (error) {
