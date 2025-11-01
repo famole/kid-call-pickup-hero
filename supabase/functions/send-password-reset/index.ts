@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const { error: emailError } = await resend.emails.send({
-      from: 'Upsy <hi@upsy.uy>',
+      from: 'Upsy <hi@mail.upsy.uy>',
       to: [email],
       subject: 'Your Password Reset Code - Upsy',
       html,
