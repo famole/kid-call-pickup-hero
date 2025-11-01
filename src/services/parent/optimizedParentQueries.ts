@@ -120,17 +120,16 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       // Don't throw, just log and continue with empty classes
     }
 
-    // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
-    const currentDayOfWeek = new Date().getDay();
+    // Get current date for date range filtering
     const today = new Date().toISOString().split('T')[0];
     
     logger.log('Checking authorizations for:', {
       parentId: parentData.id,
-      currentDayOfWeek,
       today
     });
     
     // Get authorized children (excluding deleted students) - handle both old student_id and new student_ids
+    // Show all active authorizations within the date range, regardless of day of week
     const { data: authorizedChildren, error: authorizedError } = await supabase
       .from('pickup_authorizations')
       .select(`
@@ -143,8 +142,7 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       .eq('authorized_parent_id', parentData.id)
       .eq('is_active', true)
       .lte('start_date', today)
-      .gte('end_date', today)
-      .overlaps('allowed_days_of_week', [currentDayOfWeek]);
+      .gte('end_date', today);
     
     logger.log('Authorization query result:', {
       found: authorizedChildren?.length || 0,
