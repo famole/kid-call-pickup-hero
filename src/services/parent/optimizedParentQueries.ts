@@ -120,35 +120,22 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       // Don't throw, just log and continue with empty classes
     }
 
-    // Get current date for date range filtering
-    const today = new Date().toISOString().split('T')[0];
-    
-    logger.log('Checking authorizations for:', {
-      parentId: parentData.id,
-      today
-    });
+    // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+    const currentDayOfWeek = new Date().getDay();
     
     // Get authorized children (excluding deleted students) - handle both old student_id and new student_ids
-    // Show all active authorizations within the date range, regardless of day of week
     const { data: authorizedChildren, error: authorizedError } = await supabase
       .from('pickup_authorizations')
       .select(`
         student_id,
         student_ids,
-        allowed_days_of_week,
-        start_date,
-        end_date
+        allowed_days_of_week
       `)
       .eq('authorized_parent_id', parentData.id)
       .eq('is_active', true)
-      .lte('start_date', today)
-      .gte('end_date', today);
-    
-    logger.log('Authorization query result:', {
-      found: authorizedChildren?.length || 0,
-      error: authorizedError,
-      data: authorizedChildren
-    });
+      .lte('start_date', new Date().toISOString().split('T')[0])
+      .gte('end_date', new Date().toISOString().split('T')[0])
+      .contains('allowed_days_of_week', [currentDayOfWeek]);
 
     // Get student details for all authorized students
     let authorizedStudentIds: string[] = [];
@@ -167,8 +154,6 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
 
     // Remove duplicates
     authorizedStudentIds = [...new Set(authorizedStudentIds)];
-    
-    logger.log('Authorized student IDs collected:', authorizedStudentIds);
 
     // Get student details for authorized students using secure operations
     let authorizedStudentDetails = [];
@@ -179,8 +164,6 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
         // Filter out deleted students and map to match expected structure
         authorizedStudentDetails = allStudents
           .filter(s => s && authorizedStudentIds.includes(s.id) && !s.deletedAt);
-        
-        logger.log('Authorized student details found:', authorizedStudentDetails.length);
       }
     }
 
@@ -233,15 +216,7 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
 
     const allChildren = Array.from(allChildrenMap.values());
 
-    logger.log(`Found ${allChildren.length} children for parent identifier ${parentIdentifier}`, {
-      directChildren: directChildren.length,
-      authorizedChildren: authorizedChildrenFormatted.length,
-      breakdown: allChildren.map(c => ({
-        id: c.id,
-        name: c.name,
-        isAuthorized: (c as any).isAuthorized
-      }))
-    });
+    logger.log(`Found ${allChildren.length} children for parent identifier ${parentIdentifier}`);
 
     return { allChildren };
   } catch (error) {
