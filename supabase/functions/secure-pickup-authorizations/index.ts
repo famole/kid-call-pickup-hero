@@ -468,6 +468,7 @@ serve(async (req)=>{
               .select(`
                 id,
                 authorized_parent_id,
+                student_id,
                 student_ids,
                 allowed_days_of_week,
                 authorized_parent:parents!authorized_parent_id (
@@ -498,9 +499,14 @@ serve(async (req)=>{
               });
             }
 
-            // Get all unique student IDs
+            // Get all unique student IDs from both student_id and student_ids fields
             const allStudentIds = new Set();
             authorizations.forEach(auth => {
+              // Add singular student_id if it exists
+              if (auth.student_id) {
+                allStudentIds.add(auth.student_id);
+              }
+              // Add array of student_ids if it exists
               if (auth.student_ids && Array.isArray(auth.student_ids)) {
                 auth.student_ids.forEach(id => allStudentIds.add(id));
               }
@@ -546,7 +552,19 @@ serve(async (req)=>{
 
               const parentData = parentMap.get(parent.id);
               
-              // Add students for this authorization
+              // Add students for this authorization (check both singular and array fields)
+              // First, handle singular student_id
+              if (auth.student_id) {
+                const student = studentsMap.get(auth.student_id);
+                if (student && !parentData.students.some(s => s.id === auth.student_id)) {
+                  parentData.students.push({
+                    id: student.id,
+                    name: student.name
+                  });
+                }
+              }
+              
+              // Then, handle array student_ids
               if (auth.student_ids && Array.isArray(auth.student_ids)) {
                 auth.student_ids.forEach(studentId => {
                   const student = studentsMap.get(studentId);
