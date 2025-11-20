@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
@@ -15,6 +14,7 @@ import { Child, Class } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
+import { supabase } from '@/integrations/supabase/client';
 
 const ReportsTab = () => {
   const { t } = useTranslation();
@@ -62,6 +62,7 @@ const ReportsTab = () => {
     setLoading(true);
     try {
       let historyData;
+      let selfCheckoutData: any[] = [];
       let count = 0;
       const offset = (page - 1) * pageSize;
       
@@ -78,23 +79,128 @@ const ReportsTab = () => {
         } else {
           historyData = await getAllPickupHistory(start, end, pageSize, offset);
         }
+
+        // Fetch self-checkout data
+        let selfCheckoutQuery = supabase
+          .from('student_departures')
+          .select(`
+            id,
+            student_id,
+            departed_at,
+            marked_by_user_id,
+            notes,
+            students (
+              name,
+              class_id,
+              classes (
+                name
+              )
+            )
+          `)
+          .order('departed_at', { ascending: false })
+          .range(offset, offset + pageSize - 1);
+
+        if (start) {
+          selfCheckoutQuery = selfCheckoutQuery.gte('departed_at', start.toISOString());
+        }
+        if (end) {
+          const endOfDay = new Date(end);
+          endOfDay.setHours(23, 59, 59, 999);
+          selfCheckoutQuery = selfCheckoutQuery.lte('departed_at', endOfDay.toISOString());
+        }
+
+        const { data: selfCheckoutResult, error: selfCheckoutError } = await selfCheckoutQuery;
+        if (selfCheckoutError) {
+          console.error('Error fetching self-checkout data:', selfCheckoutError);
+        } else {
+          selfCheckoutData = selfCheckoutResult || [];
+        }
+
         setStats(null); // Clear individual student stats
       } else {
         count = await getPickupHistoryCount(selectedStudent);
         historyData = await getPickupHistoryByStudent(selectedStudent, pageSize, offset);
         const studentStats = await getPickupStatsByStudent(selectedStudent);
         setStats(studentStats);
+
+        // Fetch self-checkout data for specific student
+        const { data: selfCheckoutResult, error: selfCheckoutError } = await supabase
+          .from('student_departures')
+          .select(`
+            id,
+            student_id,
+            departed_at,
+            marked_by_user_id,
+            notes,
+            students (
+              name,
+              class_id,
+              classes (
+                name
+              )
+            )
+          `)
+          .eq('student_id', selectedStudent)
+          .order('departed_at', { ascending: false })
+          .range(offset, offset + pageSize - 1);
+
+        if (selfCheckoutError) {
+          console.error('Error fetching self-checkout data:', selfCheckoutError);
+        } else {
+          selfCheckoutData = selfCheckoutResult || [];
+        }
       }
 
-      setPickupHistory(historyData);
-      setTotalCount(count);
+      // Get unique teacher IDs from self-checkout data
+      const uniqueTeacherIds = [...new Set(selfCheckoutData.map(record => record.marked_by_user_id))];
+      
+      // Fetch teacher names
+      let teacherMap = new Map();
+      if (uniqueTeacherIds.length > 0) {
+        const { secureOperations } = await import('@/services/encryption');
+        const { data: teachers } = await secureOperations.getParentsByIdsSecure(uniqueTeacherIds);
+        
+        teachers?.forEach(teacher => {
+          teacherMap.set(teacher.id, teacher.name);
+        });
+      }
+
+      // Convert pickup history to include type
+      const pickupRecords = historyData.map((item: any) => ({
+        ...item,
+        type: 'pickup' as const
+      }));
+
+      // Convert self-checkout to unified format
+      const selfCheckoutRecords = selfCheckoutData.map((item: any) => ({
+        id: item.id,
+        studentId: item.student_id,
+        parentId: item.marked_by_user_id,
+        requestTime: new Date(item.departed_at),
+        calledTime: null,
+        completedTime: new Date(item.departed_at),
+        pickupDurationMinutes: null,
+        studentName: item.students?.name || 'Unknown Student',
+        parentName: teacherMap.get(item.marked_by_user_id) || 'Unknown Teacher',
+        className: item.students?.classes?.name || 'N/A',
+        createdAt: new Date(item.departed_at),
+        type: 'self_checkout' as const
+      }));
+
+      // Merge and sort by completedTime
+      const allRecords = [...pickupRecords, ...selfCheckoutRecords].sort((a, b) => 
+        new Date(b.completedTime).getTime() - new Date(a.completedTime).getTime()
+      );
+
+      setPickupHistory(allRecords);
+      setTotalCount(count + selfCheckoutData.length);
       setCurrentPage(page);
       
       toast({
         title: t('reports.success'),
         description: t('reports.reportGenerated', { 
-          count: historyData.length, 
-          total: count 
+          count: allRecords.length, 
+          total: count + selfCheckoutData.length
         }),
       });
     } catch (error) {
