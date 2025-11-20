@@ -1,16 +1,7 @@
 import React from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Loader2, AlertTriangle } from 'lucide-react';
-
+import { useTranslation } from 'react-i18next';
 interface DeleteConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -21,7 +12,6 @@ interface DeleteConfirmationDialogProps {
   onConfirm: () => void;
   confirmText?: string;
 }
-
 const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
   open,
   onOpenChange,
@@ -30,10 +20,12 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
   itemName,
   isLoading = false,
   onConfirm,
-  confirmText = "Delete",
+  confirmText
 }) => {
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+  const {
+    t
+  } = useTranslation();
+  return <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
@@ -42,38 +34,24 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
           </AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
             <p>{description}</p>
-            {itemName && (
-              <p className="font-medium text-foreground">
-                Item: <span className="text-primary">{itemName}</span>
-              </p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Note: This will preserve all historical data and requests associated with this record.
-            </p>
+            {itemName && <p className="font-medium text-foreground">
+                {t('common.item')}: <span className="text-primary">{itemName}</span>
+              </p>}
+            
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>
-            Cancel
+            {t('common.cancel')}
           </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {isLoading ? (
-              <>
+          <AlertDialogAction onClick={onConfirm} disabled={isLoading} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            {isLoading ? <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting...
-              </>
-            ) : (
-              confirmText
-            )}
+                {t('common.deleting')}
+              </> : confirmText || t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
-    </AlertDialog>
-  );
+    </AlertDialog>;
 };
-
 export default DeleteConfirmationDialog;

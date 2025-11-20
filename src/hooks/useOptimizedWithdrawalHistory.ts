@@ -25,6 +25,20 @@ export const useOptimizedWithdrawalHistory = () => {
   // Helper function to get authorized student IDs
   const getAuthorizedStudentIds = async (parentId: string): Promise<string | null> => {
     try {
+      // Check if user is admin/teacher/superadmin - they can see all students
+      const { data: userRole } = await supabase.rpc('get_current_user_role');
+      
+      if (userRole && ['admin', 'teacher', 'superadmin'].includes(userRole)) {
+        // Get all students for admin/teacher
+        const { data: allStudents } = await supabase
+          .from('students')
+          .select('id')
+          .is('deleted_at', null);
+        
+        return allStudents && allStudents.length > 0 ? allStudents.map(s => s.id).join(',') : null;
+      }
+      
+      // For parents, get only their students
       const { data: studentIds } = await supabase
         .from('student_parents')
         .select('student_id')
@@ -58,6 +72,17 @@ export const useOptimizedWithdrawalHistory = () => {
 
       // First, get student IDs for the parent to optimize the query
       const authorizedStudentIds = await getAuthorizedStudentIds(parentId);
+      console.log('Authorized student IDs:', authorizedStudentIds);
+      
+      // If no students found, return empty data
+      if (!authorizedStudentIds) {
+        logger.warn('No students found for parent');
+        setWithdrawalData([]);
+        return;
+      }
+
+      const studentIdsArray = authorizedStudentIds.split(',');
+      console.log('Student IDs array:', studentIdsArray);
       
       // Optimized query 1: Get pickup history with students data
       // Get all pickups for the parent's students, regardless of who made the pickup
@@ -78,7 +103,7 @@ export const useOptimizedWithdrawalHistory = () => {
             )
           )
         `)
-        .in('student_id', authorizedStudentIds ? authorizedStudentIds.split(',') : [])
+        .in('student_id', studentIdsArray)
         .order('completed_time', { ascending: false })
         .limit(200); // Limit to 200 most recent records for performance
 
@@ -147,65 +172,69 @@ export const useOptimizedWithdrawalHistory = () => {
         }
       }
 
-      // Optimized query 2: Get self-checkout departures and authorizations separately
-      const [selfCheckoutDepartures, selfCheckoutAuthorizations] = await Promise.all([
-        supabase
-          .from('student_departures')
-          .select(`
+      // Optimized query 2: Get self-checkout departures for parent's students
+      const { data: selfCheckoutData, error: selfCheckoutError } = await supabase
+        .from('student_departures')
+        .select(`
+          id,
+          student_id,
+          departed_at,
+          notes,
+          marked_by_user_id,
+          students (
             id,
-            student_id,
-            departed_at,
-            notes,
-            students (
-              id,
+            name,
+            avatar,
+            classes (
               name,
-              avatar,
-              classes (
-                name,
-                grade
-              )
+              grade
             )
-          `)
-          .order('departed_at', { ascending: false })
-          .limit(200),
-        supabase
-          .from('self_checkout_authorizations')
-          .select('student_id, id')
-          .eq('authorizing_parent_id', parentId)
-      ]);
+          )
+        `)
+        .in('student_id', studentIdsArray)
+        .order('departed_at', { ascending: false })
+        .limit(200);
 
-      const selfCheckoutError = selfCheckoutDepartures.error;
-      const selfCheckoutData = selfCheckoutDepartures.data;
-
-      if (selfCheckoutError || selfCheckoutAuthorizations.error) {
-        logger.error('Error fetching self-checkout data:', selfCheckoutError || selfCheckoutAuthorizations.error);
-      } else if (selfCheckoutData && selfCheckoutAuthorizations.data) {
-        // Create a set of authorized student IDs for fast lookup
-        const authorizedStudentIds = new Set(
-          selfCheckoutAuthorizations.data.map(auth => auth.student_id)
-        );
-
-        // Filter departures to only include those for authorized students
+      console.log('Self-checkout data:', selfCheckoutData, 'Error:', selfCheckoutError);
+      
+      if (selfCheckoutError) {
+        logger.error('Error fetching self-checkout data:', selfCheckoutError);
+      } else if (selfCheckoutData) {
+        console.log('Processing self-checkout data, count:', selfCheckoutData.length);
+        // Get unique teacher IDs from self-checkout data
+        const uniqueTeacherIds = [...new Set(selfCheckoutData.map(record => record.marked_by_user_id))];
+        console.log('Unique teacher IDs:', uniqueTeacherIds);
+        
+        // Fetch teacher names
+        const { secureOperations } = await import('@/services/encryption');
+        const { data: teachers } = await secureOperations.getParentsByIdsSecure(uniqueTeacherIds);
+        console.log('Teachers fetched:', teachers);
+        
+        const teacherMap = new Map();
+        teachers?.forEach(teacher => {
+          teacherMap.set(teacher.id, teacher.name);
+        });
+        
+        // Add all self-checkout departures for parent's students
         for (const departure of selfCheckoutData) {
-          if (authorizedStudentIds.has(departure.student_id)) {
-            allRecords.push({
-              id: departure.id,
-              studentId: departure.student_id,
-              studentName: departure.students?.name || 'Unknown Student',
-              studentAvatar: departure.students?.avatar,
-              className: departure.students?.classes ? 
-                `${departure.students.classes.name} - Grade ${departure.students.classes.grade}` : undefined,
-              date: new Date(departure.departed_at),
-              type: 'self_checkout',
-              notes: departure.notes
-            });
-          }
+          allRecords.push({
+            id: departure.id,
+            studentId: departure.student_id,
+            studentName: teacherMap.get(departure.marked_by_user_id) || 'Unknown Teacher',
+            studentAvatar: departure.students?.avatar,
+            className: departure.students?.classes ? 
+              `${departure.students.classes.name} - Grade ${departure.students.classes.grade}` : undefined,
+            date: new Date(departure.departed_at),
+            type: 'self_checkout',
+            notes: departure.notes
+          });
         }
       }
 
       // Sort all records by date (most recent first)
       allRecords.sort((a, b) => b.date.getTime() - a.date.getTime());
 
+      console.log('Total records to display:', allRecords.length, allRecords);
       setWithdrawalData(allRecords);
 
     } catch (error) {
