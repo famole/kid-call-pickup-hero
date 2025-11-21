@@ -90,20 +90,8 @@ const EnhancedParentDashboard: React.FC = () => {
           />
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-            {/* Student Selection Component - Main priority, left side for larger screens */}
-            <div className="lg:col-span-2 lg:order-1">
-              <ChildrenSelectionCard
-                children={children}
-                selectedChildren={selectedChildren}
-                childrenWithActiveRequests={childrenWithActiveRequests}
-                isSubmitting={isSubmitting}
-                onToggleChildSelection={toggleChildSelection}
-                onRequestPickup={handleRequestPickup}
-              />
-            </div>
-
-            {/* Status Components - Right side for larger screens */}
-            <div className="lg:col-span-1 space-y-3 sm:space-y-4 lg:order-2">
+            {/* Status Components - Top on mobile, right side on larger screens */}
+            <div className="lg:col-span-1 space-y-3 sm:space-y-4 order-1 lg:order-2">
               <PendingRequestsCard 
                 pendingRequests={pendingRequests} 
                 children={children}
@@ -121,6 +109,18 @@ const EnhancedParentDashboard: React.FC = () => {
                   loading={selfCheckoutLoading}
                 />
               )}
+            </div>
+
+            {/* Student Selection Component - Bottom on mobile, left side on larger screens */}
+            <div className="lg:col-span-2 order-2 lg:order-1">
+              <ChildrenSelectionCard
+                children={children}
+                selectedChildren={selectedChildren}
+                childrenWithActiveRequests={childrenWithActiveRequests}
+                isSubmitting={isSubmitting}
+                onToggleChildSelection={toggleChildSelection}
+                onRequestPickup={handleRequestPickup}
+              />
             </div>
           </div>
         </div>
