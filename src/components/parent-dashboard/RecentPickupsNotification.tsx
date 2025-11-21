@@ -30,10 +30,10 @@ const RecentPickupsNotification: React.FC<RecentPickupsNotificationProps> = ({
   return (
     <div className="space-y-1.5">
       {pickups.map((pickup) => (
-        <Alert key={pickup.id} className="border-primary/20 bg-primary/5 py-2 flex items-center">
-          <UserCheck className="h-3.5 w-3.5 text-primary shrink-0" />
-          <AlertDescription className="flex items-center justify-between gap-2 flex-1">
-            <span className="text-xs">
+        <Alert key={pickup.id} className="border-primary/20 bg-primary/5 py-2">
+          <UserCheck className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+          <AlertDescription className="flex items-center justify-between gap-2">
+            <span className="text-xs leading-none">
               <strong>{pickup.studentName}</strong> {t('dashboard.pickedUpBy')} <strong>{pickup.parentName}</strong>
             </span>
             <Button
