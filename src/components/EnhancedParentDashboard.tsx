@@ -2,7 +2,6 @@ import React from 'react';
 import { useOptimizedParentDashboard } from '@/hooks/useOptimizedParentDashboard';
 import { useParentSelfCheckout } from '@/hooks/useParentSelfCheckout';
 import { useRecentPickupNotifications } from '@/hooks/useRecentPickupNotifications';
-import { useUpcomingActivity } from '@/hooks/useUpcomingActivity';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import ParentDashboardHeader from '@/components/parent-dashboard/ParentDashboardHeader';
@@ -11,7 +10,6 @@ import PendingRequestsCard from '@/components/parent-dashboard/PendingRequestsCa
 import CalledRequestsCard from '@/components/parent-dashboard/CalledRequestsCard';
 import SelfCheckoutStatusCard from '@/components/parent-dashboard/SelfCheckoutStatusCard';
 import RecentPickupsNotification from '@/components/parent-dashboard/RecentPickupsNotification';
-import { UpcomingActivityCard } from '@/components/activities/UpcomingActivityCard';
 
 /**
  * Enhanced Parent Dashboard Component
@@ -51,11 +49,6 @@ const EnhancedParentDashboard: React.FC = () => {
     dismissNotification
   } = useRecentPickupNotifications();
 
-  const {
-    data: upcomingActivity,
-    isLoading: activityLoading
-  } = useUpcomingActivity();
-
   // Get children with active requests to disable selection
   const childrenWithActiveRequests = [
     ...pendingRequests.map(req => req.studentId),
@@ -77,12 +70,8 @@ const EnhancedParentDashboard: React.FC = () => {
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
-        <div className="space-y-2 sm:space-y-3">
+        <div className="space-y-3 sm:space-y-4">
           <ParentDashboardHeader userName={user?.name} />
-          
-          {!activityLoading && upcomingActivity && (
-            <UpcomingActivityCard activity={upcomingActivity} />
-          )}
           
           <RecentPickupsNotification 
             pickups={recentPickups}
@@ -90,19 +79,7 @@ const EnhancedParentDashboard: React.FC = () => {
           />
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-            {/* Student Selection Component - Main priority, left side for larger screens */}
-            <div className="lg:col-span-2 lg:order-1">
-              <ChildrenSelectionCard
-                children={children}
-                selectedChildren={selectedChildren}
-                childrenWithActiveRequests={childrenWithActiveRequests}
-                isSubmitting={isSubmitting}
-                onToggleChildSelection={toggleChildSelection}
-                onRequestPickup={handleRequestPickup}
-              />
-            </div>
-
-            {/* Status Components - Right side for larger screens */}
+            {/* Status Components - Left side for larger screens */}
             <div className="lg:col-span-1 space-y-3 sm:space-y-4 lg:order-2">
               <PendingRequestsCard 
                 pendingRequests={pendingRequests} 
@@ -121,6 +98,18 @@ const EnhancedParentDashboard: React.FC = () => {
                   loading={selfCheckoutLoading}
                 />
               )}
+            </div>
+
+            {/* Student Selection Component - Right side for larger screens */}
+            <div className="lg:col-span-2 lg:order-1">
+              <ChildrenSelectionCard
+                children={children}
+                selectedChildren={selectedChildren}
+                childrenWithActiveRequests={childrenWithActiveRequests}
+                isSubmitting={isSubmitting}
+                onToggleChildSelection={toggleChildSelection}
+                onRequestPickup={handleRequestPickup}
+              />
             </div>
           </div>
         </div>

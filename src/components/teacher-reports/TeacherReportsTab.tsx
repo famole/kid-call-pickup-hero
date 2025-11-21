@@ -32,8 +32,6 @@ interface PickupHistoryData {
   parents: {
     name: string;
   };
-  type: 'pickup' | 'self_checkout';
-  marked_by_user_name?: string;
 }
 
 interface StudentStatsData {
@@ -136,99 +134,25 @@ const TeacherReportsTab: React.FC = () => {
 
       if (historyError) throw historyError;
 
-      // Fetch self-checkout departures
-      const { data: selfCheckoutData, error: selfCheckoutError } = await supabase
-        .from('student_departures')
-        .select(`
-          id,
-          student_id,
-          departed_at,
-          marked_by_user_id,
-          notes,
-          students (
-            name,
-            class_id,
-            classes (
-              name
-            )
-          )
-        `)
-        .gte('departed_at', startDateTime)
-        .lte('departed_at', endDateTime)
-        .order('departed_at', { ascending: false });
-
-      if (selfCheckoutError) throw selfCheckoutError;
-
-      // Get unique teacher IDs from self-checkout data
-      const uniqueTeacherIds = [...new Set(selfCheckoutData?.map(record => record.marked_by_user_id) || [])];
-      
-      // Fetch teacher names
-      const { secureOperations } = await import('@/services/encryption');
-      const { data: teachers } = await secureOperations.getParentsByIdsSecure(uniqueTeacherIds);
-      
-      const teacherMap = new Map();
-      teachers?.forEach(teacher => {
-        teacherMap.set(teacher.id, teacher.name);
-      });
-
-      // Filter pickup history by selected classes
-      let filteredPickupData = historyData || [];
+      // Filter by selected classes
+      let filteredData = historyData || [];
       if (selectedClassId !== 'all') {
-        filteredPickupData = filteredPickupData.filter(item => 
+        filteredData = filteredData.filter(item => 
           item.students?.class_id === selectedClassId
         );
       } else {
-        filteredPickupData = filteredPickupData.filter(item => 
+        // Filter by teacher's classes when "all" is selected
+        filteredData = filteredData.filter(item => 
           classIds.includes(item.students?.class_id)
         );
       }
 
-      // Filter self-checkout data by selected classes
-      let filteredSelfCheckoutData = selfCheckoutData || [];
-      if (selectedClassId !== 'all') {
-        filteredSelfCheckoutData = filteredSelfCheckoutData.filter(item => 
-          item.students?.class_id === selectedClassId
-        );
-      } else {
-        filteredSelfCheckoutData = filteredSelfCheckoutData.filter(item => 
-          classIds.includes(item.students?.class_id)
-        );
-      }
-
-      // Convert pickup history to unified format
-      const pickupRecords: PickupHistoryData[] = filteredPickupData.map(item => ({
-        ...item,
-        type: 'pickup' as const
-      }));
-
-      // Convert self-checkout to unified format
-      const selfCheckoutRecords: PickupHistoryData[] = filteredSelfCheckoutData.map(item => ({
-        id: item.id,
-        student_id: item.student_id,
-        parent_id: item.marked_by_user_id,
-        request_time: item.departed_at,
-        called_time: null,
-        completed_time: item.departed_at,
-        pickup_duration_minutes: null,
-        students: item.students,
-        parents: {
-          name: teacherMap.get(item.marked_by_user_id) || 'Unknown Teacher'
-        },
-        type: 'self_checkout' as const,
-        marked_by_user_name: teacherMap.get(item.marked_by_user_id) || 'Unknown Teacher'
-      }));
-
-      // Merge and sort by completed_time
-      const allRecords = [...pickupRecords, ...selfCheckoutRecords].sort((a, b) => 
-        new Date(b.completed_time).getTime() - new Date(a.completed_time).getTime()
-      );
-
-      setPickupHistory(allRecords);
+      setPickupHistory(filteredData);
 
       // Calculate stats for the date range
-      if (allRecords && allRecords.length > 0) {
-        const totalPickups = allRecords.length;
-        const validDurations = allRecords.filter(item => item.pickup_duration_minutes);
+      if (filteredData && filteredData.length > 0) {
+        const totalPickups = filteredData.length;
+        const validDurations = filteredData.filter(item => item.pickup_duration_minutes);
         const avgTime = validDurations.length > 0 
           ? validDurations.reduce((sum, item) => sum + (item.pickup_duration_minutes || 0), 0) / validDurations.length
           : 0;
@@ -258,14 +182,13 @@ const TeacherReportsTab: React.FC = () => {
 
     try {
       // Prepare CSV data
-      const headers = [t('teacherReports.date'), t('teacherReports.time'), t('teacherReports.student'), t('teacherReports.class'), t('teacherReports.type'), t('teacherReports.parent'), t('teacherReports.duration')];
+      const headers = [t('teacherReports.date'), t('teacherReports.time'), t('teacherReports.student'), t('teacherReports.class'), t('teacherReports.parent'), t('teacherReports.duration')];
       const csvData = pickupHistory.map(item => [
         format(new Date(item.completed_time), 'yyyy-MM-dd'),
         format(new Date(item.completed_time), 'HH:mm:ss'),
         item.students?.name || 'N/A',
         item.students?.classes?.name || 'N/A',
-        item.type === 'self_checkout' ? 'Self Checkout' : 'Pickup',
-        item.type === 'self_checkout' ? item.marked_by_user_name || 'N/A' : item.parents?.name || 'N/A',
+        item.parents?.name || 'N/A',
         item.pickup_duration_minutes?.toString() || 'N/A'
       ]);
 
