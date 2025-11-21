@@ -81,7 +81,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
                     <th className="text-center p-3 font-medium">{t('mobilePickupHistory.parentName')}</th>
                     <th className="text-center p-3 font-medium">{t('mobilePickupHistory.requestTime')}</th>
                     <th className="text-center p-3 font-medium">{t('mobilePickupHistory.calledTime')}</th>
-                    <th className="text-center p-3 font-medium">{t('mobilePickupHistory.completedTime')}</th>
+                    <th className="text-center p-3 font-medium">{t('mobilePickupHistory.type')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -93,7 +93,11 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
                       <td className="p-3 text-center">
                         {record.calledTime ? formatFullDate(record.calledTime) : '-'}
                       </td>
-                      <td className="p-3 text-center">{formatFullDate(record.completedTime)}</td>
+                      <td className="p-3 text-center">
+                        <Badge variant={(record as any).type === 'self_checkout' ? 'secondary' : 'default'} className="whitespace-nowrap">
+                          {(record as any).type === 'self_checkout' ? t('mobilePickupHistory.selfCheckoutFull') : t('mobilePickupHistory.pickup')}
+                        </Badge>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -157,7 +161,7 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
               <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.parent')}</th>
               <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.requested')}</th>
               <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.called')}</th>
-              <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.completed')}</th>
+              <th className="text-center p-2 font-medium text-xs">{t('mobilePickupHistory.type')}</th>
             </tr>
           </thead>
           <tbody>
@@ -169,7 +173,11 @@ const MobilePickupHistoryTable: React.FC<MobilePickupHistoryTableProps> = ({
                 <td className="p-2 text-xs text-center">
                   {record.calledTime ? formatTime(record.calledTime) : '-'}
                 </td>
-                <td className="p-2 text-xs text-center">{formatTime(record.completedTime)}</td>
+                <td className="p-2 text-xs text-center">
+                  <Badge variant={(record as any).type === 'self_checkout' ? 'secondary' : 'default'} className="text-[10px] px-1 py-0.5">
+                    {(record as any).type === 'self_checkout' ? t('mobilePickupHistory.selfCheckoutShort') : t('mobilePickupHistory.pickup')}
+                  </Badge>
+                </td>
               </tr>
             ))}
           </tbody>
