@@ -121,23 +121,6 @@ const EnhancedParentDashboard: React.FC = () => {
                 onToggleChildSelection={toggleChildSelection}
                 onRequestPickup={handleRequestPickup}
               />
-              <PendingRequestsCard 
-                pendingRequests={pendingRequests} 
-                children={children}
-                currentParentId={currentParentId}
-                onRequestCancelled={refetch}
-              />
-              <CalledRequestsCard 
-                calledRequests={calledRequests} 
-                children={children}
-                currentParentId={currentParentId}
-              />
-              {(selfCheckoutStudents.length > 0 || selfCheckoutLoading) && (
-                <SelfCheckoutStatusCard
-                  selfCheckoutStudents={selfCheckoutStudents}
-                  loading={selfCheckoutLoading}
-                />
-              )}
             </div>
           </div>
         </div>
