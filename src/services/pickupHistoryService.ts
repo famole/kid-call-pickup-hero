@@ -111,24 +111,14 @@ export const getPickupStatsByStudent = async (studentId: string) => {
   try {
     const { data, error } = await supabase
       .from('pickup_history')
-      .select('called_time, completed_time')
+      .select('pickup_duration_minutes, completed_time')
       .eq('student_id', studentId);
 
     if (error) throw error;
 
     const totalPickups = data.length;
-    
-    // Calculate duration between called_time and completed_time for each record
-    const validDurations = data
-      .filter(item => item.called_time) // Only include records with called_time
-      .map(item => {
-        const called = new Date(item.called_time).getTime();
-        const completed = new Date(item.completed_time).getTime();
-        return (completed - called) / (1000 * 60); // Convert to minutes
-      });
-    
-    const averageDuration = validDurations.length > 0
-      ? validDurations.reduce((sum, duration) => sum + duration, 0) / validDurations.length
+    const averageDuration = data.length > 0 
+      ? data.reduce((sum, item) => sum + (item.pickup_duration_minutes || 0), 0) / data.length 
       : 0;
 
     return {

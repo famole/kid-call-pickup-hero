@@ -12,9 +12,9 @@ export const updatePickupRequestStatus = async (
 
     const updateData: Record<string, unknown> = { status };
 
-    // When marking a request as called, store the time it was called
+    // When marking a request as called, also store the time it was called
     if (status === 'called') {
-      updateData.called_time = new Date().toISOString();
+      updateData.request_time = new Date().toISOString();
     }
 
     const { data, error } = await supabase

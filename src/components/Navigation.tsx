@@ -28,8 +28,7 @@ import {
   School,
   Languages,
   History,
-  FileText,
-  CalendarDays
+  FileText
 } from 'lucide-react';
 
 const Navigation: React.FC = () => {
@@ -61,7 +60,6 @@ const Navigation: React.FC = () => {
   const navigationItems = [
     { path: '/', label: t('navigation.dashboard'), icon: Home, roles: ['parent', 'family', 'superadmin'] },
     { path: '/pickup-authorization', label: t('navigation.pickupAuthorizations'), icon: Car, roles: ['parent'] },
-    { path: '/activities', label: t('navigation.activities'), icon: CalendarDays, roles: ['parent', 'teacher', 'admin', 'superadmin'] },
     { path: '/self-checkout', label: t('navigation.selfCheckout'), icon: LogOut, roles: ['parent'] },
     { path: '/self-checkout-history', label: t('navigation.selfCheckoutHistory'), icon: History, roles: ['parent'] },
     { path: '/pickup-management', label: t('navigation.pickupManagement'), icon: ClipboardList, roles: ['admin', 'teacher', 'superadmin'] },
