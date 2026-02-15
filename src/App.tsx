@@ -22,6 +22,7 @@ const ViewerDisplay = lazy(() => import('@/pages/ViewerDisplay'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const StressTestPage = lazy(() => import('@/pages/StressTestPage'));
 const AdminInitialSetup = lazy(() => import('@/pages/AdminInitialSetup'));
+const Communications = lazy(() => import('@/pages/Communications'));
 const PickupAuthorizationPage = lazy(() => import('@/pages/PickupAuthorizationPage'));
 const SelfCheckoutPage = lazy(() => import('@/pages/SelfCheckoutPage'));
 const SelfCheckoutHistoryPage = lazy(() => import('@/pages/SelfCheckoutHistoryPage'));
@@ -172,6 +173,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ActivitiesCalendar />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/communications" 
+                element={
+                  <ProtectedRoute>
+                    <Communications />
                   </ProtectedRoute>
                 } 
               />

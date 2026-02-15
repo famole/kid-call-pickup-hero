@@ -33,13 +33,13 @@ class SecurePickupOperations {
         return { data: null, error: new Error(data.error || 'Unknown error') };
       }
 
-      if (!data?.data?.encrypted_data) {
+      if (!data?.encryptedData) {
         logger.warn('No encrypted data received from secure pickup requests');
         return { data: [], error: null };
       }
 
       // Decrypt the pickup requests data
-      const decryptedRequests = await decryptData(data.data.encrypted_data);
+      const decryptedRequests = await decryptData(data.encryptedData);
       
       if (!decryptedRequests) {
         logger.warn('Decryption returned empty data');
@@ -93,8 +93,8 @@ class SecurePickupOperations {
         isParentIdValid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(parentId)
       });
       
-      // Encrypt the data including parent ID
-      const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
+      // Encrypt the data (encryptData will handle stringification)
+      const encryptedData = await encryptData(dataToEncrypt);
       
       logger.info('Data encrypted successfully, calling secure-pickup-requests endpoint');
       
@@ -122,9 +122,9 @@ class SecurePickupOperations {
       }
 
       // Decrypt the response data
-      const decryptedData = await decryptData(data.data.encrypted_data);
+      const decryptedResponse = await decryptData(data.encryptedData);
       // decryptData already returns a parsed object, no need to JSON.parse again
-      const requestData = decryptedData;
+      const requestData = decryptedResponse.data;
       
       // Transform to PickupRequest format
       const pickupRequest: PickupRequest = {
@@ -147,17 +147,10 @@ class SecurePickupOperations {
     try {
       logger.info('getParentAffectedRequestsSecure called with parentId:', parentId);
       
-      // Encrypt the parent ID
-      const dataToEncrypt = { parentId };
-      logger.info('Data to encrypt for getParentAffectedRequests:', dataToEncrypt);
-      
-      const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
-      logger.info('Data encrypted successfully for getParentAffectedRequests');
-      
       const { data, error } = await supabase.functions.invoke('secure-pickup-requests', {
         body: { 
           operation: 'getParentAffectedRequests',
-          data: encryptedData
+          data: { parentId }
         }
       });
       
@@ -179,20 +172,17 @@ class SecurePickupOperations {
         return { data: null, error: new Error(data.error || 'Unknown error') };
       }
 
-      // Check if data.data exists
-      if (!data.data?.encrypted_data) {
+      // Check if data exists
+      if (!data?.encryptedData) {
         logger.warn('No encrypted data received from secure parent affected requests');
         logger.info('Full response data structure:', JSON.stringify(data, null, 2));
         return { data: [], error: null };
       }
 
-      logger.info('Encrypted data received, attempting to decrypt...');
-      
       // Decrypt the pickup requests data
-      const decryptedRequests = await decryptData(data.data.encrypted_data);
-      logger.info('Decrypted requests data:', decryptedRequests);
+      const decryptedResponse = await decryptData(data.encryptedData);
+      const decryptedRequests = Array.isArray(decryptedResponse) ? decryptedResponse : decryptedResponse?.data;
       logger.info('Decrypted requests type:', typeof decryptedRequests);
-      logger.info('Is array:', Array.isArray(decryptedRequests));
       
       if (!decryptedRequests) {
         logger.warn('Decryption returned empty data for parent affected requests');

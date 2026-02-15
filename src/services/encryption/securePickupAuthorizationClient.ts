@@ -73,13 +73,14 @@ class SecurePickupAuthorizationOperations {
         return { data: null, error: new Error(data.error || 'Unknown error') };
       }
 
-      if (!data?.data?.encrypted_data) {
+      if (!data?.encryptedData) {
         logger.warn('No encrypted data received from secure pickup authorizations');
         return { data: [], error: null };
       }
 
       // Decrypt the pickup authorizations data
-      const decryptedData = await decryptData(data.data.encrypted_data);
+      const decryptedResponse = await decryptData(data.encryptedData);
+      const decryptedData = decryptedResponse.data;
       logger.info('Decrypted data:', decryptedData);
       if (!decryptedData) {
         logger.warn('Decryption returned empty data');
@@ -122,7 +123,7 @@ class SecurePickupAuthorizationOperations {
       logger.info('Getting secure pickup authorizations for authorized parent');
       
       const dataToEncrypt = { parentId: targetParentId };
-      const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
+      const encryptedData = await encryptData(dataToEncrypt);
 
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
@@ -147,13 +148,14 @@ class SecurePickupAuthorizationOperations {
         return { data: null, error: new Error(data.error || 'Unknown error') };
       }
 
-      if (!data?.data?.encrypted_data) {
+      if (!data?.encryptedData) {
         logger.warn('No encrypted data received from secure authorized pickup authorizations');
         return { data: [], error: null };
       }
 
       // Decrypt the pickup authorizations data
-      const decryptedData = await decryptData(data.data.encrypted_data);
+      const decryptedResponse = await decryptData(data.encryptedData);
+      const decryptedData = decryptedResponse.data;
       
       if (!decryptedData) {
         logger.warn('Decryption returned empty data');
@@ -194,7 +196,7 @@ class SecurePickupAuthorizationOperations {
     try {
       logger.info('Creating secure pickup authorization');
       
-      const encryptedData = await encryptData(JSON.stringify(authorizationData));
+      const encryptedData = await encryptData(authorizationData);
 
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
@@ -220,7 +222,8 @@ class SecurePickupAuthorizationOperations {
       }
 
       // Decrypt the response data
-      const decryptedData = await decryptData(data.data.encrypted_data);
+      const decryptedResponse = await decryptData(data.encryptedData);
+      const decryptedData = decryptedResponse.data;
       
       // Transform to PickupAuthorization format
       const authorization: PickupAuthorization = {
@@ -254,7 +257,7 @@ class SecurePickupAuthorizationOperations {
       logger.info('Updating secure pickup authorization');
       
       const updateData = { id, ...updates };
-      const encryptedData = await encryptData(JSON.stringify(updateData));
+      const encryptedData = await encryptData(updateData);
 
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
@@ -280,7 +283,8 @@ class SecurePickupAuthorizationOperations {
       }
 
       // Decrypt the response data
-      const decryptedData = await decryptData(data.data.encrypted_data);
+      const decryptedResponse = await decryptData(data.encryptedData);
+      const decryptedData = decryptedResponse.data;
       
       // Transform to PickupAuthorization format
       const authorization: PickupAuthorization = {
@@ -323,7 +327,7 @@ class SecurePickupAuthorizationOperations {
       logger.info('Deleting secure pickup authorization', { id, parentId });
       
       const deleteData = { id };
-      const encryptedData = await encryptData(JSON.stringify(deleteData));
+      const encryptedData = await encryptData(deleteData);
 
       const { data, error: invokeError } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
@@ -392,13 +396,14 @@ class SecurePickupAuthorizationOperations {
         return { data: null, error: new Error(data.error || 'Unknown error') };
       }
 
-      if (!data?.data?.encrypted_data) {
+      if (!data?.encryptedData) {
         logger.warn('No encrypted data received from secure available parents');
         return { data: { parents: [], sharedStudents: {} }, error: null };
       }
 
       // Decrypt the parents data
-      const decryptedData = await decryptData(data.data.encrypted_data);
+      const decryptedResponse = await decryptData(data.encryptedData);
+      const decryptedData = decryptedResponse.data;
       
       if (!decryptedData) {
         logger.warn('Decryption returned empty data');

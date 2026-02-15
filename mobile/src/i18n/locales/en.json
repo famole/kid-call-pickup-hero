@@ -1,71 +1,27 @@
 {
-  "auth": {
-    "login": "Login",
-    "logout": "Logout",
-    "loginWithEmail": "Login with Email",
-    "password": "Password",
-    "email": "Email",
-    "signIn": "Sign In",
-    "signOut": "Sign Out"
-  },
-  "navigation": {
-    "dashboard": "Dashboard",
-    "authorizations": "Authorizations",
-    "pickupAuth": "Pickup Auth"
-  },
   "dashboard": {
-    "welcome": "Welcome",
-    "todaysPickups": "Today's Pickups",
-    "upcomingAuth": "Upcoming Authorizations",
-    "noPickups": "No pickups scheduled",
-    "loading": "Loading..."
+    "greeting": "Good morning,",
+    "welcomeBack": "Welcome back!",
+    "children": "Children",
+    "today": "Today",
+    "quickActions": "Quick Actions",
+    "activePickup": "Active Pickup",
+    "todayActivities": "Today's Activities",
+    "noActivities": "No activities today",
+    "enjoyFreeDay": "Enjoy your free day!",
+    "seeAll": "See all"
   },
-  "pickupAuthorizations": {
-    "title": "Pickup Authorizations",
-    "description": "Manage who can pick up your children",
-    "addAuthorization": "Add Authorization",
-    "noAuthorizationsYet": "No authorizations yet",
-    "noAuthorizationsDescription": "Create pickup authorizations to allow others to pick up your children",
-    "createFirstAuthorization": "Create Authorization",
-    "child": "Child",
-    "parent": "Parent",
-    "startDate": "Start Date",
-    "endDate": "End Date",
-    "selectChild": "Select a child",
-    "searchForParent": "Search for parent",
-    "createAuthorization": "Create Authorization",
-    "updateAuthorization": "Update Authorization",
-    "creating": "Creating...",
-    "updating": "Updating...",
-    "active": "Active",
-    "inactive": "Inactive",
-    "expired": "Expired",
-    "scheduled": "Scheduled",
-    "createdBy": "Created by",
-    "authorizedTo": "Authorized to",
-    "removeAuthorization": "Remove Authorization",
-    "editAuthorization": "Edit Authorization",
-    "authorizationCreated": "Authorization created successfully",
-    "authorizationUpdated": "Authorization updated successfully",
-    "authorizationRemoved": "Authorization removed successfully",
-    "failedToCreate": "Failed to create authorization",
-    "failedToUpdate": "Failed to update authorization",
-    "failedToRemove": "Failed to remove authorization",
-    "failedToLoad": "Failed to load authorizations"
+  "actions": {
+    "imHere": "I'm Here",
+    "calendar": "Calendar",
+    "messages": "Messages",
+    "family": "Family"
   },
   "common": {
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "cancel": "Cancel",
-    "save": "Save",
-    "delete": "Delete",
-    "edit": "Edit",
-    "add": "Add",
-    "back": "Back",
-    "done": "Done",
-    "ok": "OK",
-    "yes": "Yes",
-    "no": "No"
+    "seeAll": "See all",
+    "refresh": "Refresh",
+    "showQR": "Show QR",
+    "collapse": "Collapse",
+    "fullScreen": "Full Screen"
   }
 }

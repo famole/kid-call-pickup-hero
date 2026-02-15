@@ -53,8 +53,18 @@ async function decryptPassword(encryptedPassword: string): Promise<string> {
   }
 }
 
-// Password hashing utilities
+// Password hashing utilities - MUST match client-side hashing
 async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const salt = 'upsy-password-hash-salt-2024'; // Must match client-side salt
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Legacy hash without salt (for backwards compatibility)
+async function hashPasswordLegacy(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -63,8 +73,13 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  // Try new hash format first (with salt)
   const passwordHash = await hashPassword(password);
-  return passwordHash === hash;
+  if (passwordHash === hash) return true;
+  
+  // Fallback to legacy hash format (without salt) for existing users
+  const legacyHash = await hashPasswordLegacy(password);
+  return legacyHash === hash;
 }
 
 const corsHeaders = {
