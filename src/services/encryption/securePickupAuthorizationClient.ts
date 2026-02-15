@@ -122,7 +122,7 @@ class SecurePickupAuthorizationOperations {
       logger.info('Getting secure pickup authorizations for authorized parent');
       
       const dataToEncrypt = { parentId: targetParentId };
-      const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
+      const encryptedData = await encryptData(dataToEncrypt);
 
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
@@ -194,7 +194,7 @@ class SecurePickupAuthorizationOperations {
     try {
       logger.info('Creating secure pickup authorization');
       
-      const encryptedData = await encryptData(JSON.stringify(authorizationData));
+      const encryptedData = await encryptData(authorizationData);
 
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
@@ -254,7 +254,7 @@ class SecurePickupAuthorizationOperations {
       logger.info('Updating secure pickup authorization');
       
       const updateData = { id, ...updates };
-      const encryptedData = await encryptData(JSON.stringify(updateData));
+      const encryptedData = await encryptData(updateData);
 
       const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 
@@ -323,7 +323,7 @@ class SecurePickupAuthorizationOperations {
       logger.info('Deleting secure pickup authorization', { id, parentId });
       
       const deleteData = { id };
-      const encryptedData = await encryptData(JSON.stringify(deleteData));
+      const encryptedData = await encryptData(deleteData);
 
       const { data, error: invokeError } = await supabase.functions.invoke('secure-pickup-authorizations', {
         body: { 

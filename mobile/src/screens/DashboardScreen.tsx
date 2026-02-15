@@ -1,469 +1,451 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  YStack,
-  XStack,
-  Button,
-  Text,
-  ListItem,
-  Theme,
-  Spinner,
-  Card,
-  Separator,
-  Paragraph,
-  Avatar
-} from 'tamagui'
-import { ScrollView, RefreshControl, Alert, SafeAreaView, AppState, StatusBar } from 'react-native'
-import * as Notifications from 'expo-notifications'
-import { Session } from '@supabase/supabase-js'
-import { supabase } from '../supabaseClient'
-import PickupStatus from '../components/PickupStatus'
-import { getCurrentParentIdCached } from '../../../src/services/parent/getCurrentParentId'
-import MenuSheet from '../components/MenuSheet'
+// mobile/src/screens/DashboardScreen.tsx
+import { useEffect, useState, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  ScrollView,
+  RefreshControl, 
+  Dimensions, 
+  Pressable, 
+} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolate,
+  Extrapolate,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 
-// TYPES
+import { colors, gradients } from '../design-system/colors';
+import { spring } from '../design-system/animations';
+import { supabase } from '../supabaseClient';
 
-type Props = { session: Session }
+const { width } = Dimensions.get('window');
+const HEADER_MAX = 180;
+const HEADER_MIN = 90;
 
-interface Student {
-  id: string
-  name: string
-  className?: string | null
-  teacher?: string | null
-  isAuthorized: boolean
+// Icon component type
+interface IconProps {
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
 }
 
-export default function DashboardScreen({ session }: Props) {
-  const [students, setStudents] = useState<Student[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [activeRequests, setActiveRequests] = useState<{
-    id: string
-    studentId: string
-    status: 'pending' | 'called'
-  }[]>([])
-  const [queuePositions, setQueuePositions] = useState<Record<string, number>>({})
-  const studentsRef = useRef<Student[]>([])
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const notifiedRef = useRef<Set<string>>(new Set())
+// Simple inline icon components
+const IconHome = ({ size = 24, color = colors.gray400 }: IconProps) => (
+  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ width: size * 0.8, height: size * 0.6, borderWidth: 2, borderColor: color, borderRadius: 4 }} />
+  </View>
+);
 
-  // ---------- DATA ----------
-  const fetchStudents = useCallback(async () => {
-    setRefreshing(true)
+const IconCalendar = ({ size = 24, color = colors.gray400 }: IconProps) => (
+  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ width: size * 0.8, height: size * 0.7, borderWidth: 2, borderColor: color, borderRadius: 4 }} />
+  </View>
+);
 
-    const { data: parent } = await supabase
-      .from('parents')
-      .select('id')
-      .eq('email', session.user.email)
-      .single()
+const IconMessage = ({ size = 24, color = colors.gray400 }: IconProps) => (
+  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ width: size * 0.8, height: size * 0.6, borderWidth: 2, borderColor: color, borderRadius: 4 }} />
+  </View>
+);
 
-    if (parent) {
-      const { data: directChildren } = await supabase
-        .from('students')
-        .select('id, name, classes(name, teacher), student_parents!inner(parent_id)')
-        .eq('student_parents.parent_id', parent.id)
+const IconUser = ({ size = 24, color = colors.gray400 }: IconProps) => (
+  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ width: size * 0.4, height: size * 0.4, borderWidth: 2, borderColor: color, borderRadius: size * 0.2 }} />
+  </View>
+);
 
-      const today = new Date().toISOString().split('T')[0]
+const IconBell = ({ size = 24, color = colors.white }: IconProps) => (
+  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ width: size * 0.7, height: size * 0.8, borderWidth: 2, borderColor: color, borderRadius: size * 0.35, borderBottomWidth: 0 }} />
+  </View>
+);
 
-      const { data: authorized } = await supabase
-        .from('pickup_authorizations')
-        .select('students(id, name, classes(name, teacher))')
-        .eq('authorized_parent_id', parent.id)
-        .eq('is_active', true)
-        .lte('start_date', today)
-        .gte('end_date', today)
+const IconPin = ({ size = 24, color = colors.primary }: IconProps) => (
+  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ width: size * 0.5, height: size * 0.5, borderWidth: 3, borderColor: color, borderRadius: size * 0.25 }} />
+  </View>
+);
 
-      const formattedDirect = (directChildren || []).map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        className: c.classes?.name ?? null,
-        teacher: c.classes?.teacher ?? null,
-        isAuthorized: false,
-      }))
+// Animated pressable component
+function ScalePress({ children, onPress, disabled = false }: { children: React.ReactNode; onPress?: () => void; disabled?: boolean }) {
+  const scale = useSharedValue(1);
 
-      const formattedAuthorized = (authorized || []).map((a: any) => ({
-        id: a.students.id,
-        name: a.students.name,
-        className: a.students.classes?.name ?? null,
-        teacher: a.students.classes?.teacher ?? null,
-        isAuthorized: true,
-      }))
-
-      const all = [...formattedDirect]
-      formattedAuthorized.forEach((child) => {
-        if (!all.some((c) => c.id === child.id)) all.push(child)
-      })
-
-      setStudents(all)
-    } else {
-      setStudents([])
-    }
-
-    setRefreshing(false)
-    fetchActiveRequests()
-  }, [session.user.email])
-
-  useEffect(() => {
-    studentsRef.current = students
-  }, [students])
-
-  const fetchActiveRequests = useCallback(async () => {
-    const parentId = await getCurrentParentIdCached()
-    if (!parentId) {
-      setActiveRequests([])
-      return
-    }
-
-    const today = new Date().toISOString().split('T')[0]
-
-    const [own, authorized] = await Promise.all([
-      supabase.from('student_parents').select('student_id').eq('parent_id', parentId),
-      supabase
-        .from('pickup_authorizations')
-        .select('student_id')
-        .eq('authorized_parent_id', parentId)
-        .eq('is_active', true)
-        .lte('start_date', today)
-        .gte('end_date', today),
-    ])
-
-    const ids = [
-      ...(own.data?.map((r: any) => r.student_id) || []),
-      ...(authorized.data?.map((r: any) => r.student_id) || []),
-    ]
-
-    const uniqueIds = Array.from(new Set(ids))
-    if (uniqueIds.length === 0) {
-      setActiveRequests([])
-      return
-    }
-
-    const { data: requests } = await supabase
-      .from('pickup_requests')
-      .select('id,student_id,status')
-      .in('student_id', uniqueIds)
-      .in('status', ['pending', 'called'])
-
-    const formatted = (requests || []).map((r: any) => ({
-      id: r.id,
-      studentId: r.student_id,
-      status: r.status as 'pending' | 'called',
-    }))
-
-    // queue positions across ALL pending
-    const { data: pendingAll } = await supabase
-      .from('pickup_requests')
-      .select('student_id, request_time')
-      .eq('status', 'pending')
-      .order('request_time', { ascending: true })
-
-    const order = (pendingAll || []).map((r: any) => r.student_id as string)
-    const positions: Record<string, number> = {}
-    formatted.forEach((r) => {
-      if (r.status === 'pending') {
-        const idx = order.indexOf(r.studentId)
-        if (idx >= 0) positions[r.studentId] = idx + 1
-      }
-    })
-    formatted.sort((a, b) =>
-      a.studentId.localeCompare(b.studentId) || a.id.localeCompare(b.id)
-    )
-    setActiveRequests((prev) =>
-      prev.length === formatted.length &&
-      prev.every(
-        (r, i) =>
-          r.id === formatted[i].id &&
-          r.studentId === formatted[i].studentId &&
-          r.status === formatted[i].status
-      )
-        ? prev
-        : formatted
-    )
-    setQueuePositions((prev) => {
-      const same =
-        Object.keys(prev).length === Object.keys(positions).length &&
-        Object.entries(positions).every(([k, v]) => prev[k] === v)
-      return same ? prev : positions
-    })
-  }, [])
-
-  useEffect(() => {
-    fetchStudents()
-    fetchActiveRequests()
-  }, [fetchStudents, fetchActiveRequests])
-
-  // ---------- ACTIONS ----------
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-  }
-
-  const toggleSelect = (id: string, disabled: boolean) => {
-    if (disabled) return
-    setSelectedStudentIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    )
-  }
-
-  const handleRequestPickup = async () => {
-    if (selectedStudentIds.length === 0) return
-    setLoading(true)
-    try {
-      const { data: parentId, error: parentError } = await supabase.rpc('get_current_parent_id')
-      if (parentError || !parentId) throw new Error('Unable to determine current parent')
-      // Prefer cached helper when available
-      const cachedParentId = await getCurrentParentIdCached()
-      const effectiveParentId = cachedParentId || parentId
-
-      for (const studentId of selectedStudentIds) {
-        const { data: isAuthorized, error: authError } = await supabase.rpc(
-          'is_parent_of_student',
-          { student_id: studentId }
-        )
-        if (authError) throw new Error('Authorization check failed')
-        if (!isAuthorized) throw new Error('Not authorized for this student')
-
-        const { error } = await supabase.from('pickup_requests').insert({
-          student_id: studentId,
-          parent_id: effectiveParentId,
-          status: 'pending',
-          request_time: new Date().toISOString(),
-        })
-        if (error) throw error
-      }
-
-      setSelectedStudentIds([])
-      fetchActiveRequests()
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Request failed')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleCancel = async (requestId: string) => {
-    setLoading(true)
-    try {
-      const { error } = await supabase
-        .from('pickup_requests')
-        .update({ status: 'cancelled' })
-        .eq('id', requestId)
-      if (error) throw error
-      Alert.alert('Cancelled', 'Pickup request cancelled')
-      fetchActiveRequests()
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Cancel failed')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // live updates
-  useEffect(() => {
-    const handleChange = (payload: any) => {
-      const id = payload.new?.student_id || payload.old?.student_id
-      if (id && studentsRef.current.some((s) => s.id === id)) {
-        fetchActiveRequests()
-      }
-    }
-
-    const channel = supabase
-      .channel('parent_dashboard_mobile')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pickup_requests', filter: 'status=eq.pending' },
-        handleChange
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pickup_requests', filter: 'status=eq.called' },
-        handleChange
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [fetchActiveRequests])
-
-  // poll backend every 10s when there are active requests
-  useEffect(() => {
-    if (activeRequests.length > 0) {
-      if (!pollRef.current) {
-        pollRef.current = setInterval(() => {
-          fetchActiveRequests()
-        }, 10000)
-      }
-    } else if (pollRef.current) {
-      clearInterval(pollRef.current)
-      pollRef.current = null
-    }
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current)
-        pollRef.current = null
-      }
-    }
-  }, [activeRequests, fetchActiveRequests])
-
-  // notify when a student is on the way and app is not active
-  useEffect(() => {
-    activeRequests
-      .filter((r) => r.status === 'called')
-      .forEach((r) => {
-        if (!notifiedRef.current.has(r.studentId)) {
-          notifiedRef.current.add(r.studentId)
-          if (AppState.currentState !== 'active') {
-            const st = studentsRef.current.find((s) => s.id === r.studentId)
-            Notifications.scheduleNotificationAsync({
-              content: {
-                title: 'Student on the way',
-                body: `${st?.name ?? 'Student'} is on the way`,
-              },
-              trigger: null,
-            })
-          }
-        }
-      })
-
-    const calledIds = activeRequests
-      .filter((r) => r.status === 'called')
-      .map((r) => r.studentId)
-    notifiedRef.current.forEach((id) => {
-      if (!calledIds.includes(id)) {
-        notifiedRef.current.delete(id)
-      }
-    })
-  }, [activeRequests])
-
-  const initials = session.user.email?.[0]?.toUpperCase?.() || 'U'
-
-  const Section = ({ title, data, authorized }: { title: string; data: Student[]; authorized: boolean }) => (
-    data.length === 0 ? null : (
-      <Card padding="$4" elevate bordered borderRadius="$6" space>
-        <XStack alignItems="center" justifyContent="space-between" marginBottom="$2">
-          <Text fontWeight="bold">{title}</Text>
-          <Text fontSize={12} opacity={0.6}>{data.length}</Text>
-        </XStack>
-        {data.map((item) => {
-          const request = activeRequests.find((r) => r.studentId === item.id)
-          const disabled = !!request
-          return (
-            <ListItem
-              key={item.id}
-              pressTheme
-              borderRadius="$6"
-              paddingVertical="$3"
-              onPress={() => toggleSelect(item.id, disabled)}
-              backgroundColor={selectedStudentIds.includes(item.id) ? '$blue3' : undefined}
-              borderWidth={selectedStudentIds.includes(item.id) ? 2 : 0}
-              borderColor="$blue7"
-              icon={
-                <Avatar circular size="$3">
-                  <Avatar.Fallback backgroundColor="$blue5">
-                    <Text color="white">{item.name?.[0]?.toUpperCase?.() || 'S'}</Text>
-                  </Avatar.Fallback>
-                </Avatar>
-              }
-              title={item.name}
-              subTitle={`${item.className ?? 'Class'} • ${item.teacher ?? 'Teacher'}`}
-              iconAfter={
-                request
-                  ? request.status === 'pending'
-                    ? (
-                        <Button size="$2" borderRadius="$6" onPress={() => handleCancel(request.id)}>
-                          Cancel
-                        </Button>
-                      )
-                    : null
-                  : null
-              }
-            />
-          )
-        })}
-      </Card>
-    )
-  )
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: disabled ? 0.5 : 1,
+  }));
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#3b82f6' }}>
-      <StatusBar barStyle="light-content" backgroundColor="#3b82f6" />
-      <Theme name="light">
-        <YStack flex={1} padding="$4" space backgroundColor="white">
-          {/* Header */}
-          <Card
-            backgroundColor="#3b82f6"
-            borderRadius="$8"
-            padding="$3"
-            elevate
-            marginBottom="$4"
-          >
-            <XStack alignItems="center" justifyContent="space-between">
-              <XStack alignItems="center" space="$3">
-                <Avatar circular size="$4">
-                  <Avatar.Fallback backgroundColor="white">
-                    <Text color="#3b82f6" fontWeight="bold">{initials}</Text>
-                  </Avatar.Fallback>
-                </Avatar>
-                <YStack>
-                  <Text fontWeight="bold" numberOfLines={1} color="white">Hi!</Text>
-                  <Paragraph size="$2" color="white" opacity={0.8} numberOfLines={1}>
-                    {session.user.email}
-                  </Paragraph>
-                </YStack>
-              </XStack>
-              <Button
-                size="$3"
-                borderRadius="$6"
-                backgroundColor="white"
-                color="#3b82f6"
-                onPress={() => setMenuOpen(true)}
-              >
-                ☰
-              </Button>
-            </XStack>
-          </Card>
+    <Pressable
+      onPressIn={() => {
+        scale.value = withSpring(0.95, spring.stiff);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, spring.gentle);
+      }}
+      onPress={disabled ? undefined : onPress}
+    >
+      <Animated.View style={animatedStyle}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+}
 
-          {/* Active status */}
-          <PickupStatus students={students} requests={activeRequests} />
+// Card component
+function Card({ children, onPress, style }: { children: React.ReactNode; onPress?: () => void; style?: any }) {
+  const content = (
+    <View
+      style={[{
+        backgroundColor: colors.white,
+        borderRadius: 16,
+        padding: 16,
+        shadowColor: colors.gray900,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
+      }, style]}
+    >
+      {children}
+    </View>
+  );
 
-          {/* Lists */}
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchStudents} />}>
-            <Section title="Your children" data={students.filter((s) => !s.isAuthorized)} authorized={false} />
-            <Separator marginVertical="$3" />
-            <Section title="Authorized to pick up" data={students.filter((s) => s.isAuthorized)} authorized={true} />
-            {students.length === 0 && (
-              <Text textAlign="center" marginTop="$8">No students found.</Text>
-            )}
-          </ScrollView>
+  if (onPress) {
+    return <ScalePress onPress={onPress}>{content}</ScalePress>;
+  }
+  return content;
+}
 
-          {/* Floating Primary Action */}
-          <Button
-            size="$6"
-            borderRadius="$10"
-            onPress={handleRequestPickup}
-            disabled={selectedStudentIds.length === 0 || loading}
-            icon={loading ? <Spinner /> : null}
-            backgroundColor="#3b82f6"
-            color="white"
-            pressStyle={{ backgroundColor: '#1e40af' }}
-            style={{ position: 'absolute', bottom: 24, left: 16, right: 16 }}
-          >
-            {loading
-              ? 'Requesting…'
-              : selectedStudentIds.length > 0
-              ? `Request Pickup (${selectedStudentIds.length})`
-              : 'Request Pickup'}
-          </Button>
-        </YStack>
+// Quick action button
+function QuickAction({ 
+  icon: Icon, 
+  label, 
+  color, 
+  onPress, 
+  delay = 0 
+}: { 
+  icon: React.ComponentType<IconProps>;
+  label: string; 
+  color: string; 
+  onPress: () => void; 
+  delay?: number;
+}) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
 
-        {/* Menu Sheet */}
-        <MenuSheet
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-          onLogout={handleLogout}
-        />
-      </Theme>
-    </SafeAreaView>
-  )
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      opacity.value = withSpring(1, spring.gentle);
+      translateY.value = withSpring(0, spring.gentle);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [delay, opacity, translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <ScalePress onPress={onPress}>
+        <View style={{ alignItems: 'center', gap: 8 }}>
+          <View style={{
+            width: 64,
+            height: 64,
+            borderRadius: 20,
+            backgroundColor: color + '15',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <Icon size={28} color={color} strokeWidth={2} />
+          </View>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.gray600 }}>
+            {label}
+          </Text>
+        </View>
+      </ScalePress>
+    </Animated.View>
+  );
+}
+
+export default function DashboardScreen() {
+  const [refreshing, setRefreshing] = useState(false);
+  const [children, setChildren] = useState<any[]>([]);
+  const [activities] = useState([
+    { id: '1', title: 'Field Trip', time: '9:00 AM' },
+    { id: '2', title: 'Sports Day', time: '2:00 PM' },
+  ]);
+  const scrollY = useSharedValue(0);
+  const insets = useSafeAreaInsets();
+
+  const loadData = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('children')
+        .select('id, name')
+        .eq('parent_id', user.id);
+      
+      setChildren(data || []);
+    } catch (error) {
+      console.error('Load error:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  const headerStyle = useAnimatedStyle(() => ({
+    height: interpolate(
+      scrollY.value,
+      [0, HEADER_MAX - HEADER_MIN],
+      [HEADER_MAX, HEADER_MIN],
+      Extrapolate.CLAMP
+    ),
+  }));
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.gray50 }}>
+      {/* Animated Header */}
+      <Animated.View
+        style={[{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          paddingTop: insets.top,
+        }, headerStyle]}
+      >
+        <LinearGradient
+          colors={[gradients.primary[0], gradients.primary[1]]}
+          style={{ flex: 1, paddingHorizontal: 20 }}
+        >
+          {/* Header Row */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 }}>
+            <View>
+              <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>
+                Good morning,
+              </Text>
+              <Text style={{ fontSize: 28, fontWeight: '800', color: colors.white }}>
+                Welcome back!
+              </Text>
+            </View>
+            <ScalePress onPress={() => {}}>
+              <View style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+                <IconBell size={22} color={colors.white} />
+              </View>
+            </ScalePress>
+          </View>
+
+          {/* Stats Row */}
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+            <View style={{
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              borderRadius: 16,
+              padding: 16,
+              flex: 1,
+            }}>
+              <IconUser size={20} color={colors.white} />
+              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.white, marginTop: 8 }}>
+                {children.length}
+              </Text>
+              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>
+                Children
+              </Text>
+            </View>
+            <View style={{
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              borderRadius: 16,
+              padding: 16,
+              flex: 1,
+            }}>
+              <IconCalendar size={20} color={colors.white} />
+              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.white, marginTop: 8 }}>
+                {activities.length}
+              </Text>
+              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>
+                Today
+              </Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </Animated.View>
+
+      {/* Content */}
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: HEADER_MAX + insets.top + 20,
+          paddingHorizontal: 16,
+          paddingBottom: insets.bottom + 100,
+        }}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
+      >
+        {/* Quick Actions */}
+        <View>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.gray800, marginBottom: 16 }}>
+            Quick Actions
+          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <QuickAction icon={IconPin} label="I'm Here" color={colors.primary} onPress={() => {}} delay={100} />
+            <QuickAction icon={IconCalendar} label="Calendar" color={colors.mint} onPress={() => {}} delay={200} />
+            <QuickAction icon={IconMessage} label="Messages" color={colors.coral} onPress={() => {}} delay={300} />
+            <QuickAction icon={IconUser} label="Family" color={colors.primaryDark} onPress={() => {}} delay={400} />
+          </View>
+        </View>
+
+        {/* Active Pickup */}
+        {children.length > 0 && (
+          <View style={{ marginTop: 24 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.gray800, marginBottom: 16 }}>
+              Active Pickup
+            </Text>
+            <Card>
+              <View style={{ gap: 16 }}>
+                {/* Header Row */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View>
+                    <Text style={{ fontSize: 14, color: colors.gray500 }}>Pickup Authorization</Text>
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: colors.gray800 }}>
+                      {children[0]?.name}
+                    </Text>
+                  </View>
+                  <View style={{
+                    backgroundColor: colors.mint400 + '20',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                  }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mint400 }}>
+                      Active
+                    </Text>
+                  </View>
+                </View>
+
+                {/* QR Placeholder */}
+                <View style={{
+                  alignSelf: 'center',
+                  width: width * 0.5,
+                  height: width * 0.5,
+                  backgroundColor: colors.white,
+                  borderRadius: 20,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  shadowColor: colors.primaryDark,
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 24,
+                  elevation: 10,
+                }}>
+                  <View style={{
+                    width: '80%',
+                    height: '80%',
+                    backgroundColor: colors.gray100,
+                    borderRadius: 12,
+                  }} />
+                </View>
+
+                {/* Action Buttons */}
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <Pressable
+                    onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+                    style={{
+                      flex: 1,
+                      backgroundColor: colors.gray100,
+                      paddingVertical: 12,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontWeight: '600', color: colors.gray700 }}>Refresh</Text>
+                  </Pressable>
+                  <Pressable
+                    style={{
+                      flex: 2,
+                      backgroundColor: colors.primary,
+                      paddingVertical: 12,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontWeight: '600', color: colors.white }}>Show QR</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </Card>
+          </View>
+        )}
+
+        {/* Activities */}
+        <View style={{ marginTop: 24 }}>
+          {/* Activities Header */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.gray800 }}>
+              Today's Activities
+            </Text>
+            <ScalePress onPress={() => {}}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
+                See all
+              </Text>
+            </ScalePress>
+          </View>
+
+          {activities.map((activity) => (
+            <Card key={activity.id} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                <View style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  backgroundColor: colors.primary + '10',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                  <IconCalendar size={24} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.gray800 }}>
+                    {activity.title}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: colors.gray500, marginTop: 4 }}>
+                    {activity.time}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
 }

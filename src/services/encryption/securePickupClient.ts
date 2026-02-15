@@ -94,7 +94,8 @@ class SecurePickupOperations {
       });
       
       // Encrypt the data including parent ID
-      const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
+      // encryptData already calls JSON.stringify internally
+      const encryptedData = await encryptData(dataToEncrypt);
       
       logger.info('Data encrypted successfully, calling secure-pickup-requests endpoint');
       
@@ -151,7 +152,8 @@ class SecurePickupOperations {
       const dataToEncrypt = { parentId };
       logger.info('Data to encrypt for getParentAffectedRequests:', dataToEncrypt);
       
-      const encryptedData = await encryptData(JSON.stringify(dataToEncrypt));
+      // encryptData already calls JSON.stringify internally
+      const encryptedData = await encryptData(dataToEncrypt);
       logger.info('Data encrypted successfully for getParentAffectedRequests');
       
       const { data, error } = await supabase.functions.invoke('secure-pickup-requests', {
@@ -187,9 +189,20 @@ class SecurePickupOperations {
       }
 
       logger.info('Encrypted data received, attempting to decrypt...');
+      logger.info('Encrypted data length:', data.data.encrypted_data?.length);
+      logger.info('Encrypted data preview:', data.data.encrypted_data?.substring(0, 50));
       
       // Decrypt the pickup requests data
-      const decryptedRequests = await decryptData(data.data.encrypted_data);
+      let decryptedRequests;
+      try {
+        decryptedRequests = await decryptData(data.data.encrypted_data);
+        logger.info('✅ Decryption successful');
+      } catch (decryptError) {
+        logger.error('❌ Decryption failed for parent affected requests:', decryptError);
+        logger.error('Encrypted data that failed to decrypt:', data.data.encrypted_data);
+        return { data: [], error: new Error(`Decryption failed: ${decryptError instanceof Error ? decryptError.message : 'Unknown error'}`) };
+      }
+      
       logger.info('Decrypted requests data:', decryptedRequests);
       logger.info('Decrypted requests type:', typeof decryptedRequests);
       logger.info('Is array:', Array.isArray(decryptedRequests));

@@ -1,8 +1,16 @@
 {
-  "android": {
-    "package": "com.anonymous.kidcallpickupheromobile"
-  },
-  "ios": {
-    "bundleIdentifier": "com.anonymous.kidcallpickupheromobile"
+  "expo": {
+    "name": "Upsy",
+    "slug": "kid-call-pickup-hero-mobile",
+    "scheme": "upsy",
+    "android": {
+      "package": "com.anonymous.kidcallpickupheromobile"
+    },
+    "ios": {
+      "bundleIdentifier": "com.anonymous.kidcallpickupheromobile"
+    },
+    "plugins": [
+      "expo-localization"
+    ]
   }
 }
