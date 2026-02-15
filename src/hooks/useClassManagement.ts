@@ -1,16 +1,18 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Class } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { getAllClasses, createClass, updateClass, deleteClass } from '@/services/classService';
+import { createClass, updateClass, deleteClass } from '@/services/classService';
 import { getAllStudents } from '@/services/studentService';
 import { addTeacherToClass, removeTeacherFromClass, getTeachersForClass } from '@/services/classTeacherService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
+import { useClasses } from '@/hooks/useClasses';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const useClassManagement = () => {
-  const [classList, setClassList] = useState<Class[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: classList = [], isLoading: loading } = useClasses();
+  const queryClient = useQueryClient();
   const [currentClass, setCurrentClass] = useState<Class | null>(null);
   const [classFormData, setClassFormData] = useState<Partial<Class & { selectedTeachers?: string[] }>>({
     name: '',
@@ -20,28 +22,6 @@ export const useClassManagement = () => {
   });
   
   const { toast } = useToast();
-
-  // Load classes
-  useEffect(() => {
-    const loadClasses = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllClasses();
-        setClassList(data);
-      } catch (error) {
-        logger.error('Error loading classes:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load classes",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadClasses();
-  }, [toast]);
 
   const handleAddClass = async () => {
     if (!classFormData.name || !classFormData.grade || !classFormData.teacher || !classFormData.selectedTeachers?.length) {
@@ -69,7 +49,7 @@ export const useClassManagement = () => {
         }
       }
       
-      setClassList([...classList, createdClass]);
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
       
       toast({
         title: "Class Added",
@@ -127,7 +107,7 @@ export const useClassManagement = () => {
         }
       }
 
-      setClassList(classList.map(c => c.id === currentClass.id ? updatedClass : c));
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
       
       toast({
         title: "Class Updated",
@@ -165,7 +145,7 @@ export const useClassManagement = () => {
       }
 
       await deleteClass(currentClass.id);
-      setClassList(classList.filter(c => c.id !== currentClass.id));
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
       
       toast({
         title: "Class Deleted",
