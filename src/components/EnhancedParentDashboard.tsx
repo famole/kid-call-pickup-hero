@@ -84,35 +84,27 @@ const EnhancedParentDashboard: React.FC = () => {
             <UpcomingActivityCard activity={upcomingActivity} />
           )}
           
-          <RecentPickupsNotification 
+          <CalledRequestsCard
+            calledRequests={calledRequests} 
+            children={children}
+            currentParentId={currentParentId}
+          />
+          
+          <PendingRequestsCard 
+            pendingRequests={pendingRequests} 
+            children={children}
+            currentParentId={currentParentId}
+            onRequestCancelled={refetch}
+          />
+          
+          <RecentPickupsNotification
             pickups={recentPickups}
             onDismiss={dismissNotification}
           />
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-            {/* Status Components - Top on mobile, right side on larger screens */}
-            <div className="lg:col-span-1 space-y-3 sm:space-y-4 order-1 lg:order-2">
-              <PendingRequestsCard 
-                pendingRequests={pendingRequests} 
-                children={children}
-                currentParentId={currentParentId}
-                onRequestCancelled={refetch}
-              />
-              <CalledRequestsCard 
-                calledRequests={calledRequests} 
-                children={children}
-                currentParentId={currentParentId}
-              />
-              {(selfCheckoutStudents.length > 0 || selfCheckoutLoading) && (
-                <SelfCheckoutStatusCard
-                  selfCheckoutStudents={selfCheckoutStudents}
-                  loading={selfCheckoutLoading}
-                />
-              )}
-            </div>
-
-            {/* Student Selection Component - Bottom on mobile, left side on larger screens */}
-            <div className="lg:col-span-2 order-2 lg:order-1">
+            {/* Student Selection Component - Main priority, left side for larger screens */}
+            <div className="lg:col-span-2 lg:order-1">
               <ChildrenSelectionCard
                 children={children}
                 selectedChildren={selectedChildren}
@@ -121,6 +113,16 @@ const EnhancedParentDashboard: React.FC = () => {
                 onToggleChildSelection={toggleChildSelection}
                 onRequestPickup={handleRequestPickup}
               />
+            </div>
+
+            {/* Status Components - Right side for larger screens */}
+            <div className="lg:col-span-1 space-y-3 sm:space-y-4 lg:order-2">
+              {(selfCheckoutStudents.length > 0 || selfCheckoutLoading) && (
+                <SelfCheckoutStatusCard
+                  selfCheckoutStudents={selfCheckoutStudents}
+                  loading={selfCheckoutLoading}
+                />
+              )}
             </div>
           </div>
         </div>

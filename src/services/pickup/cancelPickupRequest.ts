@@ -68,9 +68,9 @@ export const cancelPickupRequest = async (requestId: string): Promise<void> => {
       logger.warn('Proceeding to cancel without resolved parentId; server will validate ownership.');
     }
     
-    // Encrypt the payload
+    // Encrypt the payload (encryptData will handle stringification)
     logger.info('Invoking secure-pickup-requests.cancelPickupRequest with payload keys:', Object.keys(payload));
-    const encryptedPayload = await encryptData(JSON.stringify(payload));
+    const encryptedPayload = await encryptData(payload);
     
     // Call the secure endpoint
     const { data, error } = await supabase.functions.invoke('secure-pickup-requests', {

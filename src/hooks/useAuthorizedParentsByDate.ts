@@ -39,7 +39,7 @@ export const useAuthorizedParentsByDate = (date: Date, classId?: string, searchT
           searchTerm: searchTerm || ''
         };
         
-        const encryptedData = await encryptData(JSON.stringify(requestData));
+        const encryptedData = await encryptData(requestData);
 
         // Call the secure edge function (no parentId needed for this operation)
         const { data, error } = await supabase.functions.invoke('secure-pickup-authorizations', {

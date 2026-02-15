@@ -36,7 +36,7 @@ async function getEncryptionKey() {
     'decrypt'
   ]);
 }
-async function encryptData(data) {
+async function encryptData(data: string): Promise<string> {
   try {
     const key = await getEncryptionKey();
     const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -61,7 +61,7 @@ async function encryptData(data) {
     throw error;
   }
 }
-async function decryptData(encryptedData) {
+async function decryptData(encryptedData: string): Promise<string> {
   try {
     const key = await getEncryptionKey();
     const binaryString = atob(encryptedData);
@@ -82,7 +82,7 @@ async function decryptData(encryptedData) {
     throw error;
   }
 }
-async function encryptObject(obj) {
+async function encryptObject(obj: any): Promise<string> {
   try {
     const jsonString = JSON.stringify(obj);
     return await encryptData(jsonString);
@@ -91,7 +91,7 @@ async function encryptObject(obj) {
     throw error;
   }
 }
-async function decryptObject(encryptedString) {
+async function decryptObject(encryptedString: string): Promise<any> {
   try {
     const decryptedString = await decryptData(encryptedString);
     return JSON.parse(decryptedString);
@@ -305,7 +305,7 @@ serve(async (req)=>{
               createdAt: parent.created_at,
               updatedAt: parent.updated_at,
               deletedAt: parent.deleted_at,
-              students: (parent.student_parents || []).map((sp)=>({
+              students: (parent.student_parents || []).map((sp: any)=>({
                   id: sp.student_id,
                   name: sp.students?.name || '',
                   isPrimary: sp.is_primary,
@@ -386,10 +386,10 @@ serve(async (req)=>{
           }
           // Group by parent and track shared students
           const parentMap = new Map();
-          const sharedStudents = {};
+          const sharedStudents: Record<string, string[]> = {};
           for (const relation of sharedParentRelations || []){
             const parentId = relation.parent_id;
-            const parentData = relation.parents;
+            const parentData = Array.isArray(relation.parents) ? relation.parents[0] : relation.parents;
             // Skip if parent data is null (due to RLS restrictions or not found)
             if (!parentData || !parentData.id) {
               continue;
@@ -493,7 +493,7 @@ serve(async (req)=>{
           const term = searchTerm.trim();
           console.log(`Searching parents with term: "${term}" for parent: ${currentParentId}`);
           // Helper: escape LIKE special chars and commas (commas break .or() groups)
-          const escapeLike = (s)=>s.replace(/[%_]/g, (c)=>'\\' + c);
+          const escapeLike = (s: string)=>s.replace(/[%_]/g, (c: string)=>'\\' + c);
           const safe = escapeLike(term).replace(/,/g, ' ');
           const like = `%${safe}%`;
           // 1) Get all students for the current parent
@@ -512,14 +512,17 @@ serve(async (req)=>{
           }
           const matchedParentIds = (candidates ?? []).map((p)=>p.id);
           // 3) Fetch shared students only for matched parents (batch join)
-          const sharedStudents = {};
+          const sharedStudents: Record<string, string[]> = {};
           if (studentIds.length > 0 && matchedParentIds.length > 0) {
             const { data: sharedParentRelations, error: sharedError } = await supabase.from('student_parents').select('parent_id, student_id').in('student_id', studentIds).in('parent_id', matchedParentIds);
             if (sharedError) {
               console.warn('Shared students lookup failed, continuing without it:', sharedError);
             } else if (sharedParentRelations) {
               for (const rel of sharedParentRelations){
-                (sharedStudents[rel.parent_id] ||= []).push(rel.student_id);
+                if (!sharedStudents[rel.parent_id]) {
+                  sharedStudents[rel.parent_id] = [];
+                }
+                sharedStudents[rel.parent_id].push(rel.student_id);
               }
             }
           }

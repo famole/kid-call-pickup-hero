@@ -128,7 +128,8 @@ export const secureStudentOperations = {
       }
 
       // Decrypt the response
-      const decryptedData = await decryptObject(data.data.encrypted_data);
+      const decryptedResponse = await decryptObject(data.encryptedData);
+      const decryptedData = decryptedResponse?.data || [];
       logger.log('Decrypted students data:', decryptedData?.length || 0, 'students');
       
       // Map snake_case to camelCase for frontend
@@ -175,7 +176,8 @@ export const secureStudentOperations = {
         return { data: null, error: data.error };
       }
 
-      const decrypted = await decryptObject(data.data.encrypted_data);
+      const decryptedResponse = await decryptObject(data.encryptedData);
+      const decrypted = decryptedResponse?.data;
       logger.log('Decrypted student by ID present:', decrypted ? 'yes' : 'no');
       
       // Map snake_case to camelCase for frontend
@@ -218,7 +220,8 @@ export const secureStudentOperations = {
         return { data: null, error: data.error };
       }
 
-      const decrypted = await decryptObject(data.data.encrypted_data);
+      const decryptedResponse = await decryptObject(data.encryptedData);
+      const decrypted = decryptedResponse?.data || [];
       logger.log('Decrypted students with parents present:', decrypted ? decrypted.length : 0);
 
       // Map snake_case to camelCase for frontend
@@ -266,7 +269,8 @@ export const secureStudentOperations = {
       }
 
       // Decrypt the response
-      const decryptedData = await decryptObject(data.data.encrypted_data);
+      const decryptedResponse = await decryptObject(data.encryptedData);
+      const decryptedData = decryptedResponse?.data;
       logger.log('Created student successfully');
 
       return { data: decryptedData, error: null };
@@ -304,7 +308,8 @@ export const secureStudentOperations = {
       }
 
       // Decrypt the response
-      const decryptedData = await decryptObject(data.data.encrypted_data);
+      const decryptedResponse = await decryptObject(data.encryptedData);
+      const decryptedData = decryptedResponse?.data;
       logger.log('Updated student successfully');
 
       return { data: decryptedData, error: null };

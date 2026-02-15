@@ -178,10 +178,10 @@ serve(async (req) => {
         }
 
         // Encrypt the pickup requests data
-        const encryptedData = await encryptObject(pickupRequests);
+        const encryptedData = await encryptObject({ data: pickupRequests, error: null });
         
         return new Response(
-          JSON.stringify({ data: { encrypted_data: encryptedData }, error: null }),
+          JSON.stringify({ encryptedData }),
           { 
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -333,10 +333,10 @@ serve(async (req) => {
         }
 
         // Encrypt the response data
-        const encryptedResult = await encryptObject(requestData);
+        const encryptedResult = await encryptObject({ data: requestData, error: null });
         
         return new Response(
-          JSON.stringify({ data: { encrypted_data: encryptedResult }, error: null }),
+          JSON.stringify({ encryptedData: encryptedResult }),
           { 
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -345,25 +345,9 @@ serve(async (req) => {
       }
 
       case 'getParentAffectedRequests': {
-        // Decrypt the request data
-        let decryptedData;
-        try {
-          decryptedData = await decryptObject(data);
-          console.log('Decrypted parent affected requests data:', decryptedData);
-          console.log('Type of decryptedData:', typeof decryptedData);
-          
-          // Ensure it's parsed as object if it came through as string
-          if (typeof decryptedData === 'string') {
-            console.log('Decrypted data is string, parsing...');
-            decryptedData = JSON.parse(decryptedData);
-          }
-        } catch (error) {
-          console.error('Error decrypting request data:', error);
-          throw new Error('Invalid request data');
-        }
-
-        const { parentId } = decryptedData;
-        console.log('Extracted parentId:', parentId);
+        // Accept plain data (like getPickupRequests)
+        const { parentId } = data || {};
+        console.log('getParentAffectedRequests parentId:', parentId);
         
         if (!parentId) {
           throw new Error('Parent ID is required');
@@ -402,7 +386,7 @@ serve(async (req) => {
 
         if (uniqueStudentIds.length === 0) {
           return new Response(
-            JSON.stringify({ data: { encrypted_data: await encryptObject([]) }, error: null }),
+            JSON.stringify({ encryptedData: await encryptObject({ data: [], error: null }) }),
             { 
               status: 200,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -429,10 +413,10 @@ serve(async (req) => {
         }
 
         // Encrypt the response data
-        const encryptedResult = await encryptObject(requests || []);
+        const encryptedResult = await encryptObject({ data: requests || [], error: null });
         
         return new Response(
-          JSON.stringify({ data: { encrypted_data: encryptedResult }, error: null }),
+          JSON.stringify({ encryptedData: encryptedResult }),
           { 
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }

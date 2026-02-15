@@ -186,8 +186,8 @@ serve(async (req) => {
         console.log(`Returning ${studentsWithParents.length} students with parent data`);
 
         // Return encrypted data to client
-        const encryptedStudentsData = await encryptObject(studentsWithParents);
-        return new Response(JSON.stringify({ data: { encrypted_data: encryptedStudentsData }, error: null }), {
+        const encryptedStudentsData = await encryptObject({ data: studentsWithParents, error: null });
+        return new Response(JSON.stringify({ encryptedData: encryptedStudentsData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -223,8 +223,8 @@ serve(async (req) => {
         }
 
         if (!studentData) {
-          const encryptedEmptyData = await encryptObject(null);
-          return new Response(JSON.stringify({ data: { encrypted_data: encryptedEmptyData }, error: null }), {
+          const encryptedEmptyData = await encryptObject({ data: null, error: null });
+          return new Response(JSON.stringify({ encryptedData: encryptedEmptyData }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
@@ -251,8 +251,8 @@ serve(async (req) => {
 
         console.log(`Student ${id} has ${studentWithParents.parent_ids.length} parent(s)`);
 
-        const encryptedStudentData = await encryptObject(studentWithParents);
-        return new Response(JSON.stringify({ data: { encrypted_data: encryptedStudentData }, error: null }), {
+        const encryptedStudentData = await encryptObject({ data: studentWithParents, error: null });
+        return new Response(JSON.stringify({ encryptedData: encryptedStudentData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -290,8 +290,8 @@ serve(async (req) => {
         }
 
         if (!studentsData || studentsData.length === 0) {
-          const encryptedEmptyData = await encryptObject([]);
-          return new Response(JSON.stringify({ data: { encrypted_data: encryptedEmptyData }, error: null }), {
+          const encryptedEmptyData = await encryptObject({ data: [], error: null });
+          return new Response(JSON.stringify({ encryptedData: encryptedEmptyData }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
@@ -327,24 +327,27 @@ serve(async (req) => {
         console.log(`Found ${(parentRelations || []).length} parent-student relationships`);
 
         // Group parent relationships by student_id
-        const parentsByStudent = (parentRelations || []).reduce((acc, rel) => {
+        const parentsByStudent = (parentRelations || []).reduce((acc: Record<string, any[]>, rel: any) => {
           if (!acc[rel.student_id]) {
             acc[rel.student_id] = [];
           }
 
-          acc[rel.student_id].push({
-            id: rel.parents.id,
-            name: rel.parents.name,
-            email: rel.parents.email,
-            username: rel.parents.username,
-            phone: rel.parents.phone,
-            role: rel.parents.role,
-            created_at: rel.parents.created_at,
-            updated_at: rel.parents.updated_at,
-            deleted_at: rel.parents.deleted_at,
-            isPrimary: rel.is_primary,
-            relationship: rel.relationship
-          });
+          const parentData = Array.isArray(rel.parents) ? rel.parents[0] : rel.parents;
+          if (parentData) {
+            acc[rel.student_id].push({
+              id: parentData.id,
+              name: parentData.name,
+              email: parentData.email,
+              username: parentData.username,
+              phone: parentData.phone,
+              role: parentData.role,
+              created_at: parentData.created_at,
+              updated_at: parentData.updated_at,
+              deleted_at: parentData.deleted_at,
+              isPrimary: rel.is_primary,
+              relationship: rel.relationship
+            });
+          }
 
           return acc;
         }, {} as Record<string, any[]>);
@@ -359,8 +362,8 @@ serve(async (req) => {
         console.log(`Returning ${studentsWithParents.length} students with parent data`);
 
         // Return encrypted data to client
-        const encryptedStudentsData = await encryptObject(studentsWithParents);
-        return new Response(JSON.stringify({ data: { encrypted_data: encryptedStudentsData }, error: null }), {
+        const encryptedStudentsData = await encryptObject({ data: studentsWithParents, error: null });
+        return new Response(JSON.stringify({ encryptedData: encryptedStudentsData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -380,8 +383,8 @@ serve(async (req) => {
         }
 
         // Return encrypted data to client
-        const encryptedCreateData = await encryptObject(studentData || []);
-        return new Response(JSON.stringify({ data: { encrypted_data: encryptedCreateData }, error: null }), {
+        const encryptedCreateData = await encryptObject({ data: studentData || [], error: null });
+        return new Response(JSON.stringify({ encryptedData: encryptedCreateData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -404,8 +407,8 @@ serve(async (req) => {
         }
 
         // Return encrypted data to client
-        const encryptedUpdateData = await encryptObject(studentData || []);
-        return new Response(JSON.stringify({ data: { encrypted_data: encryptedUpdateData }, error: null }), {
+        const encryptedUpdateData = await encryptObject({ data: studentData || [], error: null });
+        return new Response(JSON.stringify({ encryptedData: encryptedUpdateData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }

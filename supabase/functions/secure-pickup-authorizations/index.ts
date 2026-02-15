@@ -3,10 +3,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.5';
 // Simple logger for edge functions
 const logger = {
-  log: (...args)=>console.log(...args),
-  error: (...args)=>console.error(...args),
-  warn: (...args)=>console.warn(...args),
-  info: (...args)=>console.info(...args)
+  log: (...args: any[])=>console.log(...args),
+  error: (...args: any[])=>console.error(...args),
+  warn: (...args: any[])=>console.warn(...args),
+  info: (...args: any[])=>console.info(...args)
 };
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +37,7 @@ async function getEncryptionKey() {
     'decrypt'
   ]);
 }
-async function encryptData(data) {
+async function encryptData(data: string): Promise<string> {
   try {
     const key = await getEncryptionKey();
     const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -56,7 +56,7 @@ async function encryptData(data) {
     return data; // Return original data if encryption fails
   }
 }
-async function decryptData(encryptedData) {
+async function decryptData(encryptedData: string): Promise<string> {
   try {
     const key = await getEncryptionKey();
     const combined = new Uint8Array(atob(encryptedData).split('').map((char)=>char.charCodeAt(0)));
@@ -72,7 +72,7 @@ async function decryptData(encryptedData) {
     return encryptedData; // Return original if decryption fails
   }
 }
-async function encryptObject(obj) {
+async function encryptObject(obj: any): Promise<string> {
   try {
     const jsonString = JSON.stringify(obj);
     return await encryptData(jsonString);
@@ -81,7 +81,7 @@ async function encryptObject(obj) {
     return JSON.stringify(obj); // Return original if encryption fails
   }
 }
-async function decryptObject(encryptedString) {
+async function decryptObject(encryptedString: string): Promise<any> {
   try {
     const decryptedString = await decryptData(encryptedString);
     return JSON.parse(decryptedString);
@@ -308,7 +308,7 @@ serve(async (req)=>{
             throw new Error('Invalid request data format');
           }
           logger.log('Updating pickup authorization:', parsedData.id);
-          const updateData = {};
+          const updateData: Record<string, any> = {};
           if (parsedData.authorizedParentId) updateData.authorized_parent_id = parsedData.authorizedParentId;
           if (parsedData.studentId) updateData.student_id = parsedData.studentId;
           if (parsedData.studentIds) updateData.student_ids = parsedData.studentIds;
@@ -415,7 +415,7 @@ serve(async (req)=>{
             throw new Error(parentsError.message);
           }
           // Get shared student relationships for display purposes
-          const sharedStudents = {};
+          const sharedStudents: Record<string, string[]> = {};
           if (studentIds.length > 0) {
             const { data: sharedParentRelations, error: sharedError } = await supabase.from('student_parents').select('parent_id, student_id').in('student_id', studentIds).neq('parent_id', parentId);
             if (!sharedError && sharedParentRelations) {
@@ -536,7 +536,7 @@ serve(async (req)=>{
             // Group authorizations by parent
             const parentMap = new Map();
 
-            authorizations.forEach(auth => {
+            authorizations.forEach((auth: any) => {
               const parent = auth.authorized_parent;
               if (!parent) return;
 
@@ -556,7 +556,7 @@ serve(async (req)=>{
               // First, handle singular student_id
               if (auth.student_id) {
                 const student = studentsMap.get(auth.student_id);
-                if (student && !parentData.students.some(s => s.id === auth.student_id)) {
+                if (student && !parentData.students.some((s: any) => s.id === auth.student_id)) {
                   parentData.students.push({
                     id: student.id,
                     name: student.name
@@ -566,9 +566,9 @@ serve(async (req)=>{
               
               // Then, handle array student_ids
               if (auth.student_ids && Array.isArray(auth.student_ids)) {
-                auth.student_ids.forEach(studentId => {
+                auth.student_ids.forEach((studentId: string) => {
                   const student = studentsMap.get(studentId);
-                  if (student && !parentData.students.some(s => s.id === studentId)) {
+                  if (student && !parentData.students.some((s: any) => s.id === studentId)) {
                     parentData.students.push({
                       id: student.id,
                       name: student.name
@@ -593,7 +593,7 @@ serve(async (req)=>{
                 }
                 
                 // Search by student names
-                return parent.students.some(student => 
+                return parent.students.some((student: any) => 
                   student.name.toLowerCase().includes(searchTerm)
                 );
               })
