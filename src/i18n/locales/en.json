@@ -283,6 +283,8 @@
     "graduateClass": "Graduate Class",
     "graduateSuccess": "Students graduated",
     "graduatedCount": "{{count}} student(s) were successfully graduated",
+    "graduationYear": "Graduation year",
+    "graduated": "Graduated",
     "deleteStudentConfirm": "Are you sure you want to delete {{studentName}}? This action cannot be undone.",
     "deleting": "Deleting...",
     "editStudentTitle": "Edit Student",

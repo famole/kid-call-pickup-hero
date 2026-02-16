@@ -132,6 +132,7 @@ serve(async (req) => {
             class_id,
             avatar,
             status,
+            graduation_year,
             created_at,
             updated_at,
             deleted_at
@@ -207,6 +208,7 @@ serve(async (req) => {
             class_id,
             avatar,
             status,
+            graduation_year,
             created_at,
             updated_at,
             deleted_at
@@ -275,6 +277,7 @@ serve(async (req) => {
             class_id,
             avatar,
             status,
+            graduation_year,
             created_at,
             updated_at,
             deleted_at

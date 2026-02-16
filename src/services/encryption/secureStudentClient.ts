@@ -139,7 +139,8 @@ export const secureStudentOperations = {
         classId: student.class_id || '',
         parentIds: student.parent_ids || [],
         avatar: student.avatar,
-        status: student.status || 'active'
+        status: student.status || 'active',
+        graduationYear: student.graduation_year || undefined
       }));
       
       // Log sample data for debugging
@@ -189,7 +190,8 @@ export const secureStudentOperations = {
           classId: decrypted.class_id || '',
           parentIds: decrypted.parent_ids || [],
           avatar: decrypted.avatar,
-          status: decrypted.status || 'active'
+          status: decrypted.status || 'active',
+          graduationYear: decrypted.graduation_year || undefined
         };
         return { data: mappedStudent, error: null };
       }
