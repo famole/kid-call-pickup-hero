@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { secureOperations } from '@/services/encryption';
 import { secureClassOperations } from '@/services/encryption/secureClassClient';
+import { secureStudentOperations } from '@/services/encryption/secureStudentClient';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
@@ -100,9 +101,9 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
 
     // Get student details using secure operations
     const studentIds = childrenRelations?.map(r => r.student_id) || [];
-    let studentsData = [];
+    let studentsData: any[] = [];
     if (studentIds.length > 0) {
-      const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
+      const { data: allStudents, error: studentsError } = await secureStudentOperations.getStudentsSecure();
       if (studentsError) {
         logger.error('Error fetching students:', studentsError);
         throw new Error(studentsError.message);
@@ -156,14 +157,14 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
     authorizedStudentIds = [...new Set(authorizedStudentIds)];
 
     // Get student details for authorized students using secure operations
-    let authorizedStudentDetails = [];
+    let authorizedStudentDetails: any[] = [];
     if (authorizedStudentIds.length > 0) {
-      const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
+      const { data: allStudents, error: studentsError } = await secureStudentOperations.getStudentsSecure();
       
       if (!studentsError && allStudents) {
         // Filter out deleted students and map to match expected structure
         authorizedStudentDetails = allStudents
-          .filter(s => s && authorizedStudentIds.includes(s.id) && !s.deletedAt);
+          .filter(s => s && authorizedStudentIds.includes(s.id) && s.status !== 'withdrawn');
       }
     }
 
@@ -185,8 +186,8 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       return {
         id: relation.student_id,
         name: student?.name || 'Unknown Student',
-        classId: student?.class_id || '',
-        className: getClassName(student?.class_id),
+        classId: student?.classId || '',
+        className: getClassName(student?.classId || null),
         parentIds: [parentData.id],
         avatar: student?.avatar,
       };
@@ -195,8 +196,8 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
     const authorizedChildrenFormatted: Child[] = authorizedStudentDetails?.map(student => ({
       id: student.id,
       name: student.name,
-      classId: student.class_id || '',
-      className: getClassName(student.class_id),
+      classId: student.classId || '',
+      className: getClassName(student.classId || null),
       parentIds: [parentData.id],
       avatar: student.avatar,
     })) || [];
