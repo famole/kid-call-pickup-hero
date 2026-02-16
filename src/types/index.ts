@@ -18,6 +18,7 @@ export type Child = {
   avatar?: string;
   isAuthorized?: boolean;
   deletedAt?: Date;
+  status?: 'active' | 'graduated';
 };
 
 export type Class = {

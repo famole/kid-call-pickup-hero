@@ -14,6 +14,7 @@ import {
 } from '@/services/classService'; 
 import CSVUploadModal from '@/components/CSVUploadModal';
 import StudentTable from '@/components/students/StudentTable';
+import GraduateStudentsDialog from '@/components/students/GraduateStudentsDialog';
 import StudentSearch from '@/components/students/StudentSearch';
 import AddStudentDialog from '@/components/students/AddStudentDialog';
 import EditStudentDialog from '@/components/students/EditStudentDialog';
@@ -30,6 +31,8 @@ import { useStudentSearch } from '@/hooks/useStudentSearch';
 import { useAdminPagination } from '@/hooks/useAdminPagination';
 import PaginationControls from '@/components/admin-parents/PaginationControls';
 import { logger } from '@/utils/logger';
+import { graduateStudentsByClass } from '@/services/student/graduateStudents';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const AdminStudentsScreen = () => {
   const [studentList, setStudentList] = useState<Child[]>([]);
@@ -39,10 +42,12 @@ const AdminStudentsScreen = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
+  const [isGraduateDialogOpen, setIsGraduateDialogOpen] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<Child | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { newStudent, setNewStudent, resetNewStudent } = useStudentForm();
 
   // Use the search hook
@@ -51,6 +56,8 @@ const AdminStudentsScreen = () => {
     setSearchTerm,
     selectedClassId,
     setSelectedClassId,
+    statusFilter,
+    setStatusFilter,
     filteredStudents
   } = useStudentSearch(studentList);
 
@@ -161,6 +168,27 @@ const AdminStudentsScreen = () => {
   const onImportCSV = (data: Partial<Child>[]) => handleCSVImportAction(data);
   const onExportCSV = () => handleExportCSVAction(studentList);
 
+  const handleGraduateClass = async (classId: string) => {
+    try {
+      setIsLoading(true);
+      const count = await graduateStudentsByClass(classId);
+      toast({
+        title: t('admin.graduateSuccess'),
+        description: t('admin.graduatedCount', { count }),
+      });
+      await reloadData();
+    } catch (error) {
+      logger.error('Error graduating students:', error);
+      toast({
+        title: "Error",
+        description: "Failed to graduate students",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getClassName = (classId: string) => {
     const classInfo = classList.find(c => c.id === classId);
     return classInfo ? classInfo.name : 'Unknown Class';
@@ -178,6 +206,7 @@ const AdminStudentsScreen = () => {
               setIsAddDialogOpen(true);
             }}
             onFullImportCompleted={reloadData}
+            onGraduateStudents={() => setIsGraduateDialogOpen(true)}
           />
         </CardHeader>
         <CardContent>
@@ -197,6 +226,8 @@ const AdminStudentsScreen = () => {
                 selectedClassId={selectedClassId}
                 onClassFilterChange={setSelectedClassId}
                 classList={classList}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
               />
               
               <StudentTable 
@@ -273,6 +304,16 @@ const AdminStudentsScreen = () => {
         onClose={() => setIsCSVModalOpen(false)}
         onImport={onImportCSV}
         classList={classList}
+      />
+
+      {/* Graduate Students Dialog */}
+      <GraduateStudentsDialog
+        open={isGraduateDialogOpen}
+        onOpenChange={setIsGraduateDialogOpen}
+        classList={classList}
+        studentList={studentList}
+        onGraduate={handleGraduateClass}
+        isLoading={isLoading}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search } from 'lucide-react';
 import { Class } from '@/types';
 import { useTranslation } from '@/hooks/useTranslation';
+import { StudentStatusFilter } from '@/hooks/useStudentSearch';
 
 interface StudentSearchProps {
   searchTerm: string;
@@ -12,6 +13,8 @@ interface StudentSearchProps {
   selectedClassId: string;
   onClassFilterChange: (value: string) => void;
   classList: Class[];
+  statusFilter: StudentStatusFilter;
+  onStatusFilterChange: (value: StudentStatusFilter) => void;
 }
 
 const StudentSearch: React.FC<StudentSearchProps> = ({
@@ -19,7 +22,9 @@ const StudentSearch: React.FC<StudentSearchProps> = ({
   onSearchChange,
   selectedClassId,
   onClassFilterChange,
-  classList
+  classList,
+  statusFilter,
+  onStatusFilterChange
 }) => {
   const { t } = useTranslation();
   
@@ -47,6 +52,18 @@ const StudentSearch: React.FC<StudentSearchProps> = ({
                 {classItem.name}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="sm:w-48">
+        <Select value={statusFilter} onValueChange={(v) => onStatusFilterChange(v as StudentStatusFilter)}>
+          <SelectTrigger className="text-left">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">{t('admin.activeStudents')}</SelectItem>
+            <SelectItem value="graduated">{t('admin.graduatedStudents')}</SelectItem>
+            <SelectItem value="all">{t('admin.allStudents')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
