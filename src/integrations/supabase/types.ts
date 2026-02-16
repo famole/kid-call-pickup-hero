@@ -1297,6 +1297,7 @@ export type Database = {
       get_parent_by_identifier: {
         Args: { identifier: string }
         Returns: {
+          auth_uid: string
           created_at: string
           email: string
           id: string
