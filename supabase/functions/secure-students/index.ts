@@ -131,6 +131,7 @@ serve(async (req) => {
             name,
             class_id,
             avatar,
+            status,
             created_at,
             updated_at,
             deleted_at
@@ -205,6 +206,7 @@ serve(async (req) => {
             name,
             class_id,
             avatar,
+            status,
             created_at,
             updated_at,
             deleted_at
@@ -272,6 +274,7 @@ serve(async (req) => {
             name,
             class_id,
             avatar,
+            status,
             created_at,
             updated_at,
             deleted_at
