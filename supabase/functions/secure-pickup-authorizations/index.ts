@@ -181,7 +181,9 @@ serve(async (req)=>{
           let decryptedData;
           try {
             decryptedData = await decryptObject(requestData);
-            decryptedData = JSON.parse(decryptedData);
+            if (typeof decryptedData === 'string') {
+              decryptedData = JSON.parse(decryptedData);
+            }
           } catch (error) {
             logger.error('Failed to decrypt request data:', error);
             throw new Error('Invalid request data format');
