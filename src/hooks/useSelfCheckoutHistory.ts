@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
@@ -61,96 +62,42 @@ interface SelfCheckoutHistoryData {
 
 export const useSelfCheckoutHistory = () => {
   const { user } = useAuth();
-  const [historyData, setHistoryData] = useState<SelfCheckoutHistoryData>({
-    authorizations: [],
-    pickupAuthorizations: []
-  });
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const loadHistoryData = useCallback(async () => {
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Get current parent ID (cached)
+  const { data: historyData = { authorizations: [], pickupAuthorizations: [] }, isLoading: loading } = useQuery({
+    queryKey: ['self-checkout-history', user?.email],
+    queryFn: async (): Promise<SelfCheckoutHistoryData> => {
       const parentData = await getCurrentParentIdCached();
       if (!parentData) {
         logger.log('No parent ID found for current user');
-        setHistoryData({ authorizations: [], pickupAuthorizations: [] });
-        return;
+        return { authorizations: [], pickupAuthorizations: [] };
       }
 
-      // Fetch self-checkout authorizations with student and class info
       const { data: selfCheckoutData, error: selfCheckoutError } = await supabase
         .from('self_checkout_authorizations')
-        .select(`
-          *,
-          students (
-            id,
-            name,
-            avatar,
-            classes (
-              id,
-              name,
-              grade
-            )
-          )
-        `)
+        .select(`*, students (id, name, avatar, classes (id, name, grade))`)
         .eq('authorizing_parent_id', parentData)
         .order('created_at', { ascending: false });
 
-      if (selfCheckoutError) {
-        logger.error('Error fetching self-checkout authorizations:', selfCheckoutError);
-        throw new Error(selfCheckoutError.message);
-      }
+      if (selfCheckoutError) throw new Error(selfCheckoutError.message);
 
-      // Fetch pickup authorizations for students where current parent is authorizing
       const { data: pickupData, error: pickupError } = await supabase
         .from('pickup_authorizations')
-        .select(`
-          *,
-          students (
-            id,
-            name,
-            avatar,
-            classes (
-              id,
-              name,
-              grade
-            )
-          ),
-          authorized_parent:parents!pickup_authorizations_authorized_parent_id_fkey (
-            id,
-            name,
-            email
-          )
-        `)
+        .select(`*, students (id, name, avatar, classes (id, name, grade)), authorized_parent:parents!pickup_authorizations_authorized_parent_id_fkey (id, name, email)`)
         .eq('authorizing_parent_id', parentData)
         .order('created_at', { ascending: false });
 
-      if (pickupError) {
-        logger.error('Error fetching pickup authorizations:', pickupError);
-        throw new Error(pickupError.message);
-      }
+      if (pickupError) throw new Error(pickupError.message);
 
-      // For each self-checkout authorization, fetch departures
       const authorizationsWithDepartures = await Promise.all(
         (selfCheckoutData || []).map(async (auth: any) => {
-          const { data: departures, error: departuresError } = await supabase
+          const { data: departures } = await supabase
             .from('student_departures')
             .select('*')
             .eq('student_id', auth.student_id)
             .gte('departed_at', auth.start_date)
             .lte('departed_at', auth.end_date)
             .order('departed_at', { ascending: false });
-
-          if (departuresError) {
-            logger.warn('Error fetching departures for student:', auth.student_id, departuresError);
-          }
 
           return {
             id: auth.id,
@@ -162,16 +109,12 @@ export const useSelfCheckoutHistory = () => {
             student: auth.students,
             class: auth.students?.classes,
             departures: (departures || []).map(dep => ({
-              id: dep.id,
-              departedAt: dep.departed_at,
-              notes: dep.notes,
-              markedByUserId: dep.marked_by_user_id
+              id: dep.id, departedAt: dep.departed_at, notes: dep.notes, markedByUserId: dep.marked_by_user_id
             }))
           };
         })
       );
 
-      // Transform pickup data to include class info
       const pickupAuthorizationsWithClass = (pickupData || []).map((auth: any) => ({
         id: auth.id,
         studentId: auth.student_id,
@@ -185,30 +128,14 @@ export const useSelfCheckoutHistory = () => {
         authorizedParent: auth.authorized_parent
       }));
 
-      setHistoryData({
-        authorizations: authorizationsWithDepartures,
-        pickupAuthorizations: pickupAuthorizationsWithClass
-      });
-
-    } catch (error) {
-      logger.error('Error loading self-checkout history:', error);
-      setHistoryData({ authorizations: [], pickupAuthorizations: [] });
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.email]);
-
-  useEffect(() => {
-    loadHistoryData();
-  }, [loadHistoryData]);
-
-  const refetch = useCallback(() => {
-    loadHistoryData();
-  }, [loadHistoryData]);
+      return { authorizations: authorizationsWithDepartures, pickupAuthorizations: pickupAuthorizationsWithClass };
+    },
+    enabled: !!user?.email,
+  });
 
   return {
     historyData,
     loading,
-    refetch
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['self-checkout-history'] })
   };
 };

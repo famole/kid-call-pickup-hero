@@ -1,11 +1,12 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from "@/components/ui/use-toast";
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentsWithStudentsOptimized } from '@/services/parent/optimizedParentQueries';
 import { getAllStudents } from '@/services/studentService';
-import { logger } from '@/utils/logger'
+import { logger } from '@/utils/logger';
 
 interface UseOptimizedParentsDataProps {
   userRole?: 'parent' | 'teacher' | 'admin' | 'superadmin' | 'family';
@@ -27,157 +28,77 @@ export const useOptimizedParentsData = ({
   pageSize = 50
 }: UseOptimizedParentsDataProps) => {
   const { toast } = useToast();
-  const [parents, setParents] = useState<ParentWithStudents[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [allStudents, setAllStudents] = useState<Child[]>([]);
-  const [loadingProgress, setLoadingProgress] = useState<string>('Initializing...');
-  
-  // Use ref to track last fetch time to prevent dependency issues
-  const lastFetchRef = useRef<number>(0);
-  const isInitializedRef = useRef<boolean>(false);
-  const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const queryClient = useQueryClient();
 
-  // Parents are now pre-filtered by backend, no need for frontend filtering
-  const filteredParentsByRole = parents;
+  // Only use search term if it's 3+ characters
+  const effectiveSearch = searchTerm.trim().length >= 3 ? searchTerm : '';
 
-  logger.info(`Backend returned ${filteredParentsByRole.length} parents filtered by roles:`, includedRoles || [userRole]);
-
-  const loadParents = useCallback(async (forceRefresh = false, search?: string, page?: number) => {
-    const now = Date.now();
-    if (!forceRefresh && now - lastFetchRef.current < 5000) { // Cache for 5 seconds
-      return;
-    }
-
-    setIsLoading(true);
-    setLoadingProgress('Loading parents data...');
-    
-    try {
+  const { data: parentsResult, isLoading: parentsLoading } = useQuery({
+    queryKey: ['optimized-parents', includeDeleted, deletedOnly, includedRoles, currentPage, pageSize, effectiveSearch],
+    queryFn: async () => {
       const startTime = performance.now();
-      
-      const effectivePage = page || currentPage;
-      const effectiveSearch = search !== undefined ? search : searchTerm;
-      
-      logger.info(`Loading parents data for page: ${effectivePage}, search: "${effectiveSearch}"`);
-      
-      // Use optimized query with backend role filtering, pagination, and search
       const result = await getParentsWithStudentsOptimized(
         includeDeleted,
         deletedOnly,
         includedRoles,
-        effectivePage,
+        currentPage,
         pageSize,
-        effectiveSearch.trim().length >= 3 ? effectiveSearch : undefined
+        effectiveSearch || undefined
       );
-      
       const loadTime = performance.now() - startTime;
-      
-      logger.info(`Loaded ${result.parents.length} of ${result.totalCount} parents from backend`);
-      
-      setParents(result.parents);
-      setTotalCount(result.totalCount);
-      setLoadingProgress(`Loaded ${result.parents.length} of ${result.totalCount} parents`);
-      lastFetchRef.current = now;
-      
+      logger.info(`Loaded ${result.parents.length} of ${result.totalCount} parents in ${loadTime.toFixed(0)}ms`);
       if (loadTime > 2000) {
         toast({
           title: "Performance Notice",
           description: `Parents loaded in ${(loadTime / 1000).toFixed(1)}s. Data has been optimized.`,
         });
       }
-    } catch (error) {
-      logger.error('Failed to load parents:', error);
-      setLoadingProgress('Failed to load parents');
-      toast({
-        title: "Error",
-        description: "Failed to load parents data",
-        variant: "destructive",
+      return result;
+    },
+    staleTime: 5000,
+  });
+
+  const parents = parentsResult?.parents || [];
+  const totalCount = parentsResult?.totalCount || 0;
+
+  const { data: allStudents = [], isLoading: studentsLoading } = useQuery({
+    queryKey: ['admin-all-students', includeDeleted],
+    queryFn: () => getAllStudents(includeDeleted),
+  });
+
+  const isLoading = parentsLoading || studentsLoading;
+
+  // Parents are pre-filtered by backend
+  const filteredParentsByRole = parents;
+  const loadingProgress = isLoading ? 'Loading...' : `Loaded ${parents.length} of ${totalCount} parents`;
+
+  const setParents = (updateFn: ((prev: ParentWithStudents[]) => ParentWithStudents[]) | ParentWithStudents[]) => {
+    const queryKey = ['optimized-parents', includeDeleted, deletedOnly, includedRoles, currentPage, pageSize, effectiveSearch];
+    if (typeof updateFn === 'function') {
+      queryClient.setQueryData(queryKey, (prev: any) => {
+        const newParents = updateFn(prev?.parents || []);
+        return prev ? { ...prev, parents: newParents } : { parents: newParents, totalCount: newParents.length };
       });
-    } finally {
-      setIsLoading(false);
+    } else {
+      queryClient.setQueryData(queryKey, (prev: any) => prev ? { ...prev, parents: updateFn } : { parents: updateFn, totalCount: updateFn.length });
     }
-  }, [toast, includeDeleted, deletedOnly, includedRoles, currentPage, pageSize, searchTerm]);
-
-  const loadStudents = useCallback(async () => {
-    try {
-      setLoadingProgress('Loading students data...');
-      const studentsData = await getAllStudents(includeDeleted);
-      setAllStudents(studentsData);
-      setLoadingProgress(`Loaded ${studentsData.length} students`);
-    } catch (error) {
-      logger.error('Failed to load students:', error);
-      setLoadingProgress('Failed to load students');
-      toast({
-        title: "Error",
-        description: "Failed to load students data",
-        variant: "destructive",
-      });
-    }
-  }, [toast, includeDeleted]);
-
-  // Initial load effect
-  useEffect(() => {
-    if (!isInitializedRef.current) {
-      const loadData = async () => {
-        setIsLoading(true);
-        await Promise.all([loadParents(true), loadStudents()]);
-        setIsLoading(false);
-        setLoadingProgress('Data loaded successfully');
-        isInitializedRef.current = true;
-      };
-      
-      loadData();
-    }
-  }, [loadParents, loadStudents]);
-
-  // Refetch when includeDeleted, currentPage changes
-  useEffect(() => {
-    if (isInitializedRef.current) {
-      logger.info('Parameters changed - includeDeleted:', includeDeleted, 'page:', currentPage);
-      loadParents(true);
-    }
-  }, [includeDeleted, currentPage, loadParents]);
-
-  // Debounced search effect
-  useEffect(() => {
-    if (isInitializedRef.current && searchTerm.trim().length >= 3) {
-      // Clear existing timer
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      
-      // Set new timer
-      debounceTimerRef.current = setTimeout(() => {
-        logger.info('Search term changed to:', searchTerm);
-        loadParents(true, searchTerm, 1); // Reset to page 1 on search
-      }, 500);
-      
-      return () => {
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-      };
-    } else if (isInitializedRef.current && searchTerm.trim().length === 0) {
-      // Clear search immediately
-      loadParents(true, '', 1);
-    }
-  }, [searchTerm, loadParents]);
+  };
 
   const onParentAdded = useCallback((newParent: ParentWithStudents) => {
-    setParents(prev => [...prev, newParent]);
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ['optimized-parents'] });
+  }, [queryClient]);
 
   const onParentUpdated = useCallback((updatedParent: ParentWithStudents) => {
-    setParents(prev => prev.map(p => p.id === updatedParent.id ? updatedParent : p));
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ['optimized-parents'] });
+  }, [queryClient]);
 
   const onImportCompleted = useCallback(() => {
-    loadParents(true);
-  }, [loadParents]);
+    queryClient.invalidateQueries({ queryKey: ['optimized-parents'] });
+  }, [queryClient]);
 
   const refetch = useCallback(() => {
-    return loadParents(true);
-  }, [loadParents]);
+    return queryClient.invalidateQueries({ queryKey: ['optimized-parents'] });
+  }, [queryClient]);
 
   return {
     parents,

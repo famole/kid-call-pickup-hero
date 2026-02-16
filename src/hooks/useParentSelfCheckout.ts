@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+
+import { useCallback } from 'react';
 import { useAuth } from '@/context/auth/AuthProvider';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   getSelfCheckoutAuthorizationsForParent, 
   getTodayDepartureForStudent,
-  SelfCheckoutAuthorizationWithDetails,
   StudentDeparture 
 } from '@/services/selfCheckoutService';
 
@@ -23,8 +24,7 @@ interface SelfCheckoutStudent {
 
 export const useParentSelfCheckout = () => {
   const { user } = useAuth();
-  const [selfCheckoutStudents, setSelfCheckoutStudents] = useState<SelfCheckoutStudent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const isActive = useCallback((startDate: string, endDate: string) => {
     const today = new Date();
@@ -33,24 +33,14 @@ export const useParentSelfCheckout = () => {
     return today >= start && today <= end;
   }, []);
 
-  const loadSelfCheckoutData = useCallback(async () => {
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      // Get all self-checkout authorizations for the parent
+  const { data: selfCheckoutStudents = [], isLoading: loading } = useQuery({
+    queryKey: ['parent-self-checkout', user?.email],
+    queryFn: async (): Promise<SelfCheckoutStudent[]> => {
       const authorizations = await getSelfCheckoutAuthorizationsForParent();
-      
-      // Filter for active authorizations only
       const activeAuthorizations = authorizations.filter(auth => 
         auth.isActive && isActive(auth.startDate, auth.endDate)
       );
 
-      // For each active authorization, check if student has departed today and get notes
       const studentsWithStatus: SelfCheckoutStudent[] = [];
       
       for (const auth of activeAuthorizations) {
@@ -78,29 +68,14 @@ export const useParentSelfCheckout = () => {
         });
       }
 
-      setSelfCheckoutStudents(studentsWithStatus);
-    } catch (error) {
-      console.error('Error loading self-checkout data:', error);
-      setSelfCheckoutStudents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.email, isActive]);
-
-  const didInitRef = useRef(false);
-  useEffect(() => {
-    if (didInitRef.current) return; // prevent StrictMode double-invoke in dev
-    didInitRef.current = true;
-    loadSelfCheckoutData();
-  }, [loadSelfCheckoutData]);
-
-  const refetch = useCallback(() => {
-    loadSelfCheckoutData();
-  }, [loadSelfCheckoutData]);
+      return studentsWithStatus;
+    },
+    enabled: !!user?.email,
+  });
 
   return {
     selfCheckoutStudents,
     loading,
-    refetch
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['parent-self-checkout'] })
   };
 };
