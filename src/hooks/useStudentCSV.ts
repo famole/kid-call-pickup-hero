@@ -1,9 +1,10 @@
-
 import { useToast } from '@/hooks/use-toast';
 import { createStudent } from '@/services/studentService';
 import { getAllClasses } from '@/services/classService';
 import { Child, Class } from '@/types';
 import { isValidUUID } from '@/utils/validators';
+import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 import React from 'react';
 
 interface UseStudentCSVProps {
@@ -116,24 +117,61 @@ export const useStudentCSV = ({
     setIsCSVModalOpen(false);
   };
 
-  const handleExportCSVAction = (studentListToExport: Child[]) => {
-    // Get class names for export
-    const getClassNameById = async (classId: string) => {
+  const handleExportCSVAction = async (studentListToExport: Child[], classId: string | null) => {
+    try {
       const classes = await getAllClasses();
-      const foundClass = classes.find(c => c.id === classId);
-      return foundClass ? foundClass.name : 'Unknown Class';
-    };
+      const getClassNameById = (cId: string) => {
+        const foundClass = classes.find(c => c.id === cId);
+        return foundClass ? foundClass.name : 'Unknown Class';
+      };
 
-    // Export with class names instead of IDs
-    const exportWithClassNames = async () => {
-      const headers = "id,name,className,parentIds,avatar\n";
-      const csvRows = await Promise.all(
-        studentListToExport.map(async (student) => {
-          const validParentIds = student.parentIds?.filter(isValidUUID) || [];
-          const className = await getClassNameById(student.classId);
-          return `${student.id},"${student.name}","${className}","${validParentIds.join(',')}",${student.avatar || ''}`;
-        })
-      );
+      // Filter by class if specified
+      const studentsToExport = classId
+        ? studentListToExport.filter(s => s.classId === classId)
+        : studentListToExport;
+
+      if (studentsToExport.length === 0) {
+        toast({
+          title: "Export",
+          description: "No students to export for the selected filter.",
+          variant: "default",
+        });
+        return;
+      }
+
+      // Fetch parent names for all students
+      const studentIds = studentsToExport.map(s => s.id);
+      const { data: relationships, error } = await supabase
+        .from('student_parents')
+        .select(`
+          student_id,
+          parents!inner(name, deleted_at)
+        `)
+        .in('student_id', studentIds)
+        .is('parents.deleted_at', null);
+
+      if (error) {
+        logger.error('Error fetching parent names for export:', error);
+      }
+
+      // Build a map of student_id -> parent names
+      const parentNamesMap: Record<string, string[]> = {};
+      if (relationships) {
+        for (const rel of relationships) {
+          const sid = rel.student_id;
+          const parentName = (rel.parents as any)?.name || 'Unknown';
+          if (!parentNamesMap[sid]) parentNamesMap[sid] = [];
+          parentNamesMap[sid].push(parentName);
+        }
+      }
+
+      const headers = "id,name,className,parents,status\n";
+      const csvRows = studentsToExport.map((student) => {
+        const className = getClassNameById(student.classId);
+        const parentNames = parentNamesMap[student.id]?.join('; ') || '';
+        const status = student.status || 'active';
+        return `${student.id},"${student.name}","${className}","${parentNames}","${status}"`;
+      });
 
       const finalCsvContent = headers + csvRows.join("\n");
       
@@ -141,7 +179,8 @@ export const useStudentCSV = ({
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `students_export_${new Date().toISOString().split('T')[0]}.csv`);
+      const classLabel = classId ? `_${getClassNameById(classId).replace(/\s+/g, '_')}` : '';
+      link.setAttribute('download', `students_export${classLabel}_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -149,11 +188,16 @@ export const useStudentCSV = ({
 
       toast({
         title: "Export Complete",
-        description: `${studentListToExport.length} students exported to CSV`,
+        description: `${studentsToExport.length} students exported to CSV`,
       });
-    };
-
-    exportWithClassNames();
+    } catch (error) {
+      logger.error('Error exporting students:', error);
+      toast({
+        title: "Export Error",
+        description: "Failed to export students.",
+        variant: "destructive",
+      });
+    }
   };
 
   return {

@@ -20,6 +20,7 @@ import AddStudentDialog from '@/components/students/AddStudentDialog';
 import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import StudentDetailsDialog from '@/components/students/StudentDetailsDialog';
+import ExportStudentsDialog from '@/components/students/ExportStudentsDialog';
 import StudentsHeader from '@/components/students/StudentsHeader';
 import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,6 +44,8 @@ const AdminStudentsScreen = () => {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
   const [isGraduateDialogOpen, setIsGraduateDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<Child | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -166,7 +169,12 @@ const AdminStudentsScreen = () => {
   };
   const onDeleteStudent = () => handleDeleteStudentAction(currentStudent);
   const onImportCSV = (data: Partial<Child>[]) => handleCSVImportAction(data);
-  const onExportCSV = () => handleExportCSVAction(studentList);
+  const onExportCSV = async (classId: string | null) => {
+    setIsExporting(true);
+    await handleExportCSVAction(studentList, classId);
+    setIsExporting(false);
+    setIsExportDialogOpen(false);
+  };
 
   const handleGraduateClass = async (classId: string, graduationYear: number) => {
     try {
@@ -199,7 +207,7 @@ const AdminStudentsScreen = () => {
       <Card>
         <CardHeader>
           <StudentsHeader 
-            onExportCSV={onExportCSV}
+            onExportCSV={() => setIsExportDialogOpen(true)}
             onImportCSV={() => setIsCSVModalOpen(true)}
             onAddStudent={() => {
               resetNewStudent();
@@ -304,6 +312,15 @@ const AdminStudentsScreen = () => {
         onClose={() => setIsCSVModalOpen(false)}
         onImport={onImportCSV}
         classList={classList}
+      />
+
+      {/* Export Students Dialog */}
+      <ExportStudentsDialog
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        classList={classList}
+        onExport={onExportCSV}
+        isExporting={isExporting}
       />
 
       {/* Graduate Students Dialog */}

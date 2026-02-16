@@ -314,6 +314,8 @@
     "close": "Cerrar",
     "confirm": "Confirmar",
     "exportCSV": "Exportar CSV",
+    "exportDescription": "Seleccione una clase para exportar o exporte todos los estudiantes.",
+    "exporting": "Exportando...",
     "importCSV": "Importar CSV",
     "totalStudents": "Total de Estudiantes",
     "totalParents": "Total de Padres",
