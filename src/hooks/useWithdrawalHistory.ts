@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/utils/logger'
+import { logger } from '@/utils/logger';
 
 interface WithdrawalRecord {
   id: string;
@@ -18,76 +19,41 @@ interface WithdrawalRecord {
 
 export const useWithdrawalHistory = () => {
   const { user } = useAuth();
-  const [withdrawalData, setWithdrawalData] = useState<WithdrawalRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const loadWithdrawalHistory = useCallback(async () => {
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Get current parent data using targeted query
+  const { data: withdrawalData = [], isLoading: loading } = useQuery({
+    queryKey: ['withdrawal-history', user?.email],
+    queryFn: async (): Promise<WithdrawalRecord[]> => {
       const { secureOperations } = await import('@/services/encryption');
-      const { data: parentData, error: parentError } = await secureOperations.getParentByIdentifierSecure(user.email);
+      const { data: parentData, error: parentError } = await secureOperations.getParentByIdentifierSecure(user!.email!);
       
-      if (parentError) {
+      if (parentError || !parentData?.id) {
         logger.error('Error getting current parent ID:', parentError);
-        setWithdrawalData([]);
-        return;
-      }
-
-      if (!parentData?.id) {
-        logger.info('No parent ID found for current user');
-        setWithdrawalData([]);
-        return;
+        return [];
       }
 
       const parentId = parentData.id;
-
       const allRecords: WithdrawalRecord[] = [];
 
-      // 1. Fetch pickup history (self pickups and authorized pickups)
       const { data: pickupHistoryData, error: pickupError } = await supabase
         .from('pickup_history')
-        .select(`
-          *,
-          students (
-            id,
-            name,
-            avatar,
-            classes (
-              name,
-              grade
-            )
-          )
-        `)
+        .select(`*, students (id, name, avatar, classes (name, grade))`)
         .order('completed_time', { ascending: false });
 
       if (pickupError) {
         logger.error('Error fetching pickup history:', pickupError);
       } else if (pickupHistoryData) {
         for (const record of pickupHistoryData) {
-          // Check if this pickup was done by the current parent (self pickup)
           if (record.parent_id === parentId) {
-            // Use the parent data we already fetched
-            const parentInfo = parentData;
-
             allRecords.push({
-              id: record.id,
-              studentId: record.student_id,
+              id: record.id, studentId: record.student_id,
               studentName: record.students?.name || 'Unknown Student',
               studentAvatar: record.students?.avatar,
               className: record.students?.classes ? `${record.students.classes.name} - Grade ${record.students.classes.grade}` : undefined,
-              date: new Date(record.completed_time),
-              type: 'self_pickup',
-              parentName: parentInfo?.name
+              date: new Date(record.completed_time), type: 'self_pickup',
+              parentName: parentData?.name
             });
           } else {
-            // Check if this pickup was authorized by the current parent
             const { data: authData, error: authError } = await supabase
               .from('pickup_authorizations')
               .select('id, authorized_parent_id, parents!pickup_authorizations_authorized_parent_id_fkey(name)')
@@ -98,13 +64,11 @@ export const useWithdrawalHistory = () => {
 
             if (!authError && authData) {
               allRecords.push({
-                id: record.id,
-                studentId: record.student_id,
+                id: record.id, studentId: record.student_id,
                 studentName: record.students?.name || 'Unknown Student',
                 studentAvatar: record.students?.avatar,
                 className: record.students?.classes ? `${record.students.classes.name} - Grade ${record.students.classes.grade}` : undefined,
-                date: new Date(record.completed_time),
-                type: 'authorized_pickup',
+                date: new Date(record.completed_time), type: 'authorized_pickup',
                 authorizedParentName: authData.parents?.name
               });
             }
@@ -112,27 +76,12 @@ export const useWithdrawalHistory = () => {
         }
       }
 
-      // 2. Fetch self-checkout departures
       const { data: selfCheckoutData, error: selfCheckoutError } = await supabase
         .from('student_departures')
-        .select(`
-          *,
-          students (
-            id,
-            name,
-            avatar,
-            classes (
-              name,
-              grade
-            )
-          )
-        `)
+        .select(`*, students (id, name, avatar, classes (name, grade))`)
         .order('departed_at', { ascending: false });
 
-      if (selfCheckoutError) {
-        console.error('Error fetching self-checkout departures:', selfCheckoutError);
-      } else if (selfCheckoutData) {
-        // Filter departures for students authorized by current parent
+      if (!selfCheckoutError && selfCheckoutData) {
         for (const departure of selfCheckoutData) {
           const { data: authData, error: authError } = await supabase
             .from('self_checkout_authorizations')
@@ -145,43 +94,26 @@ export const useWithdrawalHistory = () => {
 
           if (!authError && authData) {
             allRecords.push({
-              id: departure.id,
-              studentId: departure.student_id,
+              id: departure.id, studentId: departure.student_id,
               studentName: departure.students?.name || 'Unknown Student',
               studentAvatar: departure.students?.avatar,
               className: departure.students?.classes ? `${departure.students.classes.name} - Grade ${departure.students.classes.grade}` : undefined,
-              date: new Date(departure.departed_at),
-              type: 'self_checkout',
+              date: new Date(departure.departed_at), type: 'self_checkout',
               notes: departure.notes
             });
           }
         }
       }
 
-      // Sort all records by date (most recent first)
       allRecords.sort((a, b) => b.date.getTime() - a.date.getTime());
-
-      setWithdrawalData(allRecords);
-
-    } catch (error) {
-      console.error('Error loading withdrawal history:', error);
-      setWithdrawalData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.email]);
-
-  useEffect(() => {
-    loadWithdrawalHistory();
-  }, [loadWithdrawalHistory]);
-
-  const refetch = useCallback(() => {
-    loadWithdrawalHistory();
-  }, [loadWithdrawalHistory]);
+      return allRecords;
+    },
+    enabled: !!user?.email,
+  });
 
   return {
     withdrawalData,
     loading,
-    refetch
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['withdrawal-history'] })
   };
 };

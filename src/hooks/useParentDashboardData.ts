@@ -1,8 +1,7 @@
 
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
-import { supabase } from '@/integrations/supabase/client';
 import { Child } from '@/types';
 import { logger } from '@/utils/logger';
 
@@ -19,43 +18,22 @@ const isValidUUID = (id: string): boolean => {
 
 export const useParentDashboardData = () => {
   const { user } = useAuth();
-  const [children, setChildren] = useState<ChildWithType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const identifier = user?.id || user?.email || user?.username;
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (user?.id || user?.email || user?.username) {
-        try {
-          setLoading(true);
-          const identifier = user.id || user.email || user.username;
-          logger.log('Loading parent dashboard data for identifier:', identifier);
-          
-          // Use the optimized query that only fetches relevant students
-          const dashboardData = await getParentDashboardDataOptimized(identifier!);
-          
-          // Transform to include isAuthorized flag
-          const childrenWithType: ChildWithType[] = dashboardData.allChildren.map(child => ({
-            ...child,
-            isAuthorized: (child as any).isAuthorized || false
-          }));
-          
-          setChildren(childrenWithType);
-          logger.log(`Loaded ${childrenWithType.length} children for parent dashboard`);
-        } catch (error) {
-          logger.error('Error loading parent dashboard data:', error);
-          setChildren([]);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        // For users without any identifier, clear children
-        setChildren([]);
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [user?.id, user?.email, user?.username]);
+  const { data: children = [], isLoading: loading } = useQuery({
+    queryKey: ['parent-dashboard-data', identifier],
+    queryFn: async (): Promise<ChildWithType[]> => {
+      logger.log('Loading parent dashboard data for identifier:', identifier);
+      const dashboardData = await getParentDashboardDataOptimized(identifier!);
+      const childrenWithType: ChildWithType[] = dashboardData.allChildren.map(child => ({
+        ...child,
+        isAuthorized: (child as any).isAuthorized || false
+      }));
+      logger.log(`Loaded ${childrenWithType.length} children for parent dashboard`);
+      return childrenWithType;
+    },
+    enabled: !!identifier,
+  });
 
   return { children, loading, isValidUUID };
 };

@@ -1,96 +1,49 @@
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
 import { getAllClasses } from '@/services/classService';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { Class } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/utils/logger';
+import { useClasses } from '@/hooks/useClasses';
 
 export const useOptimizedCalledStudents = (selectedClass?: string) => {
-  const [calledChildren, setCalledChildren] = useState<PickupRequestWithDetails[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const lastFetchRef = useRef<number>(0);
-  
-  // Cache classes data
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const classData = await getAllClasses();
-        setClasses(classData);
-      } catch (error) {
-        logger.error('Error fetching classes:', error);
-      }
-    };
-    
-    fetchClasses();
-  }, []);
-  
-  const fetchCalledChildren = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    if (!forceRefresh && now - lastFetchRef.current < 1000) {
-      return;
-    }
+  const queryClient = useQueryClient();
+  const { data: classes = [] } = useClasses();
 
-    setLoading(true);
-    try {
-      const data = await getCalledStudentsOptimized(selectedClass);
-      setCalledChildren(data);
-      lastFetchRef.current = now;
-    } catch (error) {
-      logger.error("Error fetching called children:", error);
-      setCalledChildren([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedClass]); // Removed lastFetch from dependencies
-  
+  const { data: calledChildren = [], isLoading: loading } = useQuery({
+    queryKey: ['optimized-called-students', selectedClass],
+    queryFn: async (): Promise<PickupRequestWithDetails[]> => {
+      return await getCalledStudentsOptimized(selectedClass);
+    },
+  });
+
+  // Realtime subscription
   useEffect(() => {
-    fetchCalledChildren(true);
-    
-    // Single real-time subscription with intelligent debouncing
     const channel = supabase
-      .channel('called_students_optimized')
+      .channel('called_students_optimized_rq')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pickup_requests',
-          filter: 'status=eq.called'
-        },
-        async () => {
-          // Debounce rapid changes
-          const now = Date.now();
-          if (now - lastFetchRef.current > 1000) {
-            setTimeout(() => {
-              fetchCalledChildren(true);
-            }, 300);
-          }
+        { event: '*', schema: 'public', table: 'pickup_requests', filter: 'status=eq.called' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['optimized-called-students'] });
         }
       )
       .subscribe();
     
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchCalledChildren]);
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
-  // Optimized grouping using useMemo
   const childrenByClass = useMemo(() => {
     const grouped: Record<string, PickupRequestWithDetails[]> = {};
-    
     calledChildren.forEach(item => {
       if (!item.child || !item.class) return;
-      
       const classId = String(item.class.id);
-      if (!grouped[classId]) {
-        grouped[classId] = [];
-      }
+      if (!grouped[classId]) grouped[classId] = [];
       grouped[classId].push(item);
     });
-    
     return grouped;
   }, [calledChildren]);
 
@@ -98,6 +51,6 @@ export const useOptimizedCalledStudents = (selectedClass?: string) => {
     classes,
     childrenByClass,
     loading,
-    refetch: () => fetchCalledChildren(true)
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['optimized-called-students'] })
   };
 };

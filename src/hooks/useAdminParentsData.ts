@@ -1,7 +1,6 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { useToast } from "@/components/ui/use-toast";
-import { logger } from '@/utils/logger';
+import { useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ParentWithStudents } from '@/types/parent';
 import { Child } from '@/types';
 import { getParentsWithStudents } from '@/services/parentService';
@@ -12,61 +11,48 @@ interface UseAdminParentsDataProps {
 }
 
 export const useAdminParentsData = ({ userRole = 'parent' }: UseAdminParentsDataProps) => {
-  const { toast } = useToast();
-  const [parents, setParents] = useState<ParentWithStudents[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [allStudents, setAllStudents] = useState<Child[]>([]);
+  const queryClient = useQueryClient();
+
+  const { data: parents = [], isLoading: parentsLoading } = useQuery({
+    queryKey: ['admin-parents'],
+    queryFn: getParentsWithStudents,
+  });
+
+  const { data: allStudents = [], isLoading: studentsLoading } = useQuery({
+    queryKey: ['admin-students'],
+    queryFn: () => getAllStudents(),
+  });
+
+  const isLoading = parentsLoading || studentsLoading;
 
   // Filter parents by role
-  const filteredParentsByRole = parents.filter(parent => 
-    parent.role === userRole || (!parent.role && userRole === 'parent')
+  const filteredParentsByRole = useMemo(() => 
+    parents.filter(parent => 
+      parent.role === userRole || (!parent.role && userRole === 'parent')
+    ),
+    [parents, userRole]
   );
 
-  const loadParents = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getParentsWithStudents();
-      setParents(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load parents data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+  const setParents = (updateFn: ((prev: ParentWithStudents[]) => ParentWithStudents[]) | ParentWithStudents[]) => {
+    if (typeof updateFn === 'function') {
+      queryClient.setQueryData<ParentWithStudents[]>(['admin-parents'], prev => updateFn(prev || []));
+    } else {
+      queryClient.setQueryData(['admin-parents'], updateFn);
     }
-  }, [toast]);
-
-  const loadStudents = useCallback(async () => {
-    try {
-      const studentsData = await getAllStudents();
-      setAllStudents(studentsData);
-    } catch (error) {
-      logger.error('Failed to load students:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load students data",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    loadParents();
-    loadStudents();
-  }, [loadParents, loadStudents]);
+  };
 
   const onParentAdded = (newParent: ParentWithStudents) => {
-    setParents(prev => [...prev, newParent]);
+    queryClient.setQueryData<ParentWithStudents[]>(['admin-parents'], prev => [...(prev || []), newParent]);
   };
 
   const onParentUpdated = (updatedParent: ParentWithStudents) => {
-    setParents(prev => prev.map(p => p.id === updatedParent.id ? updatedParent : p));
+    queryClient.setQueryData<ParentWithStudents[]>(['admin-parents'], prev => 
+      (prev || []).map(p => p.id === updatedParent.id ? updatedParent : p)
+    );
   };
 
   const onImportCompleted = () => {
-    loadParents();
+    queryClient.invalidateQueries({ queryKey: ['admin-parents'] });
   };
 
   return {

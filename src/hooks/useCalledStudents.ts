@@ -1,155 +1,85 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCalledStudentsOptimized } from '@/services/pickup/optimizedPickupQueries';
 import { PickupRequestWithDetails } from '@/types/supabase';
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/utils/logger';
 
 export const useCalledStudents = (classId?: string, teacherClassIds?: string[]) => {
-  const [childrenByClass, setChildrenByClass] = useState<{ [key: string]: PickupRequestWithDetails[] }>({});
-  const [loading, setLoading] = useState<boolean>(true);
+  const queryClient = useQueryClient();
   const subscriptionRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastFetchRef = useRef<number>(0);
 
-  const fetchCalledStudents = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    if (!forceRefresh && now - lastFetchRef.current < 1000) {
-      return;
-    }
-
-    // Don't fetch if classId is null (waiting for teacher classes to load)
-    if (classId === null) {
-      logger.info('Skipping called students fetch - classId is null, waiting for teacher classes to load');
-      setLoading(false);
-      return;
-    }
-
-    try {
+  const { data: calledStudents = [], isLoading: loading } = useQuery({
+    queryKey: ['called-students', classId, teacherClassIds],
+    queryFn: async (): Promise<PickupRequestWithDetails[]> => {
       logger.info('Fetching called students with teacherClassIds:', teacherClassIds);
-      const calledStudents = await getCalledStudentsOptimized(classId, teacherClassIds);
-      logger.info(`Found ${calledStudents.length} called students`);
-      
-      // Group students by class for display
-      const groupedByClass = calledStudents.reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
-        const classIdKey = item.child?.classId || 'unknown';
-        if (!groups[classIdKey]) {
-          groups[classIdKey] = [];
-        }
-        groups[classIdKey].push(item);
-        return groups;
-      }, {});
+      const result = await getCalledStudentsOptimized(classId, teacherClassIds);
+      logger.info(`Found ${result.length} called students`);
+      return result;
+    },
+    enabled: classId !== null,
+    refetchInterval: 20000, // Poll every 20 seconds as fallback
+  });
 
-      setChildrenByClass(groupedByClass);
-      lastFetchRef.current = now;
-    } catch (error) {
-      logger.error('Error fetching called students:', error);
-      setChildrenByClass({});
-    } finally {
-      setLoading(false);
+  // Group students by class for display
+  const childrenByClass = (calledStudents || []).reduce((groups: { [key: string]: PickupRequestWithDetails[] }, item: PickupRequestWithDetails) => {
+    const classIdKey = item.child?.classId || 'unknown';
+    if (!groups[classIdKey]) {
+      groups[classIdKey] = [];
     }
-  }, [classId, teacherClassIds]);
+    groups[classIdKey].push(item);
+    return groups;
+  }, {});
 
+  // Realtime subscription to invalidate cache
   useEffect(() => {
-    fetchCalledStudents(true);
+    if (classId === null) return;
 
-    // Set up periodic polling as a fallback in case realtime fails (every 20 seconds)
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    intervalRef.current = setInterval(() => fetchCalledStudents(true), 20000);
-
-    // Clean up existing subscription
     if (subscriptionRef.current) {
       supabase.removeChannel(subscriptionRef.current);
       subscriptionRef.current = null;
     }
     
-    // Set up real-time subscription for called students
     const channel = supabase
-      .channel(`called_students_${Date.now()}`)
+      .channel(`called_students_rq_${Date.now()}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pickup_requests'
-        },
+        { event: '*', schema: 'public', table: 'pickup_requests' },
         async (payload) => {
-          logger.info('Called students real-time change detected:', payload.eventType, payload);
+          logger.info('Called students real-time change detected:', payload.eventType);
           
-          // Handle specific changes for better performance
           if (payload.eventType === 'UPDATE') {
             const newStatus = payload.new?.status;
             const oldStatus = payload.old?.status;
-            const studentId = payload.new?.student_id;
             
-            if (newStatus === 'called' && oldStatus !== 'called') {
-              // Student was just called - refresh to get full details
-              logger.info(`Student ${studentId} was called, refreshing called students`);
-              fetchCalledStudents(true);
-            } else if (oldStatus === 'called' && newStatus !== 'called') {
-              // Student was picked up or cancelled - remove from called list
-              logger.info(`Student ${studentId} no longer called, removing from list`);
-              if (studentId) {
-                setChildrenByClass(prev => {
-                  const updated = { ...prev };
-                  Object.keys(updated).forEach(classKey => {
-                    updated[classKey] = updated[classKey].filter(student => student.request.studentId !== studentId);
-                    if (updated[classKey].length === 0) {
-                      delete updated[classKey];
-                    }
-                  });
-                  return updated;
-                });
-              }
+            if ((newStatus === 'called' && oldStatus !== 'called') || 
+                (oldStatus === 'called' && newStatus !== 'called')) {
+              queryClient.invalidateQueries({ queryKey: ['called-students'] });
             }
           } else if (payload.eventType === 'DELETE') {
-            // Request was deleted - remove if it was called
-            const studentId = payload.old?.student_id;
-            if (studentId) {
-              logger.info(`Request for student ${studentId} deleted, removing from called list`);
-              setChildrenByClass(prev => {
-                const updated = { ...prev };
-                Object.keys(updated).forEach(classKey => {
-                  updated[classKey] = updated[classKey].filter(student => student.request.studentId !== studentId);
-                  if (updated[classKey].length === 0) {
-                    delete updated[classKey];
-                  }
-                });
-                return updated;
-              });
-            }
+            queryClient.invalidateQueries({ queryKey: ['called-students'] });
           }
         }
       )
       .subscribe((status) => {
         logger.info('Called students subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          logger.info('Successfully subscribed to called students changes');
-        } else if (status === 'CHANNEL_ERROR') {
-          logger.error('Called students subscription failed');
-        }
       });
 
     subscriptionRef.current = channel;
 
     return () => {
-      logger.info('Cleaning up called students subscription');
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
       }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
     };
-  }, [fetchCalledStudents]);
+  }, [classId, queryClient]);
 
   return {
     childrenByClass,
     loading,
-    refetch: () => fetchCalledStudents(true)
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['called-students'] })
   };
 };
