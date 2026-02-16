@@ -4,7 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-// Rebuild triggered
+// Rebuild triggered v2
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
