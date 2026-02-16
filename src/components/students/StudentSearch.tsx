@@ -63,6 +63,7 @@ const StudentSearch: React.FC<StudentSearchProps> = ({
           <SelectContent>
             <SelectItem value="active">{t('admin.activeStudents')}</SelectItem>
             <SelectItem value="graduated">{t('admin.graduatedStudents')}</SelectItem>
+            <SelectItem value="withdrawn">{t('admin.withdrawnStudents')}</SelectItem>
             <SelectItem value="all">{t('admin.allStudents')}</SelectItem>
           </SelectContent>
         </Select>

@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { Child } from '@/types';
 import { matchesSearch } from '@/utils/textUtils';
 
-export type StudentStatusFilter = 'active' | 'graduated' | 'all';
+export type StudentStatusFilter = 'active' | 'graduated' | 'withdrawn' | 'all';
 
 export const useStudentSearch = (students: Child[]) => {
   const [searchTerm, setSearchTerm] = useState('');
