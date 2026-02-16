@@ -8,6 +8,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GraduationCap } from 'lucide-react';
 import { Class, Child } from '@/types';
@@ -18,7 +20,7 @@ interface GraduateStudentsDialogProps {
   onOpenChange: (open: boolean) => void;
   classList: Class[];
   studentList: Child[];
-  onGraduate: (classId: string) => Promise<void>;
+  onGraduate: (classId: string, graduationYear: number) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -32,15 +34,17 @@ const GraduateStudentsDialog: React.FC<GraduateStudentsDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   const [selectedClassId, setSelectedClassId] = useState('');
+  const [graduationYear, setGraduationYear] = useState(new Date().getFullYear().toString());
 
   const activeStudentsInClass = studentList.filter(
     (s) => s.classId === selectedClassId && (s.status || 'active') === 'active'
   );
 
   const handleGraduate = async () => {
-    if (!selectedClassId) return;
-    await onGraduate(selectedClassId);
+    if (!selectedClassId || !graduationYear) return;
+    await onGraduate(selectedClassId, parseInt(graduationYear));
     setSelectedClassId('');
+    setGraduationYear(new Date().getFullYear().toString());
     onOpenChange(false);
   };
 
@@ -70,6 +74,17 @@ const GraduateStudentsDialog: React.FC<GraduateStudentsDialogProps> = ({
               ))}
             </SelectContent>
           </Select>
+
+          <div className="space-y-2">
+            <Label>{t('admin.graduationYear')}</Label>
+            <Input
+              type="number"
+              value={graduationYear}
+              onChange={(e) => setGraduationYear(e.target.value)}
+              min={2000}
+              max={2100}
+            />
+          </div>
 
           {selectedClassId && (
             <p className="text-sm text-muted-foreground">

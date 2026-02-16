@@ -19,6 +19,7 @@ export type Child = {
   isAuthorized?: boolean;
   deletedAt?: Date;
   status?: 'active' | 'graduated';
+  graduationYear?: number;
 };
 
 export type Class = {

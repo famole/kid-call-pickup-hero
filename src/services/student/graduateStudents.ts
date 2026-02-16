@@ -3,10 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Graduate students by class: sets status to 'graduated' and removes class_id.
  */
-export const graduateStudentsByClass = async (classId: string): Promise<number> => {
+export const graduateStudentsByClass = async (classId: string, graduationYear: number): Promise<number> => {
   const { data, error } = await supabase
     .from('students')
-    .update({ status: 'graduated', class_id: null } as any)
+    .update({ status: 'graduated', class_id: null, graduation_year: graduationYear } as any)
     .eq('class_id', classId)
     .is('deleted_at', null)
     .eq('status', 'active' as any)
@@ -23,10 +23,10 @@ export const graduateStudentsByClass = async (classId: string): Promise<number> 
 /**
  * Graduate specific students by IDs.
  */
-export const graduateStudentsByIds = async (studentIds: string[]): Promise<number> => {
+export const graduateStudentsByIds = async (studentIds: string[], graduationYear: number): Promise<number> => {
   const { data, error } = await supabase
     .from('students')
-    .update({ status: 'graduated', class_id: null } as any)
+    .update({ status: 'graduated', class_id: null, graduation_year: graduationYear } as any)
     .in('id', studentIds)
     .is('deleted_at', null)
     .select('id');

@@ -168,10 +168,10 @@ const AdminStudentsScreen = () => {
   const onImportCSV = (data: Partial<Child>[]) => handleCSVImportAction(data);
   const onExportCSV = () => handleExportCSVAction(studentList);
 
-  const handleGraduateClass = async (classId: string) => {
+  const handleGraduateClass = async (classId: string, graduationYear: number) => {
     try {
       setIsLoading(true);
-      const count = await graduateStudentsByClass(classId);
+      const count = await graduateStudentsByClass(classId, graduationYear);
       toast({
         title: t('admin.graduateSuccess'),
         description: t('admin.graduatedCount', { count }),

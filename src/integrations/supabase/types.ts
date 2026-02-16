@@ -830,6 +830,7 @@ export type Database = {
           class_id: string | null
           created_at: string
           deleted_at: string | null
+          graduation_year: number | null
           id: string
           name: string
           status: string
@@ -840,6 +841,7 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           deleted_at?: string | null
+          graduation_year?: number | null
           id?: string
           name: string
           status?: string
@@ -850,6 +852,7 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           deleted_at?: string | null
+          graduation_year?: number | null
           id?: string
           name?: string
           status?: string
