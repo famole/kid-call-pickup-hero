@@ -21,6 +21,7 @@ import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import StudentDetailsDialog from '@/components/students/StudentDetailsDialog';
 import ExportStudentsDialog from '@/components/students/ExportStudentsDialog';
+import ReassignStudentsDialog from '@/components/students/ReassignStudentsDialog';
 import StudentsHeader from '@/components/students/StudentsHeader';
 import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,6 +45,7 @@ const AdminStudentsScreen = () => {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isCSVModalOpen, setIsCSVModalOpen] = useState(false);
   const [isGraduateDialogOpen, setIsGraduateDialogOpen] = useState(false);
+  const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<Child | null>(null);
@@ -215,6 +217,7 @@ const AdminStudentsScreen = () => {
             }}
             onFullImportCompleted={reloadData}
             onGraduateStudents={() => setIsGraduateDialogOpen(true)}
+            onReassignStudents={() => setIsReassignDialogOpen(true)}
           />
         </CardHeader>
         <CardContent>
@@ -331,6 +334,15 @@ const AdminStudentsScreen = () => {
         studentList={studentList}
         onGraduate={handleGraduateStudents}
         isLoading={isLoading}
+      />
+
+      {/* Reassign Students Dialog */}
+      <ReassignStudentsDialog
+        open={isReassignDialogOpen}
+        onOpenChange={setIsReassignDialogOpen}
+        classList={classList}
+        studentList={studentList}
+        onCompleted={reloadData}
       />
     </div>
   );
