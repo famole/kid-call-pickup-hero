@@ -131,8 +131,10 @@ const StudentTable = ({
               <TableRow key={student.id}>
                 <TableCell className="text-left">{student.name}</TableCell>
                 <TableCell className="text-left">
-                  {student.status === 'graduated' 
+                {student.status === 'graduated' 
                     ? `${t('admin.graduated')} ${student.graduationYear || ''}`
+                    : student.status === 'withdrawn'
+                    ? t('admin.withdrawn')
                     : getClassName(student.classId)}
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-left">

@@ -21,6 +21,7 @@ import EditStudentDialog from '@/components/students/EditStudentDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import StudentDetailsDialog from '@/components/students/StudentDetailsDialog';
 import ExportStudentsDialog from '@/components/students/ExportStudentsDialog';
+import WithdrawStudentsDialog from '@/components/students/WithdrawStudentsDialog';
 import ReassignStudentsDialog from '@/components/students/ReassignStudentsDialog';
 import StudentsHeader from '@/components/students/StudentsHeader';
 import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
@@ -34,6 +35,7 @@ import { useAdminPagination } from '@/hooks/useAdminPagination';
 import PaginationControls from '@/components/admin-parents/PaginationControls';
 import { logger } from '@/utils/logger';
 import { graduateStudentsByIds } from '@/services/student/graduateStudents';
+import { withdrawStudentsByIds } from '@/services/student/withdrawStudents';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const AdminStudentsScreen = () => {
@@ -47,6 +49,7 @@ const AdminStudentsScreen = () => {
   const [isGraduateDialogOpen, setIsGraduateDialogOpen] = useState(false);
   const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<Child | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -199,6 +202,27 @@ const AdminStudentsScreen = () => {
     }
   };
 
+  const handleWithdrawStudents = async (studentIds: string[]) => {
+    try {
+      setIsLoading(true);
+      const count = await withdrawStudentsByIds(studentIds);
+      toast({
+        title: t('admin.withdrawSuccess'),
+        description: t('admin.withdrawnCount', { count }),
+      });
+      await reloadData();
+    } catch (error) {
+      logger.error('Error withdrawing students:', error);
+      toast({
+        title: "Error",
+        description: "Failed to withdraw students",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getClassName = (classId: string) => {
     const classInfo = classList.find(c => c.id === classId);
     return classInfo ? classInfo.name : 'Unknown Class';
@@ -218,6 +242,7 @@ const AdminStudentsScreen = () => {
             onFullImportCompleted={reloadData}
             onGraduateStudents={() => setIsGraduateDialogOpen(true)}
             onReassignStudents={() => setIsReassignDialogOpen(true)}
+            onWithdrawStudents={() => setIsWithdrawDialogOpen(true)}
           />
         </CardHeader>
         <CardContent>
@@ -343,6 +368,16 @@ const AdminStudentsScreen = () => {
         classList={classList}
         studentList={studentList}
         onCompleted={reloadData}
+      />
+
+      {/* Withdraw Students Dialog */}
+      <WithdrawStudentsDialog
+        open={isWithdrawDialogOpen}
+        onOpenChange={setIsWithdrawDialogOpen}
+        classList={classList}
+        studentList={studentList}
+        onWithdraw={handleWithdrawStudents}
+        isLoading={isLoading}
       />
     </div>
   );
