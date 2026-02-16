@@ -138,7 +138,8 @@ export const secureStudentOperations = {
         name: student.name,
         classId: student.class_id || '',
         parentIds: student.parent_ids || [],
-        avatar: student.avatar
+        avatar: student.avatar,
+        status: student.status || 'active'
       }));
       
       // Log sample data for debugging
@@ -187,7 +188,8 @@ export const secureStudentOperations = {
           name: decrypted.name,
           classId: decrypted.class_id || '',
           parentIds: decrypted.parent_ids || [],
-          avatar: decrypted.avatar
+          avatar: decrypted.avatar,
+          status: decrypted.status || 'active'
         };
         return { data: mappedStudent, error: null };
       }

@@ -91,7 +91,8 @@ export const getStudentsForParent = async (parentId: string): Promise<Child[]> =
       .from('students')
       .select('*')
       .in('id', studentIds)
-      .is('deleted_at', null);
+      .is('deleted_at', null)
+      .eq('status', 'active' as any);
     
     if (studentsError) {
       console.error('Error fetching students:', studentsError);

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { UserRound, Upload, Download, Plus } from "lucide-react";
+import { UserRound, Upload, Download, Plus, GraduationCap } from "lucide-react";
 import FullImportDialog from "@/components/admin-imports/FullImportDialog";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -10,6 +10,7 @@ interface StudentsHeaderProps {
   onImportCSV: () => void;
   onAddStudent: () => void;
   onFullImportCompleted?: () => void;
+  onGraduateStudents: () => void;
 }
 
 const StudentsHeader = ({
@@ -17,6 +18,7 @@ const StudentsHeader = ({
   onImportCSV,
   onAddStudent,
   onFullImportCompleted,
+  onGraduateStudents,
 }: StudentsHeaderProps) => {
   const { t } = useTranslation();
   
@@ -39,6 +41,13 @@ const StudentsHeader = ({
             <Upload className="mr-2 h-4 w-4" /> {t('admin.importCSV')}
           </Button>
           <FullImportDialog onCompleted={onFullImportCompleted} />
+          <Button
+            onClick={onGraduateStudents}
+            variant="outline"
+            className="flex-1 sm:flex-none bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+          >
+            <GraduationCap className="mr-2 h-4 w-4" /> {t('admin.graduateStudents')}
+          </Button>
           <Button 
             onClick={onAddStudent} 
             className="bg-school-primary flex-1 sm:flex-none"

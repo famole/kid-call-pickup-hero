@@ -58,7 +58,8 @@ export const createStudent = async (student: Omit<Child, 'id'>): Promise<Child> 
       name: data.name,
       classId: data.class_id || '',
       parentIds: student.parentIds?.filter(isValidUUID) || [],
-      avatar: data.avatar || undefined
+      avatar: data.avatar || undefined,
+      status: (data as any).status || 'active'
     };
   } catch (error) {
     console.error('Error in createStudent:', error);
