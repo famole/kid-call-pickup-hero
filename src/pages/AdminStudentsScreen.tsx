@@ -32,7 +32,7 @@ import { useStudentSearch } from '@/hooks/useStudentSearch';
 import { useAdminPagination } from '@/hooks/useAdminPagination';
 import PaginationControls from '@/components/admin-parents/PaginationControls';
 import { logger } from '@/utils/logger';
-import { graduateStudentsByClass } from '@/services/student/graduateStudents';
+import { graduateStudentsByIds } from '@/services/student/graduateStudents';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const AdminStudentsScreen = () => {
@@ -176,10 +176,10 @@ const AdminStudentsScreen = () => {
     setIsExportDialogOpen(false);
   };
 
-  const handleGraduateClass = async (classId: string, graduationYear: number) => {
+  const handleGraduateStudents = async (studentIds: string[], graduationYear: number) => {
     try {
       setIsLoading(true);
-      const count = await graduateStudentsByClass(classId, graduationYear);
+      const count = await graduateStudentsByIds(studentIds, graduationYear);
       toast({
         title: t('admin.graduateSuccess'),
         description: t('admin.graduatedCount', { count }),
@@ -329,7 +329,7 @@ const AdminStudentsScreen = () => {
         onOpenChange={setIsGraduateDialogOpen}
         classList={classList}
         studentList={studentList}
-        onGraduate={handleGraduateClass}
+        onGraduate={handleGraduateStudents}
         isLoading={isLoading}
       />
     </div>
