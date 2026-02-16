@@ -747,6 +747,48 @@ export type Database = {
         }
         Relationships: []
       }
+      student_class_history: {
+        Row: {
+          class_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          start_date: string
+          student_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string
+          student_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          start_date?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_class_history_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_class_history_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_departures: {
         Row: {
           created_at: string

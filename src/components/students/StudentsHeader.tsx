@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { UserRound, Upload, Download, Plus, GraduationCap } from "lucide-react";
+import { UserRound, Upload, Download, Plus, GraduationCap, RefreshCw } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +17,7 @@ interface StudentsHeaderProps {
   onAddStudent: () => void;
   onFullImportCompleted?: () => void;
   onGraduateStudents: () => void;
+  onReassignStudents: () => void;
 }
 
 const StudentsHeader = ({
@@ -25,6 +26,7 @@ const StudentsHeader = ({
   onAddStudent,
   onFullImportCompleted,
   onGraduateStudents,
+  onReassignStudents,
 }: StudentsHeaderProps) => {
   const { t } = useTranslation();
   
@@ -56,6 +58,20 @@ const StudentsHeader = ({
             </Tooltip>
 
             <FullImportDialog onCompleted={onFullImportCompleted} />
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onReassignStudents}
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('admin.reassignStudents')}</TooltipContent>
+            </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
