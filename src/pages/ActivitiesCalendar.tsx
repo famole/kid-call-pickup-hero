@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ActivityFormDialog } from '@/components/activities/ActivityFormDialog';
 import { ActivityDetailModal } from '@/components/activities/ActivityDetailModal';
 import { useActivities, useDeleteActivity } from '@/hooks/useActivities';
-import { useClasses } from '@/hooks/useClasses';
+import { useMyClasses } from '@/hooks/useMyClasses';
 import { useAuth } from '@/context/AuthContext';
 import { SchoolActivity } from '@/services/activitiesService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,7 +26,7 @@ export default function ActivitiesCalendar() {
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
   
-  const { data: classes = [], isLoading: isLoadingClasses } = useClasses() as { data: Class[]; isLoading: boolean };
+  const { data: classes = [], isLoading: isLoadingClasses } = useMyClasses() as { data: Class[]; isLoading: boolean };
   const deleteActivityMutation = useDeleteActivity();
 
   const deleteConfirmation = useDeleteConfirmation<SchoolActivity>({
