@@ -56,14 +56,13 @@ async function decryptPassword(encryptedPassword: string): Promise<string> {
 // Password hashing utilities - MUST match client-side hashing
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
-  const salt = 'upsy-password-hash-salt-2024'; // Must match client-side salt
+  const salt = 'upsy-password-hash-salt-2024';
   const data = encoder.encode(password + salt);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Legacy hash without salt (for backwards compatibility)
 async function hashPasswordLegacy(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
@@ -73,13 +72,25 @@ async function hashPasswordLegacy(password: string): Promise<string> {
 }
 
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  // Try new hash format first (with salt)
   const passwordHash = await hashPassword(password);
   if (passwordHash === hash) return true;
-  
-  // Fallback to legacy hash format (without salt) for existing users
   const legacyHash = await hashPasswordLegacy(password);
   return legacyHash === hash;
+}
+
+// Link parent record to auth.users via auth_uid (idempotent)
+async function linkAuthUid(supabase: any, parentId: string, authUserId: string) {
+  try {
+    const { error } = await supabase
+      .from('parents')
+      .update({ auth_uid: authUserId })
+      .eq('id', parentId)
+      .is('auth_uid', null);
+    if (error) console.warn('auth_uid link skipped (may already be set):', error.message);
+    else console.log('Linked auth_uid for parent', parentId);
+  } catch (e) {
+    console.warn('auth_uid link failed:', e);
+  }
 }
 
 const corsHeaders = {
@@ -91,32 +102,26 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { identifier, password } = await req.json();
-    
     console.log('Username auth request for identifier:', identifier);
 
-    // Try to decrypt password if it appears to be encrypted (length > 50 indicates encryption)
     let actualPassword = password;
     if (password && password.length > 50) {
       try {
         actualPassword = await decryptPassword(password);
-        console.log('Password decrypted successfully for authentication');
+        console.log('Password decrypted successfully');
       } catch (decryptionError) {
         console.warn('Password decryption failed, using as-is:', decryptionError);
-        // Continue with original password if decryption fails
       }
     }
 
-    // Create Supabase client with service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get parent data by username or email
     const { data: parentData, error: parentError } = await supabase
       .rpc('get_parent_by_identifier_pwd', { identifier });
 
@@ -133,7 +138,6 @@ serve(async (req) => {
     const parent = parentData[0];
     console.log('Parent found:', parent.email || 'no email', parent.username || 'no username', 'role:', parent.role);
 
-    // Check if user has password set
     if (!parent.password_set) {
       return new Response(JSON.stringify({
         error: 'Password not set',
@@ -145,38 +149,32 @@ serve(async (req) => {
       });
     }
 
-    // For username-only users (no email), implement custom password verification
+    // Username-only users (no email)
     if (!parent.email) {
-      console.log('Username-only user found, verifying password hash');
+      console.log('Username-only user, verifying password hash');
       
-      // Check if password hash exists
       if (!parent.password_hash) {
-        console.log('No password hash found for username-only user');
         throw new Error('Invalid credentials');
       }
       
-      // Verify password against stored hash
       const isPasswordValid = await verifyPassword(actualPassword, parent.password_hash);
-      
       if (!isPasswordValid) {
-        console.log('Password verification failed for username-only user');
         throw new Error('Invalid credentials');
       }
       
       console.log('Username-only authentication successful for:', parent.username);
       
-      // Return success without Supabase session (username-only users don't use Supabase auth)
       return new Response(JSON.stringify({
-        user: null, // No Supabase auth user for username-only users
-        session: null, // No Supabase session for username-only users
+        user: null,
+        session: null,
         parentData: parent,
-        isUsernameAuth: true // Flag to indicate this is username-only auth
+        isUsernameAuth: true
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // For users with email, use regular Supabase auth
+    // Email users — use Supabase auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: parent.email,
       password: actualPassword,
@@ -188,6 +186,11 @@ serve(async (req) => {
     }
 
     console.log('Authentication successful for:', parent.email);
+
+    // Link auth_uid on successful login
+    if (authData.user) {
+      await linkAuthUid(supabase, parent.id, authData.user.id);
+    }
 
     return new Response(JSON.stringify({
       user: authData.user,
