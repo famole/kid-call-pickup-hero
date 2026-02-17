@@ -215,17 +215,34 @@ serve(async (req) => {
         console.log('Auth user password updated successfully');
       }
 
-      // Update parent record to mark password as set (no need for password_hash for email users)
+      // Update parent record to mark password as set and link auth_uid
+      const authUserId = authUser?.id;
+      const updatePayload: Record<string, any> = { password_set: true };
+      if (authUserId) {
+        updatePayload.auth_uid = authUserId;
+      }
+
       const { error: updateError } = await supabase
         .from('parents')
-        .update({
-          password_set: true
-        })
+        .update(updatePayload)
         .eq('id', parent.id);
 
       if (updateError) {
-        console.error('Error updating parent record:', updateError);
-        throw new Error('Failed to update parent record');
+        // If auth_uid unique constraint fails, retry without it
+        if (updateError.code === '23505' && authUserId) {
+          console.warn('auth_uid already linked to another parent, setting password_set only');
+          const { error: retryError } = await supabase
+            .from('parents')
+            .update({ password_set: true })
+            .eq('id', parent.id);
+          if (retryError) {
+            console.error('Error updating parent record:', retryError);
+            throw new Error('Failed to update parent record');
+          }
+        } else {
+          console.error('Error updating parent record:', updateError);
+          throw new Error('Failed to update parent record');
+        }
       }
     } else {
       console.log('Username-only user detected, using password hash approach');

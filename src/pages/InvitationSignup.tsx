@@ -142,8 +142,18 @@ const InvitationSignup = () => {
       if (error) throw error;
 
       if (data.user) {
+        // Link auth_uid to existing parent record (matched by email)
+        try {
+          await supabase
+            .from('parents')
+            .update({ auth_uid: data.user.id })
+            .eq('email', email)
+            .is('auth_uid', null);
+        } catch (linkErr) {
+          logger.warn('auth_uid link on invitation signup failed:', linkErr);
+        }
+
         toast.success('Cuenta creada exitosamente. Redirigiendo...');
-        // Small delay to show the success message
         setTimeout(() => {
           navigate(`/accept-invitation/${token}`);
         }, 1000);
