@@ -88,6 +88,21 @@ body,
   }
 }
 
+/* Bottom tab bar safe area */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Add bottom padding on mobile to account for bottom tab bar */
+@media (max-width: 767px) {
+  .min-h-screen {
+    padding-bottom: 4.5rem;
+  }
+}
+
 /* Animation for newly called students */
 .call-animation {
   animation: highlightCall 2s ease-in-out;
