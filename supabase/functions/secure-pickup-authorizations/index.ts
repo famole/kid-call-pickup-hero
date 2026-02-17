@@ -164,9 +164,7 @@ serve(async (req)=>{
           const encryptedData = await encryptObject(authorizations);
           logger.log('Successfully fetched and encrypted pickup authorizations');
           return new Response(JSON.stringify({
-            data: {
-              encrypted_data: encryptedData
-            },
+            encryptedData: encryptedData,
             error: null
           }), {
             status: 200,
@@ -221,9 +219,7 @@ serve(async (req)=>{
           const encryptedData = await encryptObject(data);
           logger.log('Successfully fetched and encrypted authorized pickup authorizations');
           return new Response(JSON.stringify({
-            data: {
-              encrypted_data: encryptedData
-            },
+            encryptedData: encryptedData,
             error: null
           }), {
             status: 200,
@@ -279,9 +275,7 @@ serve(async (req)=>{
             if (error) throw error;
             logger.log('Successfully created pickup authorization:', data);
             return new Response(JSON.stringify({
-              data: {
-                encrypted_data: await encryptObject(data)
-              },
+              encryptedData: await encryptObject(data),
               error: null
             }), {
               status: 200,
@@ -335,9 +329,7 @@ serve(async (req)=>{
           const encryptedData = await encryptObject(data);
           logger.log('Successfully updated and encrypted pickup authorization');
           return new Response(JSON.stringify({
-            data: {
-              encrypted_data: encryptedData
-            },
+            encryptedData: encryptedData,
             error: null
           }), {
             status: 200,
@@ -438,9 +430,7 @@ serve(async (req)=>{
           const encryptedData = await encryptObject(result);
           logger.log('Successfully fetched and encrypted available parents');
           return new Response(JSON.stringify({
-            data: {
-              encrypted_data: encryptedData
-            },
+            encryptedData: encryptedData,
             error: null
           }), {
             status: 200,
@@ -605,7 +595,7 @@ serve(async (req)=>{
             
             const encryptedData = await encryptObject(result);
             return new Response(JSON.stringify({
-              data: { encrypted_data: encryptedData },
+              encryptedData: encryptedData,
               error: null
             }), {
               status: 200,
