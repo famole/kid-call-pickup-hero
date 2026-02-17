@@ -129,6 +129,7 @@ export type Database = {
       }
       parents: {
         Row: {
+          auth_uid: string | null
           created_at: string
           deleted_at: string | null
           email: string | null
@@ -143,6 +144,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          auth_uid?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string | null
@@ -157,6 +159,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          auth_uid?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string | null
