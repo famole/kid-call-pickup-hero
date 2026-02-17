@@ -67,9 +67,20 @@ const Signup = () => {
           email,
           phone: phone || undefined,
           role,
-          is_preloaded: false, // This is a new signup, not preloaded
-          password_set: false // They need to set their password after email confirmation
+          is_preloaded: false,
+          password_set: false
         });
+
+        // 3. Link auth_uid immediately since we have the auth user ID
+        try {
+          await supabase
+            .from('parents')
+            .update({ auth_uid: authData.user.id })
+            .eq('id', parent.id)
+            .is('auth_uid', null);
+        } catch (linkErr) {
+          logger.warn('auth_uid link on signup failed (will auto-link later):', linkErr);
+        }
 
         setShowEmailConfirmation(true);
         
