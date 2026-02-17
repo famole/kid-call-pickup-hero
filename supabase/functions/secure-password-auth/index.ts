@@ -6,7 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Password decryption function (matches client-side encryption)
 async function generatePasswordKey(passphrase: string): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
@@ -83,8 +82,22 @@ async function encryptResponse(responseData: any): Promise<string> {
   }
 }
 
+// Link parent record to auth.users via auth_uid (idempotent)
+async function linkAuthUid(supabase: any, parentId: string, authUserId: string) {
+  try {
+    const { error } = await supabase
+      .from('parents')
+      .update({ auth_uid: authUserId })
+      .eq('id', parentId)
+      .is('auth_uid', null);
+    if (error) console.warn('auth_uid link skipped:', error.message);
+    else console.log('Linked auth_uid for parent', parentId);
+  } catch (e) {
+    console.warn('auth_uid link failed:', e);
+  }
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -95,56 +108,53 @@ serve(async (req) => {
     if (!identifier || !encryptedPassword) {
       return new Response(
         JSON.stringify({ error: 'Missing identifier or password' }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Try to decrypt the password, but fallback to plain text if decryption fails
     let password: string;
-    const isLikelyEncrypted = encryptedPassword.length > 50; // Encrypted passwords are much longer
+    const isLikelyEncrypted = encryptedPassword.length > 50;
     
     if (isLikelyEncrypted) {
       try {
         password = await decryptPassword(encryptedPassword);
-        console.log('Password decrypted successfully for:', identifier);
-      } catch (decryptionError) {
-        console.error('Password decryption failed, trying as plain text:', decryptionError);
-        // If decryption fails, try using the password as plain text
+      } catch {
         password = encryptedPassword;
       }
     } else {
-      // Short password, likely plain text
-      console.log('Using plain text password for:', identifier);
       password = encryptedPassword;
     }
 
-    // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Check if this is an email or username
     const isEmail = identifier.includes('@');
 
     if (isEmail) {
-      // Handle email authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email: identifier,
         password: password,
       });
 
       if (error) {
-        console.error('Email auth error:', error);
         return new Response(
           JSON.stringify({ error: 'Invalid credentials' }),
-          { 
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
+      }
+
+      // Link auth_uid on successful email login
+      if (data.user) {
+        const { data: parentRow } = await supabase
+          .from('parents')
+          .select('id')
+          .eq('email', identifier)
+          .is('auth_uid', null)
+          .maybeSingle();
+        if (parentRow) {
+          await linkAuthUid(supabase, parentRow.id, data.user.id);
+        }
       }
 
       const responseData = { 
@@ -158,42 +168,27 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({ encryptedData: encryptedResponse }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     } else {
-      // Handle username authentication
       const { data: parentData, error } = await supabase
         .rpc('get_parent_by_identifier_pwd', { identifier });
 
       if (error || !parentData?.[0]) {
-        console.error('Username lookup error:', error);
         return new Response(
           JSON.stringify({ error: 'Invalid credentials' }),
-          { 
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      const parent = parentData[0];
-
-      // Verify password (this would need to be implemented based on your password storage method)
-      // For now, we'll assume the username-auth function handles this
       const { data: authResult, error: authError } = await supabase.functions.invoke('username-auth', {
         body: { identifier, password }
       });
 
       if (authError || authResult?.error) {
-        console.error('Username auth error:', authError || authResult?.error);
         return new Response(
           JSON.stringify({ error: 'Invalid credentials' }),
-          { 
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
@@ -208,9 +203,7 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({ encryptedData: encryptedResponse }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -218,10 +211,7 @@ serve(async (req) => {
     console.error('Secure password auth error:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
