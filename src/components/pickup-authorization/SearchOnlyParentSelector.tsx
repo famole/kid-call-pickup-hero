@@ -41,12 +41,13 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [filteredParents, setFilteredParents] = useState<Parent[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedParentData, setSelectedParentData] = useState<Parent | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get selected parent name
-  const selectedParent = parents.find(p => p.id === value);
+  // Get selected parent - check local state first, then fall back to parents prop
+  const selectedParent = value ? (selectedParentData?.id === value ? selectedParentData : parents.find(p => p.id === value)) ?? selectedParentData : null;
 
   const performSearch = useCallback(async (term: string) => {
     if (term.trim().length < 2) {
@@ -134,12 +135,14 @@ const SearchOnlyParentSelector: React.FC<SearchOnlyParentSelectorProps> = ({
   };
 
   const handleSelectParent = (parent: Parent) => {
+    setSelectedParentData(parent);
     onValueChange(parent.id);
     setSearchTerm('');
     setIsOpen(false);
   };
 
   const handleClearSelection = () => {
+    setSelectedParentData(null);
     onValueChange('');
     setSearchTerm('');
     setIsOpen(false);
