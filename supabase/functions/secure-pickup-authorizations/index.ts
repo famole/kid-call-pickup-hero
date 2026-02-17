@@ -243,7 +243,7 @@ serve(async (req)=>{
             logger.error('Failed to decrypt request data:', error);
             throw new Error('Invalid request data format');
           }
-          const parsedData = JSON.parse(decryptedData);
+          const parsedData = typeof decryptedData === 'string' ? JSON.parse(decryptedData) : decryptedData;
           // Validate required fields
           if (!parsedData.authorizedParentId) {
             throw new Error('Authorized parent ID is required');
@@ -352,7 +352,7 @@ serve(async (req)=>{
           try {
             // Decrypt and validate the request data
             const decryptedData = await decryptObject(requestData);
-            const parsedData = JSON.parse(decryptedData);
+            const parsedData = typeof decryptedData === 'string' ? JSON.parse(decryptedData) : decryptedData;
             // Validate that we have a valid ID
             if (!parsedData || !parsedData.id) {
               const errorMsg = 'Authorization ID is required for deletion';
@@ -455,7 +455,7 @@ serve(async (req)=>{
           try {
             // Decrypt request data to get date, optional classId, and search term
             const decryptedData = await decryptObject(requestData);
-            const parsedData = JSON.parse(decryptedData);
+            const parsedData = typeof decryptedData === 'string' ? JSON.parse(decryptedData) : decryptedData;
             
             const selectedDate = parsedData.date;
             const dayOfWeek = parsedData.dayOfWeek;
