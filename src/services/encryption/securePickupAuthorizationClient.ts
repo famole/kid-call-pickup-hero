@@ -79,8 +79,7 @@ class SecurePickupAuthorizationOperations {
       }
 
       // Decrypt the pickup authorizations data
-      const decryptedResponse = await decryptData(data.encryptedData);
-      const decryptedData = decryptedResponse.data;
+      const decryptedData = await decryptData(data.encryptedData);
       logger.info('Decrypted data:', decryptedData);
       if (!decryptedData) {
         logger.warn('Decryption returned empty data');
@@ -154,8 +153,7 @@ class SecurePickupAuthorizationOperations {
       }
 
       // Decrypt the pickup authorizations data
-      const decryptedResponse = await decryptData(data.encryptedData);
-      const decryptedData = decryptedResponse.data;
+      const decryptedData = await decryptData(data.encryptedData);
       
       if (!decryptedData) {
         logger.warn('Decryption returned empty data');
@@ -222,8 +220,7 @@ class SecurePickupAuthorizationOperations {
       }
 
       // Decrypt the response data
-      const decryptedResponse = await decryptData(data.encryptedData);
-      const decryptedData = decryptedResponse.data;
+      const decryptedData = await decryptData(data.encryptedData);
       
       // Transform to PickupAuthorization format
       const authorization: PickupAuthorization = {
@@ -283,8 +280,7 @@ class SecurePickupAuthorizationOperations {
       }
 
       // Decrypt the response data
-      const decryptedResponse = await decryptData(data.encryptedData);
-      const decryptedData = decryptedResponse.data;
+      const decryptedData = await decryptData(data.encryptedData);
       
       // Transform to PickupAuthorization format
       const authorization: PickupAuthorization = {
@@ -402,8 +398,7 @@ class SecurePickupAuthorizationOperations {
       }
 
       // Decrypt the parents data
-      const decryptedResponse = await decryptData(data.encryptedData);
-      const decryptedData = decryptedResponse.data;
+      const decryptedData = await decryptData(data.encryptedData);
       
       if (!decryptedData) {
         logger.warn('Decryption returned empty data');
