@@ -520,39 +520,29 @@ const PickupAuthorizationManagement: React.FC = () => {
     <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col space-y-4">
-            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-              <div className="space-y-1">
-                <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
-                  <Users className="h-5 w-5 sm:h-6 sm:w-6" />
-                  {t('pickupAuthorizations.allAuthorizationsTitle')}
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  {t('pickupAuthorizations.allAuthorizationsDescription')}
-                </CardDescription>
-              </div>
-              <Button 
-                onClick={() => setIsAddDialogOpen(true)}
-                className="w-full sm:w-auto bg-school-primary hover:bg-school-primary/90"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('pickupAuthorizations.addAuthorization')}
-              </Button>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              {authorizations.length > 0 && (
+                <>
+                  <Switch
+                    id="show-expired"
+                    checked={showExpired}
+                    onCheckedChange={setShowExpired}
+                  />
+                  <Label htmlFor="show-expired" className="text-sm cursor-pointer text-muted-foreground">
+                    {t('pickupAuthorizations.showExpired')}
+                  </Label>
+                </>
+              )}
             </div>
-            
-            {authorizations.length > 0 && (
-              <div className="flex items-center space-x-2 pt-2 border-t">
-                <Switch
-                  id="show-expired"
-                  checked={showExpired}
-                  onCheckedChange={setShowExpired}
-                />
-                <Label htmlFor="show-expired" className="text-sm cursor-pointer font-medium">
-                  {t('pickupAuthorizations.showExpired')}
-                </Label>
-              </div>
-            )}
+            <Button 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="bg-school-primary hover:bg-school-primary/90 shrink-0"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t('pickupAuthorizations.addAuthorization')}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
