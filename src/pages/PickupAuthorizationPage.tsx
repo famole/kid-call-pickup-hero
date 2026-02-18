@@ -29,15 +29,6 @@ const PickupAuthorizationPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       <div className="container mx-auto py-4 px-4 sm:py-6 sm:px-6 max-w-4xl">
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            {t('pickupAuthorizations.title')}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-600">
-            {t('pickupAuthorizations.description')}
-          </p>
-        </div>
-        
         <PickupAuthorizationManagement />
       </div>
     </div>
