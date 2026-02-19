@@ -73,6 +73,7 @@ export const useOptimizedWithdrawalHistory = (options: UseOptimizedWithdrawalHis
 
         const [parentsData, authorizationsData] = await Promise.all([
           (async () => {
+            if (uniqueParentIds.length === 0) return [];
             const { secureOperations } = await import('@/services/encryption');
             const { data: parents } = await secureOperations.getParentsByIdsSecure(uniqueParentIds);
             return parents?.map(p => ({ id: p.id, name: p.name })) || [];
@@ -117,9 +118,13 @@ export const useOptimizedWithdrawalHistory = (options: UseOptimizedWithdrawalHis
 
       if (!selfCheckoutError && selfCheckoutData) {
         const uniqueTeacherIds = [...new Set(selfCheckoutData.map(r => r.marked_by_user_id))];
-        const { secureOperations } = await import('@/services/encryption');
-        const { data: teachers } = await secureOperations.getParentsByIdsSecure(uniqueTeacherIds);
-        const teacherMap = new Map<string, string>(teachers?.map(t => [t.id, t.name]) || []);
+        let teachers: { id: string; name: string }[] | null = null;
+        if (uniqueTeacherIds.length > 0) {
+          const { secureOperations } = await import('@/services/encryption');
+          const { data } = await secureOperations.getParentsByIdsSecure(uniqueTeacherIds);
+          teachers = data;
+        }
+        const teacherMap = new Map<string, string>(teachers?.map((t: { id: string; name: string }) => [t.id, t.name]) || []);
 
         for (const departure of selfCheckoutData) {
           allRecords.push({
