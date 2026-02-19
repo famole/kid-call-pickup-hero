@@ -5,7 +5,12 @@ import { logger } from "@/utils/logger";
 // Encryption utilities - must match server-side implementation
 const ENCRYPTION_KEY = import.meta.env.VITE_PASSWORD_ENCRYPTION_KEY || 'U9.#s!_So2*';
 
-async function getEncryptionKey() {
+// ── Cached PBKDF2 key ──────────────────────────────────────────────
+let _cachedKey: CryptoKey | null = null;
+
+async function getEncryptionKey(): Promise<CryptoKey> {
+  if (_cachedKey) return _cachedKey;
+
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -15,7 +20,7 @@ async function getEncryptionKey() {
     ['deriveBits', 'deriveKey']
   );
 
-  return crypto.subtle.deriveKey(
+  _cachedKey = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt: encoder.encode('upsy-secure-salt-2024'),
@@ -27,6 +32,8 @@ async function getEncryptionKey() {
     true,
     ['encrypt', 'decrypt']
   );
+
+  return _cachedKey;
 }
 
 async function encryptData(data: string): Promise<string> {
@@ -220,6 +227,71 @@ export const secureStudentOperations = {
       };
     } catch (error) {
       logger.error('Error in getStudentsForParentDashboardSecure:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Unified parent dashboard — returns students with class names + pickup requests in one call
+  getParentDashboardSecure: async (parentId: string): Promise<{
+    data: {
+      directChildren: (Child & { className: string })[];
+      authorizedChildren: (Child & { className: string })[];
+      activeRequests: any[];
+    } | null;
+    error: any;
+  }> => {
+    try {
+      logger.log('Fetching unified parent dashboard for parent:', parentId);
+
+      const { data, error } = await supabase.functions.invoke('secure-students', {
+        body: { operation: 'getParentDashboard', data: { parentId } },
+      });
+
+      if (error) {
+        logger.error('Error from getParentDashboard:', error);
+        return { data: null, error };
+      }
+
+      if (data?.error) {
+        logger.error('Error in response:', data.error);
+        return { data: null, error: data.error };
+      }
+
+      const decryptedResponse = await decryptObject(data.encryptedData);
+      const payload = decryptedResponse?.data;
+
+      if (!payload) {
+        return { data: { directChildren: [], authorizedChildren: [], activeRequests: [] }, error: null };
+      }
+
+      const mapWithClassName = (students: any[]) =>
+        (students || []).map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          classId: s.class_id || '',
+          className: s.class_name || 'Unknown Class',
+          parentIds: s.parent_ids || [],
+          avatar: s.avatar,
+          status: s.status || 'active',
+          graduationYear: s.graduation_year || undefined,
+        }));
+
+      return {
+        data: {
+          directChildren: mapWithClassName(payload.directChildren),
+          authorizedChildren: mapWithClassName(payload.authorizedChildren),
+          activeRequests: (payload.activeRequests || []).map((r: any) => ({
+            id: r.id,
+            studentId: r.student_id,
+            parentId: r.parent_id,
+            requestTime: new Date(r.request_time),
+            status: r.status,
+          })),
+        },
+        error: null,
+      };
+    } catch (error) {
+      logger.error('Error in getParentDashboardSecure:', error);
       return { data: null, error };
     }
   },

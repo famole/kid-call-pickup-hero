@@ -1,7 +1,12 @@
 import { logger } from '@/utils/logger';
 
-// Generate a key from a passphrase for consistent encryption/decryption
+// ── Cached PBKDF2 key ──────────────────────────────────────────────
+const _keyCache = new Map<string, CryptoKey>();
+
 const generateKey = async (passphrase: string): Promise<CryptoKey> => {
+  const cached = _keyCache.get(passphrase);
+  if (cached) return cached;
+
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -11,7 +16,7 @@ const generateKey = async (passphrase: string): Promise<CryptoKey> => {
     ['deriveBits', 'deriveKey']
   );
 
-  return crypto.subtle.deriveKey(
+  const key = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt: encoder.encode('upsy-secure-salt-2024'),
@@ -23,6 +28,9 @@ const generateKey = async (passphrase: string): Promise<CryptoKey> => {
     true,
     ['encrypt', 'decrypt']
   );
+
+  _keyCache.set(passphrase, key);
+  return key;
 };
 
 // Get or generate encryption passphrase using environment variable or fallback

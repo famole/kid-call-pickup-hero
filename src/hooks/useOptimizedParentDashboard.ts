@@ -2,19 +2,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/auth/AuthProvider';
-import { getParentDashboardDataOptimized } from '@/services/parent/optimizedParentQueries';
+import { secureStudentOperations } from '@/services/encryption/secureStudentClient';
 import { createPickupRequestForUsernameUser } from '@/services/parent/usernameParentQueries';
-import { getActivePickupRequestsForParent } from '@/services/pickup';
-import { getParentAffectedPickupRequests } from '@/services/pickup/getParentAffectedPickupRequests';
 import { createPickupRequest } from '@/services/pickup/createPickupRequest';
 import { supabase } from '@/integrations/supabase/client';
 import { Child, PickupRequest } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
-import { getCurrentParentId, getParentIdentifierForDashboard } from '@/services/auth/parentIdResolver';
+import { getCurrentParentId } from '@/services/auth/parentIdResolver';
 
 interface ChildWithType extends Child {
   isAuthorized?: boolean;
+  className?: string;
 }
 
 interface ParentInfo {
@@ -40,25 +39,42 @@ export const useOptimizedParentDashboard = () => {
         return null;
       }
 
-      const parentIdentifier = await getParentIdentifierForDashboard();
-      const isEmailUser = Boolean(user!.email);
+      // ── Single unified call: students + class names + pickup requests ──
+      const result = await secureStudentOperations.getParentDashboardSecure(parentId);
 
-      const [dashboard, ownPickupRequests, authorizedPickupRequests] = await Promise.all([
-        getParentDashboardDataOptimized(isEmailUser ? user!.email! : parentId),
-        getActivePickupRequestsForParent(parentId),
-        getParentAffectedPickupRequests()
-      ]);
-
-      // Combine requests removing duplicates
-      const allRequests = [...ownPickupRequests];
-      for (const authRequest of authorizedPickupRequests) {
-        if (!allRequests.some(req => req.id === authRequest.id)) {
-          allRequests.push(authRequest);
-        }
+      if (result.error || !result.data) {
+        logger.error('Unified dashboard call failed:', result.error);
+        return null;
       }
 
-      // Get parent info
+      const { directChildren, authorizedChildren, activeRequests } = result.data;
+
+      // Build children list
+      const allChildrenMap = new Map<string, ChildWithType>();
+
+      directChildren.forEach(student => {
+        allChildrenMap.set(student.id, {
+          ...student,
+          parentIds: [parentId],
+          isAuthorized: false,
+        });
+      });
+
+      authorizedChildren.forEach(student => {
+        if (!allChildrenMap.has(student.id)) {
+          allChildrenMap.set(student.id, {
+            ...student,
+            parentIds: [parentId],
+            isAuthorized: true,
+          });
+        }
+      });
+
+      const children = Array.from(allChildrenMap.values());
+
+      // Parent info for username users
       let parentInfo: ParentInfo[] = [];
+      const isEmailUser = Boolean(user!.email);
       if (!isEmailUser) {
         const sessionData = localStorage.getItem('username_session');
         if (sessionData) {
@@ -68,15 +84,15 @@ export const useOptimizedParentDashboard = () => {
       }
 
       return {
-        children: dashboard.allChildren as ChildWithType[],
-        activeRequests: allRequests,
+        children,
+        activeRequests,
         parentInfo,
         currentParentId: parentId,
       };
     },
     enabled: !!user?.id,
-    staleTime: 30000,      // data stays fresh for 30s — avoids refetch on tab focus
-    refetchInterval: 60000, // poll every 60s instead of 20s
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 
   const children = dashboardData?.children || [];

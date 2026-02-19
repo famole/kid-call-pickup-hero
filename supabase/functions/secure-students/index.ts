@@ -15,9 +15,13 @@ const supabase = createClient(
 
 // Encryption utilities - fallback to default key if env var not set
 const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY') ?? 'U9.#s!_So2*';
-const SENSITIVE_STUDENT_FIELDS = ['name'];
 
-async function getEncryptionKey() {
+// ── Cached PBKDF2 key ──────────────────────────────────────────────
+let _cachedKey: CryptoKey | null = null;
+
+async function getEncryptionKey(): Promise<CryptoKey> {
+  if (_cachedKey) return _cachedKey;
+
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -27,7 +31,7 @@ async function getEncryptionKey() {
     ['deriveBits', 'deriveKey']
   );
 
-  return crypto.subtle.deriveKey(
+  _cachedKey = await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt: encoder.encode('upsy-secure-salt-2024'),
@@ -39,6 +43,8 @@ async function getEncryptionKey() {
     true,
     ['encrypt', 'decrypt']
   );
+
+  return _cachedKey;
 }
 
 async function encryptData(data: string): Promise<string> {
@@ -53,7 +59,6 @@ async function encryptData(data: string): Promise<string> {
       encodedData
     );
 
-    // Combine IV and encrypted data
     const combined = new Uint8Array(iv.length + encryptedData.byteLength);
     combined.set(iv);
     combined.set(new Uint8Array(encryptedData), iv.length);
@@ -61,7 +66,7 @@ async function encryptData(data: string): Promise<string> {
     return btoa(String.fromCharCode(...combined));
   } catch (error) {
     console.error('Encryption failed:', error);
-    return data; // Return original data if encryption fails
+    return data;
   }
 }
 
@@ -84,7 +89,7 @@ async function decryptData(encryptedData: string): Promise<string> {
     return new TextDecoder().decode(decryptedData);
   } catch (error) {
     console.error('Decryption failed:', error);
-    return encryptedData; // Return original if decryption fails
+    return encryptedData;
   }
 }
 
@@ -94,7 +99,7 @@ async function encryptObject(obj: any): Promise<string> {
     return await encryptData(jsonString);
   } catch (error) {
     console.error('Object encryption failed:', error);
-    return JSON.stringify(obj); // Return original if encryption fails
+    return JSON.stringify(obj);
   }
 }
 
@@ -105,15 +110,14 @@ async function decryptObject(encryptedString: string): Promise<any> {
   } catch (error) {
     console.error('Object decryption failed:', error);
     try {
-      return JSON.parse(encryptedString); // Try parsing original if decryption fails
+      return JSON.parse(encryptedString);
     } catch {
-      return encryptedString; // Return string if JSON parsing fails
+      return encryptedString;
     }
   }
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -126,17 +130,7 @@ serve(async (req) => {
       case 'getStudents': {
         let query = supabase
           .from('students')
-          .select(`
-            id,
-            name,
-            class_id,
-            avatar,
-            status,
-            graduation_year,
-            created_at,
-            updated_at,
-            deleted_at
-          `);
+          .select('id, name, class_id, avatar, status, graduation_year, created_at, updated_at, deleted_at');
         
         if (!includeDeleted) {
           query = query.is('deleted_at', null);
@@ -149,9 +143,7 @@ serve(async (req) => {
           throw error;
         }
 
-        // Fetch parent IDs for all students
         const studentIds = (studentsData || []).map(s => s.id);
-        console.log(`Fetching parent relationships for ${studentIds.length} students`);
         
         const { data: parentRelations, error: parentError } = await supabase
           .from('student_parents')
@@ -162,39 +154,23 @@ serve(async (req) => {
           console.error('Error fetching parent relationships:', parentError);
         }
         
-        console.log(`Found ${(parentRelations || []).length} parent-student relationships`);
-        
-        // Group parent IDs by student ID
         const parentsByStudent = (parentRelations || []).reduce((acc, rel) => {
-          if (!acc[rel.student_id]) {
-            acc[rel.student_id] = [];
-          }
+          if (!acc[rel.student_id]) acc[rel.student_id] = [];
           acc[rel.student_id].push(rel.parent_id);
           return acc;
         }, {} as Record<string, string[]>);
         
-        // Log sample of parent data
-        const sampleStudentId = studentIds[0];
-        if (sampleStudentId) {
-          console.log(`Sample: Student ${sampleStudentId} has ${(parentsByStudent[sampleStudentId] || []).length} parent(s)`);
-        }
-        
-        // Add parent_ids to each student
         const studentsWithParents = (studentsData || []).map(student => ({
           ...student,
           parent_ids: parentsByStudent[student.id] || []
         }));
-        
-        console.log(`Returning ${studentsWithParents.length} students with parent data`);
 
-        // Return encrypted data to client
         const encryptedStudentsData = await encryptObject({ data: studentsWithParents, error: null });
         return new Response(JSON.stringify({ encryptedData: encryptedStudentsData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Targeted fetch: only the students the calling parent is actually linked to
       case 'getStudentsForParent': {
         const { studentIds: requestedIds } = data || {};
         if (!requestedIds || !Array.isArray(requestedIds) || requestedIds.length === 0) {
@@ -203,8 +179,6 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-
-        console.log(`getStudentsForParent: fetching ${requestedIds.length} specific students`);
 
         let query = supabase
           .from('students')
@@ -224,7 +198,6 @@ serve(async (req) => {
 
         const fetchedIds = (studentsData || []).map(s => s.id);
 
-        // Fetch parent relationships only for the fetched students
         const { data: parentRelations } = await supabase
           .from('student_parents')
           .select('student_id, parent_id')
@@ -241,27 +214,155 @@ serve(async (req) => {
           parent_ids: parentsByStudent[student.id] || [],
         }));
 
-        console.log(`getStudentsForParent: returning ${studentsWithParents.length} students`);
-
         const encryptedData = await encryptObject({ data: studentsWithParents, error: null });
         return new Response(JSON.stringify({ encryptedData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Full parent dashboard resolution: resolves direct children + authorized children server-side
-      case 'getStudentsForParentDashboard': {
+      // ── Unified parent dashboard endpoint ──────────────────────────
+      // Returns: students (direct + authorized) with class names + active pickup requests
+      // in a SINGLE round-trip. Replaces 4-5 separate calls.
+      case 'getParentDashboard': {
         const { parentId } = data || {};
-        if (!parentId) {
-          throw new Error('Missing required parameter: parentId');
-        }
+        if (!parentId) throw new Error('Missing required parameter: parentId');
 
-        console.log(`getStudentsForParentDashboard: resolving students for parent ${parentId}`);
-
+        console.log(`getParentDashboard: resolving everything for parent ${parentId}`);
         const todayStr = new Date().toISOString().split('T')[0];
         const currentDayOfWeek = new Date().getDay();
 
-        // Parallel: get direct children IDs + authorized children IDs
+        // ── Phase 1: parallel — relationships + classes + pickup requests
+        const [directResult, authResult, classesResult, ownPickupResult, affectedPickupResult] = await Promise.all([
+          supabase
+            .from('student_parents')
+            .select('student_id, is_primary')
+            .eq('parent_id', parentId),
+          supabase
+            .from('pickup_authorizations')
+            .select('student_id, student_ids, allowed_days_of_week')
+            .eq('authorized_parent_id', parentId)
+            .eq('is_active', true)
+            .lte('start_date', todayStr)
+            .gte('end_date', todayStr),
+          supabase
+            .from('classes')
+            .select('id, name'),
+          supabase
+            .from('pickup_requests')
+            .select('id, student_id, parent_id, request_time, status')
+            .eq('parent_id', parentId)
+            .in('status', ['pending', 'called']),
+          // Pickup requests from OTHER parents for THIS parent's children
+          // We'll filter after we know the student IDs
+          supabase
+            .from('pickup_requests')
+            .select('id, student_id, parent_id, request_time, status')
+            .in('status', ['pending', 'called']),
+        ]);
+
+        if (directResult.error) {
+          console.error('Error fetching student_parents:', directResult.error);
+          throw directResult.error;
+        }
+
+        const directStudentIds = (directResult.data || []).map(r => r.student_id);
+
+        // Collect authorized student IDs, filtering by day of week
+        let authorizedStudentIds: string[] = [];
+        if (!authResult.error && authResult.data) {
+          authResult.data.forEach(auth => {
+            const allowedDays = auth.allowed_days_of_week;
+            if (allowedDays && Array.isArray(allowedDays) && !allowedDays.includes(currentDayOfWeek)) {
+              return;
+            }
+            if (auth.student_ids && Array.isArray(auth.student_ids)) {
+              authorizedStudentIds.push(...auth.student_ids);
+            }
+            if (auth.student_id) authorizedStudentIds.push(auth.student_id);
+          });
+        }
+        authorizedStudentIds = [...new Set(authorizedStudentIds)];
+
+        const allNeededIds = [...new Set([...directStudentIds, ...authorizedStudentIds])];
+        console.log(`Parent ${parentId}: ${directStudentIds.length} direct, ${authorizedStudentIds.length} authorized, ${allNeededIds.length} unique`);
+
+        // Build class name map
+        const classMap: Record<string, string> = {};
+        (classesResult.data || []).forEach(c => { classMap[c.id] = c.name; });
+
+        if (allNeededIds.length === 0) {
+          const encryptedEmpty = await encryptObject({
+            data: {
+              directChildren: [],
+              authorizedChildren: [],
+              activeRequests: [],
+            },
+            error: null,
+          });
+          return new Response(JSON.stringify({ encryptedData: encryptedEmpty }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // ── Phase 2: fetch students
+        const { data: studentsData, error: studentsError } = await supabase
+          .from('students')
+          .select('id, name, class_id, avatar, status, graduation_year, deleted_at')
+          .in('id', allNeededIds)
+          .is('deleted_at', null)
+          .order('name');
+
+        if (studentsError) {
+          console.error('Error fetching students:', studentsError);
+          throw studentsError;
+        }
+
+        // Add class_name to each student
+        const addClassName = (s: any) => ({
+          ...s,
+          class_name: s.class_id ? (classMap[s.class_id] || 'Unknown Class') : 'Unknown Class',
+        });
+
+        const directChildren = (studentsData || [])
+          .filter(s => directStudentIds.includes(s.id))
+          .map(addClassName);
+        const authorizedChildren = (studentsData || [])
+          .filter(s => authorizedStudentIds.includes(s.id) && !directStudentIds.includes(s.id))
+          .map(addClassName);
+
+        // ── Pickup requests: own + those affecting this parent's children
+        const ownRequests = ownPickupResult.data || [];
+        const allAffected = (affectedPickupResult.data || [])
+          .filter(r => allNeededIds.includes(r.student_id) && r.parent_id !== parentId);
+        
+        // Combine, dedup by id
+        const requestMap = new Map<string, any>();
+        [...ownRequests, ...allAffected].forEach(r => { requestMap.set(r.id, r); });
+        const activeRequests = Array.from(requestMap.values());
+
+        console.log(`Returning ${directChildren.length} direct + ${authorizedChildren.length} authorized children, ${activeRequests.length} active requests`);
+
+        const payload = {
+          directChildren,
+          authorizedChildren,
+          activeRequests,
+        };
+
+        const encryptedPayload = await encryptObject({ data: payload, error: null });
+        return new Response(JSON.stringify({ encryptedData: encryptedPayload }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Legacy — kept for backwards compat with usernameParentQueries
+      case 'getStudentsForParentDashboard': {
+        const { parentId } = data || {};
+        if (!parentId) throw new Error('Missing required parameter: parentId');
+
+        console.log(`getStudentsForParentDashboard: redirecting to getParentDashboard for parent ${parentId}`);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentDayOfWeek = new Date().getDay();
+
         const [directResult, authResult] = await Promise.all([
           supabase
             .from('student_parents')
@@ -276,32 +377,22 @@ serve(async (req) => {
             .gte('end_date', todayStr),
         ]);
 
-        if (directResult.error) {
-          console.error('Error fetching student_parents:', directResult.error);
-          throw directResult.error;
-        }
+        if (directResult.error) throw directResult.error;
 
         const directStudentIds = (directResult.data || []).map(r => r.student_id);
 
-        // Collect authorized student IDs, filtering by day of week
         let authorizedStudentIds: string[] = [];
         if (!authResult.error && authResult.data) {
           authResult.data.forEach(auth => {
-            // Check day-of-week filter
             const allowedDays = auth.allowed_days_of_week;
-            if (allowedDays && Array.isArray(allowedDays) && !allowedDays.includes(currentDayOfWeek)) {
-              return; // skip — not allowed today
-            }
-            if (auth.student_ids && Array.isArray(auth.student_ids)) {
-              authorizedStudentIds.push(...auth.student_ids);
-            }
+            if (allowedDays && Array.isArray(allowedDays) && !allowedDays.includes(currentDayOfWeek)) return;
+            if (auth.student_ids && Array.isArray(auth.student_ids)) authorizedStudentIds.push(...auth.student_ids);
             if (auth.student_id) authorizedStudentIds.push(auth.student_id);
           });
         }
         authorizedStudentIds = [...new Set(authorizedStudentIds)];
 
         const allNeededIds = [...new Set([...directStudentIds, ...authorizedStudentIds])];
-        console.log(`Parent ${parentId}: ${directStudentIds.length} direct, ${authorizedStudentIds.length} authorized, ${allNeededIds.length} unique`);
 
         if (allNeededIds.length === 0) {
           const encryptedEmpty = await encryptObject({
@@ -313,7 +404,6 @@ serve(async (req) => {
           });
         }
 
-        // Fetch only the needed students
         const { data: studentsData, error: studentsError } = await supabase
           .from('students')
           .select('id, name, class_id, avatar, status, graduation_year, deleted_at')
@@ -321,26 +411,16 @@ serve(async (req) => {
           .is('deleted_at', null)
           .order('name');
 
-        if (studentsError) {
-          console.error('Error fetching students:', studentsError);
-          throw studentsError;
-        }
+        if (studentsError) throw studentsError;
 
-        // Split into direct vs authorized
         const directChildren = (studentsData || []).filter(s => directStudentIds.includes(s.id));
         const authorizedChildren = (studentsData || [])
           .filter(s => authorizedStudentIds.includes(s.id) && !directStudentIds.includes(s.id));
 
-        console.log(`Returning ${directChildren.length} direct + ${authorizedChildren.length} authorized children`);
-
-        const payload = {
-          directChildren,
-          authorizedChildren,
-          directStudentIds,
-          authorizedStudentIds,
-        };
-
-        const encryptedPayload = await encryptObject({ data: payload, error: null });
+        const encryptedPayload = await encryptObject({
+          data: { directChildren, authorizedChildren, directStudentIds, authorizedStudentIds },
+          error: null,
+        });
         return new Response(JSON.stringify({ encryptedData: encryptedPayload }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -348,23 +428,11 @@ serve(async (req) => {
 
       case 'getStudentById': {
         const { id } = data || {};
-        if (!id) {
-          throw new Error('Missing required parameter: id');
-        }
+        if (!id) throw new Error('Missing required parameter: id');
 
         let query = supabase
           .from('students')
-          .select(`
-            id,
-            name,
-            class_id,
-            avatar,
-            status,
-            graduation_year,
-            created_at,
-            updated_at,
-            deleted_at
-          `)
+          .select('id, name, class_id, avatar, status, graduation_year, created_at, updated_at, deleted_at')
           .eq('id', id);
 
         if (!includeDeleted) {
@@ -373,10 +441,7 @@ serve(async (req) => {
 
         const { data: studentData, error } = await query.maybeSingle();
 
-        if (error) {
-          console.error('Error fetching student by id:', error);
-          throw error;
-        }
+        if (error) throw error;
 
         if (!studentData) {
           const encryptedEmptyData = await encryptObject({ data: null, error: null });
@@ -385,27 +450,15 @@ serve(async (req) => {
           });
         }
 
-        // Fetch parent IDs for this student
-        console.log(`Fetching parent relationships for student ${id}`);
-
-        const { data: parentRelations, error: parentError } = await supabase
+        const { data: parentRelations } = await supabase
           .from('student_parents')
           .select('student_id, parent_id')
           .eq('student_id', id);
 
-        if (parentError) {
-          console.error('Error fetching parent relationships:', parentError);
-        }
-
-        console.log(`Found ${(parentRelations || []).length} parent-student relationships for student ${id}`);
-
-        // Add parent_ids to the student
         const studentWithParents = {
           ...studentData,
           parent_ids: parentRelations ? parentRelations.map(rel => rel.parent_id) : []
         };
-
-        console.log(`Student ${id} has ${studentWithParents.parent_ids.length} parent(s)`);
 
         const encryptedStudentData = await encryptObject({ data: studentWithParents, error: null });
         return new Response(JSON.stringify({ encryptedData: encryptedStudentData }), {
@@ -419,21 +472,9 @@ serve(async (req) => {
           throw new Error('studentIds array is required for getStudentsWithParents operation');
         }
 
-        console.log(`Fetching ${studentIds.length} students with parent data`);
-
         let query = supabase
           .from('students')
-          .select(`
-            id,
-            name,
-            class_id,
-            avatar,
-            status,
-            graduation_year,
-            created_at,
-            updated_at,
-            deleted_at
-          `)
+          .select('id, name, class_id, avatar, status, graduation_year, created_at, updated_at, deleted_at')
           .in('id', studentIds);
 
         if (!includeDeleted) {
@@ -442,10 +483,7 @@ serve(async (req) => {
 
         const { data: studentsData, error } = await query;
 
-        if (error) {
-          console.error('Error fetching students:', error);
-          throw error;
-        }
+        if (error) throw error;
 
         if (!studentsData || studentsData.length === 0) {
           const encryptedEmptyData = await encryptObject({ data: [], error: null });
@@ -454,9 +492,6 @@ serve(async (req) => {
           });
         }
 
-        console.log(`Found ${studentsData.length} students, fetching parent relationships`);
-
-        // Fetch parent relationships for all students in one query
         const { data: parentRelations, error: parentError } = await supabase
           .from('student_parents')
           .select(`
@@ -465,15 +500,7 @@ serve(async (req) => {
             is_primary,
             relationship,
             parents!inner (
-              id,
-              name,
-              email,
-              username,
-              phone,
-              role,
-              created_at,
-              updated_at,
-              deleted_at
+              id, name, email, username, phone, role, created_at, updated_at, deleted_at
             )
           `)
           .in('student_id', studentIds);
@@ -482,14 +509,8 @@ serve(async (req) => {
           console.error('Error fetching parent relationships:', parentError);
         }
 
-        console.log(`Found ${(parentRelations || []).length} parent-student relationships`);
-
-        // Group parent relationships by student_id
         const parentsByStudent = (parentRelations || []).reduce((acc: Record<string, any[]>, rel: any) => {
-          if (!acc[rel.student_id]) {
-            acc[rel.student_id] = [];
-          }
-
+          if (!acc[rel.student_id]) acc[rel.student_id] = [];
           const parentData = Array.isArray(rel.parents) ? rel.parents[0] : rel.parents;
           if (parentData) {
             acc[rel.student_id].push({
@@ -506,20 +527,15 @@ serve(async (req) => {
               relationship: rel.relationship
             });
           }
-
           return acc;
         }, {} as Record<string, any[]>);
 
-        // Add parent data to each student
         const studentsWithParents = studentsData.map(student => ({
           ...student,
           parentIds: parentsByStudent[student.id]?.map(p => p.id) || [],
           parents: parentsByStudent[student.id] || []
         }));
 
-        console.log(`Returning ${studentsWithParents.length} students with parent data`);
-
-        // Return encrypted data to client
         const encryptedStudentsData = await encryptObject({ data: studentsWithParents, error: null });
         return new Response(JSON.stringify({ encryptedData: encryptedStudentsData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -527,7 +543,6 @@ serve(async (req) => {
       }
 
       case 'createStudent': {
-        // Decrypt entire object received from client
         const decryptedData = await decryptObject(data.encrypted_data);
         
         const { data: studentData, error } = await supabase
@@ -535,12 +550,8 @@ serve(async (req) => {
           .insert(decryptedData)
           .select();
         
-        if (error) {
-          console.error('Error creating student:', error);
-          throw error;
-        }
+        if (error) throw error;
 
-        // Return encrypted data to client
         const encryptedCreateData = await encryptObject({ data: studentData || [], error: null });
         return new Response(JSON.stringify({ encryptedData: encryptedCreateData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -549,8 +560,6 @@ serve(async (req) => {
 
       case 'updateStudent': {
         const { studentId, encrypted_data } = data;
-        
-        // Decrypt entire object received from client
         const decryptedData = await decryptObject(encrypted_data);
         
         const { data: studentData, error } = await supabase
@@ -559,12 +568,8 @@ serve(async (req) => {
           .eq('id', studentId)
           .select();
         
-        if (error) {
-          console.error('Error updating student:', error);
-          throw error;
-        }
+        if (error) throw error;
 
-        // Return encrypted data to client
         const encryptedUpdateData = await encryptObject({ data: studentData || [], error: null });
         return new Response(JSON.stringify({ encryptedData: encryptedUpdateData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
