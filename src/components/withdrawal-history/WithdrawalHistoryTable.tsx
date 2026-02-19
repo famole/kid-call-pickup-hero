@@ -25,9 +25,19 @@ interface WithdrawalRecord {
 interface WithdrawalHistoryTableProps {
   data: WithdrawalRecord[];
   loading?: boolean;
+  year: number;
+  month: number;
+  onYearChange: (year: number) => void;
+  onMonthChange: (month: number) => void;
 }
 
-const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, loading = false }) => {
+const MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({
+  data, loading = false, year, month, onYearChange, onMonthChange
+}) => {
   const { t } = useTranslation();
   const [selectedRecord, setSelectedRecord] = useState<WithdrawalRecord | null>(null);
   const [studentFilter, setStudentFilter] = useState<string>('all');
@@ -52,6 +62,8 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
   const filteredData = studentFilter === 'all' 
     ? data 
     : data.filter(record => record.studentName === studentFilter);
+
+  const getMonthName = (m: number) => t(`withdrawal.months.${m}`);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -146,36 +158,53 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
         {/* Header */}
         <div className="px-2">
           <h3 className="text-lg font-semibold">
-            {t('withdrawal.historyTitle')} ({data.length})
+            {t('withdrawal.historyTitle')} ({filteredData.length})
           </h3>
         </div>
 
-        {data.length === 0 ? (
+        {/* Month/Year filter */}
+        <div className="px-2 flex items-center gap-2 flex-wrap">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={String(month)} onValueChange={v => onMonthChange(Number(v))}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map(m => (
+                <SelectItem key={m} value={String(m)}>{getMonthName(m)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={String(year)} onValueChange={v => onYearChange(Number(v))}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {YEARS.map(y => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={studentFilter} onValueChange={setStudentFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder={t('withdrawal.filterByStudent')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('withdrawal.allStudents')}</SelectItem>
+              {uniqueStudents.map((studentName) => (
+                <SelectItem key={studentName} value={studentName}>{studentName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {filteredData.length === 0 ? (
           <div className="text-center py-8 px-2">
             <LogOut className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">{t('withdrawal.noRecords')}</p>
           </div>
         ) : (
           <>
-            {/* Student Filter */}
-            <div className="px-2">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={studentFilter} onValueChange={setStudentFilter}>
-                  <SelectTrigger className="w-full max-w-64">
-                    <SelectValue placeholder={t('withdrawal.filterByStudent')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('withdrawal.allStudents')}</SelectItem>
-                    {uniqueStudents.map((studentName) => (
-                      <SelectItem key={studentName} value={studentName}>
-                        {studentName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
             {/* Compact table for mobile - no container, remove avatars for space */}
             <div className="overflow-x-auto -mx-2">
@@ -283,38 +312,52 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({ data, l
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {t('withdrawal.historyTitle')} ({data.length} {t('withdrawal.records')})
-        </CardTitle>
+        <div className="flex flex-wrap items-center gap-2">
+          <CardTitle className="mr-auto">
+            {t('withdrawal.historyTitle')} ({filteredData.length} {t('withdrawal.records')})
+          </CardTitle>
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={String(month)} onValueChange={v => onMonthChange(Number(v))}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map(m => (
+                <SelectItem key={m} value={String(m)}>{getMonthName(m)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={String(year)} onValueChange={v => onYearChange(Number(v))}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {YEARS.map(y => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={studentFilter} onValueChange={setStudentFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder={t('withdrawal.filterByStudent')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('withdrawal.allStudents')}</SelectItem>
+              {uniqueStudents.map((studentName) => (
+                <SelectItem key={studentName} value={studentName}>{studentName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent>
-        {data.length === 0 ? (
+        {filteredData.length === 0 ? (
           <div className="text-center py-8">
             <LogOut className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">{t('withdrawal.noRecords')}</p>
           </div>
         ) : (
           <>
-            {/* Student Filter */}
-            <div className="mb-4">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={studentFilter} onValueChange={setStudentFilter}>
-                  <SelectTrigger className="w-64">
-                    <SelectValue placeholder={t('withdrawal.filterByStudent')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('withdrawal.allStudents')}</SelectItem>
-                    {uniqueStudents.map((studentName) => (
-                      <SelectItem key={studentName} value={studentName}>
-                        {studentName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
