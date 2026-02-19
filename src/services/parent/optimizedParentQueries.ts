@@ -85,31 +85,15 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       return { allChildren: [] };
     }
 
-    // Get direct children (via student_parents relationship) - get IDs only
-    const { data: childrenRelations, error: childrenError } = await supabase
-      .from('student_parents')
-      .select(`
-        student_id,
-        is_primary
-      `)
-      .eq('parent_id', parentData.id);
-
-    if (childrenError) {
-      logger.error('Error fetching children relations:', childrenError);
-      throw new Error(childrenError.message);
-    }
-
-    // Fetch students ONCE and classes ONCE in parallel — reuse for both direct and authorized children
-    const studentIds = childrenRelations?.map(r => r.student_id) || [];
+    // Step 1: Get direct children IDs + authorized children IDs + classes — all in parallel
     const currentDayOfWeek = new Date().getDay();
     const todayStr = new Date().toISOString().split('T')[0];
 
-    const [allStudentsResult, classesResult, authorizedChildrenResult] = await Promise.all([
-      secureStudentOperations.getStudentsSecure(),
-      secureClassOperations.getAll().catch((err: any) => {
-        logger.error('Error fetching classes with secure operations:', err);
-        return [] as any[];
-      }),
+    const [childrenRelationsResult, authorizedChildrenResult, classesResult] = await Promise.all([
+      supabase
+        .from('student_parents')
+        .select('student_id, is_primary')
+        .eq('parent_id', parentData.id),
       supabase
         .from('pickup_authorizations')
         .select('student_id, student_ids, allowed_days_of_week')
@@ -118,44 +102,55 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
         .lte('start_date', todayStr)
         .gte('end_date', todayStr)
         .contains('allowed_days_of_week', [currentDayOfWeek]),
+      secureClassOperations.getAll().catch((err: any) => {
+        logger.error('Error fetching classes:', err);
+        return [] as any[];
+      }),
     ]);
 
-    const { data: allStudents, error: studentsError } = allStudentsResult;
-    if (studentsError) {
-      logger.error('Error fetching students:', studentsError);
-      throw new Error(studentsError.message);
+    const { data: childrenRelations, error: childrenError } = childrenRelationsResult;
+    if (childrenError) {
+      logger.error('Error fetching children relations:', childrenError);
+      throw new Error(childrenError.message);
+    }
+
+    const { data: authorizedChildren, error: authorizedError } = authorizedChildrenResult;
+    if (authorizedError) {
+      logger.error('Error fetching authorized children:', authorizedError);
+      // Don't throw — just continue with empty
     }
 
     const classesData = Array.isArray(classesResult) ? classesResult : [];
-    logger.log(`Fetched ${classesData?.length || 0} classes using secure operations`);
+    logger.log(`Fetched ${classesData?.length || 0} classes`);
 
-    const { data: authorizedChildren, error: authorizedError } = authorizedChildrenResult;
+    // Step 2: Collect all needed student IDs (direct + authorized) and fetch ONLY those
+    const directStudentIds = childrenRelations?.map(r => r.student_id) || [];
 
-    // Filter direct children from the single students fetch
-    const studentsData = allStudents?.filter(s => studentIds.includes(s.id)) || [];
-
-    // Collect authorized student IDs
     let authorizedStudentIds: string[] = [];
     if (authorizedChildren) {
       authorizedChildren.forEach(auth => {
         if (auth.student_ids && Array.isArray(auth.student_ids)) {
           authorizedStudentIds.push(...auth.student_ids);
         }
-        if (auth.student_id) {
-          authorizedStudentIds.push(auth.student_id);
-        }
+        if (auth.student_id) authorizedStudentIds.push(auth.student_id);
       });
     }
     authorizedStudentIds = [...new Set(authorizedStudentIds)];
 
-    // Filter authorized students from the same single students fetch
-    const authorizedStudentDetails = allStudents
-      ?.filter(s => s && authorizedStudentIds.includes(s.id) && s.status !== 'withdrawn') || [];
+    const allNeededIds = [...new Set([...directStudentIds, ...authorizedStudentIds])];
 
-    if (authorizedError) {
-      logger.error('Error fetching authorized children:', authorizedError);
-      // Don't throw here, just log and continue
+    // Step 3: Single targeted fetch — only the students this parent needs
+    const { data: allStudents, error: studentsError } = await secureStudentOperations.getStudentsForParentSecure(allNeededIds);
+    if (studentsError) {
+      logger.error('Error fetching students:', studentsError);
+      throw new Error(studentsError.message);
     }
+    logger.log(`Fetched ${allStudents?.length || 0} students (targeted, not all)`);
+
+    // Split into direct vs authorized from the single fetch
+    const studentsData = allStudents?.filter(s => directStudentIds.includes(s.id)) || [];
+    const authorizedStudentDetails = allStudents
+      ?.filter(s => authorizedStudentIds.includes(s.id) && s.status !== 'withdrawn') || [];
 
     // Helper function to get class name
     const getClassName = (classId: string | null): string => {
