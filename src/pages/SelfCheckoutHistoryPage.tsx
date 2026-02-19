@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useOptimizedWithdrawalHistory } from '@/hooks/useOptimizedWithdrawalHistory';
 import Navigation from '@/components/Navigation';
@@ -6,7 +6,10 @@ import WithdrawalHistoryTable from '@/components/withdrawal-history/WithdrawalHi
 
 const SelfCheckoutHistoryPage: React.FC = () => {
   const { t } = useTranslation();
-  const { withdrawalData, loading } = useOptimizedWithdrawalHistory();
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const { withdrawalData, loading } = useOptimizedWithdrawalHistory({ year, month });
 
   return (
     <div className="min-h-screen w-full bg-background">
@@ -17,7 +20,14 @@ const SelfCheckoutHistoryPage: React.FC = () => {
           <p className="text-muted-foreground mt-2">{t('withdrawal.historyDescription')}</p>
         </div>
 
-        <WithdrawalHistoryTable data={withdrawalData} loading={loading} />
+        <WithdrawalHistoryTable
+          data={withdrawalData}
+          loading={loading}
+          year={year}
+          month={month}
+          onYearChange={setYear}
+          onMonthChange={setMonth}
+        />
       </div>
     </div>
   );

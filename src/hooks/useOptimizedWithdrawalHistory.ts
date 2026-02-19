@@ -18,12 +18,22 @@ interface WithdrawalRecord {
   notes?: string;
 }
 
-export const useOptimizedWithdrawalHistory = () => {
+interface UseOptimizedWithdrawalHistoryOptions {
+  year: number;
+  month: number; // 1-12
+}
+
+export const useOptimizedWithdrawalHistory = (options: UseOptimizedWithdrawalHistoryOptions) => {
+  const { year, month } = options;
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Build date range for the selected month (server-side filtering)
+  const startOfMonth = new Date(year, month - 1, 1).toISOString();
+  const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+
   const { data: withdrawalData = [], isLoading: loading } = useQuery({
-    queryKey: ['optimized-withdrawal-history', user?.email],
+    queryKey: ['optimized-withdrawal-history', user?.email, year, month],
     queryFn: async (): Promise<WithdrawalRecord[]> => {
       const parentId = await getCurrentParentIdCached();
       if (!parentId) {
@@ -47,13 +57,15 @@ export const useOptimizedWithdrawalHistory = () => {
 
       const allRecords: WithdrawalRecord[] = [];
 
-      // Fetch pickup history
+      // Fetch pickup history filtered by month on the server
       const { data: pickupHistoryData, error: pickupError } = await supabase
         .from('pickup_history')
         .select(`id, student_id, parent_id, completed_time, students (id, name, avatar, classes (name, grade))`)
         .in('student_id', studentIdsArray)
+        .gte('completed_time', startOfMonth)
+        .lte('completed_time', endOfMonth)
         .order('completed_time', { ascending: false })
-        .limit(200);
+        .limit(500);
 
       if (!pickupError && pickupHistoryData) {
         const uniqueParentIds = [...new Set(pickupHistoryData.map(r => r.parent_id))];
@@ -93,13 +105,15 @@ export const useOptimizedWithdrawalHistory = () => {
         }
       }
 
-      // Fetch self-checkout departures
+      // Fetch self-checkout departures filtered by month on the server
       const { data: selfCheckoutData, error: selfCheckoutError } = await supabase
         .from('student_departures')
         .select(`id, student_id, departed_at, notes, marked_by_user_id, students (id, name, avatar, classes (name, grade))`)
         .in('student_id', studentIdsArray)
+        .gte('departed_at', startOfMonth)
+        .lte('departed_at', endOfMonth)
         .order('departed_at', { ascending: false })
-        .limit(200);
+        .limit(500);
 
       if (!selfCheckoutError && selfCheckoutData) {
         const uniqueTeacherIds = [...new Set(selfCheckoutData.map(r => r.marked_by_user_id))];
@@ -110,11 +124,12 @@ export const useOptimizedWithdrawalHistory = () => {
         for (const departure of selfCheckoutData) {
           allRecords.push({
             id: departure.id, studentId: departure.student_id,
-            studentName: teacherMap.get(departure.marked_by_user_id) || 'Unknown Teacher',
+            studentName: departure.students?.name || 'Unknown Student',
             studentAvatar: departure.students?.avatar,
             className: departure.students?.classes ? `${departure.students.classes.name} - Grade ${departure.students.classes.grade}` : undefined,
             date: new Date(departure.departed_at), type: 'self_checkout',
-            notes: departure.notes
+            notes: departure.notes,
+            parentName: teacherMap.get(departure.marked_by_user_id)
           });
         }
       }
