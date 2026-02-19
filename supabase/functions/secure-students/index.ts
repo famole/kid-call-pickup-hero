@@ -194,6 +194,61 @@ serve(async (req) => {
         });
       }
 
+      // Targeted fetch: only the students the calling parent is actually linked to
+      case 'getStudentsForParent': {
+        const { studentIds: requestedIds } = data || {};
+        if (!requestedIds || !Array.isArray(requestedIds) || requestedIds.length === 0) {
+          const encryptedEmpty = await encryptObject({ data: [], error: null });
+          return new Response(JSON.stringify({ encryptedData: encryptedEmpty }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        console.log(`getStudentsForParent: fetching ${requestedIds.length} specific students`);
+
+        let query = supabase
+          .from('students')
+          .select('id, name, class_id, avatar, status, graduation_year, deleted_at')
+          .in('id', requestedIds);
+
+        if (!includeDeleted) {
+          query = query.is('deleted_at', null);
+        }
+
+        const { data: studentsData, error } = await query.order('name');
+
+        if (error) {
+          console.error('Error fetching students for parent:', error);
+          throw error;
+        }
+
+        const fetchedIds = (studentsData || []).map(s => s.id);
+
+        // Fetch parent relationships only for the fetched students
+        const { data: parentRelations } = await supabase
+          .from('student_parents')
+          .select('student_id, parent_id')
+          .in('student_id', fetchedIds);
+
+        const parentsByStudent = (parentRelations || []).reduce((acc: Record<string, string[]>, rel: any) => {
+          if (!acc[rel.student_id]) acc[rel.student_id] = [];
+          acc[rel.student_id].push(rel.parent_id);
+          return acc;
+        }, {});
+
+        const studentsWithParents = (studentsData || []).map(student => ({
+          ...student,
+          parent_ids: parentsByStudent[student.id] || [],
+        }));
+
+        console.log(`getStudentsForParent: returning ${studentsWithParents.length} students`);
+
+        const encryptedData = await encryptObject({ data: studentsWithParents, error: null });
+        return new Response(JSON.stringify({ encryptedData }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'getStudentById': {
         const { id } = data || {};
         if (!id) {

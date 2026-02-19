@@ -103,9 +103,22 @@ async function decryptObject(encryptedString: string): Promise<any> {
   }
 }
 
+// Helper: map snake_case DB records to frontend Child shape
+function mapStudents(data: any[]): Child[] {
+  return (data || []).map((student: any) => ({
+    id: student.id,
+    name: student.name,
+    classId: student.class_id || '',
+    parentIds: student.parent_ids || [],
+    avatar: student.avatar,
+    status: student.status || 'active',
+    graduationYear: student.graduation_year || undefined,
+  }));
+}
+
 // Secure student operations
 export const secureStudentOperations = {
-  // Get all students with encryption
+  // Get all students with encryption (admin/teacher use)
   getStudentsSecure: async (includeDeleted: boolean = false): Promise<{ data: Child[] | null; error: any }> => {
     try {
       logger.log('Fetching students with secure operations, includeDeleted:', includeDeleted);
@@ -132,26 +145,41 @@ export const secureStudentOperations = {
       const decryptedData = decryptedResponse?.data || [];
       logger.log('Decrypted students data:', decryptedData?.length || 0, 'students');
       
-      // Map snake_case to camelCase for frontend
-      const mappedStudents: Child[] = (decryptedData || []).map((student: any) => ({
-        id: student.id,
-        name: student.name,
-        classId: student.class_id || '',
-        parentIds: student.parent_ids || [],
-        avatar: student.avatar,
-        status: student.status || 'active',
-        graduationYear: student.graduation_year || undefined
-      }));
-      
-      // Log sample data for debugging
-      if (mappedStudents.length > 0) {
-        const sample = mappedStudents[0];
-        logger.log(`Sample student mapping: ${sample.name} has ${sample.parentIds.length} parent(s): ${sample.parentIds.join(', ')}`);
-      }
-      
-      return { data: mappedStudents, error: null };
+      return { data: mapStudents(decryptedData), error: null };
     } catch (error) {
       logger.error('Error in getStudentsSecure:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Get only specific students by ID (for parent dashboard — avoids fetching all 186)
+  getStudentsForParentSecure: async (studentIds: string[], includeDeleted: boolean = false): Promise<{ data: Child[] | null; error: any }> => {
+    try {
+      if (!studentIds || studentIds.length === 0) return { data: [], error: null };
+
+      logger.log(`Fetching ${studentIds.length} specific students for parent`);
+
+      const { data, error } = await supabase.functions.invoke('secure-students', {
+        body: { operation: 'getStudentsForParent', data: { studentIds }, includeDeleted }
+      });
+
+      if (error) {
+        logger.error('Error from secure-students function (getStudentsForParent):', error);
+        return { data: null, error };
+      }
+
+      if (data?.error) {
+        logger.error('Error in secure-students response:', data.error);
+        return { data: null, error: data.error };
+      }
+
+      const decryptedResponse = await decryptObject(data.encryptedData);
+      const decryptedData = decryptedResponse?.data || [];
+      logger.log('getStudentsForParent decrypted:', decryptedData?.length || 0, 'students');
+
+      return { data: mapStudents(decryptedData), error: null };
+    } catch (error) {
+      logger.error('Error in getStudentsForParentSecure:', error);
       return { data: null, error };
     }
   },
