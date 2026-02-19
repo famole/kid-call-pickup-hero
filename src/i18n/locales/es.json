@@ -70,7 +70,10 @@
     "activities": "Actividades",
     "communications": "Comunicaciones",
     "logout": "Cerrar sesión",
-    "language": "Idioma"
+    "language": "Idioma",
+    "pickup": "Retiros",
+    "manage": "Administrar",
+    "more": "Más"
   },
   "communications": {
     "title": "Comunicaciones",
