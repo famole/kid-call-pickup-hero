@@ -184,6 +184,46 @@ export const secureStudentOperations = {
     }
   },
 
+  // Full parent dashboard resolution — single endpoint, server resolves everything
+  getStudentsForParentDashboardSecure: async (parentId: string): Promise<{
+    data: { directChildren: Child[]; authorizedChildren: Child[] } | null;
+    error: any;
+  }> => {
+    try {
+      logger.log('Fetching parent dashboard students via single endpoint for parent:', parentId);
+
+      const { data, error } = await supabase.functions.invoke('secure-students', {
+        body: { operation: 'getStudentsForParentDashboard', data: { parentId } },
+      });
+
+      if (error) {
+        logger.error('Error from getStudentsForParentDashboard:', error);
+        return { data: null, error };
+      }
+
+      if (data?.error) {
+        logger.error('Error in response:', data.error);
+        return { data: null, error: data.error };
+      }
+
+      const decryptedResponse = await decryptObject(data.encryptedData);
+      const payload = decryptedResponse?.data;
+
+      if (!payload) return { data: { directChildren: [], authorizedChildren: [] }, error: null };
+
+      return {
+        data: {
+          directChildren: mapStudents(payload.directChildren || []),
+          authorizedChildren: mapStudents(payload.authorizedChildren || []),
+        },
+        error: null,
+      };
+    } catch (error) {
+      logger.error('Error in getStudentsForParentDashboardSecure:', error);
+      return { data: null, error };
+    }
+  },
+
   // Get student by ID with encryption
   getStudentByIdSecure: async (id: string): Promise<{ data: Child | null; error: any }> => {
     try {

@@ -249,6 +249,103 @@ serve(async (req) => {
         });
       }
 
+      // Full parent dashboard resolution: resolves direct children + authorized children server-side
+      case 'getStudentsForParentDashboard': {
+        const { parentId } = data || {};
+        if (!parentId) {
+          throw new Error('Missing required parameter: parentId');
+        }
+
+        console.log(`getStudentsForParentDashboard: resolving students for parent ${parentId}`);
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentDayOfWeek = new Date().getDay();
+
+        // Parallel: get direct children IDs + authorized children IDs
+        const [directResult, authResult] = await Promise.all([
+          supabase
+            .from('student_parents')
+            .select('student_id, is_primary')
+            .eq('parent_id', parentId),
+          supabase
+            .from('pickup_authorizations')
+            .select('student_id, student_ids, allowed_days_of_week')
+            .eq('authorized_parent_id', parentId)
+            .eq('is_active', true)
+            .lte('start_date', todayStr)
+            .gte('end_date', todayStr),
+        ]);
+
+        if (directResult.error) {
+          console.error('Error fetching student_parents:', directResult.error);
+          throw directResult.error;
+        }
+
+        const directStudentIds = (directResult.data || []).map(r => r.student_id);
+
+        // Collect authorized student IDs, filtering by day of week
+        let authorizedStudentIds: string[] = [];
+        if (!authResult.error && authResult.data) {
+          authResult.data.forEach(auth => {
+            // Check day-of-week filter
+            const allowedDays = auth.allowed_days_of_week;
+            if (allowedDays && Array.isArray(allowedDays) && !allowedDays.includes(currentDayOfWeek)) {
+              return; // skip — not allowed today
+            }
+            if (auth.student_ids && Array.isArray(auth.student_ids)) {
+              authorizedStudentIds.push(...auth.student_ids);
+            }
+            if (auth.student_id) authorizedStudentIds.push(auth.student_id);
+          });
+        }
+        authorizedStudentIds = [...new Set(authorizedStudentIds)];
+
+        const allNeededIds = [...new Set([...directStudentIds, ...authorizedStudentIds])];
+        console.log(`Parent ${parentId}: ${directStudentIds.length} direct, ${authorizedStudentIds.length} authorized, ${allNeededIds.length} unique`);
+
+        if (allNeededIds.length === 0) {
+          const encryptedEmpty = await encryptObject({
+            data: { directChildren: [], authorizedChildren: [], directStudentIds: [], authorizedStudentIds: [] },
+            error: null,
+          });
+          return new Response(JSON.stringify({ encryptedData: encryptedEmpty }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Fetch only the needed students
+        const { data: studentsData, error: studentsError } = await supabase
+          .from('students')
+          .select('id, name, class_id, avatar, status, graduation_year, deleted_at')
+          .in('id', allNeededIds)
+          .is('deleted_at', null)
+          .order('name');
+
+        if (studentsError) {
+          console.error('Error fetching students:', studentsError);
+          throw studentsError;
+        }
+
+        // Split into direct vs authorized
+        const directChildren = (studentsData || []).filter(s => directStudentIds.includes(s.id));
+        const authorizedChildren = (studentsData || [])
+          .filter(s => authorizedStudentIds.includes(s.id) && !directStudentIds.includes(s.id));
+
+        console.log(`Returning ${directChildren.length} direct + ${authorizedChildren.length} authorized children`);
+
+        const payload = {
+          directChildren,
+          authorizedChildren,
+          directStudentIds,
+          authorizedStudentIds,
+        };
+
+        const encryptedPayload = await encryptObject({ data: payload, error: null });
+        return new Response(JSON.stringify({ encryptedData: encryptedPayload }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'getStudentById': {
         const { id } = data || {};
         if (!id) {

@@ -7,119 +7,45 @@ export const getParentDashboardDataByParentId = async (parentId: string) => {
   try {
     logger.log('Fetching parent dashboard data for parent ID:', parentId);
 
-    // Get direct children (via student_parents relationship) - get IDs only
-    const { data: childrenRelations, error: childrenError } = await supabase
-      .from('student_parents')
-      .select(`
-        student_id,
-        is_primary
-      `)
-      .eq('parent_id', parentId);
+    // Single endpoint resolves everything server-side
+    const { secureStudentOperations } = await import('@/services/encryption/secureStudentClient');
+    const { data: dashboardData, error: dashboardError } = await secureStudentOperations.getStudentsForParentDashboardSecure(parentId);
 
-    if (childrenError) {
-      logger.error('Error fetching children relations:', childrenError);
-      throw new Error(childrenError.message);
+    if (dashboardError) {
+      logger.error('Error fetching dashboard students:', dashboardError);
+      throw new Error(dashboardError.message || 'Failed to fetch dashboard data');
     }
 
-    // Get student details using secure operations
-    const studentIds = childrenRelations?.map(r => r.student_id) || [];
-    let studentsData = [];
-    if (studentIds.length > 0) {
-      const { secureOperations } = await import('@/services/encryption');
-      const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
-      if (studentsError) {
-        logger.error('Error fetching students:', studentsError);
-        throw new Error(studentsError.message);
-      }
-      studentsData = allStudents?.filter(s => studentIds.includes(s.id)) || [];
-    }
-
-    if (childrenError) {
-      logger.error('Error fetching children:', childrenError);
-      throw new Error(childrenError.message);
-    }
-
-    // Get authorized children - handle both old student_id and new student_ids
-    const { data: authorizedChildren, error: authorizedError } = await supabase
-      .from('pickup_authorizations')
-      .select(`
-        student_id,
-        student_ids
-      `)
-      .eq('authorized_parent_id', parentId)
-      .eq('is_active', true)
-      .lte('start_date', new Date().toISOString().split('T')[0])
-      .gte('end_date', new Date().toISOString().split('T')[0]);
-
-    // Get student details for all authorized students
-    let authorizedStudentIds: string[] = [];
-    if (authorizedChildren) {
-      authorizedChildren.forEach(auth => {
-        // Handle new student_ids array field
-        if (auth.student_ids && Array.isArray(auth.student_ids)) {
-          authorizedStudentIds.push(...auth.student_ids);
-        }
-        // Handle old student_id field for backward compatibility
-        if (auth.student_id) {
-          authorizedStudentIds.push(auth.student_id);
-        }
-      });
-    }
-
-    // Remove duplicates
-    authorizedStudentIds = [...new Set(authorizedStudentIds)];
-
-    // Get student details for authorized students using secure operations
-    let authorizedStudentDetails = [];
-    if (authorizedStudentIds.length > 0) {
-      const { secureOperations } = await import('@/services/encryption');
-      const { data: allStudents, error: studentsError } = await secureOperations.getStudentsSecure();
-      
-      if (!studentsError && allStudents) {
-        authorizedStudentDetails = allStudents.filter(s => authorizedStudentIds.includes(s.id));
-      }
-    }
-
-    if (authorizedError) {
-      logger.error('Error fetching authorized children:', authorizedError);
-      // Don't throw here, just log and continue
-    }
+    const { directChildren: directStudents, authorizedChildren: authorizedStudents } = dashboardData || { directChildren: [], authorizedChildren: [] };
 
     // Combine and format children data
-    const directChildren: Child[] = childrenRelations?.map(relation => {
-      const student = studentsData.find(s => s.id === relation.student_id);
-      return {
-        id: relation.student_id,
-        name: student?.name || 'Unknown Student',
-        classId: student?.class_id || '',
-        parentIds: [parentId],
-        avatar: student?.avatar,
-      };
-    }) || [];
-
-    const authorizedChildrenFormatted: Child[] = authorizedStudentDetails?.map(student => ({
-      id: student.id,
-      name: student.name,
-      classId: student.class_id || '',
-      parentIds: [parentId],
-      avatar: student.avatar,
-    })) || [];
-
-    // Remove duplicates and combine
     const allChildrenMap = new Map<string, Child>();
-    
-    directChildren.forEach(child => {
-      allChildrenMap.set(child.id, { ...child, isAuthorized: false });
+
+    directStudents.forEach(student => {
+      allChildrenMap.set(student.id, {
+        id: student.id,
+        name: student.name,
+        classId: student.classId || '',
+        parentIds: [parentId],
+        avatar: student.avatar,
+        isAuthorized: false,
+      });
     });
 
-    authorizedChildrenFormatted.forEach(child => {
-      if (!allChildrenMap.has(child.id)) {
-        allChildrenMap.set(child.id, { ...child, isAuthorized: true });
+    authorizedStudents.forEach(student => {
+      if (!allChildrenMap.has(student.id)) {
+        allChildrenMap.set(student.id, {
+          id: student.id,
+          name: student.name,
+          classId: student.classId || '',
+          parentIds: [parentId],
+          avatar: student.avatar,
+          isAuthorized: true,
+        });
       }
     });
 
     const allChildren = Array.from(allChildrenMap.values());
-
     logger.log(`Found ${allChildren.length} children for parent ID ${parentId}`);
 
     return { allChildren };
