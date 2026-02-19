@@ -34,8 +34,13 @@ export interface CreatePostData {
   class_ids?: string[];
 }
 
-// Get all posts visible to current user
-export const getPosts = async (): Promise<Post[]> => {
+const PAGE_SIZE = 5;
+
+// Get paginated posts visible to current user
+export const getPosts = async (page = 0): Promise<{ posts: Post[]; hasMore: boolean }> => {
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const { data, error } = await supabase
     .from('posts')
     .select(`
@@ -46,7 +51,8 @@ export const getPosts = async (): Promise<Post[]> => {
       post_reads(parent_id, read_at)
     `)
     .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(from, to + 1); // fetch one extra to check if there are more
 
   if (error) {
     console.error('Error fetching posts:', error);
@@ -54,7 +60,10 @@ export const getPosts = async (): Promise<Post[]> => {
     throw error;
   }
 
-  return data as unknown as Post[];
+  const hasMore = (data?.length ?? 0) > PAGE_SIZE;
+  const posts = (data ?? []).slice(0, PAGE_SIZE);
+
+  return { posts: posts as unknown as Post[], hasMore };
 };
 
 // Create a new post
