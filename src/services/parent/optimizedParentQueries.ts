@@ -99,74 +99,58 @@ export const getParentDashboardDataOptimized = async (parentIdentifier: string) 
       throw new Error(childrenError.message);
     }
 
-    // Get student details using secure operations
+    // Fetch students ONCE and classes ONCE in parallel — reuse for both direct and authorized children
     const studentIds = childrenRelations?.map(r => r.student_id) || [];
-    let studentsData: any[] = [];
-    if (studentIds.length > 0) {
-      const { data: allStudents, error: studentsError } = await secureStudentOperations.getStudentsSecure();
-      if (studentsError) {
-        logger.error('Error fetching students:', studentsError);
-        throw new Error(studentsError.message);
-      }
-      studentsData = allStudents?.filter(s => studentIds.includes(s.id)) || [];
-    }
-
-    // Get all classes data to resolve class names using secure operations
-    let classesData = [];
-    try {
-      classesData = await secureClassOperations.getAll();
-      logger.log(`Fetched ${classesData?.length || 0} classes using secure operations`);
-    } catch (error) {
-      logger.error('Error fetching classes with secure operations:', error);
-      // Don't throw, just log and continue with empty classes
-    }
-
-    // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
     const currentDayOfWeek = new Date().getDay();
-    
-    // Get authorized children (excluding deleted students) - handle both old student_id and new student_ids
-    const { data: authorizedChildren, error: authorizedError } = await supabase
-      .from('pickup_authorizations')
-      .select(`
-        student_id,
-        student_ids,
-        allowed_days_of_week
-      `)
-      .eq('authorized_parent_id', parentData.id)
-      .eq('is_active', true)
-      .lte('start_date', new Date().toISOString().split('T')[0])
-      .gte('end_date', new Date().toISOString().split('T')[0])
-      .contains('allowed_days_of_week', [currentDayOfWeek]);
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    // Get student details for all authorized students
+    const [allStudentsResult, classesResult, authorizedChildrenResult] = await Promise.all([
+      secureStudentOperations.getStudentsSecure(),
+      secureClassOperations.getAll().catch((err: any) => {
+        logger.error('Error fetching classes with secure operations:', err);
+        return [] as any[];
+      }),
+      supabase
+        .from('pickup_authorizations')
+        .select('student_id, student_ids, allowed_days_of_week')
+        .eq('authorized_parent_id', parentData.id)
+        .eq('is_active', true)
+        .lte('start_date', todayStr)
+        .gte('end_date', todayStr)
+        .contains('allowed_days_of_week', [currentDayOfWeek]),
+    ]);
+
+    const { data: allStudents, error: studentsError } = allStudentsResult;
+    if (studentsError) {
+      logger.error('Error fetching students:', studentsError);
+      throw new Error(studentsError.message);
+    }
+
+    const classesData = Array.isArray(classesResult) ? classesResult : [];
+    logger.log(`Fetched ${classesData?.length || 0} classes using secure operations`);
+
+    const { data: authorizedChildren, error: authorizedError } = authorizedChildrenResult;
+
+    // Filter direct children from the single students fetch
+    const studentsData = allStudents?.filter(s => studentIds.includes(s.id)) || [];
+
+    // Collect authorized student IDs
     let authorizedStudentIds: string[] = [];
     if (authorizedChildren) {
       authorizedChildren.forEach(auth => {
-        // Handle new student_ids array field
         if (auth.student_ids && Array.isArray(auth.student_ids)) {
           authorizedStudentIds.push(...auth.student_ids);
         }
-        // Handle old student_id field for backward compatibility
         if (auth.student_id) {
           authorizedStudentIds.push(auth.student_id);
         }
       });
     }
-
-    // Remove duplicates
     authorizedStudentIds = [...new Set(authorizedStudentIds)];
 
-    // Get student details for authorized students using secure operations
-    let authorizedStudentDetails: any[] = [];
-    if (authorizedStudentIds.length > 0) {
-      const { data: allStudents, error: studentsError } = await secureStudentOperations.getStudentsSecure();
-      
-      if (!studentsError && allStudents) {
-        // Filter out deleted students and map to match expected structure
-        authorizedStudentDetails = allStudents
-          .filter(s => s && authorizedStudentIds.includes(s.id) && s.status !== 'withdrawn');
-      }
-    }
+    // Filter authorized students from the same single students fetch
+    const authorizedStudentDetails = allStudents
+      ?.filter(s => s && authorizedStudentIds.includes(s.id) && s.status !== 'withdrawn') || [];
 
     if (authorizedError) {
       logger.error('Error fetching authorized children:', authorizedError);

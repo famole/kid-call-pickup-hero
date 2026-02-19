@@ -75,7 +75,8 @@ export const useOptimizedParentDashboard = () => {
       };
     },
     enabled: !!user?.id,
-    refetchInterval: 20000,
+    staleTime: 30000,      // data stays fresh for 30s — avoids refetch on tab focus
+    refetchInterval: 60000, // poll every 60s instead of 20s
   });
 
   const children = dashboardData?.children || [];
