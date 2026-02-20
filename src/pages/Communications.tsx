@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import PageHeader from '@/components/PageHeader';
 
 const Communications = () => {
   const { user } = useAuth();
@@ -115,27 +116,22 @@ const Communications = () => {
       <Navigation />
       <div className="w-full">
         <div className="container mx-auto py-6 px-4 max-w-4xl">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2 text-center sm:text-left">
-                {t('communications.title')}
-              </h1>
-              <p className="text-muted-foreground">
-                {t('communications.subtitle')}
-              </p>
-            </div>
-            {isAdminOrTeacher && (
-              <Button
-                onClick={() => setCreateDialogOpen(true)}
-                size={isMobile ? 'sm' : 'default'}
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                {!isMobile && t('communications.createPost')}
-              </Button>
-            )}
-          </div>
+          <PageHeader
+            title={t('communications.title')}
+            description={t('communications.subtitle')}
+            actions={
+              isAdminOrTeacher ? (
+                <Button
+                  onClick={() => setCreateDialogOpen(true)}
+                  size={isMobile ? 'sm' : 'default'}
+                  className="gap-2 bg-school-primary hover:bg-school-primary/90"
+                >
+                  <Plus className="h-4 w-4" />
+                  {!isMobile && t('communications.createPost')}
+                </Button>
+              ) : undefined
+            }
+          />
 
           {/* Posts Feed */}
           {loading ? (
@@ -161,18 +157,12 @@ const Communications = () => {
               {posts.map((post) => (
                 <PostCard key={post.id} post={post} onUpdate={handlePostUpdate} />
               ))}
-
-              {/* Sentinel for IntersectionObserver */}
               <div ref={sentinelRef} className="h-4" />
-
-              {/* Loading more spinner */}
               {loadingMore && (
                 <div className="flex justify-center py-6">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               )}
-
-              {/* End of feed message */}
               {!hasMore && !loadingMore && (
                 <div className="text-center py-8 text-muted-foreground">
                   <p className="text-2xl mb-2">🎉</p>
@@ -182,7 +172,6 @@ const Communications = () => {
             </div>
           )}
 
-          {/* Create Post Dialog */}
           {isAdminOrTeacher && (
             <CreatePostDialog
               open={createDialogOpen}

@@ -18,6 +18,7 @@ import DeleteConfirmationDialog from '@/components/ui/delete-confirmation-dialog
 import { downloadActivityAsICS } from '@/utils/calendarExport';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import Logo from '@/components/Logo';
 
 export default function ActivitiesCalendar() {
   const { user } = useAuth();
@@ -92,6 +93,12 @@ export default function ActivitiesCalendar() {
     <div className="min-h-screen w-full bg-muted/50">
       <Navigation />
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Logo header */}
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
+          <Logo size="sm" />
+          <h2 className="text-lg sm:text-2xl font-bold">Clifton College</h2>
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           {showPast ? (
