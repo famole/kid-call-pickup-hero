@@ -40,7 +40,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ visibleItems }) => {
           <img
             src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
             alt="Upsy"
-            className="h-10 w-auto object-contain"
+            className="h-14 w-auto object-contain"
           />
         </Link>
         <div className="flex items-center gap-2">
