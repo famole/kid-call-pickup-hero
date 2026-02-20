@@ -446,7 +446,7 @@ export const ActivityFormDialog = ({ open, onOpenChange, activity }: ActivityFor
                   uploadImage.isPending
                 }
               >
-                {activity ? t('common.update', 'Update') : t('common.create', 'Create')} {t('activities.activity', 'Activity')}
+                {activity ? t('activities.updateActivity', 'Update Activity') : t('activities.createActivity', 'Create Activity')}
               </Button>
             </DialogFooter>
           </form>
