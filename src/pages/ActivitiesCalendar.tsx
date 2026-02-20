@@ -18,7 +18,7 @@ import DeleteConfirmationDialog from '@/components/ui/delete-confirmation-dialog
 import { downloadActivityAsICS } from '@/utils/calendarExport';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import Logo from '@/components/Logo';
+import PageHeader from '@/components/PageHeader';
 
 export default function ActivitiesCalendar() {
   const { user } = useAuth();
@@ -93,60 +93,54 @@ export default function ActivitiesCalendar() {
     <div className="min-h-screen w-full bg-muted/50">
       <Navigation />
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        {/* Logo header */}
-        <div className="flex items-center gap-3 mb-4 sm:mb-6">
-          <Logo size="sm" />
-          <h2 className="text-lg sm:text-2xl font-bold">Clifton College</h2>
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          {showPast ? (
-            <h1 className="text-lg sm:text-3xl font-bold truncate">
-              {t('activities.pastActivities', 'Actividades Pasadas')}
-            </h1>
-          ) : viewMode === 'month' ? (
-            <div className="flex items-center gap-1 sm:gap-4">
-              <Button variant="outline" size="icon" onClick={handlePreviousMonth} className="h-7 w-7 sm:h-9 sm:w-9">
-                <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </Button>
-              <h1 className="text-lg sm:text-3xl font-bold capitalize">
-                {format(currentMonth, isMobile ? 'MMM yyyy' : 'MMMM yyyy', { locale: es })}
-              </h1>
-              <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-7 w-7 sm:h-9 sm:w-9">
-                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </Button>
-            </div>
-          ) : (
-            <h1 className="text-lg sm:text-3xl font-bold">
-              {format(currentMonth, 'yyyy')} {t('activities.yearActivities', 'Activities')}
-            </h1>
-          )}
-
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {isAdmin && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    {isMobile ? (
-                      <Button onClick={handleCreateActivity} size="icon" className="h-8 w-8 bg-school-primary hover:bg-school-primary/90">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button onClick={handleCreateActivity} className="bg-school-primary hover:bg-school-primary/90">
-                        <Plus className="h-4 w-4 mr-2" />
-                        {t('activities.createActivity', 'Create Activity')}
-                      </Button>
+        {/* Header with logo + month nav + actions */}
+        <PageHeader
+          title={
+            showPast
+              ? t('activities.pastActivities', 'Actividades Pasadas')
+              : viewMode === 'month'
+              ? (() => {
+                  const formatted = format(currentMonth, isMobile ? 'MMM yyyy' : 'MMMM yyyy', { locale: es });
+                  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+                })()
+              : `${format(currentMonth, 'yyyy')} ${t('activities.yearActivities', 'Activities')}`
+          }
+          actions={
+            <div className="flex items-center gap-1">
+              {!showPast && viewMode === 'month' && (
+                <>
+                  <Button variant="outline" size="icon" onClick={handlePreviousMonth} className="h-7 w-7 sm:h-9 sm:w-9">
+                    <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-7 w-7 sm:h-9 sm:w-9">
+                    <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </Button>
+                </>
+              )}
+              {isAdmin && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      {isMobile ? (
+                        <Button onClick={handleCreateActivity} size="icon" className="h-7 w-7 sm:h-9 sm:w-9 bg-school-primary hover:bg-school-primary/90">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button onClick={handleCreateActivity} className="bg-school-primary hover:bg-school-primary/90">
+                          <Plus className="h-4 w-4 mr-2" />
+                          {t('activities.createActivity', 'Create Activity')}
+                        </Button>
+                      )}
+                    </TooltipTrigger>
+                    {isMobile && (
+                      <TooltipContent>{t('activities.createActivity', 'Create Activity')}</TooltipContent>
                     )}
-                  </TooltipTrigger>
-                  {isMobile && (
-                    <TooltipContent>{t('activities.createActivity', 'Create Activity')}</TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-        </div>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+          }
+        />
 
         {/* Filters row - compact on mobile */}
         <div className="flex items-center gap-2 mb-4 sm:mb-6 overflow-x-auto pb-1">
