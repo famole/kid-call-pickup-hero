@@ -5,11 +5,13 @@ import { Navigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import SelfCheckoutAuthorizationManagement from '@/components/self-checkout/SelfCheckoutAuthorizationManagement';
 import SelfCheckoutManagement from '@/components/self-checkout/SelfCheckoutManagement';
+import PageHeader from '@/components/PageHeader';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const SelfCheckoutPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
 
-  // Show loading while checking auth
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -21,7 +23,6 @@ const SelfCheckoutPage: React.FC = () => {
     );
   }
 
-  // Redirect if not authenticated
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -31,6 +32,7 @@ const SelfCheckoutPage: React.FC = () => {
       <Navigation />
       <div className="w-full">
         <div className="container mx-auto py-6 px-4">
+          <PageHeader title={t('selfCheckout.title', 'Auto-Salida')} />
           {user.role === 'parent' ? (
             <SelfCheckoutAuthorizationManagement />
           ) : user.role === 'admin' || user.role === 'teacher' || user.role === 'superadmin' ? (

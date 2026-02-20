@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import PickupAuthorizationManagement from '@/components/pickup-authorization/PickupAuthorizationManagement';
 import { useTranslation } from '@/hooks/useTranslation';
+import PageHeader from '@/components/PageHeader';
 
 const PickupAuthorizationPage: React.FC = () => {
   const { user, loading } = useAuth();
@@ -29,6 +30,7 @@ const PickupAuthorizationPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       <div className="container mx-auto py-4 px-4 sm:py-6 sm:px-6 max-w-4xl">
+        <PageHeader title={t('pickupAuth.title', 'Autorizaciones de Retiro')} />
         <PickupAuthorizationManagement />
       </div>
     </div>
