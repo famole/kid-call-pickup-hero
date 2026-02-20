@@ -15,12 +15,12 @@ const AdminTabs = () => {
     <div className="container mx-auto">
       <Tabs defaultValue="classes" className="mx-auto">
         <TabsList className={`grid w-full ${isMobile ? 'grid-cols-3 gap-1' : 'grid-cols-6'} max-w-4xl mx-auto mb-6`}>
-          <TabsTrigger value="classes" className={isMobile ? 'text-xs px-2' : ''}>{t('admin.classes')}</TabsTrigger>
-          <TabsTrigger value="students" className={isMobile ? 'text-xs px-2' : ''}>{t('admin.students')}</TabsTrigger>
-          <TabsTrigger value="parents" className={isMobile ? 'text-xs px-2' : ''}>{t('admin.parents')}</TabsTrigger>
-          <TabsTrigger value="family" className={isMobile ? 'text-xs px-2' : ''}>{t('admin.family')}</TabsTrigger>
-          <TabsTrigger value="teachers" className={isMobile ? 'text-xs px-2' : ''}>{t('admin.teachers')}</TabsTrigger>
-          <TabsTrigger value="pickup" className={isMobile ? 'text-xs px-2' : ''}>{t('admin.pickup')}</TabsTrigger>
+          <TabsTrigger value="classes" className={isMobile ? 'text-[11px] px-1.5 py-1.5' : ''}>{t('admin.classes')}</TabsTrigger>
+          <TabsTrigger value="students" className={isMobile ? 'text-[11px] px-1.5 py-1.5' : ''}>{t('admin.students')}</TabsTrigger>
+          <TabsTrigger value="parents" className={isMobile ? 'text-[11px] px-1.5 py-1.5' : ''}>{t('admin.parents')}</TabsTrigger>
+          <TabsTrigger value="family" className={isMobile ? 'text-[11px] px-1.5 py-1.5' : ''}>{t('admin.family')}</TabsTrigger>
+          <TabsTrigger value="teachers" className={isMobile ? 'text-[11px] px-1.5 py-1.5' : ''}>{t('admin.teachers')}</TabsTrigger>
+          <TabsTrigger value="pickup" className={isMobile ? 'text-[11px] px-1.5 py-1.5' : ''}>{t('admin.pickup')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="classes">

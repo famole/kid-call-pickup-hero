@@ -15,10 +15,10 @@ const AdminPanel = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
+    <div className="min-h-screen w-full bg-gray-50 overflow-x-hidden">
       <Navigation />
       <div className="w-full">
-        <div className="container mx-auto py-6">
+        <div className="container mx-auto py-4 sm:py-6 px-3 sm:px-6">
           <AdminPanelHeader userName={user?.name} />
 
           <Tabs defaultValue="manage" className="w-full">
