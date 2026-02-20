@@ -165,7 +165,7 @@ const PickupManagement: React.FC<PickupManagementProps> = ({ showNavigation = tr
         <div className="container mx-auto py-6 px-4">
           <div className="mb-6">
             <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
-              <div>
+              <div className="text-left">
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{t('pickup.management')}</h2>
                 <p className="text-base sm:text-lg text-muted-foreground">{t('pickup.manageStudentPickupRequests')}</p>
               </div>
