@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, startOfYear, endOfYear } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Edit, Download, ExternalLink, Clock, MapPin } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, startOfYear, endOfYear, subYears } from 'date-fns';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2, Edit, Download, ExternalLink, Clock, MapPin, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActivityFormDialog } from '@/components/activities/ActivityFormDialog';
 import { ActivityDetailModal } from '@/components/activities/ActivityDetailModal';
@@ -25,7 +25,7 @@ export default function ActivitiesCalendar() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
-  
+  const [showPast, setShowPast] = useState(false);
   const { data: classes = [], isLoading: isLoadingClasses } = useMyClasses() as { data: Class[]; isLoading: boolean };
   const deleteActivityMutation = useDeleteActivity();
 
@@ -40,12 +40,16 @@ export default function ActivitiesCalendar() {
     }),
   });
 
-  const startDate = viewMode === 'month' 
-    ? format(startOfMonth(currentMonth), 'yyyy-MM-dd')
-    : format(startOfYear(currentMonth), 'yyyy-MM-dd');
-  const endDate = viewMode === 'month'
-    ? format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-    : format(endOfYear(currentMonth), 'yyyy-MM-dd');
+  const startDate = showPast
+    ? format(subYears(new Date(), 1), 'yyyy-MM-dd')
+    : viewMode === 'month' 
+      ? format(startOfMonth(currentMonth), 'yyyy-MM-dd')
+      : format(startOfYear(currentMonth), 'yyyy-MM-dd');
+  const endDate = showPast
+    ? format(new Date(), 'yyyy-MM-dd')
+    : viewMode === 'month'
+      ? format(endOfMonth(currentMonth), 'yyyy-MM-dd')
+      : format(endOfYear(currentMonth), 'yyyy-MM-dd');
 
   const classFilter = selectedClassId === 'all' 
     ? undefined 
@@ -87,7 +91,11 @@ export default function ActivitiesCalendar() {
       <div className="flex flex-col gap-4 mb-8 items-center sm:items-stretch">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-4">
-            {viewMode === 'month' && (
+            {showPast ? (
+              <h1 className="text-2xl sm:text-3xl font-bold text-center">
+                {t('activities.pastActivities', 'Actividades Pasadas')}
+              </h1>
+            ) : viewMode === 'month' ? (
               <>
                 <Button
                   variant="outline"
@@ -107,8 +115,7 @@ export default function ActivitiesCalendar() {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </>
-            )}
-            {viewMode === 'year' && (
+            ) : (
               <h1 className="text-2xl sm:text-3xl font-bold text-center">
                 {format(currentMonth, 'yyyy')} {t('activities.yearActivities', 'Activities')}
               </h1>
@@ -123,16 +130,18 @@ export default function ActivitiesCalendar() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <Select value={viewMode} onValueChange={(value: 'month' | 'year') => setViewMode(value)}>
-            <SelectTrigger className="w-[180px]">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="month">{t('activities.monthlyView', 'Monthly View')}</SelectItem>
-              <SelectItem value="year">{t('activities.yearView', 'Year View')}</SelectItem>
-            </SelectContent>
-          </Select>
+          {!showPast && (
+            <Select value={viewMode} onValueChange={(value: 'month' | 'year') => setViewMode(value)}>
+              <SelectTrigger className="w-[180px]">
+                <Calendar className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="month">{t('activities.monthlyView', 'Monthly View')}</SelectItem>
+                <SelectItem value="year">{t('activities.yearView', 'Year View')}</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
 
           <Select value={selectedClassId} onValueChange={setSelectedClassId}>
             <SelectTrigger className="w-[200px]">
@@ -148,6 +157,17 @@ export default function ActivitiesCalendar() {
               ))}
             </SelectContent>
           </Select>
+
+          <Button
+            variant={showPast ? 'default' : 'outline'}
+            onClick={() => setShowPast(!showPast)}
+            className="gap-2"
+          >
+            <History className="h-4 w-4" />
+            {showPast
+              ? t('activities.showUpcoming', 'Ver Próximas')
+              : t('activities.showPast', 'Ver Pasadas')}
+          </Button>
         </div>
       </div>
 
