@@ -146,8 +146,8 @@ export default function ActivitiesCalendar() {
         <div className="flex items-center gap-2 mb-4 sm:mb-6 overflow-x-auto pb-1">
           {!showPast && (
             <Select value={viewMode} onValueChange={(value: 'month' | 'year') => setViewMode(value)}>
-              <SelectTrigger className="w-auto min-w-[120px] sm:w-[180px] h-8 sm:h-9 text-xs sm:text-sm">
-                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" />
+              <SelectTrigger className="min-w-fit shrink-0 sm:w-[180px] h-8 sm:h-9 text-xs sm:text-sm">
+                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 shrink-0" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -158,8 +158,8 @@ export default function ActivitiesCalendar() {
           )}
 
           <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-            <SelectTrigger className="w-auto min-w-[120px] sm:w-[200px] h-8 sm:h-9 text-xs sm:text-sm">
-              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:hidden" />
+            <SelectTrigger className="min-w-fit shrink-0 sm:w-[200px] h-8 sm:h-9 text-xs sm:text-sm">
+              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 shrink-0 sm:hidden" />
               <SelectValue placeholder={t('activities.filterByClass', 'Filter by class')} />
             </SelectTrigger>
             <SelectContent>
