@@ -81,11 +81,11 @@ export default function ActivitiesCalendar() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
+    <div className="min-h-screen w-full bg-muted/50">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col gap-4 mb-8">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 mb-8 items-center sm:items-stretch">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             {viewMode === 'month' && (
               <>
@@ -96,7 +96,7 @@ export default function ActivitiesCalendar() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <h1 className="text-3xl font-bold">
+                <h1 className="text-2xl sm:text-3xl font-bold text-center">
                   {format(currentMonth, 'MMMM yyyy')}
                 </h1>
                 <Button
@@ -109,7 +109,7 @@ export default function ActivitiesCalendar() {
               </>
             )}
             {viewMode === 'year' && (
-              <h1 className="text-3xl font-bold">
+              <h1 className="text-2xl sm:text-3xl font-bold text-center">
                 {format(currentMonth, 'yyyy')} {t('activities.yearActivities', 'Activities')}
               </h1>
             )}
@@ -122,7 +122,7 @@ export default function ActivitiesCalendar() {
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4">
           <Select value={viewMode} onValueChange={(value: 'month' | 'year') => setViewMode(value)}>
             <SelectTrigger className="w-[180px]">
               <Calendar className="h-4 w-4 mr-2" />
