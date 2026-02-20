@@ -297,8 +297,16 @@ export default function ActivitiesCalendar() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          {t('activities.noActivities', 'No activities scheduled for this')} {viewMode === 'month' ? t('activities.month', 'month') : t('activities.year', 'year')}
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <span className="text-5xl mb-4">📅✨</span>
+          <h3 className="text-xl font-semibold text-foreground mb-2">
+            {t('activities.noActivitiesTitle', 'No activities yet!')}
+          </h3>
+          <p className="text-muted-foreground max-w-sm">
+            {viewMode === 'month'
+              ? t('activities.noActivitiesMonth', 'There are no activities scheduled for this month. Check back soon! 🎉')
+              : t('activities.noActivitiesYear', 'There are no activities scheduled for this year. Check back soon! 🎉')}
+          </p>
         </div>
       )}
 
