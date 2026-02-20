@@ -10,7 +10,7 @@ const ViewerHeader: React.FC = () => {
       <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Logo size="md" />
-          <h1 className="text-xl sm:text-2xl font-bold">School Pickup</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Clifton College</h1>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-sm sm:text-base">
