@@ -139,10 +139,7 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({
   if (loading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>{t('withdrawal.historyTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           </div>
@@ -154,19 +151,11 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({
   if (isMobile) {
     // Mobile-optimized layout without container box
     return (
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="px-2">
-          <h3 className="text-lg font-semibold">
-            {t('withdrawal.historyTitle')} ({filteredData.length})
-          </h3>
-        </div>
-
-        {/* Month/Year filter */}
-        <div className="px-2 flex items-center gap-2 flex-wrap">
-          <Filter className="h-4 w-4 text-muted-foreground" />
+      <div className="space-y-3">
+        {/* Filters row */}
+        <div className="grid grid-cols-3 gap-2">
           <Select value={String(month)} onValueChange={v => onMonthChange(Number(v))}>
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -176,7 +165,7 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({
             </SelectContent>
           </Select>
           <Select value={String(year)} onValueChange={v => onYearChange(Number(v))}>
-            <SelectTrigger className="w-24">
+            <SelectTrigger className="h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -186,7 +175,7 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({
             </SelectContent>
           </Select>
           <Select value={studentFilter} onValueChange={setStudentFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder={t('withdrawal.filterByStudent')} />
             </SelectTrigger>
             <SelectContent>
@@ -197,6 +186,8 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({
             </SelectContent>
           </Select>
         </div>
+
+        <p className="text-xs text-muted-foreground">{filteredData.length} {t('withdrawal.records')}</p>
 
         {filteredData.length === 0 ? (
           <div className="text-center py-8 px-2">
@@ -313,9 +304,9 @@ const WithdrawalHistoryTable: React.FC<WithdrawalHistoryTableProps> = ({
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="mr-auto">
-            {t('withdrawal.historyTitle')} ({filteredData.length} {t('withdrawal.records')})
-          </CardTitle>
+          <span className="text-sm text-muted-foreground mr-auto">
+            {filteredData.length} {t('withdrawal.records')}
+          </span>
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={String(month)} onValueChange={v => onMonthChange(Number(v))}>
             <SelectTrigger className="w-36">
