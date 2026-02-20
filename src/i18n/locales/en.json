@@ -52,7 +52,10 @@
     "viewLink": "View Link",
     "deleteConfirmation": "Delete Activity",
     "deleteDescription": "Are you sure you want to delete this activity? This action cannot be undone.",
-    "schoolWide": "School-Wide"
+    "schoolWide": "School-Wide",
+    "noActivitiesTitle": "No activities yet!",
+    "noActivitiesMonth": "There are no activities scheduled for this month. Check back soon! 🎉",
+    "noActivitiesYear": "There are no activities scheduled for this year. Check back soon! 🎉"
   },
   "dashboard": {
     "upcomingActivity": "Next Upcoming Activity",

@@ -52,7 +52,10 @@
     "viewLink": "Ver Enlace",
     "deleteConfirmation": "Eliminar Actividad",
     "deleteDescription": "¿Estás seguro de que deseas eliminar esta actividad? Esta acción no se puede deshacer.",
-    "schoolWide": "Toda la Escuela"
+    "schoolWide": "Toda la Escuela",
+    "noActivitiesTitle": "¡No hay actividades aún!",
+    "noActivitiesMonth": "No hay actividades programadas para este mes. ¡Vuelve pronto! 🎉",
+    "noActivitiesYear": "No hay actividades programadas para este año. ¡Vuelve pronto! 🎉"
   },
   "dashboard": {
     "upcomingActivity": "Próxima Actividad",
