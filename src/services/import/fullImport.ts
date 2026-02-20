@@ -253,22 +253,35 @@ export const applyFullImport = async (preview: FullImportPreview) => {
       const fatherId = await resolveParent('father', plan.father);
       const motherId = await resolveParent('mother', plan.mother);
 
-      // Create student
-      const student = await createStudent({
-        name: plan.studentName,
-        classId: plan.classId!,
-        parentIds: [], // we'll add relationships explicitly to control primary + relationship label
-      });
+      // Check if student already exists in the same class (dedup by name + class)
+      const { data: existingStudents } = await supabase
+        .from('students')
+        .select('id')
+        .eq('name', plan.studentName)
+        .eq('class_id', plan.classId!)
+        .is('deleted_at', null)
+        .limit(1);
 
-      // Link relationships with explicit relationship field
-      // Determine primary
+      let studentId: string;
+      if (existingStudents && existingStudents.length > 0) {
+        studentId = existingStudents[0].id;
+      } else {
+        const student = await createStudent({
+          name: plan.studentName,
+          classId: plan.classId!,
+          parentIds: [],
+        });
+        studentId = student.id;
+      }
+
+      // Link relationships using upsert to avoid duplicates
       const primary = plan.primaryParent;
 
       if (motherId) {
-        await addStudentToParent(motherId, student.id, 'Mother', primary === 'mother');
+        await upsertStudentParent(motherId, studentId, 'Mother', primary === 'mother');
       }
       if (fatherId) {
-        await addStudentToParent(fatherId, student.id, 'Father', primary === 'father');
+        await upsertStudentParent(fatherId, studentId, 'Father', primary === 'father');
       }
 
       results.successes++;
@@ -279,3 +292,28 @@ export const applyFullImport = async (preview: FullImportPreview) => {
 
   return results;
 };
+
+/** Upsert a student-parent relationship, avoiding duplicates */
+async function upsertStudentParent(
+  parentId: string,
+  studentId: string,
+  relationship: string,
+  isPrimary: boolean
+) {
+  const { data: existing } = await supabase
+    .from('student_parents')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('parent_id', parentId)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    // Update existing relationship
+    await supabase
+      .from('student_parents')
+      .update({ relationship, is_primary: isPrimary })
+      .eq('id', existing[0].id);
+  } else {
+    await addStudentToParent(parentId, studentId, relationship, isPrimary);
+  }
+}
