@@ -2,16 +2,24 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { School, Plus } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import ClassListTable from '@/components/admin-classes/ClassListTable';
 import ClassFormDialog from '@/components/admin-classes/ClassFormDialog';
 import DeleteClassDialog from '@/components/admin-classes/DeleteClassDialog';
 import TableSkeleton from '@/components/ui/skeletons/TableSkeleton';
 import { useClassManagement } from '@/hooks/useClassManagement';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const AdminClassesScreen = () => {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -81,19 +89,35 @@ const AdminClassesScreen = () => {
       <div className="container mx-auto py-6">
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-start justify-start gap-4 mb-6">
-              <div className="flex items-center gap-3 text-left">
-                <School className="h-8 w-8 text-school-primary" />
-                <h1 className="text-3xl font-bold text-left">{t('classes.title')}</h1>
+            <div className="flex items-center justify-between gap-2 mb-6">
+              <div className="flex items-center gap-2 sm:gap-3 text-left min-w-0">
+                <School className="h-6 w-6 sm:h-8 sm:w-8 text-school-primary flex-shrink-0" />
+                <h1 className="text-lg sm:text-3xl font-bold text-left truncate">{t('classes.title')}</h1>
               </div>
-              <div className="flex flex-wrap gap-2 sm:ml-auto">
-                <Button 
-                  onClick={() => setIsAddDialogOpen(true)} 
-                  className="bg-school-primary flex-1 sm:flex-none"
-                >
-                  <Plus className="mr-2 h-4 w-4" /> {t('classes.addClass')}
-                </Button>
-              </div>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {isMobile ? (
+                      <Button 
+                        onClick={() => setIsAddDialogOpen(true)} 
+                        size="icon"
+                        className="h-8 w-8 bg-school-primary flex-shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={() => setIsAddDialogOpen(true)} 
+                        size="sm"
+                        className="bg-school-primary"
+                      >
+                        <Plus className="mr-1.5 h-3.5 w-3.5" /> {t('classes.addClass')}
+                      </Button>
+                    )}
+                  </TooltipTrigger>
+                  {isMobile && <TooltipContent>{t('classes.addClass')}</TooltipContent>}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </CardHeader>
           <CardContent>
