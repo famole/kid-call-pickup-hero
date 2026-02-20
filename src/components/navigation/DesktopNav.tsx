@@ -88,7 +88,7 @@ const DesktopNav: React.FC<DesktopNavProps> = ({ visibleItems }) => {
             <img
               src="/assets/ece6442c-dc5f-4017-8cab-7fb80ee8e28a.png"
               alt="Upsy"
-              className="h-10 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
           </Link>
 
