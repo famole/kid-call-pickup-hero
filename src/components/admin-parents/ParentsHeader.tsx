@@ -65,15 +65,15 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
 
   return (
     <header className="mb-8 text-left">
-      <div className="flex flex-col sm:flex-row sm:items-start justify-start gap-4">
-        <div className="flex items-center gap-3 text-left">
-          <Users className="h-8 w-8 text-school-primary" />
-          <h1 className="text-3xl font-bold text-left">{headerTitle || getDefaultTitle()}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-start gap-3">
+        <div className="flex items-center gap-3 text-left min-w-0">
+          <Users className="h-6 w-6 sm:h-8 sm:w-8 text-school-primary flex-shrink-0" />
+          <h1 className="text-xl sm:text-3xl font-bold text-left truncate">{headerTitle || getDefaultTitle()}</h1>
         </div>
-        <div className="flex flex-wrap gap-2 sm:ml-auto">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 sm:ml-auto">
           {onExportCSV && (
-            <Button onClick={onExportCSV} variant="outline" className="flex-1 sm:flex-none">
-              <Download className="mr-2 h-4 w-4" /> {t('admin.exportCSV')}
+            <Button onClick={onExportCSV} variant="outline" size="sm" className="flex-1 sm:flex-none text-xs sm:text-sm">
+              <Download className="mr-1.5 h-3.5 w-3.5" /> {t('admin.exportCSV')}
             </Button>
           )}
           {(userRole === 'parent' || userRole === 'family') && (
@@ -89,9 +89,10 @@ const ParentsHeader: React.FC<ParentsHeaderProps> = ({
           )}
           <Button 
             onClick={onAddParent} 
-            className="bg-school-primary flex-1 sm:flex-none"
+            size="sm"
+            className="bg-school-primary flex-1 sm:flex-none text-xs sm:text-sm"
           >
-            <Plus className="mr-2 h-4 w-4" /> {getButtonLabel()}
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> {getButtonLabel()}
           </Button>
         </div>
       </div>
