@@ -264,6 +264,7 @@ export const ActivityFormDialog = ({ open, onOpenChange, activity }: ActivityFor
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
+                          className={cn("p-3 pointer-events-auto")}
                         />
                       </PopoverContent>
                     </Popover>
